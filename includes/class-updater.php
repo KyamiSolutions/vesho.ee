@@ -26,10 +26,26 @@ class Vesho_CRM_Updater {
         add_filter( 'plugins_api', [ __CLASS__, 'plugin_info' ], 20, 3 );
         // Clear our cache after update completes
         add_action( 'upgrader_process_complete', [ __CLASS__, 'after_update' ], 10, 2 );
+        // Delete old theme folder before update to avoid "can't move to backup" error
+        add_filter( 'upgrader_pre_install', [ __CLASS__, 'pre_theme_install' ], 10, 2 );
         // Admin AJAX: create release package
         add_action( 'wp_ajax_vesho_create_release', [ __CLASS__, 'ajax_create_release' ] );
         // Admin AJAX: force-check for updates now
         add_action( 'wp_ajax_vesho_force_update_check', [ __CLASS__, 'ajax_force_check' ] );
+    }
+
+    public static function pre_theme_install( $return, $hook_extra ) {
+        if ( ! isset( $hook_extra['theme'] ) || $hook_extra['theme'] !== self::THEME_SLUG ) {
+            return $return;
+        }
+        $theme_dir = get_theme_root() . '/' . self::THEME_SLUG;
+        if ( is_dir( $theme_dir ) ) {
+            require_once ABSPATH . 'wp-admin/includes/file.php';
+            WP_Filesystem();
+            global $wp_filesystem;
+            $wp_filesystem->delete( $theme_dir, true );
+        }
+        return $return;
     }
 
     // ── Update server URL ─────────────────────────────────────────────────────
