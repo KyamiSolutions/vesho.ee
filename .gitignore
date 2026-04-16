@@ -31,5 +31,5 @@ desktop.ini
 vendor/
 composer.lock
 
-# Releases dir (generated, not committed)
-/releases/
+# Releases dir - JSON-id on tracked, ZIPid mitte
+/releases/*.zip
