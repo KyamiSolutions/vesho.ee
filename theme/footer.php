@@ -140,20 +140,3 @@
 </body>
 </html>
 
-<!-- Fallback nav function (defined in footer so it's available) -->
-<?php
-function vesho_fallback_nav() {
-    $pages = array(
-        home_url( '/' )         => __( 'Avaleht', 'vesho' ),
-        home_url( '/teenused/' ) => __( 'Teenused', 'vesho' ),
-        home_url( '/meist/' )    => __( 'Meist', 'vesho' ),
-        home_url( '/kontakt/' )  => __( 'Kontakt', 'vesho' ),
-    );
-    echo '<ul class="nav__list">';
-    foreach ( $pages as $url => $label ) {
-        $active = ( untrailingslashit( $_SERVER['REQUEST_URI'] ) === parse_url( $url, PHP_URL_PATH ) || ( $url === home_url( '/' ) && is_front_page() ) ) ? ' nav__item--active' : '';
-        echo '<li class="nav__item' . $active . '"><a class="nav__link' . ( $active ? ' nav__link--active' : '' ) . '" href="' . esc_url( $url ) . '">' . esc_html( $label ) . '</a></li>';
-    }
-    echo '</ul>';
-}
-?>
