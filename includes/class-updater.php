@@ -260,6 +260,13 @@ class Vesho_CRM_Updater {
             ];
         }
 
+        // Bump version in source files BEFORE zipping
+        if ( $type === 'plugin' ) {
+            self::bump_plugin_version( $version );
+        } else {
+            self::bump_theme_version( $version );
+        }
+
         // Create ZIP
         $zip_path = $dir . '/' . $zip_name;
         $zip_ok   = self::zip_directory( $source, $zip_path, $folder );
