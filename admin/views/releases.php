@@ -8,9 +8,69 @@ $server_url   = Vesho_CRM_Updater::get_server_url();
 $upload       = wp_upload_dir();
 $releases_dir = $upload['basedir'] . '/vesho-releases';
 $nonce        = wp_create_nonce('vesho_admin_nonce');
+
+// Only show package creator on local/dev environment
+$is_local = in_array($_SERVER['HTTP_HOST'] ?? '', ['localhost', '127.0.0.1'])
+         || str_contains(($_SERVER['HTTP_HOST'] ?? ''), 'localhost')
+         || ( defined('WP_DEBUG') && WP_DEBUG && !str_contains(home_url(), 'https') );
 ?>
 <div class="wrap vesho-admin-wrap">
 <h1 class="crm-page-title">🚀 Uuenduste haldus</h1>
+
+<?php if (!$is_local): ?>
+<!-- LIVE SERVER: show only version info + update check -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px">
+<div class="crm-card">
+  <div class="crm-card-header"><span class="crm-card-title">🔌 Vesho CRM plugin</span></div>
+  <div style="padding:20px">
+    <table class="widefat">
+      <tr><td style="font-weight:600;width:180px">Paigaldatud versioon</td><td><span style="background:#e0f7fa;color:#006064;padding:3px 10px;border-radius:20px;font-size:13px;font-weight:700"><?php echo VESHO_CRM_VERSION; ?></span></td></tr>
+      <tr><td style="font-weight:600">Saadaval versioon</td><td><?php echo $plugin_info ? '<span style="background:#e8f5e9;color:#1b5e20;padding:3px 10px;border-radius:20px;font-size:13px;font-weight:700">' . esc_html($plugin_info->version) . '</span>' : '<span style="color:#999">—</span>'; ?></td></tr>
+    </table>
+    <?php if ($plugin_info && version_compare($plugin_info->version, VESHO_CRM_VERSION, '>')): ?>
+    <div style="margin-top:12px;padding:10px 14px;background:#fff3cd;border:1px solid #ffc107;border-radius:8px;font-size:13px">
+      ⚠️ Uuendus saadaval! Mine <a href="<?php echo admin_url('update-core.php'); ?>">Töölaud → Uuendused</a>
+    </div>
+    <?php endif; ?>
+  </div>
+</div>
+<div class="crm-card">
+  <div class="crm-card-header"><span class="crm-card-title">🎨 Vesho teema</span></div>
+  <div style="padding:20px">
+    <table class="widefat">
+      <tr><td style="font-weight:600;width:180px">Paigaldatud versioon</td><td><span style="background:#e0f7fa;color:#006064;padding:3px 10px;border-radius:20px;font-size:13px;font-weight:700"><?php echo esc_html($theme->get('Version')); ?></span></td></tr>
+      <tr><td style="font-weight:600">Saadaval versioon</td><td><?php echo $theme_info ? '<span style="background:#e8f5e9;color:#1b5e20;padding:3px 10px;border-radius:20px;font-size:13px;font-weight:700">' . esc_html($theme_info->version) . '</span>' : '<span style="color:#999">—</span>'; ?></td></tr>
+    </table>
+    <?php if ($theme_info && version_compare($theme_info->version, $theme->get('Version'), '>')): ?>
+    <div style="margin-top:12px;padding:10px 14px;background:#fff3cd;border:1px solid #ffc107;border-radius:8px;font-size:13px">
+      ⚠️ Uuendus saadaval! Mine <a href="<?php echo admin_url('update-core.php'); ?>">Töölaud → Uuendused</a>
+    </div>
+    <?php endif; ?>
+  </div>
+</div>
+</div>
+<div class="crm-card">
+  <div style="padding:20px">
+    <p style="margin-bottom:12px;color:#555">Uuendused luuakse arenduskeskkonnas (localhost) ja avaldatakse siia serverile automaatselt.</p>
+    <button id="btn-force-check" class="button button-primary">🔄 Kontrolli uuendusi kohe</button>
+    <span id="force-check-msg" style="margin-left:10px;font-size:13px"></span>
+  </div>
+</div>
+<script>
+var veshoNonce = '<?php echo $nonce; ?>';
+document.getElementById('btn-force-check').addEventListener('click', function(){
+  this.disabled = true;
+  document.getElementById('force-check-msg').textContent = 'Kontrollin...';
+  fetch(ajaxurl,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},
+    body:'action=vesho_force_update_check&nonce='+veshoNonce})
+  .then(r=>r.json()).then(d=>{
+    document.getElementById('force-check-msg').textContent = d.success ? '✅ '+d.data.message : '❌ Viga';
+    document.getElementById('btn-force-check').disabled = false;
+    if(d.success) setTimeout(()=>window.location.href='/wp-admin/update-core.php',1500);
+  });
+});
+</script>
+<?php return; endif; ?>
 
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px">
 
