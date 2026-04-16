@@ -47,6 +47,20 @@
             <?php endif; ?>
         </a>
 
+        <!-- Primary Navigation -->
+        <nav class="header-nav" id="primary-nav" role="navigation" aria-label="<?php esc_attr_e( 'Peamine navigatsioon', 'vesho' ); ?>">
+            <?php
+            wp_nav_menu( array(
+                'theme_location' => 'primary',
+                'menu_id'        => 'primary-menu',
+                'menu_class'     => 'nav__list',
+                'container'      => false,
+                'walker'         => new Vesho_Nav_Walker(),
+                'fallback_cb'    => 'vesho_fallback_nav',
+            ) );
+            ?>
+        </nav>
+
         <!-- Header Actions -->
         <div class="header-actions">
             <!-- Phone (desktop) -->
