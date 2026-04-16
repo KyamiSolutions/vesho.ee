@@ -27,10 +27,12 @@ jobs:
           echo "VERSION=${VERSION}" >> $GITHUB_ENV
           echo "TODAY=${TODAY}" >> $GITHUB_ENV
 
-          # Tõsta versioon failides enne ZIP loomist
+          # Tõsta versioon failides enne ZIP loomist (eemalda CRLF enne sed-i)
+          sed -i 's/\r//' vesho-crm.php
+          sed -i 's/\r//' theme/style.css
           sed -i "s/^\( \* Version:\s*\).*/\1${VERSION}/" vesho-crm.php
           sed -i "s/^define('VESHO_CRM_VERSION', '[^']*')/define('VESHO_CRM_VERSION', '${VERSION}')/" vesho-crm.php
-          sed -i "s/^Version:\s*.*/Version: ${VERSION}/" theme/style.css
+          sed -i "s/^Version:.*/Version: ${VERSION}/" theme/style.css
 
           mkdir -p dist releases
 
