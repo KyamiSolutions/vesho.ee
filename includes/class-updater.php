@@ -26,13 +26,26 @@ class Vesho_CRM_Updater {
         add_filter( 'plugins_api', [ __CLASS__, 'plugin_info' ], 20, 3 );
         // Clear our cache after update completes
         add_action( 'upgrader_process_complete', [ __CLASS__, 'after_update' ], 10, 2 );
-        // Delete old theme folder BEFORE WordPress tries to backup it
+        // Delete old theme folder BEFORE WordPress tries to backup it (WP 6.3+ rollback workaround)
+        add_filter( 'upgrader_pre_download', [ __CLASS__, 'pre_download_delete_theme' ], 1, 3 );
         add_action( 'load-update-core.php', [ __CLASS__, 'pre_delete_theme_for_update' ] );
         add_filter( 'upgrader_pre_install', [ __CLASS__, 'pre_theme_install' ], 10, 2 );
         // Admin AJAX: create release package
         add_action( 'wp_ajax_vesho_create_release', [ __CLASS__, 'ajax_create_release' ] );
         // Admin AJAX: force-check for updates now
         add_action( 'wp_ajax_vesho_force_update_check', [ __CLASS__, 'ajax_force_check' ] );
+    }
+
+    // Fires before package download — before move_to_rollback_cache runs (WP 6.3+)
+    public static function pre_download_delete_theme( $reply, $package, $upgrader ) {
+        if ( strpos( (string) $package, 'vesho-theme' ) !== false
+            || strpos( (string) $package, self::THEME_SLUG . '.zip' ) !== false ) {
+            $theme_dir = get_theme_root() . '/' . self::THEME_SLUG;
+            if ( is_dir( $theme_dir ) ) {
+                self::recursive_rmdir( $theme_dir );
+            }
+        }
+        return $reply;
     }
 
     // Fires when update-core.php loads with do-theme-upgrade action — before WP_Upgrader runs
