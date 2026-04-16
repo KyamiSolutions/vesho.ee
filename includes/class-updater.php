@@ -26,12 +26,34 @@ class Vesho_CRM_Updater {
         add_filter( 'plugins_api', [ __CLASS__, 'plugin_info' ], 20, 3 );
         // Clear our cache after update completes
         add_action( 'upgrader_process_complete', [ __CLASS__, 'after_update' ], 10, 2 );
-        // Delete old theme folder before update to avoid "can't move to backup" error
+        // Delete old theme folder BEFORE WordPress tries to backup it
+        add_action( 'load-update-core.php', [ __CLASS__, 'pre_delete_theme_for_update' ] );
         add_filter( 'upgrader_pre_install', [ __CLASS__, 'pre_theme_install' ], 10, 2 );
         // Admin AJAX: create release package
         add_action( 'wp_ajax_vesho_create_release', [ __CLASS__, 'ajax_create_release' ] );
         // Admin AJAX: force-check for updates now
         add_action( 'wp_ajax_vesho_force_update_check', [ __CLASS__, 'ajax_force_check' ] );
+    }
+
+    // Fires when update-core.php loads with do-theme-upgrade action — before WP_Upgrader runs
+    public static function pre_delete_theme_for_update() {
+        if ( ! isset( $_POST['checked'] ) ) return;
+        $themes = (array) $_POST['checked'];
+        if ( in_array( self::THEME_SLUG, $themes, true ) ) {
+            $theme_dir = get_theme_root() . '/' . self::THEME_SLUG;
+            if ( is_dir( $theme_dir ) ) {
+                self::recursive_rmdir( $theme_dir );
+            }
+        }
+    }
+
+    private static function recursive_rmdir( $dir ) {
+        foreach ( scandir( $dir ) as $item ) {
+            if ( $item === '.' || $item === '..' ) continue;
+            $path = $dir . DIRECTORY_SEPARATOR . $item;
+            is_dir( $path ) ? self::recursive_rmdir( $path ) : unlink( $path );
+        }
+        rmdir( $dir );
     }
 
     public static function pre_theme_install( $return, $hook_extra ) {
@@ -40,10 +62,7 @@ class Vesho_CRM_Updater {
         }
         $theme_dir = get_theme_root() . '/' . self::THEME_SLUG;
         if ( is_dir( $theme_dir ) ) {
-            require_once ABSPATH . 'wp-admin/includes/file.php';
-            WP_Filesystem();
-            global $wp_filesystem;
-            $wp_filesystem->delete( $theme_dir, true );
+            self::recursive_rmdir( $theme_dir );
         }
         return $return;
     }
