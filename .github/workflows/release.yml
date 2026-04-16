@@ -3,14 +3,14 @@ name: Deploy Vesho CRM
 on:
   push:
     tags:
-      - 'v*.*.*'    # ainult tagid käivitavad release'i
+      - 'v*.*.*'
   workflow_dispatch:
 
 jobs:
   release:
     runs-on: ubuntu-latest
     permissions:
-      contents: write  # vajalik GitHub Release loomiseks ja commiti pushimiseks
+      contents: write
 
     steps:
       - name: Checkout code
@@ -19,18 +19,16 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      # ── 1. Ehita ZIP-id ───────────────────────────────────────────────────
       - name: Build release ZIPs
         run: |
           VERSION="${{ github.ref_name }}"
-          VERSION_CLEAN="${VERSION#v}"
+          VERSION="${VERSION#v}"
           TODAY="$(date +%Y-%m-%d)"
-          echo "VERSION=${VERSION_CLEAN}" >> $GITHUB_ENV
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
           echo "TODAY=${TODAY}" >> $GITHUB_ENV
 
           mkdir -p dist releases
 
-          # Plugin ZIP (ilma giti, githubi, dist ja teema kaustadeta)
           zip -r dist/vesho-crm.zip . \
             --exclude "*.git*" \
             --exclude "*/.github/*" \
@@ -39,43 +37,46 @@ jobs:
             --exclude "*/releases/*" \
             --exclude "*/theme/*"
 
-          # Teema ZIP
           zip -r dist/vesho-theme.zip ./theme/ \
             --exclude "*.git*"
 
-      # ── 2. Uuenda versioonifailid repos ───────────────────────────────────
       - name: Update version JSON files
         run: |
+          VERSION="${{ github.ref_name }}"
+          VERSION="${VERSION#v}"
+          TODAY="$(date +%Y-%m-%d)"
           PLUGIN_URL="https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/vesho-crm.zip"
           THEME_URL="https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/vesho-theme.zip"
 
-          cat > releases/plugin-info.json << ENDJSON
-{
-  "name": "Vesho CRM",
-  "slug": "vesho-crm",
-  "version": "${{ env.VERSION }}",
-  "download_url": "${PLUGIN_URL}",
-  "requires": "6.0",
-  "tested": "6.7",
-  "last_updated": "${{ env.TODAY }}",
-  "changelog": "<h4>${{ env.VERSION }} (${{ env.TODAY }})</h4><ul><li>Uus versioon saadaval</li></ul>"
-}
-ENDJSON
+          python3 -c "
+          import json
+          plugin = {
+            'name': 'Vesho CRM',
+            'slug': 'vesho-crm',
+            'version': '${VERSION}',
+            'download_url': '${PLUGIN_URL}',
+            'requires': '6.0',
+            'tested': '6.7',
+            'last_updated': '${TODAY}',
+            'changelog': '<h4>${VERSION}</h4><ul><li>Uus versioon</li></ul>'
+          }
+          with open('releases/plugin-info.json', 'w') as f:
+            json.dump(plugin, f, indent=2, ensure_ascii=False)
+          theme = {
+            'name': 'Vesho',
+            'slug': 'vesho',
+            'version': '${VERSION}',
+            'download_url': '${THEME_URL}',
+            'requires': '6.0',
+            'tested': '6.7',
+            'last_updated': '${TODAY}',
+            'changelog': '<h4>${VERSION}</h4><ul><li>Uus versioon</li></ul>'
+          }
+          with open('releases/theme-info.json', 'w') as f:
+            json.dump(theme, f, indent=2, ensure_ascii=False)
+          print('JSON files updated')
+          "
 
-          cat > releases/theme-info.json << ENDJSON
-{
-  "name": "Vesho",
-  "slug": "vesho",
-  "version": "${{ env.VERSION }}",
-  "download_url": "${THEME_URL}",
-  "requires": "6.0",
-  "tested": "6.7",
-  "last_updated": "${{ env.TODAY }}",
-  "changelog": "<h4>${{ env.VERSION }} (${{ env.TODAY }})</h4><ul><li>Uus versioon saadaval</li></ul>"
-}
-ENDJSON
-
-      # ── 3. Commit JSON-id tagasi reposse ──────────────────────────────────
       - name: Commit version JSONs
         run: |
           git config user.name "github-actions[bot]"
@@ -84,7 +85,6 @@ ENDJSON
           git diff --staged --quiet || git commit -m "chore: versioon ${{ github.ref_name }} JSON-id [skip ci]"
           git push origin HEAD:main
 
-      # ── 4. Loo GitHub Release koos ZIP-idega ──────────────────────────────
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -94,10 +94,6 @@ ENDJSON
           name: "Vesho ${{ github.ref_name }}"
           body: |
             ## Vesho ${{ github.ref_name }}
-
-            WordPress uuendused on automaatselt saadaval **Töölaud → Uuendused** lehel.
-
-            ### Käsitsi install
-            Lae alla ZIP ja installi WP Admin kaudu.
+            WordPress uuendused on saadaval **Töölaud → Uuendused** lehel.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
