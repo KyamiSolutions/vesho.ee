@@ -44,8 +44,10 @@ jobs:
             --exclude "*/releases/*" \
             --exclude "*/theme/*"
 
-          zip -r dist/vesho-theme.zip ./theme/ \
-            --exclude "*.git*"
+          # Teema ZIP peab sisaldama kausta "vesho/" mitte "theme/"
+          cp -r theme /tmp/vesho
+          cd /tmp && zip -r $GITHUB_WORKSPACE/dist/vesho-theme.zip vesho/ --exclude "*.git*"
+          cd $GITHUB_WORKSPACE
 
       - name: Update version JSON files
         run: |
