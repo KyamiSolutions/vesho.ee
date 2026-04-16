@@ -1,0 +1,10 @@
+{
+  "name": "Vesho CRM",
+  "slug": "vesho-crm",
+  "version": "1.7.2",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v1.7.2/vesho-crm.zip",
+  "requires": "6.0",
+  "tested": "6.7",
+  "last_updated": "2026-04-16",
+  "changelog": "<h4>1.7.2</h4><ul><li>Uus versioon</li></ul>"
+}
