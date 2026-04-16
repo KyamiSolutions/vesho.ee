@@ -1,0 +1,35 @@
+# Node
+node_modules/
+npm-debug.log
+
+# Build artifacts
+*.zip
+*.tar.gz
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# WordPress uploads (not part of plugin code)
+/wp-content/uploads/
+
+# Logs
+*.log
+
+# Environment
+.env
+.env.local
+
+# PHP
+vendor/
+composer.lock
+
+# Releases dir (generated, not committed)
+/releases/

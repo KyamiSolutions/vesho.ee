@@ -1,0 +1,64 @@
+name: Release Vesho Theme
+
+on:
+  push:
+    tags:
+      - 'theme-v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number (e.g. 1.0.1)'
+        required: true
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create theme ZIP
+        run: |
+          mkdir -p dist
+          cd ..
+          zip -r vesho/dist/vesho-theme.zip vesho/ \
+            --exclude "*.git*" \
+            --exclude "*/.github/*" \
+            --exclude "*/node_modules/*" \
+            --exclude "*/dist/*" \
+            --exclude "*/.DS_Store" \
+            --exclude "*/Thumbs.db"
+          echo "Theme ZIP created"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: dist/vesho-theme.zip
+          name: "Vesho Theme v${{ github.event.inputs.version || github.ref_name }}"
+          body: |
+            ## Vesho Teema uuendus
+
+            ### Paigaldamine
+            1. Laadi alla `vesho-theme.zip`
+            2. WordPress Admin → Välimus → Teemad → Lisa uus → Laadi üles
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Deploy theme to live server via FTP
+        if: secrets.FTP_HOST != ''
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USER }}
+          password: ${{ secrets.FTP_PASS }}
+          local-dir: ./
+          server-dir: /public_html/wp-content/themes/vesho/
+          exclude: |
+            **/.git*
+            **/.github*
+            **/node_modules/**
+            **/dist/**

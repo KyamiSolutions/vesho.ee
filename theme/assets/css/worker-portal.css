@@ -1,0 +1,83 @@
+/* ============================================================
+   VESHO WORKER PORTAL CSS
+   Töötaja portaali kujundus — amber aktsent (#f59e0b)
+   ============================================================ */
+
+.vwp-wrap{display:flex;min-height:100vh;font-family:'Barlow',system-ui,sans-serif;font-size:14px;color:#1e293b;background:#f8fafc}
+.vwp-sidebar{width:240px;height:calc(100vh - var(--site-top-height,94px));background:var(--vesho-dark,#1e293b);display:flex;flex-direction:column;flex-shrink:0;position:sticky;top:var(--site-top-height,94px)}
+.vwp-sidebar-logo{padding:20px 20px 10px;display:flex;align-items:center;gap:10px;min-height:60px}
+.vwp-sidebar-logo img{max-height:40px;max-width:160px;object-fit:contain}
+.vwp-sidebar-logo-text{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;color:#fff;letter-spacing:-.5px}
+.vwp-sidebar-logo-text span{color:#f59e0b}
+.vwp-sidebar-label{padding:4px 20px 8px;font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.35)}
+.vwp-nav{list-style:none;margin:0;padding:0 8px}
+.vwp-nav li{margin-bottom:2px}
+.vwp-nav-link{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;color:rgba(255,255,255,.65);text-decoration:none;font-size:13px;font-weight:500;transition:background .15s,color .15s}
+.vwp-nav-link:hover,.vwp-nav-link.active{background:rgba(245,158,11,.15);color:#fff}
+.vwp-nav-link.active{color:#f59e0b}
+.vwp-nav-icon{width:18px;text-align:center;font-size:15px}
+.vwp-sidebar-footer{margin-top:auto;padding:16px 16px 20px;border-top:1px solid rgba(255,255,255,.08)}
+.vwp-sidebar-user{display:flex;gap:10px;align-items:center;margin-bottom:12px}
+.vwp-avatar{width:34px;height:34px;border-radius:50%;background:#f59e0b;color:#fff;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.vwp-sidebar-name{color:#fff;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px}
+.vwp-sidebar-role{color:rgba(255,255,255,.4);font-size:11px}
+.vwp-logout-link{display:block;color:rgba(255,255,255,.4);font-size:12px;text-decoration:none;padding:4px 0;transition:color .15s}
+.vwp-logout-link:hover{color:#fff}
+.vwp-main{flex:1;display:flex;flex-direction:column;min-width:0}
+.vwp-topbar{height:56px;background:#fff;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;padding:0 24px;gap:12px;position:sticky;top:var(--site-top-height,94px);z-index:50}
+.vwp-topbar-title{font-size:16px;font-weight:600;flex:1}
+.vwp-topbar-right{font-size:13px;color:#64748b}
+.vwp-hamburger{display:none;background:none;border:none;font-size:20px;cursor:pointer;color:#1e293b;padding:4px 8px}
+.vwp-content{padding:28px;max-width:1100px;width:100%}
+.vwp-page-header{margin-bottom:24px}
+.vwp-page-header h1{font-size:22px;font-weight:700;margin:0 0 4px}
+.vwp-section-title{font-size:16px;font-weight:600;margin:0 0 12px}
+.vwp-stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:28px}
+.vwp-stat-card{background:#fff;border-radius:12px;padding:20px;border-left:4px solid #e2e8f0;box-shadow:0 1px 3px rgba(0,0,0,.07)}
+.vwp-stat-blue{border-left-color:#3b82f6}
+.vwp-stat-green{border-left-color:#10b981}
+.vwp-stat-orange{border-left-color:#f59e0b}
+.vwp-stat-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:#94a3b8;margin-bottom:6px}
+.vwp-stat-value{font-size:1.6rem;font-weight:700;color:#1e293b}
+.vwp-card{background:#fff;border-radius:12px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.07);margin-bottom:16px}
+.vwp-order-card{background:#fff;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.07);overflow:hidden}
+.vwp-order-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #f1f5f9;flex-wrap:wrap;gap:8px}
+.vwp-order-meta{font-size:12px;color:#64748b;white-space:nowrap}
+.vwp-order-body{padding:12px 16px}
+.vwp-desc{margin:0 0 10px;color:#64748b;font-size:13px}
+.vwp-order-actions{display:flex;gap:8px;flex-wrap:wrap}
+.vwp-priority{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;color:#fff;margin-left:6px}
+.vwp-table{width:100%;border-collapse:collapse;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.07)}
+.vwp-table thead tr{background:#f8fafc}
+.vwp-table th{padding:10px 14px;text-align:left;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:#64748b;border-bottom:1px solid #e2e8f0}
+.vwp-table td{padding:10px 14px;border-bottom:1px solid #f1f5f9;font-size:13px}
+.vwp-table tbody tr:last-child td{border-bottom:none}
+.vwp-table tbody tr:nth-child(even){background:#fafafa}
+.vwp-table tbody tr:hover{background:#f1f5f9}
+.vwp-empty{padding:32px;text-align:center;color:#94a3b8;background:#fff;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.07)}
+.vwp-btn-primary{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:#f59e0b;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;transition:background .15s}
+.vwp-btn-primary:hover{background:#d97706;color:#fff}
+.vwp-btn-outline{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:#fff;color:#1e293b;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;transition:border-color .15s}
+.vwp-btn-outline:hover{border-color:#94a3b8}
+.vwp-field{display:flex;flex-direction:column;gap:4px}
+.vwp-field label{font-size:12px;font-weight:600;color:#64748b}
+.vwp-input{width:100%;padding:8px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;font-family:inherit;transition:border-color .15s;outline:none}
+.vwp-input:focus{border-color:#f59e0b;box-shadow:0 0 0 3px rgba(245,158,11,.12)}
+.vwp-msg{padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:12px}
+.vwp-msg.success{background:#dcfce7;color:#16a34a;border:1px solid #bbf7d0}
+.vwp-msg.error{background:#fee2e2;color:#dc2626;border:1px solid #fecaca}
+/* Login */
+.vwp-login-wrap{display:flex;align-items:center;justify-content:center;min-height:60vh;padding:24px}
+.vwp-login-card{background:#fff;border-radius:16px;padding:36px;width:100%;max-width:380px;box-shadow:0 4px 24px rgba(0,0,0,.1)}
+.vwp-login-logo{font-size:24px;font-weight:800;color:#1e293b;margin-bottom:4px;letter-spacing:-.5px}
+.vwp-login-logo span{color:#f59e0b}
+.vwp-login-logo img{max-height:40px;max-width:150px;object-fit:contain;margin-bottom:8px}
+.vwp-login-title{font-size:18px;font-weight:600;color:#1e293b;margin:0 0 24px}
+/* Responsive */
+@media(max-width:768px){
+  .vwp-sidebar{position:fixed;left:-260px;top:0;bottom:0;z-index:200;transition:left .25s;width:240px}
+  .vwp-sidebar.open{left:0}
+  .vwp-hamburger{display:block}
+  .vwp-content{padding:16px}
+  .vwp-stat-grid{grid-template-columns:1fr 1fr}
+}
