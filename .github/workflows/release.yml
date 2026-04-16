@@ -27,6 +27,11 @@ jobs:
           echo "VERSION=${VERSION}" >> $GITHUB_ENV
           echo "TODAY=${TODAY}" >> $GITHUB_ENV
 
+          # Tõsta versioon failides enne ZIP loomist
+          sed -i "s/^\( \* Version:\s*\).*/\1${VERSION}/" vesho-crm.php
+          sed -i "s/^define('VESHO_CRM_VERSION', '[^']*')/define('VESHO_CRM_VERSION', '${VERSION}')/" vesho-crm.php
+          sed -i "s/^Version:\s*.*/Version: ${VERSION}/" theme/style.css
+
           mkdir -p dist releases
 
           zip -r dist/vesho-crm.zip . \
