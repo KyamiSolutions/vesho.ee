@@ -2,117 +2,90 @@ name: Deploy Vesho CRM
 
 on:
   push:
-    branches:
-      - main        # iga push → deploy live serverisse
     tags:
-      - 'v*.*.*'    # tag → deploy + uuendused + GitHub Release
-  workflow_dispatch: # käsitsi käivitamine GitHub veebist
+      - 'v*.*.*'    # ainult tagid käivitavad release'i
+  workflow_dispatch:
 
 jobs:
-  deploy:
+  release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # vajalik GitHub Release loomiseks ja commiti pushimiseks
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      # ── 1. Deploy plugin live serverisse ──────────────────────────────────
-      - name: Deploy plugin to live server (FTP)
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          server: ${{ secrets.FTP_HOST }}
-          username: ${{ secrets.FTP_USER }}
-          password: ${{ secrets.FTP_PASS }}
-          local-dir: ./
-          server-dir: /public_html/wp-content/plugins/vesho-crm/
-          exclude: |
-            **/.git*
-            **/.github*
-            **/node_modules/**
-            **/dist/**
-            **/releases/**
-            **/theme/**
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-      # ── 2. Deploy teema live serverisse ───────────────────────────────────
-      - name: Deploy theme to live server (FTP)
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          server: ${{ secrets.FTP_HOST }}
-          username: ${{ secrets.FTP_USER }}
-          password: ${{ secrets.FTP_PASS }}
-          local-dir: ./theme/
-          server-dir: /public_html/wp-content/themes/vesho/
-          exclude: |
-            **/.git*
-            **/.gitignore
-
-      # ── 3. Ehita release paketid (ainult tagide puhul) ────────────────────
-      - name: Build release packages
-        if: startsWith(github.ref, 'refs/tags/')
+      # ── 1. Ehita ZIP-id ───────────────────────────────────────────────────
+      - name: Build release ZIPs
         run: |
           VERSION="${{ github.ref_name }}"
-          VERSION="${VERSION#v}"   # eemalda 'v' eesliide (v1.6.5 → 1.6.5)
+          VERSION_CLEAN="${VERSION#v}"
           TODAY="$(date +%Y-%m-%d)"
+          echo "VERSION=${VERSION_CLEAN}" >> $GITHUB_ENV
+          echo "TODAY=${TODAY}" >> $GITHUB_ENV
 
           mkdir -p dist releases
 
-          # Plugin ZIP
+          # Plugin ZIP (ilma giti, githubi, dist ja teema kaustadeta)
           zip -r dist/vesho-crm.zip . \
             --exclude "*.git*" \
             --exclude "*/.github/*" \
             --exclude "*/node_modules/*" \
             --exclude "*/dist/*" \
-            --exclude "*/releases/*"
+            --exclude "*/releases/*" \
+            --exclude "*/theme/*"
 
           # Teema ZIP
-          zip -r dist/vesho-theme.zip ./theme/
+          zip -r dist/vesho-theme.zip ./theme/ \
+            --exclude "*.git*"
 
-          # Kopeeri ZIPid releases/ kausta (lähevad FTP-ga serverile)
-          cp dist/vesho-crm.zip releases/vesho-crm.zip
-          cp dist/vesho-theme.zip releases/vesho-theme.zip
+      # ── 2. Uuenda versioonifailid repos ───────────────────────────────────
+      - name: Update version JSON files
+        run: |
+          PLUGIN_URL="https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/vesho-crm.zip"
+          THEME_URL="https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/vesho-theme.zip"
 
-          # Genereeri plugin-info.json
           cat > releases/plugin-info.json << ENDJSON
-          {
-            "name": "Vesho CRM",
-            "slug": "vesho-crm",
-            "version": "${VERSION}",
-            "download_url": "https://vesho.ee/wp-content/uploads/vesho-releases/vesho-crm.zip",
-            "requires": "6.0",
-            "tested": "6.7",
-            "last_updated": "${TODAY}",
-            "changelog": "<h4>${VERSION} (${TODAY})</h4><ul><li>Automaatne uuendus GitHubist</li></ul>"
-          }
-          ENDJSON
+{
+  "name": "Vesho CRM",
+  "slug": "vesho-crm",
+  "version": "${{ env.VERSION }}",
+  "download_url": "${PLUGIN_URL}",
+  "requires": "6.0",
+  "tested": "6.7",
+  "last_updated": "${{ env.TODAY }}",
+  "changelog": "<h4>${{ env.VERSION }} (${{ env.TODAY }})</h4><ul><li>Uus versioon saadaval</li></ul>"
+}
+ENDJSON
 
-          # Genereeri theme-info.json
           cat > releases/theme-info.json << ENDJSON
-          {
-            "name": "Vesho",
-            "slug": "vesho",
-            "version": "${VERSION}",
-            "download_url": "https://vesho.ee/wp-content/uploads/vesho-releases/vesho-theme.zip",
-            "requires": "6.0",
-            "tested": "6.7",
-            "last_updated": "${TODAY}",
-            "changelog": "<h4>${VERSION} (${TODAY})</h4><ul><li>Automaatne uuendus GitHubist</li></ul>"
-          }
-          ENDJSON
+{
+  "name": "Vesho",
+  "slug": "vesho",
+  "version": "${{ env.VERSION }}",
+  "download_url": "${THEME_URL}",
+  "requires": "6.0",
+  "tested": "6.7",
+  "last_updated": "${{ env.TODAY }}",
+  "changelog": "<h4>${{ env.VERSION }} (${{ env.TODAY }})</h4><ul><li>Uus versioon saadaval</li></ul>"
+}
+ENDJSON
 
-      # ── 4. Lae ZIPid + JSONid live serverile ──────────────────────────────
-      - name: Upload releases to live server (FTP)
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          server: ${{ secrets.FTP_HOST }}
-          username: ${{ secrets.FTP_USER }}
-          password: ${{ secrets.FTP_PASS }}
-          local-dir: ./releases/
-          server-dir: /public_html/wp-content/uploads/vesho-releases/
+      # ── 3. Commit JSON-id tagasi reposse ──────────────────────────────────
+      - name: Commit version JSONs
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add releases/plugin-info.json releases/theme-info.json
+          git diff --staged --quiet || git commit -m "chore: versioon ${{ github.ref_name }} JSON-id [skip ci]"
+          git push origin HEAD:main
 
-      # ── 5. Loo GitHub Release (arhiiv + backup) ───────────────────────────
+      # ── 4. Loo GitHub Release koos ZIP-idega ──────────────────────────────
       - name: Publish GitHub Release
-        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           files: |
@@ -122,10 +95,9 @@ jobs:
           body: |
             ## Vesho ${{ github.ref_name }}
 
-            ✅ Plugin ja teema on automaatselt live serverisse deployitud.
-            ✅ WordPress uuendused on saadaval `Töölaud → Uuendused` lehel.
+            WordPress uuendused on automaatselt saadaval **Töölaud → Uuendused** lehel.
 
             ### Käsitsi install
-            Lae alla `vesho-crm.zip` või `vesho-theme.zip` ja lae üles WP Admin → Plugins/Themes.
+            Lae alla ZIP ja installi WP Admin kaudu.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
