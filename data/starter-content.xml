@@ -16,7 +16,7 @@
 <!-- 7. WordPress will then import each of the posts, pages, comments, categories, etc. -->
 <!--    contained in this file into your site. -->
 
-	<!-- generator="WordPress/6.9.4" created="2026-04-17 15:52" -->
+	<!-- generator="WordPress/6.9.4" created="2026-04-17 16:04" -->
 <rss version="2.0"
 	xmlns:excerpt="http://wordpress.org/export/1.2/excerpt/"
 	xmlns:content="http://purl.org/rss/1.0/modules/content/"
@@ -29,7 +29,7 @@
 	<title>vesho.ee</title>
 	<link>http://localhost/wordpress</link>
 	<description></description>
-	<pubDate>Fri, 17 Apr 2026 15:52:53 +0000</pubDate>
+	<pubDate>Fri, 17 Apr 2026 16:04:17 +0000</pubDate>
 	<language>et</language>
 	<wp:wxr_version>1.2</wp:wxr_version>
 	<wp:base_site_url>http://localhost/wordpress</wp:base_site_url>
@@ -438,6 +438,14 @@
 							<wp:postmeta>
 		<wp:meta_key><![CDATA[_elementor_migrations_state_d2a1]]></wp:meta_key>
 		<wp:meta_value><![CDATA[4.0.2:9267163a0037ca073f680d6fb269369d]]></wp:meta_value>
+		</wp:postmeta>
+							<wp:postmeta>
+		<wp:meta_key><![CDATA[_elementor_page_assets]]></wp:meta_key>
+		<wp:meta_value><![CDATA[a:2:{s:6:"styles";a:2:{i:0;s:14:"widget-heading";i:1;s:13:"widget-spacer";}s:7:"scripts";a:1:{i:0;s:18:"elementor-frontend";}}]]></wp:meta_value>
+		</wp:postmeta>
+							<wp:postmeta>
+		<wp:meta_key><![CDATA[_elementor_element_cache]]></wp:meta_key>
+		<wp:meta_value><![CDATA[{"timeout":1776528187,"value":{"content":"\t\t<section class=\"elementor-section elementor-top-section elementor-element elementor-element-5ae44de elementor-section-boxed elementor-section-height-default elementor-section-height-default\" data-id=\"5ae44de\" data-element_type=\"section\" data-e-type=\"section\" data-settings=\"{&quot;background_background&quot;:&quot;classic&quot;}\">\n\t\t\t\t\t\t<div class=\"elementor-container elementor-column-gap-default\">\n\t\t\t\t\t<div class=\"elementor-column elementor-col-100 elementor-top-column elementor-element elementor-element-b0cd7f9\" data-id=\"b0cd7f9\" data-element_type=\"column\" data-e-type=\"column\">\n\t\t\t<div class=\"elementor-widget-wrap elementor-element-populated\">\n\t\t\t\t\t\t<div class=\"elementor-element elementor-element-55304d8 elementor-widget elementor-widget-heading\" data-id=\"55304d8\" data-element_type=\"widget\" data-e-type=\"widget\" data-widget_type=\"heading.default\">\n\t\t\t\t\t<h6 class=\"elementor-heading-title elementor-size-default\">VESHO O\u00dc<\/h6>\t\t\t\t<\/div>\n\t\t\t\t<div class=\"elementor-element elementor-element-5bfb188 elementor-widget elementor-widget-spacer\" data-id=\"5bfb188\" data-element_type=\"widget\" data-e-type=\"widget\" data-widget_type=\"spacer.default\">\n\t\t\t\t\t\t\t<div class=\"elementor-spacer\">\n\t\t\t<div class=\"elementor-spacer-inner\"><\/div>\n\t\t<\/div>\n\t\t\t\t\t\t<\/div>\n\t\t\t\t<div class=\"elementor-element elementor-element-cd29900 elementor-widget elementor-widget-heading\" data-id=\"cd29900\" data-element_type=\"widget\" data-e-type=\"widget\" data-widget_type=\"heading.default\">\n\t\t\t\t\t<h1 class=\"elementor-heading-title elementor-size-default\">Pood<\/h1>\t\t\t\t<\/div>\n\t\t[elementor-element k=\"6572d85486719ec077998d3f3a99b1bf\" data=\"eyJpZCI6IjQ3YTgxYTkiLCJlbFR5cGUiOiJ3aWRnZXQiLCJzZXR0aW5ncyI6eyJlZGl0b3IiOiI8cCBzdHlsZT1cInRleHQtYWxpZ246Y2VudGVyO2NvbG9yOnJnYmEoMjU1LDI1NSwyNTUsLjc1KTtmb250LXNpemU6MTZweDttYXJnaW46MFwiPlZlZXNcdTAwZmNzdGVlbWlkZSBtYXRlcmphbGlkIGphIGtvbXBvbmVuZGlkLjxcL3A+IiwiYWxpZ24iOiJjZW50ZXIifSwiZWxlbWVudHMiOltdLCJ3aWRnZXRUeXBlIjoidGV4dC1lZGl0b3IifQ==\"]\t\t\t<\/div>\n\t\t<\/div>\n\t\t\t\t\t<\/div>\n\t\t<\/section>\n\t\t\t\t<section class=\"elementor-section elementor-top-section elementor-element elementor-element-479e57c elementor-section-boxed elementor-section-height-default elementor-section-height-default\" data-id=\"479e57c\" data-element_type=\"section\" data-e-type=\"section\">\n\t\t\t\t\t\t<div class=\"elementor-container elementor-column-gap-default\">\n\t\t\t\t\t<div class=\"elementor-column elementor-col-100 elementor-top-column elementor-element elementor-element-0b86fd6\" data-id=\"0b86fd6\" data-element_type=\"column\" data-e-type=\"column\">\n\t\t\t<div class=\"elementor-widget-wrap elementor-element-populated\">\n\t\t\t\t\t\t<div class=\"elementor-element elementor-element-2032b20 elementor-widget elementor-widget-html\" data-id=\"2032b20\" data-element_type=\"widget\" data-e-type=\"widget\" data-widget_type=\"html.default\">\n\t\t\t\t\t[vesho_shop_grid]\t\t\t\t<\/div>\n\t\t\t\t\t<\/div>\n\t\t<\/div>\n\t\t\t\t\t<\/div>\n\t\t<\/section>\n\t\t","scripts":[],"styles":[]}}]]></wp:meta_value>
 		</wp:postmeta>
 							</item>
 					<item>

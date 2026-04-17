@@ -417,14 +417,23 @@ class Vesho_CRM_Updater {
             wp_send_json_error( 'starter-content.xml ei leitud' );
         }
 
-        $xml  = simplexml_load_file( $xml_file );
-        $ns   = $xml->getNamespaces( true );
-        $log  = [];
+        // Parse WXR with full namespace support
+        $xml_content = file_get_contents( $xml_file );
+        // Replace localhost URLs with live site URL
+        $local_url = 'http://localhost/wordpress';
+        $live_url  = rtrim( home_url(), '/' );
+        $xml_content = str_replace( $local_url, $live_url, $xml_content );
+
+        $xml = simplexml_load_string( $xml_content );
+        if ( ! $xml ) wp_send_json_error( 'XML parsimine ebaõnnestus' );
+
+        $ns       = $xml->getNamespaces( true );
+        $log      = [];
         $imported = 0;
 
-        // Import pages
+        // Import pages & posts with ALL meta (including Elementor data)
         foreach ( $xml->channel->item as $item ) {
-            $wp = $item->children( $ns['wp'] );
+            $wp          = $item->children( $ns['wp'] );
             $post_type   = (string) $wp->post_type;
             $post_status = (string) $wp->status;
             $post_name   = (string) $wp->post_name;
@@ -433,16 +442,36 @@ class Vesho_CRM_Updater {
             if ( ! in_array( $post_type, [ 'page', 'post' ], true ) ) continue;
             if ( $post_status !== 'publish' ) continue;
 
-            // Check if page/post with same slug exists
-            $existing = get_page_by_path( $post_name, OBJECT, $post_type );
-            if ( $existing ) {
-                $log[] = "⏭ Olemas: [{$post_type}] {$title}";
-                continue;
-            }
-
+            // Get post content
             $content = '';
             foreach ( $item->children( 'http://purl.org/rss/1.0/modules/content/' ) as $c ) {
                 $content = (string) $c;
+            }
+            $content = str_replace( $local_url, $live_url, $content );
+
+            // Collect post meta
+            $meta = [];
+            foreach ( $wp->postmeta as $pm ) {
+                $key = (string) $pm->meta_key;
+                $val = (string) $pm->meta_value;
+                // Replace localhost URLs in meta values
+                $val = str_replace( $local_url, $live_url, $val );
+                $meta[ $key ] = $val;
+            }
+
+            // Check if exists
+            $existing = get_page_by_path( $post_name, OBJECT, $post_type );
+            if ( $existing ) {
+                // Update existing post content + meta
+                wp_update_post( [
+                    'ID'           => $existing->ID,
+                    'post_content' => $content,
+                ] );
+                foreach ( $meta as $k => $v ) {
+                    update_post_meta( $existing->ID, $k, $v );
+                }
+                $log[] = "🔄 Uuendatud [{$post_type}]: {$title}";
+                continue;
             }
 
             $post_id = wp_insert_post( [
@@ -456,6 +485,10 @@ class Vesho_CRM_Updater {
             if ( is_wp_error( $post_id ) ) {
                 $log[] = "❌ Viga [{$post_type}]: {$title}";
             } else {
+                // Save all meta including Elementor data
+                foreach ( $meta as $k => $v ) {
+                    update_post_meta( $post_id, $k, $v );
+                }
                 $log[] = "✅ Imporditud [{$post_type}]: {$title}";
                 $imported++;
             }
