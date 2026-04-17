@@ -490,6 +490,10 @@ class Vesho_CRM_Updater {
                 $val   = (string) $pm_wp->meta_value;
                 if ( ! $key ) continue;
                 $val = str_replace( $local_url, $live_url, $val );
+                // Force default page template — elementor_header_footer needs Pro
+                if ( $key === '_wp_page_template' && $val === 'elementor_header_footer' ) {
+                    $val = 'default';
+                }
                 $meta[ $key ] = $val;
             }
 
