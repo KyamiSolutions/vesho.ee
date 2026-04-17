@@ -42,6 +42,16 @@ class Vesho_CRM_Updater {
     public static function pre_download_delete_theme( $reply, $package, $upgrader ) {
         if ( strpos( (string) $package, 'vesho-theme' ) !== false
             || strpos( (string) $package, self::THEME_SLUG . '.zip' ) !== false ) {
+
+            // 1) Pre-create upgrade-temp-backup so WP move can succeed
+            $backup_base = WP_CONTENT_DIR . '/upgrade-temp-backup';
+            if ( ! is_dir( $backup_base ) ) {
+                wp_mkdir_p( $backup_base );
+            }
+            // Make sure it's writable
+            @chmod( $backup_base, 0755 );
+
+            // 2) Try to delete old theme folder so there's nothing to backup
             $theme_dir = get_theme_root() . '/' . self::THEME_SLUG;
             if ( is_dir( $theme_dir ) ) {
                 self::recursive_rmdir( $theme_dir );
