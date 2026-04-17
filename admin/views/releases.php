@@ -43,7 +43,11 @@ $is_local = in_array($_SERVER['HTTP_HOST'] ?? '', ['localhost', '127.0.0.1'])
     </table>
     <?php if ($theme_info && version_compare($theme_info->version, $theme->get('Version'), '>')): ?>
     <div style="margin-top:12px;padding:10px 14px;background:#fff3cd;border:1px solid #ffc107;border-radius:8px;font-size:13px">
-      ⚠️ Uuendus saadaval! Mine <a href="<?php echo admin_url('update-core.php'); ?>">Töölaud → Uuendused</a>
+      ⚠️ Uuendus saadaval (v<?php echo esc_html($theme_info->version); ?>)
+    </div>
+    <div style="margin-top:10px">
+      <button id="btn-install-theme" class="button button-primary">⬆️ Uuenda teema kohe</button>
+      <span id="install-theme-msg" style="margin-left:10px;font-size:13px"></span>
     </div>
     <?php endif; ?>
   </div>
@@ -78,6 +82,25 @@ document.getElementById('btn-force-check').addEventListener('click', function(){
     document.getElementById('btn-force-check').disabled = false;
     if(d.success) setTimeout(()=>window.location.href='/wp-admin/update-core.php',1500);
   });
+});
+
+var btnInstall = document.getElementById('btn-install-theme');
+if(btnInstall) btnInstall.addEventListener('click', function(){
+  if(!confirm('Uuenda teema? Vana teema kustutakse ja uus paigaldatakse GitHubist.')) return;
+  this.disabled = true;
+  var msg = document.getElementById('install-theme-msg');
+  msg.style.color='#555'; msg.textContent = '⏳ Installin...';
+  fetch(ajaxurl,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},
+    body:'action=vesho_install_theme&nonce='+veshoNonce})
+  .then(r=>r.json()).then(d=>{
+    if(d.success){
+      msg.style.color='#1b5e20'; msg.textContent='✅ '+d.data;
+      setTimeout(()=>location.reload(),2000);
+    } else {
+      msg.style.color='#c62828'; msg.textContent='❌ '+(d.data||'Viga');
+      document.getElementById('btn-install-theme').disabled=false;
+    }
+  }).catch(()=>{ msg.style.color='#c62828'; msg.textContent='❌ Ühenduse viga'; document.getElementById('btn-install-theme').disabled=false; });
 });
 
 document.getElementById('btn-import-content').addEventListener('click', function(){

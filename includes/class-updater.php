@@ -37,6 +37,8 @@ class Vesho_CRM_Updater {
         add_action( 'wp_ajax_vesho_force_update_check', [ __CLASS__, 'ajax_force_check' ] );
         // Admin AJAX: import starter content
         add_action( 'wp_ajax_vesho_import_starter_content', [ __CLASS__, 'ajax_import_starter_content' ] );
+        // Admin AJAX: direct theme installer (bypasses WP backup/rollback)
+        add_action( 'wp_ajax_vesho_install_theme', [ __CLASS__, 'ajax_install_theme' ] );
     }
 
     /**
@@ -591,5 +593,81 @@ class Vesho_CRM_Updater {
         $file   = $upload['basedir'] . '/vesho-releases/' . $type . '-info.json';
         if ( ! file_exists( $file ) ) return null;
         return json_decode( file_get_contents( $file ) );
+    }
+
+    /**
+     * Direct theme installer — bypasses WP_Upgrader and move_to_rollback_cache entirely.
+     * Downloads ZIP, deletes old theme, extracts and copies new theme.
+     */
+    public static function ajax_install_theme() {
+        check_ajax_referer( 'vesho_admin_nonce', 'nonce' );
+        if ( ! current_user_can( 'install_themes' ) ) {
+            wp_send_json_error( 'Pole õigusi' );
+        }
+
+        require_once ABSPATH . 'wp-admin/includes/file.php';
+        require_once ABSPATH . 'wp-admin/includes/misc.php';
+        WP_Filesystem();
+        global $wp_filesystem;
+
+        // Get download URL
+        $info = self::fetch_remote_info( 'theme' );
+        if ( ! $info || empty( $info->download_url ) ) {
+            wp_send_json_error( 'Uuenduse info puudub — kontrolli GitHubi' );
+        }
+
+        // Download ZIP to temp file
+        $tmp_zip = download_url( $info->download_url );
+        if ( is_wp_error( $tmp_zip ) ) {
+            wp_send_json_error( 'Allalaadimine ebaõnnestus: ' . $tmp_zip->get_error_message() );
+        }
+
+        // Extract ZIP to temp directory
+        $tmp_dir = WP_CONTENT_DIR . '/upgrade/vesho-theme-tmp-' . time();
+        wp_mkdir_p( $tmp_dir );
+
+        $unzip = unzip_file( $tmp_zip, $tmp_dir );
+        @unlink( $tmp_zip );
+
+        if ( is_wp_error( $unzip ) ) {
+            $wp_filesystem->delete( $tmp_dir, true );
+            wp_send_json_error( 'Lahtipakkimine ebaõnnestus: ' . $unzip->get_error_message() );
+        }
+
+        // Find extracted theme dir (should be vesho/ inside tmp_dir)
+        $theme_src = $tmp_dir . '/' . self::THEME_SLUG;
+        if ( ! is_dir( $theme_src ) ) {
+            $dirs = glob( $tmp_dir . '/*', GLOB_ONLYDIR );
+            $theme_src = ! empty( $dirs ) ? $dirs[0] : '';
+        }
+
+        if ( empty( $theme_src ) || ! is_dir( $theme_src ) ) {
+            $wp_filesystem->delete( $tmp_dir, true );
+            wp_send_json_error( 'Teema kausta ei leitud ZIP-is' );
+        }
+
+        $theme_dest = get_theme_root() . '/' . self::THEME_SLUG;
+
+        // Delete old theme (no backup — this is the whole point)
+        if ( $wp_filesystem && $wp_filesystem->is_dir( $theme_dest ) ) {
+            $wp_filesystem->delete( $theme_dest, true );
+        } elseif ( is_dir( $theme_dest ) ) {
+            self::recursive_rmdir( $theme_dest );
+        }
+
+        // Copy new theme into place
+        $copy_result = copy_dir( $theme_src, $theme_dest );
+        $wp_filesystem->delete( $tmp_dir, true );
+
+        if ( is_wp_error( $copy_result ) ) {
+            wp_send_json_error( 'Kopeerimine ebaõnnestus: ' . $copy_result->get_error_message() );
+        }
+
+        // Clear caches
+        wp_clean_themes_cache();
+        delete_site_transient( 'update_themes' );
+        delete_transient( 'vesho_remote_theme_info' );
+
+        wp_send_json_success( 'Teema uuendatud versioonile ' . esc_html( $info->version ) . ' ✅' );
     }
 }
