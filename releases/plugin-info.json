@@ -1,10 +1,10 @@
 {
   "name": "Vesho CRM",
   "slug": "vesho-crm",
-  "version": "1.8.9",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v1.8.9/vesho-crm.zip",
+  "version": "1.9.0",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v1.9.0/vesho-crm.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-17",
-  "changelog": "<h4>1.8.9</h4><ul><li>Teema uuenduse parandus: rename() abil vältida backup viga</li></ul>"
+  "changelog": "<h4>1.9.0</h4><ul><li>admin_init hook + WP_Filesystem teema kustutuseks (WP 6.3+ backup vea parandus)</li></ul>"
 }

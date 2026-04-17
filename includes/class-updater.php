@@ -26,9 +26,10 @@ class Vesho_CRM_Updater {
         add_filter( 'plugins_api', [ __CLASS__, 'plugin_info' ], 20, 3 );
         // Clear our cache after update completes
         add_action( 'upgrader_process_complete', [ __CLASS__, 'after_update' ], 10, 2 );
-        // Delete old theme folder BEFORE WordPress tries to backup it (WP 6.3+ rollback workaround)
-        add_filter( 'upgrader_pre_download', [ __CLASS__, 'pre_download_delete_theme' ], 1, 3 );
-        add_action( 'load-update-core.php', [ __CLASS__, 'pre_delete_theme_for_update' ] );
+        // WP 6.3+ rollback workaround: delete theme dir BEFORE move_to_rollback_cache() runs.
+        // admin_init fires before ANY upgrader code, so this is the safest hook.
+        add_action( 'admin_init', [ __CLASS__, 'maybe_pre_delete_theme' ] );
+        // Also hook upgrader_pre_install as belt-and-suspenders
         add_filter( 'upgrader_pre_install', [ __CLASS__, 'pre_theme_install' ], 10, 2 );
         // Admin AJAX: create release package
         add_action( 'wp_ajax_vesho_create_release', [ __CLASS__, 'ajax_create_release' ] );
@@ -38,60 +39,70 @@ class Vesho_CRM_Updater {
         add_action( 'wp_ajax_vesho_import_starter_content', [ __CLASS__, 'ajax_import_starter_content' ] );
     }
 
-    // Fires before package download — before move_to_rollback_cache runs (WP 6.3+)
-    public static function pre_download_delete_theme( $reply, $package, $upgrader ) {
-        if ( strpos( (string) $package, 'vesho-theme' ) !== false
-            || strpos( (string) $package, self::THEME_SLUG . '.zip' ) !== false ) {
+    /**
+     * Fires on admin_init — BEFORE WP_Upgrader::run() calls move_to_rollback_cache().
+     * Detects both single-theme update (update.php?action=upgrade-theme)
+     * and bulk update (POST to update-core.php with checked[]=vesho).
+     */
+    public static function maybe_pre_delete_theme() {
+        $is_single_update = (
+            isset( $_GET['action'], $_GET['theme'] )
+            && $_GET['action'] === 'upgrade-theme'
+            && sanitize_key( $_GET['theme'] ) === self::THEME_SLUG
+        );
+        $is_bulk_update = (
+            isset( $_POST['action'], $_POST['checked'] )
+            && $_POST['action'] === 'do-theme-upgrade'
+            && in_array( self::THEME_SLUG, (array) $_POST['checked'], true )
+        );
 
-            $theme_dir   = get_theme_root() . '/' . self::THEME_SLUG;
-            $backup_base = WP_CONTENT_DIR . '/upgrade-temp-backup';
-
-            if ( is_dir( $theme_dir ) ) {
-                // Ensure backup dir exists
-                if ( ! is_dir( $backup_base ) ) {
-                    @mkdir( $backup_base, 0755, true );
-                }
-
-                // Try atomic rename first (fastest, no file-by-file delete needed)
-                $temp_dest = $backup_base . '/vesho-old-' . time();
-                if ( ! @rename( $theme_dir, $temp_dest ) ) {
-                    // Fallback: recursive delete
-                    self::recursive_rmdir( $theme_dir );
-                }
-            }
+        if ( $is_single_update || $is_bulk_update ) {
+            self::delete_theme_dir_fs();
         }
-        return $reply;
     }
 
-    // Fires when update-core.php loads with do-theme-upgrade action — before WP_Upgrader runs
-    public static function pre_delete_theme_for_update() {
-        if ( ! isset( $_POST['checked'] ) ) return;
-        $themes = (array) $_POST['checked'];
-        if ( in_array( self::THEME_SLUG, $themes, true ) ) {
-            $theme_dir = get_theme_root() . '/' . self::THEME_SLUG;
-            if ( is_dir( $theme_dir ) ) {
-                self::recursive_rmdir( $theme_dir );
-            }
+    /**
+     * Delete theme directory using WP Filesystem abstraction
+     * (handles Hostinger file ownership correctly).
+     */
+    private static function delete_theme_dir_fs() {
+        global $wp_filesystem;
+
+        $theme_dir = get_theme_root() . '/' . self::THEME_SLUG;
+
+        // Init WP Filesystem if not already done
+        if ( empty( $wp_filesystem ) ) {
+            require_once ABSPATH . 'wp-admin/includes/file.php';
+            WP_Filesystem();
+        }
+
+        if ( ! empty( $wp_filesystem ) && $wp_filesystem->is_dir( $theme_dir ) ) {
+            $wp_filesystem->delete( $theme_dir, true );
+            return;
+        }
+
+        // Fallback: native PHP delete
+        if ( is_dir( $theme_dir ) ) {
+            self::recursive_rmdir( $theme_dir );
         }
     }
 
     private static function recursive_rmdir( $dir ) {
-        foreach ( scandir( $dir ) as $item ) {
+        $items = @scandir( $dir );
+        if ( ! $items ) return;
+        foreach ( $items as $item ) {
             if ( $item === '.' || $item === '..' ) continue;
             $path = $dir . DIRECTORY_SEPARATOR . $item;
-            is_dir( $path ) ? self::recursive_rmdir( $path ) : unlink( $path );
+            is_dir( $path ) ? self::recursive_rmdir( $path ) : @unlink( $path );
         }
-        rmdir( $dir );
+        @rmdir( $dir );
     }
 
     public static function pre_theme_install( $return, $hook_extra ) {
         if ( ! isset( $hook_extra['theme'] ) || $hook_extra['theme'] !== self::THEME_SLUG ) {
             return $return;
         }
-        $theme_dir = get_theme_root() . '/' . self::THEME_SLUG;
-        if ( is_dir( $theme_dir ) ) {
-            self::recursive_rmdir( $theme_dir );
-        }
+        self::delete_theme_dir_fs();
         return $return;
     }
 
