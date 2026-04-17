@@ -34,6 +34,8 @@ class Vesho_CRM_Updater {
         add_action( 'wp_ajax_vesho_create_release', [ __CLASS__, 'ajax_create_release' ] );
         // Admin AJAX: force-check for updates now
         add_action( 'wp_ajax_vesho_force_update_check', [ __CLASS__, 'ajax_force_check' ] );
+        // Admin AJAX: import starter content
+        add_action( 'wp_ajax_vesho_import_starter_content', [ __CLASS__, 'ajax_import_starter_content' ] );
     }
 
     // Fires before package download — before move_to_rollback_cache runs (WP 6.3+)
@@ -402,6 +404,119 @@ class Vesho_CRM_Updater {
         $content = file_get_contents( $style_file );
         $content = preg_replace( '/^(Version:\s*)[\d.]+/m', '${1}' . $new_version, $content );
         file_put_contents( $style_file, $content );
+    }
+
+    // ── AJAX: import starter content ──────────────────────────────────────────
+
+    public static function ajax_import_starter_content() {
+        check_ajax_referer( 'vesho_admin_nonce', 'nonce' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error( 'Unauthorized' );
+
+        $xml_file = WP_PLUGIN_DIR . '/vesho-crm/data/starter-content.xml';
+        if ( ! file_exists( $xml_file ) ) {
+            wp_send_json_error( 'starter-content.xml ei leitud' );
+        }
+
+        $xml  = simplexml_load_file( $xml_file );
+        $ns   = $xml->getNamespaces( true );
+        $log  = [];
+        $imported = 0;
+
+        // Import pages
+        foreach ( $xml->channel->item as $item ) {
+            $wp = $item->children( $ns['wp'] );
+            $post_type   = (string) $wp->post_type;
+            $post_status = (string) $wp->status;
+            $post_name   = (string) $wp->post_name;
+            $title       = (string) $item->title;
+
+            if ( ! in_array( $post_type, [ 'page', 'post' ], true ) ) continue;
+            if ( $post_status !== 'publish' ) continue;
+
+            // Check if page/post with same slug exists
+            $existing = get_page_by_path( $post_name, OBJECT, $post_type );
+            if ( $existing ) {
+                $log[] = "⏭ Olemas: [{$post_type}] {$title}";
+                continue;
+            }
+
+            $content = '';
+            foreach ( $item->children( 'http://purl.org/rss/1.0/modules/content/' ) as $c ) {
+                $content = (string) $c;
+            }
+
+            $post_id = wp_insert_post( [
+                'post_title'   => $title,
+                'post_name'    => $post_name,
+                'post_content' => $content,
+                'post_status'  => 'publish',
+                'post_type'    => $post_type,
+            ] );
+
+            if ( is_wp_error( $post_id ) ) {
+                $log[] = "❌ Viga [{$post_type}]: {$title}";
+            } else {
+                $log[] = "✅ Imporditud [{$post_type}]: {$title}";
+                $imported++;
+            }
+        }
+
+        // Set front page if 'avaleht' page exists
+        $front = get_page_by_path( 'avaleht' ) ?: get_page_by_path( 'kodu' );
+        if ( $front ) {
+            update_option( 'show_on_front', 'page' );
+            update_option( 'page_on_front', $front->ID );
+            $log[] = "🏠 Esileht seatud: {$front->post_title}";
+        }
+
+        // Create primary nav menu if missing
+        $menu_name = 'Peamine';
+        $menu_id   = 0;
+        $existing_menu = get_term_by( 'name', $menu_name, 'nav_menu' );
+        if ( ! $existing_menu ) {
+            $menu_id = wp_create_nav_menu( $menu_name );
+            $log[]   = "📋 Menüü loodud: {$menu_name}";
+        } else {
+            $menu_id = $existing_menu->term_id;
+            $log[]   = "⏭ Menüü olemas: {$menu_name}";
+        }
+
+        // Add pages to menu
+        $menu_pages = [ 'avaleht' => 'Avaleht', 'meist' => 'Meist', 'teenused' => 'Teenused', 'pood' => 'Pood', 'uudised' => 'Uudised', 'kontakt' => 'Kontakt' ];
+        if ( $menu_id && ! is_wp_error( $menu_id ) ) {
+            $existing_items = wp_get_nav_menu_items( $menu_id );
+            $existing_slugs = [];
+            if ( $existing_items ) {
+                foreach ( $existing_items as $ei ) {
+                    $p = get_post( $ei->object_id );
+                    if ( $p ) $existing_slugs[] = $p->post_name;
+                }
+            }
+            foreach ( $menu_pages as $slug => $label ) {
+                if ( in_array( $slug, $existing_slugs, true ) ) continue;
+                $page = get_page_by_path( $slug );
+                if ( $page ) {
+                    wp_update_nav_menu_item( $menu_id, 0, [
+                        'menu-item-title'     => $label,
+                        'menu-item-object'    => 'page',
+                        'menu-item-object-id' => $page->ID,
+                        'menu-item-type'      => 'post_type',
+                        'menu-item-status'    => 'publish',
+                    ] );
+                    $log[] = "➕ Menüüsse lisatud: {$label}";
+                }
+            }
+            // Assign menu to primary location
+            $locations = get_theme_mod( 'nav_menu_locations', [] );
+            $locations['primary'] = $menu_id;
+            set_theme_mod( 'nav_menu_locations', $locations );
+            $log[] = "📌 Menüü määratud: Primary Navigation";
+        }
+
+        wp_send_json_success( [
+            'message' => "{$imported} elementi imporditud, menüü seadistatud.",
+            'log'     => $log,
+        ] );
     }
 
     // ── Get current info.json contents (for admin UI) ─────────────────────────

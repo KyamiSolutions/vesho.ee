@@ -56,6 +56,16 @@ $is_local = in_array($_SERVER['HTTP_HOST'] ?? '', ['localhost', '127.0.0.1'])
     <span id="force-check-msg" style="margin-left:10px;font-size:13px"></span>
   </div>
 </div>
+
+<div class="crm-card" style="margin-top:20px">
+  <div class="crm-card-header"><span class="crm-card-title">📦 Startersisu</span></div>
+  <div style="padding:20px">
+    <p style="margin-bottom:12px;color:#555">Impordi kõik lehed, menüüd ja sisu localhost-ist. Olemasolevad lehed jäetakse puutumata.</p>
+    <button id="btn-import-content" class="button button-primary">📥 Impordi startersisu</button>
+    <span id="import-content-msg" style="margin-left:10px;font-size:13px"></span>
+    <div id="import-content-log" style="margin-top:12px;display:none;background:#f8f9fa;border:1px solid #ddd;border-radius:6px;padding:12px;font-size:12px;font-family:monospace;max-height:200px;overflow-y:auto"></div>
+  </div>
+</div>
 <script>
 var veshoNonce = '<?php echo $nonce; ?>';
 document.getElementById('btn-force-check').addEventListener('click', function(){
@@ -68,6 +78,29 @@ document.getElementById('btn-force-check').addEventListener('click', function(){
     document.getElementById('btn-force-check').disabled = false;
     if(d.success) setTimeout(()=>window.location.href='/wp-admin/update-core.php',1500);
   });
+});
+
+document.getElementById('btn-import-content').addEventListener('click', function(){
+  if(!confirm('Impordi startersisu? Olemasolevaid lehti ei kustutata.')) return;
+  this.disabled = true;
+  var msg = document.getElementById('import-content-msg');
+  var log = document.getElementById('import-content-log');
+  msg.textContent = 'Importin...';
+  log.style.display = 'none';
+  fetch(ajaxurl,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},
+    body:'action=vesho_import_starter_content&nonce='+veshoNonce})
+  .then(r=>r.json()).then(d=>{
+    if(d.success){
+      msg.style.color='#1b5e20'; msg.textContent='✅ '+d.data.message;
+      if(d.data.log && d.data.log.length){
+        log.style.display='block';
+        log.innerHTML = d.data.log.map(l=>'<div>'+l+'</div>').join('');
+      }
+    } else {
+      msg.style.color='#c62828'; msg.textContent='❌ '+(d.data||'Viga');
+    }
+    document.getElementById('btn-import-content').disabled = false;
+  }).catch(()=>{ msg.style.color='#c62828'; msg.textContent='❌ Ühenduse viga'; document.getElementById('btn-import-content').disabled=false; });
 });
 </script>
 <?php return; endif; ?>
