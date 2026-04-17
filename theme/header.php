@@ -375,7 +375,7 @@
                         <input type="text" name="company" placeholder="OÜ Näide"
                             style="width:100%;padding:10px 12px;border:1px solid #dce8ef;border-radius:7px;font-size:14px;box-sizing:border-box;outline:none">
                     </div>
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px" class="lm-firma-field" style="display:none">
+                    <div style="display:none;grid-template-columns:1fr 1fr;gap:8px" class="lm-firma-field" data-display="grid">
                         <div>
                             <label style="font-size:12px;font-weight:600;color:#0d1f2d;display:block;margin-bottom:4px">Registrikood</label>
                             <input type="text" name="reg_code" placeholder="12345678"
@@ -510,7 +510,7 @@
         radio.addEventListener('change', function(){
             var isFirma = radio.value === 'firma';
             document.querySelectorAll('.lm-firma-field').forEach(function(el){
-                el.style.display = isFirma ? '' : 'none';
+                el.style.display = isFirma ? (el.dataset.display || 'block') : 'none';
             });
             var nameLabel = document.getElementById('lm-name-label');
             if (nameLabel) nameLabel.textContent = isFirma ? 'Kontaktisik *' : 'Täisnimi *';
