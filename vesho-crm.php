@@ -3,7 +3,7 @@
  * Plugin Name: Vesho CRM
  * Plugin URI:  https://vesho.ee
  * Description: CRM ja klientide portaal Vesho OÜ-le. Haldab kliente, seadmeid, hooldusi, arveid ja teenuseid.
- * Version:     1.9.9
+ * Version:     2.0.0
  * Author:      Vesho OÜ
  * Author URI:  https://vesho.ee
  * Text Domain: vesho-crm
@@ -15,7 +15,7 @@
 defined( 'ABSPATH' ) || exit;
 
 // ── Constants ──────────────────────────────────────────────────────────────────
-define('VESHO_CRM_VERSION', '1.9.9');
+define('VESHO_CRM_VERSION', '2.0.0');
 define( 'VESHO_CRM_FILE',     __FILE__ );
 define( 'VESHO_CRM_PATH',     plugin_dir_path( __FILE__ ) );
 define( 'VESHO_CRM_URL',      plugin_dir_url( __FILE__ ) );
@@ -119,7 +119,9 @@ function vesho_crm_create_pages() {
 // ── Coming Soon / Site-wide maintenance mode ──────────────────────────────────
 add_action( 'template_redirect', 'vesho_coming_soon_redirect' );
 function vesho_coming_soon_redirect() {
-    if ( get_option('vesho_coming_soon_mode','0') !== '1' ) return;
+    $active = get_option('vesho_coming_soon_mode','0') === '1'
+           || get_option('vesho_maintenance_mode','0') === '1';
+    if ( ! $active ) return;
     if ( current_user_can('manage_options') ) return;
     if ( is_admin() ) return;
     // Allow wp-login, wp-admin, REST API, AJAX
