@@ -45,11 +45,11 @@ $is_local = in_array($_SERVER['HTTP_HOST'] ?? '', ['localhost', '127.0.0.1'])
     <div style="margin-top:12px;padding:10px 14px;background:#fff3cd;border:1px solid #ffc107;border-radius:8px;font-size:13px">
       ⚠️ Uuendus saadaval (v<?php echo esc_html($theme_info->version); ?>)
     </div>
+    <?php endif; ?>
     <div style="margin-top:10px">
       <button id="btn-install-theme" class="button button-primary">⬆️ Uuenda teema kohe</button>
       <span id="install-theme-msg" style="margin-left:10px;font-size:13px"></span>
     </div>
-    <?php endif; ?>
   </div>
 </div>
 </div>
