@@ -449,12 +449,13 @@ class Vesho_CRM_Updater {
             }
             $content = str_replace( $local_url, $live_url, $content );
 
-            // Collect post meta
+            // Collect post meta (meta_key/meta_value are also in wp: namespace)
             $meta = [];
             foreach ( $wp->postmeta as $pm ) {
-                $key = (string) $pm->meta_key;
-                $val = (string) $pm->meta_value;
-                // Replace localhost URLs in meta values
+                $pm_wp = $pm->children( $ns['wp'] );
+                $key   = (string) $pm_wp->meta_key;
+                $val   = (string) $pm_wp->meta_value;
+                if ( ! $key ) continue;
                 $val = str_replace( $local_url, $live_url, $val );
                 $meta[ $key ] = $val;
             }
