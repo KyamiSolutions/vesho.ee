@@ -622,6 +622,9 @@ class Vesho_CRM_Updater {
             wp_send_json_error( 'Pole õigusi' );
         }
 
+        // Always fetch fresh info — never use cached version
+        delete_transient( 'vesho_remote_theme_info' );
+
         require_once ABSPATH . 'wp-admin/includes/file.php';
         require_once ABSPATH . 'wp-admin/includes/misc.php';
         WP_Filesystem();
@@ -694,6 +697,9 @@ class Vesho_CRM_Updater {
         if ( ! current_user_can( 'update_plugins' ) ) {
             wp_send_json_error( 'Pole õigusi' );
         }
+
+        // Always fetch fresh info — never use cached version
+        delete_transient( 'vesho_remote_plugin_info' );
 
         require_once ABSPATH . 'wp-admin/includes/file.php';
         require_once ABSPATH . 'wp-admin/includes/misc.php';

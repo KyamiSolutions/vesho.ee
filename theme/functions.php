@@ -366,6 +366,8 @@ function vesho_get_setting( $key, $default = '' ) {
  * Page banner helper
  */
 function vesho_page_banner( $title, $subtitle = '' ) {
+    // Elementor pages handle their own layout — no banner needed
+    if ( get_post_meta( get_the_ID(), '_elementor_edit_mode', true ) === 'builder' ) return;
     ?>
     <div class="page-banner">
         <div class="container">
