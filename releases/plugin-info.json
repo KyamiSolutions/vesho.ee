@@ -1,10 +1,1 @@
-{
-  "name": "Vesho CRM",
-  "slug": "vesho-crm",
-  "version": "1.9.4",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v1.9.4/vesho-crm.zip",
-  "requires": "6.0",
-  "tested": "6.7",
-  "last_updated": "2026-04-17",
-  "changelog": "<h4>1.9.4</h4><ul><li>Uus versioon</li></ul>"
-}
+{"name":"Vesho CRM","slug":"vesho-crm","version":"1.9.5","download_url":"https://github.com/KyamiSolutions/vesho.ee/releases/download/v1.9.5/vesho-crm.zip","requires":"6.0","tested":"6.7","last_updated":"2026-04-17","changelog":"<h4>1.9.5</h4><ul><li>Parandus: Elementori sisu import — wp_slash() kasutamine takistab JSON korruptsiooni</li><li>Parandus: URL asendamine JSON-escaped slashidega</li></ul>"}
