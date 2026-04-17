@@ -36,6 +36,7 @@ class Vesho_CRM_Client_Portal {
         }
 
         add_action('wp_enqueue_scripts', [__CLASS__, 'enqueue_assets']);
+        add_action('wp_footer', [__CLASS__, 'register_form_fix_script']);
     }
 
     // ── Auth ──────────────────────────────────────────────────────────────────
@@ -2370,5 +2371,28 @@ function setMsg(m){document.getElementById('vcp-pay-msg').textContent=m;}
             ['id' => $order_id]
         );
         wp_send_json_success(['message' => 'Tagastustaotlus esitatud']);
+    }
+
+    // ── Fix: hide firma fields on register form load ──────────────────────────
+    public static function register_form_fix_script() {
+        ?>
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Hide firma fields initially (fix for duplicate style attribute bug in older theme)
+            document.querySelectorAll('#lm-register-form .lm-firma-field').forEach(function(el) {
+                el.style.display = 'none';
+            });
+            // Fix firma/eraisik toggle to use correct display value
+            document.querySelectorAll('#lm-register-form input[name="client_type"]').forEach(function(radio) {
+                radio.addEventListener('change', function() {
+                    var isFirma = this.value === 'firma';
+                    document.querySelectorAll('#lm-register-form .lm-firma-field').forEach(function(el) {
+                        el.style.display = isFirma ? (el.dataset.display || 'block') : 'none';
+                    });
+                });
+            });
+        });
+        </script>
+        <?php
     }
 }
