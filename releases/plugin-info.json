@@ -1,10 +1,1 @@
-{
-  "name": "Vesho CRM",
-  "slug": "vesho-crm",
-  "version": "1.9.7",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v1.9.7/vesho-crm.zip",
-  "requires": "6.0",
-  "tested": "6.7",
-  "last_updated": "2026-04-17",
-  "changelog": "<h4>1.9.7</h4><ul><li>Uus versioon</li></ul>"
-}
+{"name":"Vesho CRM","slug":"vesho-crm","version":"1.9.8","download_url":"https://github.com/KyamiSolutions/vesho.ee/releases/download/v1.9.8/vesho-crm.zip","requires":"6.0","tested":"6.7","last_updated":"2026-04-17","changelog":"<h4>1.9.8</h4><ul><li>Sama release teemaga</li></ul>"}
