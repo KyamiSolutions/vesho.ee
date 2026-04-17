@@ -489,6 +489,9 @@ class Vesho_CRM_Updater {
                 $key   = (string) $pm_wp->meta_key;
                 $val   = (string) $pm_wp->meta_value;
                 if ( ! $key ) continue;
+                // Skip Elementor computed/cache meta — Elementor regenerates these automatically
+                $skip_meta = [ '_elementor_page_assets', '_elementor_css', '_elementor_inline_assets' ];
+                if ( in_array( $key, $skip_meta, true ) ) continue;
                 // Replace localhost URLs — handle both plain and JSON-escaped slashes
                 $local_url_json = str_replace( '/', '\/', $local_url );
                 $live_url_json  = str_replace( '/', '\/', rtrim( $live_url, '/' ) );
