@@ -1,1 +1,10 @@
-{"name":"Vesho","slug":"vesho","version":"1.9.8","download_url":"https://github.com/KyamiSolutions/vesho.ee/releases/download/v1.9.8/vesho-theme.zip","requires":"6.0","tested":"6.7","last_updated":"2026-04-17","changelog":"<h4>1.9.8</h4><ul><li>Parandus: page.php renderib ainult the_content() — bänner eemaldatud, full-width Elementor</li></ul>"}
+{
+  "name": "Vesho",
+  "slug": "vesho",
+  "version": "1.9.8",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v1.9.8/vesho-theme.zip",
+  "requires": "6.0",
+  "tested": "6.7",
+  "last_updated": "2026-04-17",
+  "changelog": "<h4>1.9.8</h4><ul><li>Uus versioon</li></ul>"
+}
