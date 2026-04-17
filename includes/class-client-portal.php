@@ -1693,7 +1693,10 @@ function setMsg(m){document.getElementById('vcp-pay-msg').textContent=m;}
     // ── AJAX: Register ────────────────────────────────────────────────────────
 
     public static function ajax_register() {
-        check_ajax_referer('vesho_portal_nonce', 'nonce');
+        $nonce = $_POST['nonce'] ?? $_POST['lm_nonce_reg'] ?? $_POST['lm_reg_nonce'] ?? '';
+        if ( ! wp_verify_nonce( $nonce, 'vesho_portal_nonce' ) ) {
+            wp_send_json_error( [ 'message' => 'Turvakontroll ebaõnnestus. Uuenda leht ja proovi uuesti.' ] );
+        }
         $name     = sanitize_text_field($_POST['name'] ?? '');
         $email    = sanitize_email($_POST['email'] ?? '');
         $phone    = sanitize_text_field($_POST['phone'] ?? '');

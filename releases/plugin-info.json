@@ -1,10 +1,10 @@
 {
   "name": "Vesho CRM",
   "slug": "vesho-crm",
-  "version": "2.0.0",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.0.0/vesho-crm.zip",
+  "version": "2.0.1",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.0.1/vesho-crm.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-17",
-  "changelog": "<h4>2.0.0</h4><ul><li>Uus versioon</li></ul>"
+  "changelog": "<h4>2.0.1</h4><ul><li>Fix: registreerimine 403 viga (nonce kontroll)</li></ul>"
 }
