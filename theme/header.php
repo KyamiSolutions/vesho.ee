@@ -350,7 +350,7 @@
         <div class="lm-panel" id="lm-panel-register" style="display:none;padding:20px 0 4px">
             <div id="lm-register-msg" style="display:none;padding:10px 14px;border-radius:6px;font-size:13px;margin-bottom:12px"></div>
             <form id="lm-register-form" novalidate>
-                <?php wp_nonce_field('vesho_portal_nonce','lm_nonce_reg'); ?>
+                <?php wp_nonce_field('vesho_portal_nonce','lm_reg_nonce'); ?>
                 <div style="display:flex;flex-direction:column;gap:12px">
                     <!-- Kliendi tüüp -->
                     <div>
