@@ -253,7 +253,7 @@
                     <select class="form-select" id="sr-service" name="service_type">
                         <option value=""><?php _e( '— Vali teenus —', 'vesho' ); ?></option>
                         <?php
-                        $services = vesho_get_services();
+                        $services = function_exists('vesho_get_services') ? vesho_get_services() : [];
                         foreach ( $services as $svc ) {
                             printf(
                                 '<option value="%s">%s %s</option>',
