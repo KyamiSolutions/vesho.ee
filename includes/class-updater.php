@@ -41,22 +41,29 @@ class Vesho_CRM_Updater {
 
     /**
      * Fires on admin_init — BEFORE WP_Upgrader::run() calls move_to_rollback_cache().
-     * Detects both single-theme update (update.php?action=upgrade-theme)
-     * and bulk update (POST to update-core.php with checked[]=vesho).
+     *
+     * Single update:  wp-admin/update.php?action=upgrade-theme&theme=vesho
+     * Bulk update:    wp-admin/update-core.php?action=do-theme-upgrade  (POST checked[]=vesho)
+     * Note: "action" is always in $_GET (query string), NOT in $_POST.
      */
     public static function maybe_pre_delete_theme() {
-        $is_single_update = (
-            isset( $_GET['action'], $_GET['theme'] )
-            && $_GET['action'] === 'upgrade-theme'
+        $action = isset( $_GET['action'] ) ? $_GET['action'] : '';
+
+        // Single theme update via update.php
+        $is_single = (
+            $action === 'upgrade-theme'
+            && isset( $_GET['theme'] )
             && sanitize_key( $_GET['theme'] ) === self::THEME_SLUG
         );
-        $is_bulk_update = (
-            isset( $_POST['action'], $_POST['checked'] )
-            && $_POST['action'] === 'do-theme-upgrade'
+
+        // Bulk theme update via update-core.php (action in URL, themes in POST body)
+        $is_bulk = (
+            $action === 'do-theme-upgrade'
+            && isset( $_POST['checked'] )
             && in_array( self::THEME_SLUG, (array) $_POST['checked'], true )
         );
 
-        if ( $is_single_update || $is_bulk_update ) {
+        if ( $is_single || $is_bulk ) {
             self::delete_theme_dir_fs();
         }
     }
