@@ -6,10 +6,5 @@
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-17",
-<<<<<<< Updated upstream
-  "changelog": "<h4>1.9.2</h4><ul><li>Uus versioon</li></ul>"
+  "changelog": "<h4>1.9.3</h4><ul><li>Uus versioon</li></ul>"
 }
-=======
-  "changelog": "<h4>1.9.3</h4><ul><li>Uuenda teema nupp alati nähtav releases lehel</li></ul>"
-}
->>>>>>> Stashed changes
