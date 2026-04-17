@@ -489,7 +489,11 @@ class Vesho_CRM_Updater {
                 $key   = (string) $pm_wp->meta_key;
                 $val   = (string) $pm_wp->meta_value;
                 if ( ! $key ) continue;
-                $val = str_replace( $local_url, $live_url, $val );
+                // Replace localhost URLs — handle both plain and JSON-escaped slashes
+                $local_url_json = str_replace( '/', '\/', $local_url );
+                $live_url_json  = str_replace( '/', '\/', rtrim( $live_url, '/' ) );
+                $val = str_replace( $local_url_json, $live_url_json, $val );
+                $val = str_replace( $local_url, rtrim( $live_url, '/' ), $val );
                 // Force default page template — elementor_header_footer needs Pro
                 if ( $key === '_wp_page_template' && $val === 'elementor_header_footer' ) {
                     $val = 'default';
@@ -506,7 +510,9 @@ class Vesho_CRM_Updater {
                     'post_content' => $content,
                 ] );
                 foreach ( $meta as $k => $v ) {
-                    update_post_meta( $existing->ID, $k, $v );
+                    // _elementor_data is JSON with backslashes — wp_slash() prevents wp_unslash() corruption
+                    $meta_val = ( $k === '_elementor_data' ) ? wp_slash( $v ) : $v;
+                    update_post_meta( $existing->ID, $k, $meta_val );
                 }
                 $log[] = "🔄 Uuendatud [{$post_type}]: {$title}";
                 continue;
@@ -525,7 +531,9 @@ class Vesho_CRM_Updater {
             } else {
                 // Save all meta including Elementor data
                 foreach ( $meta as $k => $v ) {
-                    update_post_meta( $post_id, $k, $v );
+                    // _elementor_data is JSON with backslashes — wp_slash() prevents wp_unslash() corruption
+                    $meta_val = ( $k === '_elementor_data' ) ? wp_slash( $v ) : $v;
+                    update_post_meta( $post_id, $k, $meta_val );
                 }
                 $log[] = "✅ Imporditud [{$post_type}]: {$title}";
                 $imported++;
