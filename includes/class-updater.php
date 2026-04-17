@@ -39,6 +39,8 @@ class Vesho_CRM_Updater {
         add_action( 'wp_ajax_vesho_import_starter_content', [ __CLASS__, 'ajax_import_starter_content' ] );
         // Admin AJAX: direct theme installer (bypasses WP backup/rollback)
         add_action( 'wp_ajax_vesho_install_theme', [ __CLASS__, 'ajax_install_theme' ] );
+        // Admin AJAX: direct plugin installer (bypasses WP_Upgrader)
+        add_action( 'wp_ajax_vesho_install_plugin', [ __CLASS__, 'ajax_install_plugin' ] );
     }
 
     /**
@@ -684,5 +686,73 @@ class Vesho_CRM_Updater {
         delete_transient( 'vesho_remote_theme_info' );
 
         wp_send_json_success( 'Teema uuendatud versioonile ' . esc_html( $info->version ) . ' ✅' );
+    }
+
+    // ── Direct plugin installer (bypasses WP_Upgrader) ───────────────────────────
+    public static function ajax_install_plugin() {
+        check_ajax_referer( 'vesho_admin_nonce', 'nonce' );
+        if ( ! current_user_can( 'update_plugins' ) ) {
+            wp_send_json_error( 'Pole õigusi' );
+        }
+
+        require_once ABSPATH . 'wp-admin/includes/file.php';
+        require_once ABSPATH . 'wp-admin/includes/misc.php';
+        require_once ABSPATH . 'wp-admin/includes/plugin.php';
+        WP_Filesystem();
+        global $wp_filesystem;
+
+        $info = self::fetch_remote_info( 'plugin' );
+        if ( ! $info || empty( $info->download_url ) ) {
+            wp_send_json_error( 'Uuenduse info puudub — kontrolli GitHubi' );
+        }
+
+        $tmp_zip = download_url( $info->download_url );
+        if ( is_wp_error( $tmp_zip ) ) {
+            wp_send_json_error( 'Allalaadimine ebaõnnestus: ' . $tmp_zip->get_error_message() );
+        }
+
+        $tmp_dir = WP_CONTENT_DIR . '/upgrade/vesho-plugin-tmp-' . time();
+        wp_mkdir_p( $tmp_dir );
+
+        $unzip = unzip_file( $tmp_zip, $tmp_dir );
+        @unlink( $tmp_zip );
+
+        if ( is_wp_error( $unzip ) ) {
+            $wp_filesystem->delete( $tmp_dir, true );
+            wp_send_json_error( 'Lahtipakkimine ebaõnnestus: ' . $unzip->get_error_message() );
+        }
+
+        // Find extracted plugin dir (should be vesho-crm/ inside tmp_dir)
+        $plugin_src = $tmp_dir . '/' . self::PLUGIN_SLUG;
+        if ( ! is_dir( $plugin_src ) ) {
+            $dirs = glob( $tmp_dir . '/*', GLOB_ONLYDIR );
+            $plugin_src = ! empty( $dirs ) ? $dirs[0] : '';
+        }
+
+        if ( empty( $plugin_src ) || ! is_dir( $plugin_src ) ) {
+            $wp_filesystem->delete( $tmp_dir, true );
+            wp_send_json_error( 'Plugina kausta ei leitud ZIP-is' );
+        }
+
+        $plugin_dest = WP_PLUGIN_DIR . '/' . self::PLUGIN_SLUG;
+
+        // Delete old plugin dir
+        if ( $wp_filesystem && $wp_filesystem->is_dir( $plugin_dest ) ) {
+            $wp_filesystem->delete( $plugin_dest, true );
+        } elseif ( is_dir( $plugin_dest ) ) {
+            self::recursive_rmdir( $plugin_dest );
+        }
+
+        $copy_result = copy_dir( $plugin_src, $plugin_dest );
+        $wp_filesystem->delete( $tmp_dir, true );
+
+        if ( is_wp_error( $copy_result ) ) {
+            wp_send_json_error( 'Kopeerimine ebaõnnestus: ' . $copy_result->get_error_message() );
+        }
+
+        delete_site_transient( 'update_plugins' );
+        delete_transient( 'vesho_remote_plugin_info' );
+
+        wp_send_json_success( 'Plugin uuendatud versioonile ' . esc_html( $info->version ) . ' ✅' );
     }
 }

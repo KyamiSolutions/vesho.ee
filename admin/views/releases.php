@@ -27,11 +27,10 @@ $is_local = in_array($_SERVER['HTTP_HOST'] ?? '', ['localhost', '127.0.0.1'])
       <tr><td style="font-weight:600;width:180px">Paigaldatud versioon</td><td><span style="background:#e0f7fa;color:#006064;padding:3px 10px;border-radius:20px;font-size:13px;font-weight:700"><?php echo VESHO_CRM_VERSION; ?></span></td></tr>
       <tr><td style="font-weight:600">Saadaval versioon</td><td><?php echo $plugin_info ? '<span style="background:#e8f5e9;color:#1b5e20;padding:3px 10px;border-radius:20px;font-size:13px;font-weight:700">' . esc_html($plugin_info->version) . '</span>' : '<span style="color:#999">—</span>'; ?></td></tr>
     </table>
-    <?php if ($plugin_info && version_compare($plugin_info->version, VESHO_CRM_VERSION, '>')): ?>
-    <div style="margin-top:12px;padding:10px 14px;background:#fff3cd;border:1px solid #ffc107;border-radius:8px;font-size:13px">
-      ⚠️ Uuendus saadaval! Mine <a href="<?php echo admin_url('update-core.php'); ?>">Töölaud → Uuendused</a>
+    <div style="margin-top:10px">
+      <button id="btn-install-plugin" class="button button-primary">⬆️ Uuenda plugin kohe</button>
+      <span id="install-plugin-msg" style="margin-left:10px;font-size:13px"></span>
     </div>
-    <?php endif; ?>
   </div>
 </div>
 <div class="crm-card">
@@ -82,6 +81,25 @@ document.getElementById('btn-force-check').addEventListener('click', function(){
     document.getElementById('btn-force-check').disabled = false;
     if(d.success) setTimeout(()=>window.location.href='/wp-admin/update-core.php',1500);
   });
+});
+
+var btnInstallPlugin = document.getElementById('btn-install-plugin');
+if(btnInstallPlugin) btnInstallPlugin.addEventListener('click', function(){
+  if(!confirm('Uuenda plugin? Vana plugin kustutakse ja uus paigaldatakse GitHubist.')) return;
+  this.disabled = true;
+  var msg = document.getElementById('install-plugin-msg');
+  msg.style.color='#555'; msg.textContent = '⏳ Installin...';
+  fetch(ajaxurl,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},
+    body:'action=vesho_install_plugin&nonce='+veshoNonce})
+  .then(r=>r.json()).then(d=>{
+    if(d.success){
+      msg.style.color='#1b5e20'; msg.textContent='✅ '+d.data;
+      setTimeout(()=>location.reload(),2000);
+    } else {
+      msg.style.color='#c62828'; msg.textContent='❌ '+(d.data||'Viga');
+      document.getElementById('btn-install-plugin').disabled=false;
+    }
+  }).catch(()=>{ msg.style.color='#c62828'; msg.textContent='❌ Ühenduse viga'; document.getElementById('btn-install-plugin').disabled=false; });
 });
 
 var btnInstall = document.getElementById('btn-install-theme');
