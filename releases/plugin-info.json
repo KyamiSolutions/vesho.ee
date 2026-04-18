@@ -6,5 +6,5 @@
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-18",
-  "changelog": "<h4>2.2.23</h4><ul><li>Kohustuslik paroolivahetus uutele adminidele (force_password_change)</li><li>Parandus: 2FA sisselogimisel lõpmatu tsükkel</li><li>Admin tellimused: pakikaardi skänner (leia pakikaardi/jälgimisnumbriga)</li></ul><h4>2.2.22</h4><ul><li>Töötaja QR kaardiga sisselogimine (ajax_barcode_login)</li><li>Klientide portaal: lepingutingimused eraldi tab</li><li>Admin seaded: lepingutingimuste kuva kliendi portaalis</li></ul><h4>2.2.21</h4><ul><li>Admin kasutajahaldus, PDF, TOTP 2FA, GPS clock-in</li></ul>"
+  "changelog": "<h4>2.2.23</h4><ul><li>Uus versioon</li></ul>"
 }
