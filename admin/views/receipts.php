@@ -59,6 +59,11 @@ endif; ?>
         <input class="crm-search" type="search" name="s" placeholder="Otsi arve nr, tarnija, töötaja..." value="<?php echo esc_attr($search); ?>">
         <button type="submit" class="crm-btn crm-btn-outline crm-btn-sm">Otsi</button>
     </form>
+    <div id="bulk-toolbar" style="display:none;gap:8px;align-items:center">
+        <span id="bulk-count" style="font-size:13px;color:#6b7280"></span>
+        <button class="crm-btn crm-btn-sm" style="background:#dcfce7;color:#16a34a;border:1px solid #86efac" onclick="bulkApprove()">✓ Kinnita valitud</button>
+        <button class="crm-btn crm-btn-sm crm-btn-outline" onclick="clearBulk()">Tühista</button>
+    </div>
 </div>
 
 <!-- Status tabs -->
@@ -109,11 +114,15 @@ endif; ?>
         </div>
         <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">
             <?php if ($st === 'draft') : ?>
+                <input type="checkbox" class="bulk-cb" value="<?php echo $r->id; ?>" style="accent-color:#00b4c8;width:16px;height:16px">
                 <button class="crm-btn crm-btn-primary crm-btn-sm" onclick="openSendModal(<?php echo $r->id; ?>)">📤 Saada töötajale</button>
             <?php elseif ($st === 'pending') : ?>
                 <button class="crm-btn crm-btn-sm" style="background:#fef3c7;color:#d97706;border:1px solid #fcd34d" onclick="openSendModal(<?php echo $r->id; ?>)">🔄 Töötajat</button>
             <?php elseif ($st === 'received') : ?>
+                <input type="checkbox" class="bulk-cb" value="<?php echo $r->id; ?>" style="accent-color:#00b4c8;width:16px;height:16px">
                 <button class="crm-btn crm-btn-sm" style="background:#dcfce7;color:#16a34a;border:1px solid #86efac" onclick="approveReceipt(<?php echo $r->id; ?>, this)">✓ Kinnita</button>
+                <button class="crm-btn crm-btn-sm" style="background:#dbeafe;color:#2563eb;border:1px solid #93c5fd" onclick="openToInvoiceModal(<?php echo $r->id; ?>)" title="Lisa arvele">📄 Arvele</button>
+                <button class="crm-btn crm-btn-sm" style="background:#fef3c7;color:#d97706;border:1px solid #fcd34d" onclick="returnReceipt(<?php echo $r->id; ?>, this)" title="Tagasta tarnijale">↩</button>
             <?php endif; ?>
             <?php if (in_array($st, ['draft','pending','received'])) : ?>
                 <button class="crm-btn crm-btn-sm" style="background:#fee2e2;color:#dc2626;border:1px solid #fca5a5" onclick="rejectReceipt(<?php echo $r->id; ?>, this)">✗</button>
@@ -193,6 +202,30 @@ endif; ?>
     <div style="display:flex;gap:8px">
         <button onclick="closeModal('modal-send')" class="crm-btn crm-btn-outline" style="flex:1">Tühista</button>
         <button onclick="doSend()" class="crm-btn crm-btn-primary" style="flex:2">📤 Saada</button>
+    </div>
+</div>
+</div>
+
+<!-- To-invoice modal -->
+<div id="modal-to-invoice" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.5);align-items:center;justify-content:center">
+<div style="background:#fff;border-radius:14px;padding:24px;width:100%;max-width:400px;margin:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <strong style="font-size:16px">Lisa arvele</strong>
+        <button onclick="closeModal('modal-to-invoice')" style="background:none;border:none;font-size:20px;cursor:pointer;color:#94a3b8">✕</button>
+    </div>
+    <input type="hidden" id="toi-receipt-id">
+    <div style="margin-bottom:12px">
+        <label class="crm-form-label">Arve ID *</label>
+        <input id="toi-invoice-id" type="number" min="1" class="crm-form-input" placeholder="nt 42">
+    </div>
+    <div style="margin-bottom:16px">
+        <label class="crm-form-label">KM määr (%)</label>
+        <input id="toi-vat" type="number" min="0" max="100" value="0" class="crm-form-input">
+    </div>
+    <div id="toi-msg" style="display:none;margin-bottom:10px;font-size:13px"></div>
+    <div style="display:flex;gap:8px">
+        <button onclick="closeModal('modal-to-invoice')" class="crm-btn crm-btn-outline" style="flex:1">Tühista</button>
+        <button onclick="doToInvoice()" class="crm-btn crm-btn-primary" style="flex:2">📄 Lisa arvele</button>
     </div>
 </div>
 </div>
@@ -311,12 +344,84 @@ function approveReceipt(id, btn) {
 }
 
 function rejectReceipt(id, btn) {
+    if (!confirm('Lükka saadetis tagasi?')) return;
     btn.disabled = true;
     fetch(ajaxUrl, {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
         body:'action=vesho_receipt_reject&nonce='+veshoNonce+'&receipt_id='+id})
     .then(r=>r.json()).then(function(d){
         if (d.success) location.reload();
         else { btn.disabled=false; alert('Viga: '+(d.data||'')); }
+    });
+}
+
+function returnReceipt(id, btn) {
+    if (!confirm('Tagasta tarnijale? Staatus muutub "Tagasi lükatud".')) return;
+    btn.disabled = true;
+    fetch(ajaxUrl, {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body:'action=vesho_receipt_return&nonce='+veshoNonce+'&receipt_id='+id})
+    .then(r=>r.json()).then(function(d){
+        if (d.success) location.reload();
+        else { btn.disabled=false; alert('Viga: '+(d.data?.message||d.data||'')); }
+    });
+}
+
+function openToInvoiceModal(id) {
+    document.getElementById('toi-receipt-id').value = id;
+    document.getElementById('toi-invoice-id').value = '';
+    document.getElementById('toi-msg').style.display = 'none';
+    document.getElementById('modal-to-invoice').style.display = 'flex';
+}
+
+function doToInvoice() {
+    var rid = document.getElementById('toi-receipt-id').value;
+    var invId = document.getElementById('toi-invoice-id').value;
+    var vat = document.getElementById('toi-vat').value || 0;
+    var msg = document.getElementById('toi-msg');
+    if (!invId) { msg.textContent='Arve ID on kohustuslik'; msg.style.color='#dc2626'; msg.style.display=''; return; }
+    fetch(ajaxUrl, {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body:'action=vesho_receipt_to_invoice&nonce='+veshoNonce+'&receipt_id='+rid+'&invoice_id='+invId+'&vat_rate='+vat})
+    .then(r=>r.json()).then(function(d){
+        if (d.success) {
+            msg.textContent = d.data?.message || 'Lisatud!';
+            msg.style.color = '#16a34a'; msg.style.display = '';
+            setTimeout(function(){ location.reload(); }, 1200);
+        } else { msg.textContent = d.data?.message || 'Viga'; msg.style.color='#dc2626'; msg.style.display=''; }
+    });
+}
+
+/* ---- Bulk approve ---- */
+document.addEventListener('change', function(e){
+    if (e.target.classList.contains('bulk-cb')) updateBulkToolbar();
+});
+
+function updateBulkToolbar(){
+    var checked = document.querySelectorAll('.bulk-cb:checked');
+    var toolbar = document.getElementById('bulk-toolbar');
+    var cnt = document.getElementById('bulk-count');
+    if (checked.length > 0) {
+        toolbar.style.display = 'flex';
+        cnt.textContent = checked.length + ' valitud';
+    } else {
+        toolbar.style.display = 'none';
+    }
+}
+
+function clearBulk(){
+    document.querySelectorAll('.bulk-cb').forEach(function(cb){ cb.checked=false; });
+    document.getElementById('bulk-toolbar').style.display = 'none';
+}
+
+function bulkApprove(){
+    var ids = Array.from(document.querySelectorAll('.bulk-cb:checked')).map(function(cb){return parseInt(cb.value);});
+    if (!ids.length) return;
+    if (!confirm('Kinnita '+ids.length+' saadetist? Laoseis uuendatakse.')) return;
+    fetch(ajaxUrl, {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body:'action=vesho_receipt_bulk_approve&nonce='+veshoNonce+'&ids='+encodeURIComponent(JSON.stringify(ids))})
+    .then(r=>r.json()).then(function(d){
+        if (d.success) {
+            alert('Kinnitatud: '+d.data.approved);
+            location.reload();
+        } else alert('Viga: '+(d.data?.message||''));
     });
 }
 

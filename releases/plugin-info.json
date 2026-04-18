@@ -1,10 +1,10 @@
 {
   "name": "Vesho CRM",
   "slug": "vesho-crm",
-  "version": "2.2.57",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.2.57/vesho-crm.zip",
+  "version": "2.2.58",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.2.58/vesho-crm.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-18",
-  "changelog": "<h4>2.2.57</h4><ul><li>Uus versioon</li></ul>"
+  "changelog": "<h4>2.2.58</h4><ul><li>Laoaadressid: uus leht (genereeri grid, lisa üksik, prindi barcoded)</li><li>Vastuvõtt: tagasta tarnijale, bulk approve, lisa arvele</li></ul>"
 }

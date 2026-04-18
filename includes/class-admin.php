@@ -43,6 +43,13 @@ class Vesho_CRM_Admin {
         add_action( 'wp_ajax_vesho_receipt_send',            array( __CLASS__, 'ajax_receipt_send' ) );
         add_action( 'wp_ajax_vesho_receipt_approve',         array( __CLASS__, 'ajax_receipt_approve' ) );
         add_action( 'wp_ajax_vesho_receipt_reject',          array( __CLASS__, 'ajax_receipt_reject' ) );
+        add_action( 'wp_ajax_vesho_receipt_return',          array( __CLASS__, 'ajax_receipt_return' ) );
+        add_action( 'wp_ajax_vesho_receipt_bulk_approve',    array( __CLASS__, 'ajax_receipt_bulk_approve' ) );
+        add_action( 'wp_ajax_vesho_receipt_to_invoice',      array( __CLASS__, 'ajax_receipt_to_invoice' ) );
+        add_action( 'wp_ajax_vesho_list_warehouse_locations',   array( __CLASS__, 'ajax_list_warehouse_locations' ) );
+        add_action( 'wp_ajax_vesho_add_warehouse_location',     array( __CLASS__, 'ajax_add_warehouse_location' ) );
+        add_action( 'wp_ajax_vesho_bulk_warehouse_locations',   array( __CLASS__, 'ajax_bulk_warehouse_locations' ) );
+        add_action( 'wp_ajax_vesho_delete_warehouse_location',  array( __CLASS__, 'ajax_delete_warehouse_location' ) );
         add_action( 'admin_post_vesho_save_campaign',        array( __CLASS__, 'handle_save_campaign' ) );
         add_action( 'admin_post_vesho_pause_campaign',       array( __CLASS__, 'handle_pause_campaign' ) );
         add_action( 'admin_post_vesho_resume_campaign',      array( __CLASS__, 'handle_resume_campaign' ) );
@@ -159,6 +166,7 @@ class Vesho_CRM_Admin {
         // ── LADU ──
         add_submenu_page( 'vesho-crm', 'Ladu', 'Ladu', $cap, 'vesho-crm-inventory', array( __CLASS__, 'page_inventory' ) );
         add_submenu_page( 'vesho-crm', 'Vastuvõtt', 'Vastuvõtt', $cap, 'vesho-crm-receipts', array( __CLASS__, 'page_receipts' ) );
+        add_submenu_page( 'vesho-crm', 'Laoaadressid', 'Laoaadressid', $cap, 'vesho-crm-locations', array( __CLASS__, 'page_locations' ) );
         add_submenu_page( 'vesho-crm', 'Hinnakiri', 'Hinnakiri', $cap, 'vesho-crm-pricelist', array( __CLASS__, 'page_pricelist' ) );
 
         // ── MUU ──
@@ -321,6 +329,7 @@ class Vesho_CRM_Admin {
     public static function page_sales()       { self::load_view('sales'); }
     public static function page_inventory()   { self::load_view('inventory'); }
     public static function page_receipts()    { self::load_view('receipts'); }
+    public static function page_locations()   { self::load_view('locations'); }
     public static function page_pricelist()   { self::load_view('pricelist'); }
     public static function page_services()    { self::load_view('services'); }
     public static function page_campaigns()   { self::load_view('campaigns'); }
@@ -1306,6 +1315,205 @@ private static function load_view( $name ) {
         $receipt_id = absint( $_POST['receipt_id'] ?? 0 );
         if ( ! $receipt_id ) wp_send_json_error();
         $wpdb->update( $wpdb->prefix . 'vesho_stock_receipts', array( 'status' => 'rejected' ), array( 'id' => $receipt_id ) );
+        wp_send_json_success();
+    }
+
+    // ── AJAX: return received receipt to rejected ──────────────────────────────
+    public static function ajax_receipt_return() {
+        check_ajax_referer( 'vesho_admin_nonce', 'nonce' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error();
+        global $wpdb;
+        $receipt_id = absint( $_POST['receipt_id'] ?? 0 );
+        if ( ! $receipt_id ) wp_send_json_error();
+        $receipt = $wpdb->get_row( $wpdb->prepare(
+            "SELECT * FROM {$wpdb->prefix}vesho_stock_receipts WHERE id=%d AND status='received'", $receipt_id
+        ) );
+        if ( ! $receipt ) wp_send_json_error( array( 'message' => 'Ei leitud või vale staatus' ) );
+        $wpdb->update(
+            $wpdb->prefix . 'vesho_stock_receipts',
+            array( 'status' => 'rejected', 'notes' => trim( ($receipt->notes ?? '') . ' [Tagastatud tarnijale]' ) ),
+            array( 'id' => $receipt_id )
+        );
+        wp_send_json_success();
+    }
+
+    // ── AJAX: bulk approve receipts ────────────────────────────────────────────
+    public static function ajax_receipt_bulk_approve() {
+        check_ajax_referer( 'vesho_admin_nonce', 'nonce' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error();
+        global $wpdb;
+        $ids_raw = sanitize_text_field( $_POST['ids'] ?? '[]' );
+        $ids = array_filter( array_map( 'absint', json_decode( stripslashes( $ids_raw ), true ) ?? [] ) );
+        if ( empty( $ids ) ) wp_send_json_error( array( 'message' => 'IDs puuduvad' ) );
+        if ( count( $ids ) > 200 ) wp_send_json_error( array( 'message' => 'Liiga palju (max 200)' ) );
+        $approved = 0;
+        foreach ( $ids as $rid ) {
+            $receipt = $wpdb->get_row( $wpdb->prepare(
+                "SELECT * FROM {$wpdb->prefix}vesho_stock_receipts WHERE id=%d AND status IN ('received','pending')", $rid
+            ) );
+            if ( ! $receipt ) continue;
+            $items = $wpdb->get_results( $wpdb->prepare(
+                "SELECT * FROM {$wpdb->prefix}vesho_stock_receipt_items WHERE receipt_id=%d", $rid
+            ) );
+            foreach ( $items as $item ) {
+                $qty    = (float)( $item->actual_qty ?? $item->quantity );
+                $inv_id = (int) $item->inventory_id;
+                if ( ! $inv_id ) {
+                    if ( $item->ean ) $inv_id = (int)$wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$wpdb->prefix}vesho_inventory WHERE ean=%s LIMIT 1", $item->ean ) );
+                    if ( ! $inv_id && $item->product_sku ) $inv_id = (int)$wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$wpdb->prefix}vesho_inventory WHERE sku=%s LIMIT 1", $item->product_sku ) );
+                    if ( ! $inv_id ) {
+                        $wpdb->insert( $wpdb->prefix . 'vesho_inventory', array(
+                            'name' => $item->product_name ?: 'Nimeta toode', 'sku' => $item->product_sku ?: null,
+                            'ean' => $item->ean ?: null, 'unit' => $item->product_unit ?: 'tk',
+                            'quantity' => 0, 'purchase_price' => $item->unit_price ?: 0, 'shop_price' => $item->selling_price ?: 0, 'archived' => 0,
+                        ) );
+                        $inv_id = (int)$wpdb->insert_id;
+                    }
+                    $wpdb->update( $wpdb->prefix . 'vesho_stock_receipt_items', array( 'inventory_id' => $inv_id ), array( 'id' => $item->id ) );
+                }
+                if ( $inv_id && $qty > 0 ) {
+                    $wpdb->query( $wpdb->prepare( "UPDATE {$wpdb->prefix}vesho_inventory SET quantity = quantity + %f WHERE id=%d", $qty, $inv_id ) );
+                    if ( $item->location ) $wpdb->update( $wpdb->prefix . 'vesho_inventory', array( 'location' => $item->location ), array( 'id' => $inv_id ) );
+                }
+            }
+            $wpdb->update( $wpdb->prefix . 'vesho_stock_receipts', array( 'status' => 'approved', 'received_at' => current_time('mysql') ), array( 'id' => $rid ) );
+            $approved++;
+        }
+        wp_send_json_success( array( 'approved' => $approved ) );
+    }
+
+    // ── AJAX: add receipt items to invoice ─────────────────────────────────────
+    public static function ajax_receipt_to_invoice() {
+        check_ajax_referer( 'vesho_admin_nonce', 'nonce' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error();
+        global $wpdb;
+        $receipt_id = absint( $_POST['receipt_id'] ?? 0 );
+        $invoice_id = absint( $_POST['invoice_id'] ?? 0 );
+        $vat_rate   = (float)( $_POST['vat_rate'] ?? 0 );
+        if ( ! $receipt_id || ! $invoice_id ) wp_send_json_error( array( 'message' => 'receipt_id ja invoice_id on kohustuslikud' ) );
+        $receipt = $wpdb->get_row( $wpdb->prepare(
+            "SELECT * FROM {$wpdb->prefix}vesho_stock_receipts WHERE id=%d AND status='received'", $receipt_id
+        ) );
+        if ( ! $receipt ) wp_send_json_error( array( 'message' => 'Saab lisada ainult vastuvõetud saadetisi' ) );
+        $invoice = $wpdb->get_row( $wpdb->prepare( "SELECT id FROM {$wpdb->prefix}vesho_invoices WHERE id=%d", $invoice_id ) );
+        if ( ! $invoice ) wp_send_json_error( array( 'message' => 'Arvet ei leitud' ) );
+        $items = $wpdb->get_results( $wpdb->prepare(
+            "SELECT sri.*, COALESCE(inv.name, sri.product_name) AS display_name
+             FROM {$wpdb->prefix}vesho_stock_receipt_items sri
+             LEFT JOIN {$wpdb->prefix}vesho_inventory inv ON inv.id=sri.inventory_id
+             WHERE sri.receipt_id=%d", $receipt_id
+        ) );
+        foreach ( $items as $item ) {
+            $qty  = (float)( $item->actual_qty ?? $item->quantity );
+            $name = $item->display_name ?: 'Nimeta toode';
+            $wpdb->insert( $wpdb->prefix . 'vesho_invoice_items', array(
+                'invoice_id'  => $invoice_id,
+                'description' => $name,
+                'quantity'    => $qty,
+                'unit'        => $item->product_unit ?: 'tk',
+                'unit_price'  => $item->unit_price ?: 0,
+                'vat_rate'    => $vat_rate,
+            ) );
+        }
+        // Recalculate invoice total
+        $total = (float)$wpdb->get_var( $wpdb->prepare(
+            "SELECT COALESCE(SUM(quantity * unit_price * (1 + vat_rate/100)), 0) FROM {$wpdb->prefix}vesho_invoice_items WHERE invoice_id=%d", $invoice_id
+        ) );
+        $wpdb->update( $wpdb->prefix . 'vesho_invoices', array( 'amount' => $total ), array( 'id' => $invoice_id ) );
+        // Approve the receipt
+        self::_approve_receipt_items( $receipt_id );
+        $wpdb->update( $wpdb->prefix . 'vesho_stock_receipts', array( 'status' => 'approved', 'received_at' => current_time('mysql') ), array( 'id' => $receipt_id ) );
+        wp_send_json_success( array( 'message' => 'Lisatud arvele #' . $invoice_id . ' ja kinnitatud' ) );
+    }
+
+    private static function _approve_receipt_items( $receipt_id ) {
+        global $wpdb;
+        $items = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}vesho_stock_receipt_items WHERE receipt_id=%d", $receipt_id ) );
+        foreach ( $items as $item ) {
+            $qty = (float)( $item->actual_qty ?? $item->quantity );
+            $inv_id = (int) $item->inventory_id;
+            if ( ! $inv_id ) {
+                if ( $item->ean ) $inv_id = (int)$wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$wpdb->prefix}vesho_inventory WHERE ean=%s LIMIT 1", $item->ean ) );
+                if ( ! $inv_id && $item->product_sku ) $inv_id = (int)$wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$wpdb->prefix}vesho_inventory WHERE sku=%s LIMIT 1", $item->product_sku ) );
+                if ( ! $inv_id ) {
+                    $wpdb->insert( $wpdb->prefix . 'vesho_inventory', array(
+                        'name' => $item->product_name ?: 'Nimeta toode', 'sku' => $item->product_sku ?: null,
+                        'ean' => $item->ean ?: null, 'unit' => $item->product_unit ?: 'tk',
+                        'quantity' => 0, 'archived' => 0,
+                    ) );
+                    $inv_id = (int)$wpdb->insert_id;
+                }
+                $wpdb->update( $wpdb->prefix . 'vesho_stock_receipt_items', array( 'inventory_id' => $inv_id ), array( 'id' => $item->id ) );
+            }
+            if ( $inv_id && $qty > 0 ) {
+                $wpdb->query( $wpdb->prepare( "UPDATE {$wpdb->prefix}vesho_inventory SET quantity = quantity + %f WHERE id=%d", $qty, $inv_id ) );
+                if ( $item->location ) $wpdb->update( $wpdb->prefix . 'vesho_inventory', array( 'location' => $item->location ), array( 'id' => $inv_id ) );
+            }
+        }
+    }
+
+    // ── AJAX: warehouse locations ──────────────────────────────────────────────
+    public static function ajax_list_warehouse_locations() {
+        check_ajax_referer( 'vesho_admin_nonce', 'nonce' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error();
+        global $wpdb;
+        $locs = $wpdb->get_results(
+            "SELECT wl.*, inv.id as item_id, inv.name as item_name, inv.sku, inv.ean as item_ean,
+                    inv.quantity, inv.unit
+             FROM {$wpdb->prefix}vesho_warehouse_locations wl
+             LEFT JOIN {$wpdb->prefix}vesho_inventory inv ON inv.location = wl.code
+             ORDER BY wl.code"
+        );
+        foreach ( $locs as &$l ) {
+            $l->ean = $l->ean ?: ( $l->item_ean ?? '' );
+        }
+        wp_send_json_success( array( 'locations' => $locs ) );
+    }
+
+    public static function ajax_add_warehouse_location() {
+        check_ajax_referer( 'vesho_admin_nonce', 'nonce' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error();
+        global $wpdb;
+        $code = strtoupper( sanitize_text_field( $_POST['code'] ?? '' ) );
+        $desc = sanitize_text_field( $_POST['description'] ?? '' );
+        if ( ! $code ) wp_send_json_error( 'Kood on kohustuslik' );
+        $result = $wpdb->insert( $wpdb->prefix . 'vesho_warehouse_locations', array( 'code' => $code, 'description' => $desc ) );
+        if ( $result === false ) wp_send_json_error( 'Viga (kood võib juba olla olemas)' );
+        wp_send_json_success( array( 'id' => $wpdb->insert_id ) );
+    }
+
+    public static function ajax_bulk_warehouse_locations() {
+        check_ajax_referer( 'vesho_admin_nonce', 'nonce' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error();
+        global $wpdb;
+        $blk_start = strtoupper( sanitize_text_field( $_POST['blockStart'] ?? 'A' ) );
+        $blk_end   = strtoupper( sanitize_text_field( $_POST['blockEnd']   ?? 'A' ) );
+        $sh_start  = max( 1, (int)( $_POST['shelfStart'] ?? 1 ) );
+        $sh_end    = min( 99, (int)( $_POST['shelfEnd']  ?? 5 ) );
+        $pos_start = max( 1, (int)( $_POST['posStart']   ?? 1 ) );
+        $pos_end   = min( 99, (int)( $_POST['posEnd']    ?? 10 ) );
+        $desc      = sanitize_text_field( $_POST['description'] ?? '' );
+        $created = 0; $skipped = 0;
+        for ( $b = ord( $blk_start[0] ); $b <= ord( $blk_end[0] ); $b++ ) {
+            $block = chr( $b );
+            for ( $s = $sh_start; $s <= $sh_end; $s++ ) {
+                for ( $p = $pos_start; $p <= $pos_end; $p++ ) {
+                    $code = $block . '-' . str_pad( $s, 2, '0', STR_PAD_LEFT ) . '-' . str_pad( $p, 2, '0', STR_PAD_LEFT );
+                    $r = $wpdb->insert( $wpdb->prefix . 'vesho_warehouse_locations', array( 'code' => $code, 'description' => $desc ) );
+                    if ( $r ) $created++; else $skipped++;
+                }
+            }
+        }
+        wp_send_json_success( array( 'created' => $created, 'skipped' => $skipped ) );
+    }
+
+    public static function ajax_delete_warehouse_location() {
+        check_ajax_referer( 'vesho_admin_nonce', 'nonce' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error();
+        global $wpdb;
+        $id = absint( $_POST['location_id'] ?? 0 );
+        if ( ! $id ) wp_send_json_error();
+        $wpdb->delete( $wpdb->prefix . 'vesho_warehouse_locations', array( 'id' => $id ) );
         wp_send_json_success();
     }
 
