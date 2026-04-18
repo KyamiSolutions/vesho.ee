@@ -763,6 +763,11 @@ class Vesho_CRM_Updater {
             opcache_invalidate( $plugin_dest . '/vesho-crm.php', true );
         }
 
-        wp_send_json_success( 'Plugin uuendatud versioonile ' . esc_html( $info->version ) . ' ✅ — tee leht uuesti (F5)' );
+        // Verify: read actual version from disk after copy
+        clearstatcache( true, $plugin_dest . '/vesho-crm.php' );
+        $verify_data    = function_exists('get_plugin_data') ? get_plugin_data( $plugin_dest . '/vesho-crm.php', false, false ) : [];
+        $actual_version = $verify_data['Version'] ?? 'ei leidnud';
+
+        wp_send_json_success( 'Sihtkaust: ' . $plugin_dest . ' | ZIP versioon: ' . esc_html( $info->version ) . ' | Failis: ' . $actual_version );
     }
 }
