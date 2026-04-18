@@ -56,6 +56,7 @@ class Vesho_CRM_Admin {
         add_action( 'admin_post_vesho_confirm_maintenance', array( __CLASS__, 'handle_confirm_maintenance' ) );
         add_action( 'admin_post_vesho_reject_maintenance',  array( __CLASS__, 'handle_reject_maintenance' ) );
         add_action( 'admin_post_vesho_cancel_maintenance',  array( __CLASS__, 'handle_cancel_maintenance' ) );
+        add_action( 'wp_ajax_vesho_search_wp_users',        array( __CLASS__, 'ajax_search_wp_users' ) );
         add_action( 'wp_ajax_vesho_add_maintenance_ajax',   array( __CLASS__, 'ajax_add_maintenance' ) );
         add_action( 'wp_ajax_vesho_get_client_devices',     array( __CLASS__, 'ajax_get_client_devices' ) );
         add_action( 'wp_ajax_vesho_postpone_maintenance',   array( __CLASS__, 'ajax_postpone_maintenance' ) );
@@ -1718,6 +1719,39 @@ private static function load_view( $name ) {
         }
         wp_redirect( add_query_arg( array( 'page' => 'vesho-crm-reminders', 'msg' => 'cancelled' ), admin_url( 'admin.php' ) ) );
         exit;
+    }
+
+    // ── AJAX: search WP users ─────────────────────────────────────────────────
+    public static function ajax_search_wp_users() {
+        check_ajax_referer( 'vesho_admin_nonce' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error();
+        $q = sanitize_text_field( $_GET['q'] ?? '' );
+        if ( strlen( $q ) < 2 ) wp_send_json_error();
+
+        $users = get_users([
+            'search'         => '*' . $q . '*',
+            'search_columns' => ['user_login','user_email','display_name'],
+            'number'         => 10,
+            'orderby'        => 'display_name',
+        ]);
+
+        $already = array_map(
+            fn($u) => $u->ID,
+            get_users(['role__in' => ['administrator','vesho_crm_admin'], 'fields' => 'ID', 'number' => 500])
+        );
+
+        $result = [];
+        foreach ( $users as $u ) {
+            if ( in_array( $u->ID, $already ) ) continue;
+            $result[] = [
+                'id'      => $u->ID,
+                'display' => esc_html( $u->display_name ),
+                'login'   => esc_html( $u->user_login ),
+                'email'   => esc_html( $u->user_email ),
+                'label'   => esc_attr( $u->display_name . ' (' . $u->user_email . ')' ),
+            ];
+        }
+        wp_send_json_success( $result );
     }
 
     // ── AJAX: add maintenance ─────────────────────────────────────────────────

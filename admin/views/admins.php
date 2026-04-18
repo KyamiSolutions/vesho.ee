@@ -11,38 +11,27 @@ if ( isset($_POST['vesho_admin_action']) && check_admin_referer('vesho_manage_ad
     $action = $_POST['vesho_admin_action'];
 
     if ( $action === 'add' || $action === 'edit' ) {
-        $uid        = absint($_POST['user_id'] ?? 0);
-        $username   = sanitize_user($_POST['username'] ?? '');
-        $email      = sanitize_email($_POST['email'] ?? '');
-        $display    = sanitize_text_field($_POST['display_name'] ?? '');
-        $password   = $_POST['password'] ?? '';
-        $role_key   = sanitize_key($_POST['vesho_role'] ?? 'vesho_admin');
-        $perms      = array_map('sanitize_key', (array)($_POST['perms'] ?? []));
+        $uid      = absint($_POST['user_id'] ?? 0);
+        $role_key = sanitize_key($_POST['vesho_role'] ?? 'vesho_admin');
+        $perms    = array_map('sanitize_key', (array)($_POST['perms'] ?? []));
 
         if ( $action === 'add' ) {
-            if ( ! $username || ! $email ) {
-                $msg = '<div class="notice notice-error"><p>Kasutajanimi ja e-post on kohustuslikud.</p></div>';
-            } elseif ( username_exists($username) || email_exists($email) ) {
-                $msg = '<div class="notice notice-error"><p>Kasutajanimi või e-post on juba kasutusel.</p></div>';
+            if ( ! $uid ) {
+                $msg = '<div class="notice notice-error"><p>Vali kasutaja otsingust.</p></div>';
             } else {
-                $uid = wp_create_user( $username, $password ?: wp_generate_password(), $email );
-                if ( is_wp_error($uid) ) {
-                    $msg = '<div class="notice notice-error"><p>' . esc_html($uid->get_error_message()) . '</p></div>';
+                $u = get_user_by('id', $uid);
+                if ( ! $u ) {
+                    $msg = '<div class="notice notice-error"><p>Kasutajat ei leitud.</p></div>';
                 } else {
-                    wp_update_user(['ID'=>$uid,'display_name'=>$display]);
-                    $u = new WP_User($uid);
-                    $u->set_role('vesho_crm_admin');
+                    if ( ! in_array('administrator', $u->roles) ) {
+                        $u->add_role('vesho_crm_admin');
+                    }
                     update_user_meta($uid, 'vesho_crm_role', $role_key);
                     update_user_meta($uid, 'vesho_crm_perms', $perms);
-                    $msg = '<div class="notice notice-success"><p>Admin lisatud.</p></div>';
+                    $msg = '<div class="notice notice-success"><p>' . esc_html($u->display_name) . ' lisatud adminiks.</p></div>';
                 }
             }
         } elseif ( $action === 'edit' && $uid ) {
-            $upd = ['ID' => $uid];
-            if ( $display )  $upd['display_name'] = $display;
-            if ( $email )    $upd['user_email']    = $email;
-            if ( $password ) $upd['user_pass']     = $password;
-            wp_update_user($upd);
             update_user_meta($uid, 'vesho_crm_role', $role_key);
             update_user_meta($uid, 'vesho_crm_perms', $perms);
             $msg = '<div class="notice notice-success"><p>Admin uuendatud.</p></div>';
@@ -171,29 +160,23 @@ $edit_perms = $edit_uid ? (get_user_meta($edit_uid,'vesho_crm_perms',true) ?: []
     <input type="hidden" name="vesho_admin_action" value="<?php echo $edit_user ? 'edit' : 'add'; ?>">
     <?php if ($edit_user): ?>
     <input type="hidden" name="user_id" value="<?php echo $edit_uid; ?>">
-    <?php endif; ?>
-
-    <?php if (!$edit_user): ?>
-    <div style="margin-bottom:14px">
-      <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px">Kasutajanimi *</label>
-      <input type="text" name="username" required class="regular-text" style="width:100%">
+    <div style="margin-bottom:14px;padding:10px 12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;font-size:13px">
+      <strong><?php echo esc_html($edit_user->display_name); ?></strong>
+      <span style="color:#64748b"> — <?php echo esc_html($edit_user->user_email); ?></span>
+    </div>
+    <?php else: ?>
+    <div style="margin-bottom:14px;position:relative">
+      <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px">Otsi kasutajat *</label>
+      <input type="text" id="user-search-input" placeholder="Nimi, kasutajanimi või e-post…"
+             class="regular-text" style="width:100%" autocomplete="off">
+      <div id="user-search-results" style="display:none;position:absolute;z-index:100;width:100%;border:1px solid #e2e8f0;border-radius:6px;background:#fff;margin-top:2px;max-height:200px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.1)"></div>
+      <input type="hidden" name="user_id" id="selected-user-id" required>
+      <div id="selected-user-display" style="display:none;margin-top:8px;padding:8px 12px;background:#f0fdf4;border:1px solid #86efac;border-radius:6px;font-size:13px;align-items:center;justify-content:space-between">
+        <span id="selected-user-label"></span>
+        <button type="button" onclick="clearUserSelection()" style="background:none;border:none;cursor:pointer;color:#64748b;font-size:16px;padding:0;margin-left:8px">✕</button>
+      </div>
     </div>
     <?php endif; ?>
-
-    <div style="margin-bottom:14px">
-      <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px">Kuvatav nimi</label>
-      <input type="text" name="display_name" value="<?php echo esc_attr($edit_user?->display_name??''); ?>" class="regular-text" style="width:100%">
-    </div>
-
-    <div style="margin-bottom:14px">
-      <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px">E-post<?php echo $edit_user?'':' *'; ?></label>
-      <input type="email" name="email" value="<?php echo esc_attr($edit_user?->user_email??''); ?>" <?php echo $edit_user?'':'required'; ?> class="regular-text" style="width:100%">
-    </div>
-
-    <div style="margin-bottom:14px">
-      <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px"><?php echo $edit_user ? 'Uus parool (tühi = muutmata)' : 'Parool'; ?></label>
-      <input type="password" name="password" <?php echo $edit_user?'':'required'; ?> class="regular-text" style="width:100%" autocomplete="new-password">
-    </div>
 
     <div style="margin-bottom:14px">
       <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px">Roll</label>
@@ -234,5 +217,63 @@ function applyPreset(role){
   var all = document.querySelectorAll('#perm-grid input[type="checkbox"]');
   var perms = presets[role] || [];
   all.forEach(function(cb){ cb.checked = perms.includes(cb.value); });
+}
+
+// ── User search ──────────────────────────────────────────────────────────────
+var searchTimer;
+var searchInput   = document.getElementById('user-search-input');
+var searchResults = document.getElementById('user-search-results');
+var selectedId    = document.getElementById('selected-user-id');
+var selectedDisp  = document.getElementById('selected-user-display');
+var selectedLabel = document.getElementById('selected-user-label');
+
+if (searchInput) {
+  searchInput.addEventListener('input', function(){
+    clearTimeout(searchTimer);
+    var q = this.value.trim();
+    if (q.length < 2) { searchResults.style.display='none'; return; }
+    searchTimer = setTimeout(function(){
+      fetch(ajaxurl + '?action=vesho_search_wp_users&q=' + encodeURIComponent(q) + '&_wpnonce=<?php echo wp_create_nonce('vesho_admin_nonce'); ?>')
+        .then(r => r.json())
+        .then(function(res){
+          if (!res.success || !res.data.length) {
+            searchResults.innerHTML = '<div style="padding:10px 14px;color:#94a3b8;font-size:13px">Kasutajat ei leitud</div>';
+          } else {
+            searchResults.innerHTML = res.data.map(function(u){
+              return '<div class="user-result-item" data-id="'+u.id+'" data-label="'+u.label+'" style="padding:10px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid #f1f5f9">'
+                + '<strong>'+u.display+'</strong> <span style="color:#64748b">'+u.login+'</span><br>'
+                + '<small style="color:#94a3b8">'+u.email+'</small></div>';
+            }).join('');
+            searchResults.querySelectorAll('.user-result-item').forEach(function(el){
+              el.addEventListener('mouseenter', function(){ this.style.background='#f8fafc'; });
+              el.addEventListener('mouseleave', function(){ this.style.background=''; });
+              el.addEventListener('click', function(){
+                selectUser(this.dataset.id, this.dataset.label);
+              });
+            });
+          }
+          searchResults.style.display = 'block';
+        });
+    }, 250);
+  });
+
+  document.addEventListener('click', function(e){
+    if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+      searchResults.style.display = 'none';
+    }
+  });
+}
+
+function selectUser(id, label) {
+  selectedId.value           = id;
+  selectedLabel.textContent  = label;
+  selectedDisp.style.display = 'flex';
+  searchInput.value          = '';
+  searchResults.style.display = 'none';
+}
+
+function clearUserSelection() {
+  selectedId.value           = '';
+  selectedDisp.style.display = 'none';
 }
 </script>
