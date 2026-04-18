@@ -170,6 +170,19 @@
     // ── Init page-specific scripts ─────────────────────────────────────────────
     $(document).ready(function() {
 
+        // ── Select2: searchable dropdowns for all CRM selects ─────────────────
+        if (typeof $.fn.select2 !== 'undefined') {
+            $('.crm-form-select, .crm-form-select-search').select2({
+                width: '100%',
+                allowClear: true,
+                placeholder: function() { return $(this).find('option[value=""]').text() || '— Vali —'; },
+                language: {
+                    noResults: function() { return 'Tulemusi ei leitud'; },
+                    searching: function() { return 'Otsin...'; }
+                }
+            });
+        }
+
         // ── Sidebar navigation group labels ───────────────────────────────────
         var navGroups = [
             { page: 'vesho-crm-clients',   label: '👥 KLIENDID' },

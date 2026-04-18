@@ -18,7 +18,8 @@ $month_end   = date('Y-m-t', strtotime($month_start));
 $prev_month = date('Y-m', strtotime('-1 month', strtotime($month_start)));
 $next_month = date('Y-m', strtotime('+1 month', strtotime($month_start)));
 
-$month_label = strftime_compat($year, $month); // defined below
+$et_months = ['','Jaanuar','Veebruar','Märts','Aprill','Mai','Juuni','Juuli','August','September','Oktoober','November','Detsember'];
+$month_label = ($et_months[$month] ?? date('F', mktime(0,0,0,$month,1,$year))) . ' ' . $year;
 
 // --- Load maintenances for this month ---
 $where_client = '';

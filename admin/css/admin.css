@@ -1365,7 +1365,60 @@
 }
 
 /* --------------------------------------------------------------------------
-   22. Sidebar Navigation Group Labels
+   22. Select2 overrides — match CRM form style
+   -------------------------------------------------------------------------- */
+
+.select2-container--default .select2-selection--single {
+  height: 38px !important;
+  border: 1.5px solid var(--crm-border) !important;
+  border-radius: var(--crm-radius-sm) !important;
+  display: flex !important;
+  align-items: center !important;
+  background: var(--crm-white) !important;
+  font-family: var(--crm-font) !important;
+  font-size: 13.5px !important;
+  color: var(--crm-text) !important;
+  transition: border-color var(--crm-duration) !important;
+}
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+  line-height: 36px !important;
+  padding-left: 13px !important;
+  color: var(--crm-text) !important;
+  font-size: 13.5px !important;
+}
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+  height: 36px !important;
+}
+.select2-container--default.select2-container--focus .select2-selection--single,
+.select2-container--default.select2-container--open .select2-selection--single {
+  border-color: var(--crm-teal) !important;
+  box-shadow: 0 0 0 3.5px var(--crm-teal-faint) !important;
+  outline: none !important;
+}
+.select2-dropdown {
+  border: 1.5px solid var(--crm-teal) !important;
+  border-radius: var(--crm-radius-sm) !important;
+  box-shadow: var(--crm-shadow-md) !important;
+  font-family: var(--crm-font) !important;
+  font-size: 13.5px !important;
+}
+.select2-container--default .select2-search--dropdown .select2-search__field {
+  border: 1.5px solid var(--crm-border) !important;
+  border-radius: var(--crm-radius-sm) !important;
+  padding: 7px 10px !important;
+  font-size: 13px !important;
+  outline: none !important;
+}
+.select2-container--default .select2-results__option--highlighted[aria-selected] {
+  background-color: var(--crm-teal) !important;
+}
+.select2-container--default .select2-results__option[aria-selected=true] {
+  background-color: var(--crm-teal-faint) !important;
+  color: var(--crm-teal-dark) !important;
+}
+
+/* --------------------------------------------------------------------------
+   23. Sidebar Navigation Group Labels
    -------------------------------------------------------------------------- */
 
 /* Group separator labels injected via JS into #adminmenu */
