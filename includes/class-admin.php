@@ -101,8 +101,6 @@ class Vesho_CRM_Admin {
         // ── LADU ──
         add_submenu_page( 'vesho-crm', 'Ladu', 'Ladu', 'manage_options', 'vesho-crm-inventory', array( __CLASS__, 'page_inventory' ) );
         add_submenu_page( 'vesho-crm', 'Vastuvõtt', 'Vastuvõtt', 'manage_options', 'vesho-crm-receipts', array( __CLASS__, 'page_receipts' ) );
-        add_submenu_page( 'vesho-crm', 'Inventuur', 'Inventuur', 'manage_options', 'vesho-crm-stockcount', array( __CLASS__, 'page_stockcount' ) );
-        add_submenu_page( 'vesho-crm', 'Laadressid', 'Laadressid', 'manage_options', 'vesho-crm-warehouseloc', array( __CLASS__, 'page_warehouseloc' ) );
         add_submenu_page( 'vesho-crm', 'Hinnakiri', 'Hinnakiri', 'manage_options', 'vesho-crm-pricelist', array( __CLASS__, 'page_pricelist' ) );
 
         // ── MUU ──
