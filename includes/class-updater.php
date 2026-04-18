@@ -744,7 +744,10 @@ class Vesho_CRM_Updater {
             wp_send_json_error( 'Plugina kausta ei leitud ZIP-is' );
         }
 
-        $plugin_dest = WP_PLUGIN_DIR . '/' . self::PLUGIN_SLUG;
+        // Always install to the directory where the plugin is currently running
+        $plugin_dest = defined('VESHO_CRM_FILE')
+            ? dirname( VESHO_CRM_FILE )
+            : WP_PLUGIN_DIR . '/' . self::PLUGIN_SLUG;
 
         // Delete old plugin dir
         if ( $wp_filesystem && $wp_filesystem->is_dir( $plugin_dest ) ) {
