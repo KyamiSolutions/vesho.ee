@@ -149,6 +149,10 @@ class Vesho_CRM_Worker_Portal {
       <form id="vwauth-form">
         <input type="hidden" name="nonce" value="<?php echo $nonce; ?>">
         <div class="vwauth-group">
+          <label>Nimi</label>
+          <input type="text" name="worker_name" required placeholder="Sinu nimi" autocomplete="name">
+        </div>
+        <div class="vwauth-group">
           <label>PIN-kood</label>
           <div class="vwauth-pin-wrap" id="vwauth-pin-dots">
             <div class="vwauth-pin-dot" id="vwdot-0"></div>
@@ -156,7 +160,7 @@ class Vesho_CRM_Worker_Portal {
             <div class="vwauth-pin-dot" id="vwdot-2"></div>
             <div class="vwauth-pin-dot" id="vwdot-3"></div>
           </div>
-          <input type="password" name="pin" id="vwauth-pin" required placeholder="Sisesta PIN" maxlength="10" inputmode="numeric" autocomplete="off" style="text-align:center;font-size:1.4rem;letter-spacing:6px">
+          <input type="password" name="pin" id="vwauth-pin" required placeholder="••••" maxlength="10" inputmode="numeric" autocomplete="off" style="text-align:center;font-size:1.4rem;letter-spacing:6px">
         </div>
         <button type="submit" class="vwauth-btn">Logi sisse</button>
       </form>
@@ -1895,19 +1899,21 @@ $all_picked = !empty($my_items) && count(array_filter($my_items, fn($i) => $i->p
 
     public static function ajax_login() {
         check_ajax_referer('vesho_portal_nonce', 'nonce');
-        $pin = sanitize_text_field($_POST['pin'] ?? '');
-        if ( empty($pin) ) {
-            wp_send_json_error(['message' => 'Sisesta PIN-kood']);
+        $name = sanitize_text_field($_POST['worker_name'] ?? '');
+        $pin  = sanitize_text_field($_POST['pin'] ?? '');
+        if ( empty($name) || empty($pin) ) {
+            wp_send_json_error(['message' => 'Sisesta nimi ja PIN-kood']);
         }
         global $wpdb;
+        // Match by name (case-insensitive) + PIN
         $worker = $wpdb->get_row($wpdb->prepare(
-            "SELECT * FROM {$wpdb->prefix}vesho_workers WHERE pin=%s AND active=1 LIMIT 1",
-            $pin
+            "SELECT * FROM {$wpdb->prefix}vesho_workers WHERE LOWER(name)=LOWER(%s) AND pin=%s AND active=1 LIMIT 1",
+            $name, $pin
         ));
         if ( ! $worker ) {
-            wp_send_json_error(['message' => 'Vale PIN-kood']);
+            wp_send_json_error(['message' => 'Vale nimi või PIN-kood']);
         }
-        // Log in via linked WordPress user if available
+        // Log in via linked WordPress user
         if ( ! empty($worker->user_id) ) {
             $user = get_user_by('id', (int)$worker->user_id);
             if ( $user && in_array('vesho_worker', (array)$user->roles) ) {
@@ -1915,9 +1921,9 @@ $all_picked = !empty($my_items) && count(array_filter($my_items, fn($i) => $i->p
                 wp_send_json_success(['message' => 'Tere, ' . esc_html($worker->name) . '!', 'redirect' => home_url('/worker/')]);
             }
         }
-        // Fallback: try wp_signon with worker name + pin (legacy)
+        // Fallback: wp_signon (legacy — worker name = WP username, pin = WP password)
         $creds = ['user_login' => $worker->name, 'user_password' => $pin, 'remember' => true];
-        $user = wp_signon($creds, is_ssl());
+        $user  = wp_signon($creds, is_ssl());
         if ( is_wp_error($user) ) {
             wp_send_json_error(['message' => 'Konto seadistus puudub. Palun pöördu administraatori poole.']);
         }
