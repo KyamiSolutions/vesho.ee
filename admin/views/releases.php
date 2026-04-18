@@ -95,62 +95,51 @@ function veshoStartUpdate(type, btnId, msgId) {
   var msg = document.getElementById(msgId);
   btn.disabled = true;
   msg.style.color = '#555';
-  var dots = 0;
   var label = type === 'theme' ? 'teema' : 'plugin';
-
-  var timer = setInterval(function(){
-    dots = (dots + 1) % 4;
-    msg.textContent = '⏳ Allalaadin ' + label + '...' + '.'.repeat(dots);
-  }, 600);
 
   fetch(ajaxurl, {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
     body:'action=vesho_install_'+type+'&nonce='+veshoNonce})
   .then(r=>r.json()).then(function(d){
     if (!d.success) {
-      clearInterval(timer);
       msg.style.color = '#c62828';
       msg.textContent = '❌ ' + (d.data || 'Viga');
       btn.disabled = false;
       return;
     }
-    // Background worker started — poll for status
-    var attempts = 0;
-    var sawRunning = false;
-    var poll = setInterval(function(){
-      attempts++;
-      if (attempts > 90) { // 3 min max — reload anyway, update probably done
-        clearInterval(poll); clearInterval(timer);
+    // Spawn succeeded — countdown 50s then reload (transient polling unreliable on this host)
+    var secs = 50;
+    msg.style.color = '#555';
+    msg.textContent = '⏳ Allalaadin ' + label + '... (' + secs + 's)';
+    var countdown = setInterval(function(){
+      secs--;
+      if (secs <= 0) {
+        clearInterval(countdown);
         msg.style.color = '#1b5e20';
-        msg.textContent = '✅ Uuendus valmis, laen uuesti...';
-        setTimeout(function(){ location.reload(); }, 800);
-        return;
+        msg.textContent = '✅ Valmis! Laen uuesti...';
+        location.reload();
+      } else {
+        msg.textContent = '⏳ Allalaadin ' + label + '... (' + secs + 's)';
       }
+    }, 1000);
+    // Also poll — if 'done' comes early, reload sooner
+    var poll = setInterval(function(){
       fetch(ajaxurl + '?action=vesho_update_status&type=' + type + '&nonce=' + veshoNonce)
         .then(r=>r.json()).then(function(s){
-          if (!s.success) return;
-          var st = s.data || {};
-          if (st.status === 'running') { sawRunning = true; return; }
+          var st = (s.success && s.data) ? s.data : {};
           if (st.status === 'done') {
-            clearInterval(poll); clearInterval(timer);
+            clearInterval(poll); clearInterval(countdown);
             msg.style.color = '#1b5e20';
             msg.textContent = '✅ ' + (st.message || 'Uuendatud!');
-            setTimeout(function(){ location.reload(); }, 1200);
+            setTimeout(function(){ location.reload(); }, 800);
           } else if (st.status === 'error') {
-            clearInterval(poll); clearInterval(timer);
+            clearInterval(poll); clearInterval(countdown);
             msg.style.color = '#c62828';
             msg.textContent = '❌ ' + (st.message || 'Viga');
             btn.disabled = false;
-          } else if (sawRunning && (!st.status || st.status === 'pending')) {
-            // transient expired after running — worker finished, reload
-            clearInterval(poll); clearInterval(timer);
-            msg.style.color = '#1b5e20';
-            msg.textContent = '✅ Uuendus valmis, laen uuesti...';
-            setTimeout(function(){ location.reload(); }, 800);
           }
         }).catch(function(){});
-    }, 2000);
+    }, 3000);
   }).catch(function(){
-    clearInterval(timer);
     msg.style.color = '#c62828';
     msg.textContent = '❌ Ühenduse viga';
     btn.disabled = false;
