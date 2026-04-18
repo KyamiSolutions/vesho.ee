@@ -1910,3 +1910,77 @@
     color: #ef4444 !important;
     margin-top: 4px;
 }
+
+/* ============================================================
+   RESPONSIVE — 480px and below
+   ============================================================ */
+
+@media (max-width: 480px) {
+    /* Header: hide CTA button — too cramped, user has hamburger menu */
+    .header-cta { display: none !important; }
+
+    /* Topbar: hide on tiny screens to save vertical space */
+    .site-topbar { display: none; }
+
+    /* Header inner: tighter gap */
+    .header-inner { gap: 10px; height: 56px; }
+    :root { --site-top-height: 56px; }
+
+    /* Logo: smaller */
+    .header-logo img { height: 36px; }
+    .header-logo__name { font-size: 18px; }
+
+    /* Page banner: reduce padding */
+    .page-banner { padding: 36px 0 28px; }
+    .page-banner::before, .page-banner::after { display: none; }
+
+    /* Section padding */
+    .section { padding: 40px 0; }
+    .section-sm { padding: 32px 0; }
+    .container { padding: 0 12px; }
+
+    /* Stats row: 1 column on tiny screens */
+    .stats-grid { grid-template-columns: 1fr 1fr; gap: 0; }
+    .stat-item { padding: 20px 12px; border-right: none; border-bottom: 1px solid rgba(255,255,255,.1); }
+    .stat-item:nth-child(odd) { border-right: 1px solid rgba(255,255,255,.1); }
+    .stat-item__num { font-size: 1.8rem; }
+
+    /* Services grid — already 1 col via auto-fit but reinforce */
+    .services-grid { grid-template-columns: 1fr; gap: 16px; }
+
+    /* Section header */
+    .section-header { margin-bottom: 32px; }
+
+    /* Why-us inner stacks */
+    .why-us__inner { grid-template-columns: 1fr; gap: 32px; }
+
+    /* Hero vesho inner already handled at 680px, but extra reduction */
+    .hero__vesho-inner { padding: 32px 14px 24px; }
+    .hero--vesho { min-height: auto; }
+
+    /* Process steps already column at 768px */
+
+    /* Footer: already 1 col at 600px, just tighten padding */
+    .footer { padding: 48px 0 0; }
+    .footer-grid { gap: 24px; }
+    .footer-bottom__inner { gap: 8px; font-size: 12px; }
+
+    /* Modal: slide up from bottom on tiny screens */
+    .modal { max-width: 100%; bottom: 0; top: auto; max-height: 95vh;
+             border-radius: 16px 16px 0 0; right: 0; left: 0;
+             transform: translateY(100%); }
+    .modal.is-open { transform: translateY(0); }
+    .modal__inner { padding: 24px 16px 32px; }
+    .modal__form .form-row { grid-template-columns: 1fr; }
+
+    /* Contact cards already 1 col at 500px */
+
+    /* Blog grid already 1 col at 600px */
+
+    /* CTA section buttons */
+    .hero__actions { flex-direction: column; align-items: stretch; }
+    .hero__actions .btn { text-align: center; justify-content: center; }
+
+    /* Topbar height compensation */
+    #page-content { padding-top: 56px; }
+}

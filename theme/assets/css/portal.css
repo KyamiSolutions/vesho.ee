@@ -113,3 +113,36 @@
   .vcp-two-col{grid-template-columns:1fr}
   .vcp-stat-grid{grid-template-columns:1fr 1fr}
 }
+
+/* ── 480px and below ─────────────────────────────────────────────────────── */
+@media(max-width:480px){
+  /* Auth card narrower padding */
+  .vauth-wrap{padding:16px}
+  .vauth-card{padding:28px 20px;border-radius:10px}
+
+  /* Portal content */
+  .vcp-content{padding:12px}
+  .vcp-topbar{padding:0 12px}
+  .vcp-page-header h1{font-size:18px}
+
+  /* Stats: stay 2-col until very small */
+  .vcp-stat-grid{grid-template-columns:1fr 1fr}
+  .vcp-stat-value{font-size:1.35rem}
+
+  /* Table: smaller text */
+  .vcp-table th,.vcp-table td{padding:8px 10px;font-size:12px}
+
+  /* Quick actions stack */
+  .vcp-quick-actions{flex-direction:column}
+  .vcp-btn-primary,.vcp-btn-outline{width:100%;text-align:center;box-sizing:border-box}
+
+  /* Two-col already 1-col at 768px */
+}
+
+/* ── 360px and below ─────────────────────────────────────────────────────── */
+@media(max-width:360px){
+  .vcp-stat-grid{grid-template-columns:1fr}
+  .vauth-card{padding:22px 14px}
+  .vauth-logo a{font-size:1.4rem}
+  .vauth-group input{font-size:14px;padding:10px 12px}
+}

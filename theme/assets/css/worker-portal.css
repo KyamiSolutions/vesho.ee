@@ -81,3 +81,10 @@
   .vwp-content{padding:16px}
   .vwp-stat-grid{grid-template-columns:1fr 1fr}
 }
+
+/* ── 480px and below ─────────────────────────────────────────────────────── */
+@media(max-width:480px){
+  .vwp-stat-grid{grid-template-columns:1fr}
+  .vwp-content{padding:10px}
+  .vwp-login-card{padding:24px 18px;border-radius:12px}
+}

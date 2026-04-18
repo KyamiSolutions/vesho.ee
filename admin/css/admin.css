@@ -1280,5 +1280,90 @@
 .crm-qr-output canvas, .crm-qr-output img { border-radius: 8px; }
 
 /* --------------------------------------------------------------------------
+   21. Extra Mobile — 480px and below
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 480px) {
+  /* Hide decorative orbs — they overflow on tiny screens */
+  .crm-page-header::before,
+  .crm-page-header::after { display: none; }
+
+  /* Header: actions wrap below title */
+  .crm-page-header {
+    flex-wrap: wrap;
+    padding: 14px 12px;
+    gap: 12px;
+  }
+  .crm-page-header__actions {
+    width: 100%;
+    justify-content: flex-start;
+    gap: 8px;
+  }
+  .crm-page-header__title { font-size: 16px; }
+
+  /* Toolbar: stack search + filters vertically */
+  .crm-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 12px;
+  }
+  .crm-toolbar__left,
+  .crm-toolbar__right {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+  .crm-search { width: 100%; max-width: 100%; }
+  .crm-filter { width: 100%; }
+  .crm-filter select { flex: 1; min-width: 0; }
+
+  /* Stats: 2 columns on phones, not 4 */
+  .crm-stat-grid--4,
+  .crm-stat-grid--5 { grid-template-columns: 1fr 1fr; }
+
+  /* Stat card compact */
+  .crm-stat { padding: 14px 12px 12px; gap: 12px; }
+  .crm-stat__icon { width: 36px; height: 36px; font-size: 16px; }
+  .crm-stat__num { font-size: 22px; }
+
+  /* Column grids → single column */
+  .crm-col-grid--2,
+  .crm-col-grid--3 { grid-template-columns: 1fr; }
+
+  /* Card padding */
+  .crm-card-header,
+  .crm-card-body,
+  .crm-card-footer { padding-left: 12px; padding-right: 12px; }
+
+  /* Table font reduction */
+  .crm-table { font-size: 12px; }
+  .crm-table thead th,
+  .crm-table tbody td { padding: 8px 8px; }
+
+  /* Modal full-screen on tiny devices */
+  .crm-modal {
+    width: calc(100vw - 8px);
+    max-height: 96vh;
+    border-radius: 8px;
+  }
+  .crm-modal__header,
+  .crm-modal__body,
+  .crm-modal__footer { padding-left: 14px; padding-right: 14px; }
+
+  /* Form actions: stack buttons */
+  .crm-form-actions {
+    flex-direction: column-reverse;
+    gap: 8px;
+  }
+  .crm-form-actions .crm-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Page title */
+  .crm-page-title { font-size: 17px; margin: 16px 0 14px; }
+}
+
+/* --------------------------------------------------------------------------
    End of Vesho CRM Admin Stylesheet
    ========================================================================== */
