@@ -25,6 +25,8 @@ class Vesho_CRM_Worker_Portal {
             // New: vastuvõtt
             'vesho_worker_get_receipt_items',
             'vesho_worker_confirm_receipt',
+            'vesho_worker_submit_batch',
+            'vesho_worker_add_batch_item',
             // New: tellimused
             'vesho_worker_claim_order',
             'vesho_worker_release_order',
@@ -1342,104 +1344,299 @@ foreach ($notices as $notice) : ?>
 
     private static function tab_vastuvott($wid, $nonce, $ajax) {
         global $wpdb;
-        $receipts = $wpdb->get_results($wpdb->prepare(
-            "SELECT sr.*, COUNT(sri.id) as item_count,
-                    SUM(CASE WHEN sri.actual_qty IS NULL THEN 1 ELSE 0 END) as pending_count
+        $pending = $wpdb->get_results($wpdb->prepare(
+            "SELECT sr.*, COUNT(sri.id) as item_count
              FROM {$wpdb->prefix}vesho_stock_receipts sr
              LEFT JOIN {$wpdb->prefix}vesho_stock_receipt_items sri ON sri.receipt_id=sr.id
-             WHERE sr.worker_id=%d OR sr.status='pending'
-             GROUP BY sr.id
-             ORDER BY sr.created_at DESC LIMIT 20", $wid
+             WHERE (sr.worker_id=%d OR sr.status='pending') AND sr.status NOT IN ('approved','rejected')
+             GROUP BY sr.id ORDER BY sr.created_at DESC LIMIT 30", $wid
         ));
+        $history = $wpdb->get_results($wpdb->prepare(
+            "SELECT sr.*, COUNT(sri.id) as item_count
+             FROM {$wpdb->prefix}vesho_stock_receipts sr
+             LEFT JOIN {$wpdb->prefix}vesho_stock_receipt_items sri ON sri.receipt_id=sr.id
+             WHERE sr.worker_id=%d AND sr.status IN ('approved','rejected','received')
+             GROUP BY sr.id ORDER BY sr.created_at DESC LIMIT 20", $wid
+        ));
+        $status_label = ['pending'=>'Ootel kinnitamist','received'=>'Vastuvõetud','approved'=>'✓ Kinnitatud','rejected'=>'✗ Tagasi lükatud'];
+        $status_color = ['pending'=>'#d97706','received'=>'#2563eb','approved'=>'#16a34a','rejected'=>'#dc2626'];
+        $status_bg    = ['pending'=>'#fef9c3','received'=>'#dbeafe','approved'=>'#dcfce7','rejected'=>'#fee2e2'];
         ?>
-<h2 class="vwp-section-title">Vastuvõtt</h2>
-<?php if (empty($receipts)): ?>
-  <div class="vwp-empty">Vastuvõetavaid kaupu pole.</div>
-<?php else: ?>
-<div id="vwp-recv-list" style="display:flex;flex-direction:column;gap:12px">
-<?php foreach ($receipts as $sr):
-  $pend = (int)($sr->pending_count??0);
+<h2 class="vwp-section-title">Kauba vastuvõtt</h2>
+
+<?php if (!empty($pending)): ?>
+<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#64748b;margin-bottom:8px">
+  Ootel vastuvõtmine
+  <span style="background:#fef9c3;color:#b45309;border-radius:999px;padding:1px 8px;font-size:11px;margin-left:4px"><?php echo count($pending); ?></span>
+</div>
+<div id="vwp-recv-list" style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px">
+<?php foreach ($pending as $sr):
+  $bref = $sr->batch_ref ?: $sr->receipt_num;
 ?>
-<div class="vwp-card">
-  <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="toggleRecv(<?php echo $sr->id; ?>)">
+<div class="vwp-card" id="recv-card-<?php echo $sr->id; ?>" style="overflow:hidden">
+  <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;padding:2px 0" onclick="toggleRecv(<?php echo $sr->id; ?>, '<?php echo esc_js($bref); ?>')">
     <div>
-      <strong style="font-size:14px">#<?php echo esc_html($sr->receipt_num); ?></strong>
-      <?php if ($sr->supplier): ?><span style="font-size:12px;color:#64748b;margin-left:8px"><?php echo esc_html($sr->supplier); ?></span><?php endif; ?>
-      <div style="font-size:12px;color:#64748b;margin-top:2px"><?php echo (int)$sr->item_count; ?> kaupa · <?php echo esc_html(date('d.m.Y',strtotime($sr->created_at))); ?></div>
+      <div style="font-weight:700;font-size:14px;color:#0d1f2d">
+        <?php echo $bref ? 'Arve: '.esc_html($bref) : esc_html($sr->receipt_num); ?>
+        <?php if ($sr->supplier): ?><span style="font-weight:400;color:#64748b;margin-left:8px;font-size:13px">· <?php echo esc_html($sr->supplier); ?></span><?php endif; ?>
+      </div>
+      <div style="font-size:12px;color:#94a3b8;margin-top:2px"><?php echo (int)$sr->item_count; ?> kaupa · <?php echo esc_html(date('d.m.Y',strtotime($sr->created_at))); ?></div>
     </div>
-    <div style="display:flex;align-items:center;gap:10px">
-      <?php if ($pend > 0): ?>
-        <span style="background:#fef9c3;color:#b45309;border-radius:999px;font-size:11px;font-weight:700;padding:3px 10px"><?php echo $pend; ?> ootel</span>
-      <?php else: ?>
-        <span style="background:#dcfce7;color:#16a34a;border-radius:999px;font-size:11px;font-weight:700;padding:3px 10px">Kõik vastu võetud</span>
-      <?php endif; ?>
-      <span style="color:#94a3b8" id="recv-arrow-<?php echo $sr->id; ?>">&#8250;</span>
+    <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+      <span style="background:#fef9c3;color:#b45309;border-radius:999px;font-size:11px;font-weight:700;padding:2px 8px" id="recv-badge-<?php echo $sr->id; ?>"><?php echo (int)$sr->item_count; ?> ootel</span>
+      <span style="color:#94a3b8;font-size:14px" id="recv-arrow-<?php echo $sr->id; ?>">▼</span>
     </div>
   </div>
-  <div id="recv-items-<?php echo $sr->id; ?>" style="display:none;margin-top:14px;border-top:1px solid #f1f5f9;padding-top:12px">
-    <div style="color:#94a3b8;font-size:13px;text-align:center;padding:10px">Laen...</div>
+  <div id="recv-items-<?php echo $sr->id; ?>" style="display:none;margin-top:12px;border-top:1px solid #f1f5f9">
+    <div style="color:#94a3b8;font-size:13px;text-align:center;padding:16px">Laen...</div>
   </div>
+</div>
+<?php endforeach; ?>
+</div>
+<?php else: ?>
+<div class="vwp-card" style="text-align:center;color:#94a3b8;padding:24px;margin-bottom:20px">Sulle pole saadetusi määratud</div>
+<?php endif; ?>
+
+<?php if (!empty($history)): ?>
+<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#64748b;margin-bottom:8px">Ajalugu</div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<?php foreach ($history as $sr):
+  $st = $sr->status ?? 'received';
+  $bref = $sr->batch_ref ?: $sr->receipt_num;
+?>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:#fff;border:1px solid #e8ecf0;border-radius:10px">
+  <div>
+    <div style="font-weight:600;font-size:13px;color:#0d1f2d"><?php echo esc_html($bref); ?><?php if($sr->supplier): ?> <span style="color:#94a3b8;font-weight:400">· <?php echo esc_html($sr->supplier); ?></span><?php endif; ?></div>
+    <div style="font-size:12px;color:#94a3b8"><?php echo (int)$sr->item_count; ?> kaupa · <?php echo esc_html(date('d.m.Y',strtotime($sr->created_at))); ?></div>
+  </div>
+  <span style="font-size:12px;font-weight:600;color:<?php echo $status_color[$st]??'#64748b'; ?>;background:<?php echo $status_bg[$st]??'#f1f5f9'; ?>;padding:3px 8px;border-radius:999px;flex-shrink:0;margin-left:8px">
+    <?php echo $status_label[$st] ?? $st; ?>
+  </span>
 </div>
 <?php endforeach; ?>
 </div>
 <?php endif; ?>
 
+<!-- Lisa tundmatu kaup modal -->
+<div id="vwp-add-item-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:9999;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:16px;padding:24px;width:92%;max-width:420px;max-height:90vh;overflow-y:auto">
+    <div style="font-size:16px;font-weight:700;color:#0d1f2d;margin-bottom:4px">Lisa tundmatu kaup</div>
+    <div style="font-size:12px;color:#64748b;margin-bottom:16px">Arve: <span id="vwp-add-item-bref"></span></div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <label style="font-size:13px;color:#374151">Toote nimi *<br>
+        <input id="vwp-ai-name" placeholder="Toote nimetus" style="width:100%;margin-top:4px;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px;box-sizing:border-box"></label>
+      <label style="font-size:13px;color:#374151">EAN / Vöötkood<br>
+        <div style="display:flex;gap:6px;margin-top:4px">
+          <input id="vwp-ai-ean" placeholder="Skänni või sisesta" style="flex:1;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;font-family:monospace">
+          <button type="button" onclick="vwpGenEan()" style="padding:0 12px;background:rgba(16,185,129,.15);color:#10b981;border:1px solid rgba(16,185,129,.3);border-radius:8px;font-size:12px;cursor:pointer;white-space:nowrap">✦ Genereeri</button>
+        </div>
+      </label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <label style="font-size:13px;color:#374151">Kogus *<br>
+          <input id="vwp-ai-qty" type="number" min="0.01" step="0.01" placeholder="0" style="width:100%;margin-top:4px;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px;box-sizing:border-box"></label>
+        <label style="font-size:13px;color:#374151">Ühik<br>
+          <select id="vwp-ai-unit" style="width:100%;margin-top:4px;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px;box-sizing:border-box">
+            <option>tk</option><option>l</option><option>kg</option><option>m</option><option>m²</option><option>pakk</option>
+          </select></label>
+      </div>
+      <label style="font-size:13px;color:#374151">Müügihind (€)<br>
+        <input id="vwp-ai-price" type="number" min="0" step="0.01" placeholder="0.00" style="width:100%;margin-top:4px;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px;box-sizing:border-box"></label>
+      <label style="font-size:13px;color:#374151">Laoasukoht<br>
+        <input id="vwp-ai-loc" placeholder="nt A-01-03" style="width:100%;margin-top:4px;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;font-family:monospace;box-sizing:border-box" oninput="this.value=this.value.toUpperCase()"></label>
+      <label style="font-size:13px;color:#374151">Märkused<br>
+        <textarea id="vwp-ai-notes" rows="2" placeholder="Valikuline" style="width:100%;margin-top:4px;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;resize:vertical;box-sizing:border-box"></textarea></label>
+      <div id="vwp-add-item-msg" style="color:#dc2626;font-size:13px;display:none"></div>
+      <div style="display:flex;gap:10px;margin-top:4px">
+        <button type="button" onclick="document.getElementById('vwp-add-item-modal').style.display='none'" style="flex:1;padding:11px;background:#f1f5f9;border:none;border-radius:8px;font-size:14px;cursor:pointer">Tühista</button>
+        <button type="button" onclick="vwpAddItem()" id="vwp-add-item-btn" style="flex:2;padding:11px;background:#10b981;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer">Lisa kaup</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 (function(){
   var AJAX='<?php echo $ajax; ?>', NONCE='<?php echo $nonce; ?>';
-  var loaded={};
+  var loaded={}, itemData={}, currentRecvId=null;
 
-  window.toggleRecv = function(id){
+  window.toggleRecv = function(id, bref){
     var el=document.getElementById('recv-items-'+id);
     var arrow=document.getElementById('recv-arrow-'+id);
     if(el.style.display==='none'){
-      el.style.display=''; arrow.textContent='❮';
+      el.style.display='';
+      arrow.textContent='▲';
+      currentRecvId=id;
       if(loaded[id]) return;
       loaded[id]=true;
-      var fd=new FormData(); fd.append('action','vesho_worker_get_receipt_items'); fd.append('nonce',NONCE); fd.append('receipt_id',id);
-      fetch(AJAX,{method:'POST',body:fd}).then(r=>r.json()).then(d=>{
-        if(!d.success){el.innerHTML='<div style="color:#ef4444">'+(d.data?.message||'Viga')+'</div>';return;}
-        var items=d.data.items, html='';
-        items.forEach(item=>{
-          var received=item.actual_qty!==null;
-          html+='<div style="padding:10px 0;border-bottom:1px solid #f8fafc;display:grid;grid-template-columns:1fr auto auto auto;gap:10px;align-items:center">'+
-            '<div>'+
-              '<div style="font-size:13px;font-weight:600">'+item.name+'</div>'+
-              (item.sku?'<div style="font-size:11px;color:#94a3b8;font-family:monospace">'+item.sku+'</div>':'')+
-              '<div style="font-size:11px;color:#94a3b8">Oodata: '+item.expected_qty+' '+item.unit+'</div>'+
-            '</div>'+
-            '<input type="number" id="recv-qty-'+item.id+'" value="'+(item.actual_qty!==null?item.actual_qty:item.expected_qty)+'"'+
-              ' min="0" step="0.01" style="width:75px;padding:6px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;text-align:center" '+
-              (received?'disabled':'')+'>'+
-            '<input type="text" id="recv-loc-'+item.id+'" value="'+(item.location||'')+'"'+
-              ' placeholder="Asukoht" style="width:90px;padding:6px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px" '+
-              (received?'disabled':'')+'>'+
-            '<button onclick="confirmRecv('+item.id+','+id+')" class="vwp-btn-outline" style="font-size:12px;padding:5px 10px" '+
-              (received?'disabled style="opacity:.4"':'')+'>'+
-              (received?'✓ OK':'Kinnita')+
-            '</button>'+
-          '</div>';
+      itemData[id]={};
+      var fd=new FormData();
+      fd.append('action','vesho_worker_get_receipt_items');
+      fd.append('nonce',NONCE);
+      fd.append('receipt_id',id);
+      fetch(AJAX,{method:'POST',body:fd}).then(r=>r.json()).then(function(d){
+        if(!d.success){el.innerHTML='<div style="padding:12px;color:#ef4444">'+(d.data?.message||'Viga')+'</div>';return;}
+        var items=d.data.items;
+        items.forEach(function(it){
+          itemData[id][it.id]={actual_qty:it.actual_qty!==null?it.actual_qty:it.expected_qty,location:it.location||'',ean:it.ean||''};
         });
-        el.innerHTML=html||'<div style="color:#94a3b8;padding:10px;text-align:center">Kaupasid pole.</div>';
+        renderItems(id,items,bref);
       });
-    } else { el.style.display='none'; arrow.textContent='›'; }
+    } else {
+      el.style.display='none';
+      arrow.textContent='▼';
+    }
   };
 
-  window.confirmRecv = function(itemId, receiptId){
-    var qty=document.getElementById('recv-qty-'+itemId)?.value;
-    var loc=document.getElementById('recv-loc-'+itemId)?.value||'';
-    if(!qty){alert('Sisesta kogus');return;}
-    var fd=new FormData(); fd.append('action','vesho_worker_confirm_receipt'); fd.append('nonce',NONCE);
-    fd.append('item_id',itemId); fd.append('actual_qty',qty); fd.append('location',loc);
-    fetch(AJAX,{method:'POST',body:fd}).then(r=>r.json()).then(d=>{
+  function renderItems(rid, items, bref){
+    var el=document.getElementById('recv-items-'+rid);
+    var html='';
+    // Header row
+    html+='<div style="display:grid;grid-template-columns:1fr 80px 80px 36px;gap:8px;padding:8px 16px 4px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#94a3b8">';
+    html+='<span>Toode</span><span style="text-align:right">Oodatav</span><span style="text-align:center">Tegelik</span><span></span>';
+    html+='</div>';
+    items.forEach(function(it){
+      var done=it.actual_qty!==null;
+      html+='<div style="border-top:1px solid #f1f5f9;padding:10px 16px" id="recv-row-'+it.id+'">';
+      // Main row
+      html+='<div style="display:grid;grid-template-columns:1fr 80px 80px 36px;gap:8px;align-items:center;margin-bottom:6px">';
+      html+='<div><div style="font-size:13px;font-weight:600;color:#0d1f2d">'+escH(it.name||it.product_name||'?')+'</div>'+(it.sku?'<div style="font-size:11px;color:#94a3b8;font-family:monospace">'+escH(it.sku)+'</div>':'')+'</div>';
+      html+='<div style="font-size:13px;color:#64748b;text-align:right;font-weight:500">'+(it.expected_qty||it.quantity)+' '+(it.unit||'tk')+'</div>';
+      html+='<input type="number" id="rq-'+it.id+'" value="'+(done?it.actual_qty:it.expected_qty||it.quantity||'')+'" min="0.01" step="0.01"'+(done?' disabled':'')+
+        ' onchange="itemData['+rid+']['+it.id+'].actual_qty=this.value"'+
+        ' style="padding:5px 6px;border:1.5px solid #e2e8f0;border-radius:6px;font-size:13px;text-align:center;width:100%'+(done?';opacity:.5':'')+'">'+
+      '</div>';
+      // EAN print btn
+      var ean=it.ean||it.product_ean||'';
+      if(ean){
+        html+='<button type="button" onclick="vwpPrintEan(\''+escJ(ean)+'\',\''+escJ(it.name||it.product_name||'')+'\','+(it.selling_price||0)+')" title="Prindi EAN" style="padding:0 6px;height:32px;background:rgba(0,180,200,.1);color:#00b4c8;border:1px solid rgba(0,180,200,.25);border-radius:6px;cursor:pointer;font-size:13px">🖨️</button>';
+      } else {
+        html+='<button type="button" onclick="vwpGenAndPrint('+it.id+','+rid+',\''+escJ(it.name||it.product_name||'')+'\','+(it.selling_price||0)+')" title="Genereeri EAN ja prindi" style="padding:0 6px;height:32px;background:rgba(16,185,129,.15);color:#10b981;border:1px solid rgba(16,185,129,.3);border-radius:6px;cursor:pointer;font-size:13px">✦</button>';
+      }
+      html+='</div>';
+      // Location row
+      html+='<div style="display:flex;gap:6px;align-items:center">';
+      html+='<span style="font-size:11px;color:#94a3b8;flex-shrink:0">📍</span>';
+      html+='<input id="rl-'+it.id+'" value="'+(it.location||'')+'" placeholder="Laoasukoht (nt A-01-03)"'+(done?' disabled':'')+
+        ' oninput="this.value=this.value.toUpperCase();itemData['+rid+']['+it.id+'].location=this.value"'+
+        ' style="flex:1;padding:6px 10px;border:1.5px solid #e2e8f0;border-radius:6px;font-size:12px;font-family:monospace'+(done?';opacity:.5':'')+'">'+
+      '</div>';
+      html+='</div>';
+    });
+    // Footer buttons
+    html+='<div style="border-top:1px solid #f1f5f9;padding:12px 16px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">';
+    html+='<button type="button" onclick="vwpOpenAddItem('+rid+',\''+escJ(bref)+'\')" style="padding:7px 14px;background:rgba(0,180,200,.08);color:#00b4c8;border:1px dashed rgba(0,180,200,.4);border-radius:8px;font-size:12px;cursor:pointer">+ Lisa tundmatu kaup</button>';
+    html+='<button type="button" onclick="vwpSubmitBatch('+rid+')" id="recv-submit-'+rid+'" style="margin-left:auto;padding:7px 20px;background:rgba(16,185,129,.12);color:#10b981;border:1px solid rgba(16,185,129,.25);border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">✓ Saada adminile</button>';
+    html+='</div>';
+    html+='<div id="recv-msg-'+rid+'" style="padding:0 16px 10px;font-size:13px;color:#dc2626;display:none"></div>';
+    el.innerHTML=html;
+  }
+
+  window.vwpSubmitBatch = function(rid){
+    var btn=document.getElementById('recv-submit-'+rid);
+    var msg=document.getElementById('recv-msg-'+rid);
+    var data=itemData[rid]||{};
+    var items=Object.entries(data).map(function(e){return{id:e[0],actual_qty:e[1].actual_qty,location:e[1].location,ean:e[1].ean};});
+    var invalid=items.find(function(i){return !i.actual_qty||Number(i.actual_qty)<=0;});
+    if(invalid){msg.textContent='Kõikidel kaupadel peab olema kogus';msg.style.display='';return;}
+    btn.disabled=true; btn.textContent='Saadan...';
+    var fd=new FormData();
+    fd.append('action','vesho_worker_submit_batch');
+    fd.append('nonce',NONCE);
+    fd.append('receipt_id',rid);
+    fd.append('items',JSON.stringify(items));
+    fetch(AJAX,{method:'POST',body:fd}).then(r=>r.json()).then(function(d){
       if(d.success){
-        var btn=document.querySelector('[onclick="confirmRecv('+itemId+','+receiptId+')"]');
-        if(btn){btn.textContent='✓ OK';btn.disabled=true;btn.style.opacity='.4';}
-        document.getElementById('recv-qty-'+itemId).disabled=true;
-        document.getElementById('recv-loc-'+itemId).disabled=true;
-      } else alert(d.data?.message||'Viga');
+        var card=document.getElementById('recv-card-'+rid);
+        if(card) card.style.display='none';
+        var badge=document.getElementById('recv-badge-'+rid);
+        if(badge){badge.textContent='✓ Saadetud';badge.style.background='#dcfce7';badge.style.color='#16a34a';}
+      } else {
+        btn.disabled=false; btn.textContent='✓ Saada adminile';
+        msg.textContent=d.data?.message||'Viga';msg.style.display='';
+      }
+    }).catch(function(){
+      btn.disabled=false; btn.textContent='✓ Saada adminile';
+      msg.textContent='Ühenduse viga';msg.style.display='';
     });
   };
+
+  window.vwpOpenAddItem = function(rid, bref){
+    currentRecvId=rid;
+    document.getElementById('vwp-add-item-bref').textContent=bref;
+    document.getElementById('vwp-ai-name').value='';
+    document.getElementById('vwp-ai-ean').value='';
+    document.getElementById('vwp-ai-qty').value='';
+    document.getElementById('vwp-ai-price').value='';
+    document.getElementById('vwp-ai-loc').value='';
+    document.getElementById('vwp-ai-notes').value='';
+    document.getElementById('vwp-add-item-msg').style.display='none';
+    document.getElementById('vwp-add-item-modal').style.display='flex';
+  };
+
+  window.vwpAddItem = function(){
+    var name=document.getElementById('vwp-ai-name').value.trim();
+    var qty=document.getElementById('vwp-ai-qty').value;
+    if(!name||!qty){
+      var m=document.getElementById('vwp-add-item-msg');
+      m.textContent='Toote nimi ja kogus on kohustuslikud';m.style.display='';return;
+    }
+    var btn=document.getElementById('vwp-add-item-btn');
+    btn.disabled=true; btn.textContent='Lisamine...';
+    var fd=new FormData();
+    fd.append('action','vesho_worker_add_batch_item');
+    fd.append('nonce',NONCE);
+    fd.append('receipt_id',currentRecvId);
+    fd.append('product_name',name);
+    fd.append('product_ean',document.getElementById('vwp-ai-ean').value);
+    fd.append('actual_qty',qty);
+    fd.append('product_unit',document.getElementById('vwp-ai-unit').value);
+    fd.append('selling_price',document.getElementById('vwp-ai-price').value||0);
+    fd.append('location',document.getElementById('vwp-ai-loc').value);
+    fd.append('notes',document.getElementById('vwp-ai-notes').value);
+    fetch(AJAX,{method:'POST',body:fd}).then(r=>r.json()).then(function(d){
+      btn.disabled=false; btn.textContent='Lisa kaup';
+      if(d.success){
+        document.getElementById('vwp-add-item-modal').style.display='none';
+        loaded[currentRecvId]=false;
+        var el=document.getElementById('recv-items-'+currentRecvId);
+        if(el){el.innerHTML='<div style="padding:16px;text-align:center;color:#94a3b8">Laen...</div>';}
+        var fd2=new FormData();
+        fd2.append('action','vesho_worker_get_receipt_items');
+        fd2.append('nonce',NONCE);
+        fd2.append('receipt_id',currentRecvId);
+        fetch(AJAX,{method:'POST',body:fd2}).then(r=>r.json()).then(function(d2){
+          if(d2.success){loaded[currentRecvId]=true;itemData[currentRecvId]={};d2.data.items.forEach(function(it){itemData[currentRecvId][it.id]={actual_qty:it.actual_qty!==null?it.actual_qty:it.expected_qty,location:it.location||'',ean:it.ean||''};});renderItems(currentRecvId,d2.data.items,'');}
+        });
+      } else {
+        var m=document.getElementById('vwp-add-item-msg');
+        m.textContent=d.data?.message||'Viga';m.style.display='';
+      }
+    });
+  };
+
+  window.vwpGenEan = function(){
+    var base='200'+String(Math.floor(Math.random()*1000000000)).padStart(9,'0');
+    var sum=0; for(var i=0;i<12;i++) sum+=parseInt(base[i])*(i%2===0?1:3);
+    document.getElementById('vwp-ai-ean').value=base+(10-sum%10)%10;
+  };
+
+  window.vwpPrintEan = function(ean, name, price){
+    var priceHtml=price?'<div style="font-size:20px;font-weight:800;margin:4px 0">'+Number(price).toFixed(2)+' €</div>':'';
+    var w=window.open('','_blank','width=320,height=260');
+    w.document.write('<!DOCTYPE html><html><head><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Helvetica,Arial,sans-serif;background:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh}.label{width:280px;border:1.5px solid #222;border-radius:8px;padding:14px 16px;text-align:center}.name{font-size:13px;font-weight:700;margin-bottom:4px;line-height:1.3}@media print{body{min-height:auto}}</style></head><body><div class="label"><div class="name">'+name+'</div>'+priceHtml+'<svg id="b" style="max-width:100%"></svg></div><script src="https://cdn.jsdelivr.net/npm/jsbarcode@3/dist/JsBarcode.all.min.js"><\/script><script>window.onload=function(){JsBarcode(\'#b\',\''+ean+'\',{format:\'EAN13\',width:2,height:55,displayValue:true,fontSize:13,margin:4});setTimeout(function(){window.print()},300)}<\/script></body></html>');
+    w.document.close();
+  };
+
+  window.vwpGenAndPrint = function(itemId, rid, name, price){
+    var base='200'+String(Math.floor(Math.random()*1000000000)).padStart(9,'0');
+    var sum=0; for(var i=0;i<12;i++) sum+=parseInt(base[i])*(i%2===0?1:3);
+    var ean=base+(10-sum%10)%10;
+    if(itemData[rid]&&itemData[rid][itemId]) itemData[rid][itemId].ean=ean;
+    vwpPrintEan(ean, name, price);
+  };
+
+  function escH(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+  function escJ(s){return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'");}
 })();
 </script>
         <?php
@@ -2550,17 +2747,23 @@ $all_picked = !empty($my_items) && count(array_filter($my_items, fn($i) => $i->p
         global $wpdb;
         $receipt_id = absint($_POST['receipt_id']??0);
         $items = $wpdb->get_results($wpdb->prepare(
-            "SELECT sri.*, inv.name, inv.sku, inv.unit
+            "SELECT sri.*,
+                    COALESCE(inv.name, sri.product_name) AS name,
+                    COALESCE(inv.sku,  sri.product_sku)  AS sku,
+                    COALESCE(inv.unit, sri.product_unit) AS unit,
+                    COALESCE(inv.ean,  sri.ean)          AS ean,
+                    inv.selling_price AS inv_selling_price
              FROM {$wpdb->prefix}vesho_stock_receipt_items sri
              LEFT JOIN {$wpdb->prefix}vesho_inventory inv ON inv.id=sri.inventory_id
              WHERE sri.receipt_id=%d
-             ORDER BY inv.name ASC", $receipt_id
+             ORDER BY sri.id ASC", $receipt_id
         ));
-        // Add location/actual_qty columns if they exist
         foreach ($items as &$item) {
             if (!isset($item->actual_qty)) $item->actual_qty = null;
-            if (!isset($item->location)) $item->location = '';
-            $item->expected_qty = $item->quantity ?? 0;
+            if (!isset($item->location))   $item->location   = '';
+            if (!isset($item->ean))        $item->ean        = '';
+            $item->expected_qty   = $item->quantity ?? 0;
+            $item->selling_price  = $item->selling_price ?? $item->inv_selling_price ?? null;
         }
         wp_send_json_success(['items'=>$items]);
     }
@@ -2572,26 +2775,82 @@ $all_picked = !empty($my_items) && count(array_filter($my_items, fn($i) => $i->p
         $item_id  = absint($_POST['item_id']??0);
         $actual   = (float)($_POST['actual_qty']??0);
         $location = sanitize_text_field($_POST['location']??'');
-        // Update actual_qty if column exists, else use quantity
-        $cols = $wpdb->get_col("DESCRIBE `{$wpdb->prefix}vesho_stock_receipt_items`");
-        $data = ['quantity'=>$actual];
-        if (in_array('actual_qty',$cols)) $data['actual_qty'] = $actual;
-        if (in_array('location',$cols))   $data['location']   = $location;
-        $wpdb->update("{$wpdb->prefix}vesho_stock_receipt_items", $data, ['id'=>$item_id]);
-        // Update inventory quantity
-        $item = $wpdb->get_row($wpdb->prepare(
-            "SELECT inventory_id FROM {$wpdb->prefix}vesho_stock_receipt_items WHERE id=%d", $item_id
-        ));
-        if ($item && $item->inventory_id) {
-            $wpdb->query($wpdb->prepare(
-                "UPDATE {$wpdb->prefix}vesho_inventory SET quantity = quantity + %f WHERE id=%d",
-                $actual, $item->inventory_id
-            ));
-            if ($location) {
-                $wpdb->update("{$wpdb->prefix}vesho_inventory",['location'=>$location],['id'=>$item->inventory_id]);
-            }
-        }
+        // Only mark item as received — inventory update happens at admin approval
+        $wpdb->update(
+            "{$wpdb->prefix}vesho_stock_receipt_items",
+            ['actual_qty' => $actual, 'location' => $location],
+            ['id' => $item_id]
+        );
         wp_send_json_success(['message'=>'Vastu võetud']);
+    }
+
+    public static function ajax_submit_batch() {
+        check_ajax_referer('vesho_portal_nonce','nonce');
+        $worker = self::get_current_worker();
+        if (!$worker) wp_send_json_error(['message'=>'Pole sisse logitud']);
+        global $wpdb;
+        $receipt_id = absint($_POST['receipt_id']??0);
+        $items_raw  = sanitize_text_field($_POST['items']??'[]');
+        $items      = json_decode(stripslashes($items_raw), true);
+        if (!$receipt_id || !is_array($items)) wp_send_json_error(['message'=>'Vigased andmed']);
+        // Validate receipt belongs to this worker or is pending
+        $receipt = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM {$wpdb->prefix}vesho_stock_receipts WHERE id=%d AND status='pending'", $receipt_id
+        ));
+        if (!$receipt) wp_send_json_error(['message'=>'Saadetist ei leitud või juba kinnitatud']);
+        // Update each item
+        foreach ($items as $item) {
+            $iid = absint($item['id']??0);
+            $qty = (float)($item['actual_qty']??0);
+            $loc = sanitize_text_field($item['location']??'');
+            $ean = sanitize_text_field($item['ean']??'');
+            if (!$iid || $qty <= 0) continue;
+            $data = ['actual_qty'=>$qty, 'location'=>$loc];
+            if ($ean) $data['ean'] = $ean;
+            $wpdb->update("{$wpdb->prefix}vesho_stock_receipt_items", $data, ['id'=>$iid, 'receipt_id'=>$receipt_id]);
+        }
+        // Change receipt status to received
+        $wpdb->update(
+            "{$wpdb->prefix}vesho_stock_receipts",
+            ['status'=>'received', 'worker_id'=>(int)$worker->id, 'worker_name'=>$worker->name],
+            ['id'=>$receipt_id]
+        );
+        wp_send_json_success(['message'=>'Saadetud adminile kinnitamiseks']);
+    }
+
+    public static function ajax_add_batch_item() {
+        check_ajax_referer('vesho_portal_nonce','nonce');
+        $worker = self::get_current_worker();
+        if (!$worker) wp_send_json_error(['message'=>'Pole sisse logitud']);
+        global $wpdb;
+        $receipt_id   = absint($_POST['receipt_id']??0);
+        $product_name = sanitize_text_field($_POST['product_name']??'');
+        $actual_qty   = (float)($_POST['actual_qty']??0);
+        if (!$receipt_id || !$product_name || $actual_qty <= 0)
+            wp_send_json_error(['message'=>'Toote nimi ja kogus on kohustuslikud']);
+        // Verify receipt access
+        $receipt = $wpdb->get_row($wpdb->prepare(
+            "SELECT id FROM {$wpdb->prefix}vesho_stock_receipts WHERE id=%d AND status='pending'", $receipt_id
+        ));
+        if (!$receipt) wp_send_json_error(['message'=>'Saadetist ei leitud']);
+        $ean          = sanitize_text_field($_POST['product_ean']??'');
+        $unit         = sanitize_text_field($_POST['product_unit']??'tk');
+        $selling_price= (float)($_POST['selling_price']??0);
+        $location     = sanitize_text_field($_POST['location']??'');
+        $notes        = sanitize_textarea_field($_POST['notes']??'');
+        $wpdb->insert("{$wpdb->prefix}vesho_stock_receipt_items", [
+            'receipt_id'    => $receipt_id,
+            'product_name'  => $product_name,
+            'product_sku'   => sanitize_text_field($_POST['product_sku']??''),
+            'product_unit'  => $unit,
+            'ean'           => $ean,
+            'quantity'      => $actual_qty,
+            'actual_qty'    => $actual_qty,
+            'selling_price' => $selling_price ?: null,
+            'location'      => $location,
+            'notes'         => $notes,
+        ]);
+        wp_send_json_success(['id'=>$wpdb->insert_id]);
     }
 
     // ── AJAX: Tellimused ──────────────────────────────────────────────────────
