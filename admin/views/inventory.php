@@ -280,7 +280,6 @@ function inv_fmt($n) { return rtrim(rtrim(number_format((float)$n, 3, '.', ''), 
 $tabs = [
   'all'        => ['🏷️', 'Laoseis',          count($items)],
   'categories' => ['🗂️', 'Kategooriad',      count($categories)],
-  'locations'  => ['🗺', 'Laoaadressid',      count($locations)],
   'history'    => ['📋', 'Kasutuse ajalugu',  null],
   'count'      => ['🔍', 'Inventuur',         count($stock_counts)],
   'used'       => ['♻️', 'Kasutatud',         count($used_items)],
