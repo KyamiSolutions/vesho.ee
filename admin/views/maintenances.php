@@ -111,6 +111,67 @@ $pending_count = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}vesho_maint
                 <button type="submit" class="crm-btn crm-btn-primary">💾 Salvesta</button>
             </div>
         </form>
+
+        <?php if ($edit): ?>
+        <?php
+        $maint_photos = $wpdb->get_results($wpdb->prepare(
+            "SELECT * FROM {$wpdb->prefix}vesho_workorder_photos WHERE maintenance_id=%d ORDER BY created_at ASC", $edit->id
+        ));
+        ?>
+        <div style="border-top:1px solid #e5edf4;margin-top:24px;padding-top:20px">
+          <div style="font-weight:700;font-size:14px;color:#0d1f2d;margin-bottom:12px">📷 Fotod (<?php echo count($maint_photos); ?>/10)</div>
+          <div id="maint-photo-grid" style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px">
+            <?php foreach ($maint_photos as $mp): ?>
+            <div id="mphoto-<?php echo $mp->id; ?>" style="position:relative;width:100px;height:100px">
+              <img src="<?php echo esc_url($mp->filename); ?>" style="width:100%;height:100%;object-fit:cover;border-radius:8px;border:1px solid #e2e8f0">
+              <button type="button" onclick="deleteMaintPhoto(<?php echo $mp->id; ?>)" style="position:absolute;top:2px;right:2px;width:22px;height:22px;background:rgba(220,38,38,.85);border:none;border-radius:50%;color:#fff;font-size:12px;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center">✕</button>
+            </div>
+            <?php endforeach; ?>
+          </div>
+          <?php if (count($maint_photos) < 10): ?>
+          <label style="display:inline-flex;align-items:center;gap:8px;padding:8px 16px;background:#e0f7fa;border:1px solid #00b4c8;color:#007a8a;border-radius:6px;font-size:13px;cursor:pointer;font-weight:500">
+            📤 Lisa foto
+            <input type="file" id="maint-photo-input" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="uploadMaintPhoto(this,<?php echo $edit->id; ?>)">
+          </label>
+          <span id="maint-photo-msg" style="margin-left:10px;font-size:13px;color:#64748b"></span>
+          <?php endif; ?>
+        </div>
+        <script>
+        var maintAdminNonce = '<?php echo wp_create_nonce('vesho_admin_nonce'); ?>';
+        function uploadMaintPhoto(input, mid) {
+          if (!input.files[0]) return;
+          var msg = document.getElementById('maint-photo-msg');
+          msg.textContent = 'Laen üles...';
+          var fd = new FormData();
+          fd.append('action', 'vesho_admin_upload_maint_photo');
+          fd.append('nonce', maintAdminNonce);
+          fd.append('maintenance_id', mid);
+          fd.append('photo', input.files[0]);
+          fetch(ajaxurl, {method:'POST',body:fd}).then(r=>r.json()).then(d=>{
+            input.value = '';
+            if (d.success) {
+              msg.textContent = '✓ Foto lisatud';
+              var grid = document.getElementById('maint-photo-grid');
+              var div = document.createElement('div');
+              div.id = 'mphoto-' + d.data.photo_id;
+              div.style.cssText = 'position:relative;width:100px;height:100px';
+              div.innerHTML = '<img src="'+d.data.url+'" style="width:100%;height:100%;object-fit:cover;border-radius:8px;border:1px solid #e2e8f0">'
+                + '<button type="button" onclick="deleteMaintPhoto('+d.data.photo_id+')" style="position:absolute;top:2px;right:2px;width:22px;height:22px;background:rgba(220,38,38,.85);border:none;border-radius:50%;color:#fff;font-size:12px;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center">✕</button>';
+              grid.appendChild(div);
+              setTimeout(()=>{ msg.textContent=''; }, 2000);
+            } else { msg.textContent = '❌ ' + (d.data && d.data.message || 'Viga'); }
+          }).catch(()=>{ msg.textContent = '❌ Ühenduse viga'; });
+        }
+        function deleteMaintPhoto(photoId) {
+          if (!confirm('Kustuta foto?')) return;
+          fetch(ajaxurl, {method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},
+            body:'action=vesho_admin_delete_maint_photo&nonce='+maintAdminNonce+'&photo_id='+photoId
+          }).then(r=>r.json()).then(d=>{
+            if (d.success) { var el=document.getElementById('mphoto-'+photoId); if(el) el.remove(); }
+          });
+        }
+        </script>
+        <?php endif; ?>
         </div>
     </div>
     <?php else : ?>

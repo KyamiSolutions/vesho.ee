@@ -3,7 +3,7 @@
  * Plugin Name: Vesho CRM
  * Plugin URI:  https://vesho.ee
  * Description: CRM ja klientide portaal Vesho OÜ-le. Haldab kliente, seadmeid, hooldusi, arveid ja teenuseid.
- * Version:     2.2.60
+ * Version:     2.2.61
  * Author:      Vesho OÜ
  * Author URI:  https://vesho.ee
  * Text Domain: vesho-crm
@@ -15,7 +15,7 @@
 defined( 'ABSPATH' ) || exit;
 
 // ── Constants ──────────────────────────────────────────────────────────────────
-define('VESHO_CRM_VERSION', '2.2.60');
+define('VESHO_CRM_VERSION', '2.2.61');
 define( 'VESHO_CRM_FILE',     __FILE__ );
 define( 'VESHO_CRM_PATH',     plugin_dir_path( __FILE__ ) );
 define( 'VESHO_CRM_URL',      plugin_dir_url( __FILE__ ) );
@@ -1442,7 +1442,23 @@ function vesho_ajax_save_inventory_inline() {
     global $wpdb;
     vesho_inv_check_nonce();
 
-    $id   = absint( $_POST['inventory_id'] ?? 0 );
+    $id           = absint( $_POST['inventory_id'] ?? 0 );
+    $image_delete = ( $_POST['image_delete'] ?? '0' ) === '1';
+    $image_url    = esc_url_raw( $_POST['image_url'] ?? '' );
+
+    // Handle file upload
+    if ( ! empty( $_FILES['image_file']['tmp_name'] ) ) {
+        require_once ABSPATH . 'wp-admin/includes/file.php';
+        require_once ABSPATH . 'wp-admin/includes/image.php';
+        require_once ABSPATH . 'wp-admin/includes/media.php';
+        $uploaded = wp_handle_upload( $_FILES['image_file'], [ 'test_form' => false ] );
+        if ( isset( $uploaded['url'] ) ) {
+            $image_url = $uploaded['url'];
+        }
+    } elseif ( $image_delete ) {
+        $image_url = '';
+    }
+
     $data = [
         'name'             => sanitize_text_field( $_POST['name'] ?? '' ),
         'sku'              => sanitize_text_field( $_POST['sku'] ?? '' ),
@@ -1458,7 +1474,7 @@ function vesho_ajax_save_inventory_inline() {
         'shop_enabled'     => isset( $_POST['shop_enabled'] ) ? 1 : 0,
         'shop_description' => sanitize_textarea_field( $_POST['shop_description'] ?? '' ),
         'shop_price'       => strlen( $_POST['shop_price'] ?? '' ) ? (float) $_POST['shop_price'] : null,
-        'image_url'        => esc_url_raw( $_POST['image_url'] ?? '' ),
+        'image_url'        => $image_url,
     ];
 
     if ( empty( $data['name'] ) ) {
@@ -1469,11 +1485,11 @@ function vesho_ajax_save_inventory_inline() {
 
     if ( $id ) {
         $wpdb->update( $table, $data, [ 'id' => $id ] );
-        wp_send_json_success( [ 'message' => 'Uuendatud: ' . $data['name'], 'id' => $id ] );
+        wp_send_json_success( [ 'message' => 'Uuendatud: ' . $data['name'], 'id' => $id, 'image_url' => $image_url ] );
     } else {
         $data['archived'] = 0;
         $wpdb->insert( $table, $data );
-        wp_send_json_success( [ 'message' => 'Lisatud: ' . $data['name'], 'id' => $wpdb->insert_id ] );
+        wp_send_json_success( [ 'message' => 'Lisatud: ' . $data['name'], 'id' => $wpdb->insert_id, 'image_url' => $image_url ] );
     }
 }
 

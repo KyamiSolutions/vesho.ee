@@ -554,12 +554,15 @@ if ( $action === 'print' && $invoice_id ) {
                 </td>
                 <td><strong><?php echo vesho_crm_format_money($inv->amount); ?></strong></td>
                 <td>
-                    <?php
-                    echo vesho_crm_status_badge($inv->status);
-                    if ( $inv->status === 'sent' && $inv->due_date && $inv->due_date < date('Y-m-d') ) {
+                    <select class="inv-inline-status" data-id="<?php echo $inv->id; ?>" onchange="updateInvoiceStatus(this)"
+                      style="padding:4px 8px;border-radius:20px;font-size:11px;font-weight:700;border:1.5px solid #e2e8f0;cursor:pointer;background:#fff">
+                      <?php foreach ($statuses as $v=>$l): ?>
+                        <option value="<?php echo $v; ?>" <?php selected($inv->status,$v); ?>><?php echo $l; ?></option>
+                      <?php endforeach; ?>
+                    </select>
+                    <?php if ( $inv->status === 'sent' && $inv->due_date && $inv->due_date < date('Y-m-d') ) {
                         echo ' <span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;background:#fee2e2;color:#dc2626">Tähtaeg ületatud</span>';
-                    }
-                    ?>
+                    } ?>
                 </td>
                 <td class="td-actions">
                     <a href="<?php echo admin_url('admin.php?page=vesho-crm-invoices&action=edit&invoice_id='.$inv->id); ?>" class="crm-btn crm-btn-icon crm-btn-sm" title="Muuda">✏️</a>
@@ -642,6 +645,31 @@ if ( $action === 'print' && $invoice_id ) {
     <script>
     var veshoNonce = '<?php echo wp_create_nonce("vesho_admin_nonce"); ?>';
     var cnInvId = 0;
+
+    var statusColors = {
+      draft:'#6b7280',sent:'#2563eb',paid:'#16a34a',unpaid:'#dc2626',overdue:'#dc2626',cancelled:'#9ca3af'
+    };
+    function updateInvoiceStatus(sel) {
+      var id = sel.dataset.id, status = sel.value;
+      sel.disabled = true;
+      fetch(ajaxurl, {
+        method: 'POST',
+        headers: {'Content-Type':'application/x-www-form-urlencoded'},
+        body: 'action=vesho_update_invoice_status&nonce=' + veshoNonce + '&invoice_id=' + id + '&status=' + status
+      }).then(r=>r.json()).then(d=>{
+        sel.disabled = false;
+        if (d.success) {
+          sel.style.color = statusColors[status] || '#333';
+          sel.style.borderColor = statusColors[status] || '#e2e8f0';
+        } else { alert('Viga staatuse uuendamisel'); sel.value = sel.getAttribute('data-orig') || sel.value; }
+      }).catch(()=>{ sel.disabled=false; alert('Ühenduse viga'); });
+    }
+    document.querySelectorAll('.inv-inline-status').forEach(function(s){
+      s.setAttribute('data-orig', s.value);
+      s.style.color = statusColors[s.value] || '#333';
+      s.style.borderColor = statusColors[s.value] || '#e2e8f0';
+    });
+
     function openCreditNoteModal(invId, invNum, amount) {
       cnInvId = invId;
       document.getElementById('cn-inv-number').textContent = invNum;

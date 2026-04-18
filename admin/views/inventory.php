@@ -258,12 +258,29 @@ function inv_fmt($n) { return rtrim(rtrim(number_format((float)$n, 3, '.', ''), 
         <input type="number" id="isf-shop-price" name="shop_price" step="0.01" placeholder="0.00">
       </div>
       <div class="inv-fg inv-full" id="isf-image-row" style="display:none">
-        <label>Toote pilt (URL)</label>
-        <div style="display:flex;gap:8px;align-items:center">
-          <input type="url" id="isf-image-url" name="image_url" placeholder="https://..." style="flex:1">
-          <button type="button" onclick="isf_openMedia()" style="padding:6px 12px;background:#e0f7fa;border:1px solid #00b4c8;color:#007a8a;border-radius:6px;font-size:12px;cursor:pointer;white-space:nowrap">📁 Vali</button>
+        <label>Toote pilt</label>
+        <div id="isf-img-current" style="display:none;margin-bottom:10px;display:flex;align-items:flex-start;gap:10px">
+          <img id="isf-img-thumb" src="" style="max-height:100px;border-radius:8px;border:1px solid #e5edf4;display:block">
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <span style="font-size:11px;color:#94a3b8" id="isf-img-label">Praegune pilt</span>
+            <button type="button" onclick="isf_removeImage()" style="font-size:12px;padding:4px 10px;background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;border-radius:6px;cursor:pointer;width:fit-content">🗑️ Eemalda</button>
+          </div>
         </div>
-        <div id="isf-img-preview" style="margin-top:8px;display:none"><img id="isf-img-thumb" src="" style="max-height:80px;border-radius:6px;border:1px solid #e5edf4"></div>
+        <div id="isf-img-new-preview" style="display:none;margin-bottom:10px;display:flex;align-items:flex-start;gap:10px">
+          <img id="isf-img-new-thumb" src="" style="max-height:100px;border-radius:8px;border:2px solid #00b4c8;display:block">
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <span style="font-size:11px;color:#00b4c8;font-weight:600">Uus pilt (salvestatakse koos tootega)</span>
+            <span style="font-size:11px;color:#94a3b8" id="isf-img-new-name"></span>
+            <button type="button" onclick="isf_cancelNewImage()" style="font-size:12px;padding:4px 10px;background:#f1f5f9;color:#64748b;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer;width:fit-content">✕ Tühista</button>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button type="button" onclick="document.getElementById('isf-image-file').click()" style="padding:7px 16px;background:#e0f7fa;border:1px solid #00b4c8;color:#007a8a;border-radius:6px;font-size:13px;cursor:pointer;font-weight:500">📤 Laadi pilt üles</button>
+          <span style="font-size:11px;color:#94a3b8">Max 5 MB · JPG, PNG, WebP</span>
+        </div>
+        <input type="file" id="isf-image-file" name="image_file" accept="image/jpeg,image/png,image/webp,image/gif" style="display:none">
+        <input type="hidden" id="isf-image-url" name="image_url">
+        <input type="hidden" id="isf-image-delete" name="image_delete" value="0">
       </div>
     </div>
     <div style="display:flex;gap:10px;margin-top:20px">
@@ -1091,9 +1108,12 @@ window.openEditForm = function(item) {
     document.getElementById('isf-shop-price').value = item.shop_price || '';
     var imgUrl = item.image_url || '';
     document.getElementById('isf-image-url').value = imgUrl;
-    var prev = document.getElementById('isf-img-preview');
-    if (imgUrl) { document.getElementById('isf-img-thumb').src = imgUrl; prev.style.display = ''; }
-    else { prev.style.display = 'none'; }
+    document.getElementById('isf-image-delete').value = '0';
+    document.getElementById('isf-image-file').value = '';
+    document.getElementById('isf-img-new-preview').style.display = 'none';
+    var cur = document.getElementById('isf-img-current');
+    if (imgUrl) { document.getElementById('isf-img-thumb').src = imgUrl; cur.style.display = 'flex'; }
+    else { cur.style.display = 'none'; }
   }
   f.classList.add('open');
   f.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1103,33 +1123,37 @@ window.toggleShopDesc = function(checked) {
   document.getElementById('isf-shop-desc-row').style.display  = checked ? '' : 'none';
   document.getElementById('isf-shop-price-row').style.display = checked ? '' : 'none';
   document.getElementById('isf-image-row').style.display      = checked ? '' : 'none';
-};
-
-window.isf_openMedia = function() {
-  if (typeof wp === 'undefined' || !wp.media) {
-    var url = prompt('Sisesta pildi URL:');
-    if (url) { isf_setImage(url); }
-    return;
+  if (!checked) {
+    document.getElementById('isf-img-current').style.display = 'none';
+    document.getElementById('isf-img-new-preview').style.display = 'none';
   }
-  var frame = wp.media({ title: 'Vali toote pilt', multiple: false });
-  frame.on('select', function() {
-    var att = frame.state().get('selection').first().toJSON();
-    isf_setImage(att.url);
-  });
-  frame.open();
 };
 
-window.isf_setImage = function(url) {
-  document.getElementById('isf-image-url').value = url;
-  document.getElementById('isf-img-thumb').src = url;
-  document.getElementById('isf-img-preview').style.display = '';
-};
-document.getElementById('isf-image-url').addEventListener('input', function() {
-  var url = this.value.trim();
-  var prev = document.getElementById('isf-img-preview');
-  if (url) { document.getElementById('isf-img-thumb').src = url; prev.style.display = ''; }
-  else { prev.style.display = 'none'; }
+document.getElementById('isf-image-file').addEventListener('change', function() {
+  var file = this.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) { showToast('Fail on liiga suur (max 5 MB)', true); this.value = ''; return; }
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    document.getElementById('isf-img-new-thumb').src = e.target.result;
+    document.getElementById('isf-img-new-name').textContent = file.name;
+    document.getElementById('isf-img-new-preview').style.display = 'flex';
+    document.getElementById('isf-image-delete').value = '0';
+  };
+  reader.readAsDataURL(file);
 });
+
+window.isf_cancelNewImage = function() {
+  document.getElementById('isf-image-file').value = '';
+  document.getElementById('isf-img-new-preview').style.display = 'none';
+};
+
+window.isf_removeImage = function() {
+  document.getElementById('isf-image-url').value = '';
+  document.getElementById('isf-image-delete').value = '1';
+  document.getElementById('isf-img-current').style.display = 'none';
+  document.getElementById('isf-img-thumb').src = '';
+};
 
 document.getElementById('inv-save-form').addEventListener('submit', function(e) {
   e.preventDefault();

@@ -66,6 +66,9 @@ class Vesho_CRM_Admin {
         add_action( 'admin_post_vesho_confirm_maintenance', array( __CLASS__, 'handle_confirm_maintenance' ) );
         add_action( 'admin_post_vesho_reject_maintenance',  array( __CLASS__, 'handle_reject_maintenance' ) );
         add_action( 'admin_post_vesho_cancel_maintenance',  array( __CLASS__, 'handle_cancel_maintenance' ) );
+        add_action( 'wp_ajax_vesho_update_invoice_status',  array( __CLASS__, 'ajax_update_invoice_status' ) );
+        add_action( 'wp_ajax_vesho_admin_upload_maint_photo', array( __CLASS__, 'ajax_admin_upload_maint_photo' ) );
+        add_action( 'wp_ajax_vesho_admin_delete_maint_photo', array( __CLASS__, 'ajax_admin_delete_maint_photo' ) );
         add_action( 'wp_ajax_vesho_search_wp_users',        array( __CLASS__, 'ajax_search_wp_users' ) );
         add_action( 'wp_ajax_vesho_add_maintenance_ajax',   array( __CLASS__, 'ajax_add_maintenance' ) );
         add_action( 'wp_ajax_vesho_get_client_devices',     array( __CLASS__, 'ajax_get_client_devices' ) );
@@ -2045,6 +2048,59 @@ private static function load_view( $name ) {
         }
         wp_redirect( add_query_arg( array( 'page' => 'vesho-crm-reminders', 'msg' => 'cancelled' ), admin_url( 'admin.php' ) ) );
         exit;
+    }
+
+    // ── AJAX: update invoice status inline ───────────────────────────────────
+    public static function ajax_update_invoice_status() {
+        check_ajax_referer( 'vesho_admin_nonce', 'nonce' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error();
+        global $wpdb;
+        $id     = absint( $_POST['invoice_id'] ?? 0 );
+        $status = sanitize_text_field( $_POST['status'] ?? '' );
+        $allowed = [ 'draft', 'sent', 'paid', 'unpaid', 'overdue', 'cancelled' ];
+        if ( ! $id || ! in_array( $status, $allowed ) ) wp_send_json_error( [ 'message' => 'Vigased andmed' ] );
+        $wpdb->update( $wpdb->prefix . 'vesho_invoices', [ 'status' => $status ], [ 'id' => $id ] );
+        wp_send_json_success( [ 'status' => $status ] );
+    }
+
+    // ── AJAX: admin upload maintenance photo ─────────────────────────────────
+    public static function ajax_admin_upload_maint_photo() {
+        check_ajax_referer( 'vesho_admin_nonce', 'nonce' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error();
+        global $wpdb;
+        $mid = absint( $_POST['maintenance_id'] ?? 0 );
+        if ( ! $mid ) wp_send_json_error( [ 'message' => 'Puuduv hooldus ID' ] );
+        $count = (int) $wpdb->get_var( $wpdb->prepare(
+            "SELECT COUNT(*) FROM {$wpdb->prefix}vesho_workorder_photos WHERE maintenance_id=%d", $mid
+        ) );
+        if ( $count >= 10 ) wp_send_json_error( [ 'message' => 'Maksimaalselt 10 fotot' ] );
+        if ( empty( $_FILES['photo']['tmp_name'] ) ) wp_send_json_error( [ 'message' => 'Fail puudub' ] );
+        require_once ABSPATH . 'wp-admin/includes/file.php';
+        require_once ABSPATH . 'wp-admin/includes/image.php';
+        require_once ABSPATH . 'wp-admin/includes/media.php';
+        $_FILES['photo']['name'] = 'maint-' . $mid . '-' . time() . '-' . basename( $_FILES['photo']['name'] );
+        $att_id = media_handle_upload( 'photo', 0 );
+        if ( is_wp_error( $att_id ) ) wp_send_json_error( [ 'message' => $att_id->get_error_message() ] );
+        $url = wp_get_attachment_url( $att_id );
+        $wpdb->insert( $wpdb->prefix . 'vesho_workorder_photos', [
+            'workorder_id'   => 0,
+            'maintenance_id' => $mid,
+            'worker_id'      => 0,
+            'filename'       => $url,
+            'created_at'     => current_time( 'mysql' ),
+        ] );
+        wp_send_json_success( [ 'url' => $url, 'photo_id' => $wpdb->insert_id ] );
+    }
+
+    // ── AJAX: admin delete maintenance photo ─────────────────────────────────
+    public static function ajax_admin_delete_maint_photo() {
+        check_ajax_referer( 'vesho_admin_nonce', 'nonce' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error();
+        global $wpdb;
+        $photo_id = absint( $_POST['photo_id'] ?? 0 );
+        if ( ! $photo_id ) wp_send_json_error();
+        $wpdb->delete( $wpdb->prefix . 'vesho_workorder_photos', [ 'id' => $photo_id ] );
+        wp_send_json_success();
     }
 
     // ── AJAX: search WP users ─────────────────────────────────────────────────
