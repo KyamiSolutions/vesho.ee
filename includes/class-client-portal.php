@@ -2403,9 +2403,8 @@ function setMsg(m){document.getElementById('vcp-pay-msg').textContent=m;}
             });
 
             // Unverified email — show waiting screen instead of red error
-            var loginForm = document.getElementById('lm-login-form');
+            var loginForm = document.getElementById('vauth-login-form');
             if (!loginForm) return;
-            loginForm.addEventListener('submit', function() {}, false); // ensure listener order
 
             // Intercept the AJAX response by monkey-patching fetch
             var _origFetch = window.fetch;
@@ -2413,10 +2412,10 @@ function setMsg(m){document.getElementById('vcp-pay-msg').textContent=m;}
                 return _origFetch.apply(this, arguments).then(function(resp) {
                     return resp.clone().json().then(function(data) {
                         if (data && !data.success && data.data && data.data.unverified) {
-                            // Show unverified waiting screen inside modal
-                            var modal = document.getElementById('lm-modal-inner') || document.getElementById('lm-login-modal') || loginForm.closest('.lm-modal-box') || loginForm.parentElement;
-                            if (modal) {
-                                modal.innerHTML = '<div style="text-align:center;padding:32px 20px">' +
+                            // Show unverified waiting screen — replace login panel content
+                            var panel = document.getElementById('vauth-panel-login') || loginForm.closest('.vauth-card') || loginForm.parentElement;
+                            if (panel) {
+                                panel.innerHTML = '<div style="text-align:center;padding:32px 20px">' +
                                     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 100" width="70" height="88" style="margin:0 auto 20px;display:block">' +
                                     '<rect x="28" y="4" width="24" height="14" rx="4" fill="#00b4c8"/>' +
                                     '<rect x="16" y="8" width="48" height="8" rx="4" fill="#00d4e8"/>' +

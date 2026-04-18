@@ -3,7 +3,7 @@
  * Plugin Name: Vesho CRM
  * Plugin URI:  https://vesho.ee
  * Description: CRM ja klientide portaal Vesho OÜ-le. Haldab kliente, seadmeid, hooldusi, arveid ja teenuseid.
- * Version:     2.1.6
+ * Version:     2.1.7
  * Author:      Vesho OÜ
  * Author URI:  https://vesho.ee
  * Text Domain: vesho-crm
@@ -15,7 +15,7 @@
 defined( 'ABSPATH' ) || exit;
 
 // ── Constants ──────────────────────────────────────────────────────────────────
-define('VESHO_CRM_VERSION', '2.1.6');
+define('VESHO_CRM_VERSION', '2.1.7');
 define( 'VESHO_CRM_FILE',     __FILE__ );
 define( 'VESHO_CRM_PATH',     plugin_dir_path( __FILE__ ) );
 define( 'VESHO_CRM_URL',      plugin_dir_url( __FILE__ ) );
@@ -127,8 +127,12 @@ function vesho_coming_soon_redirect() {
     // Allow wp-login, wp-admin, REST API, AJAX
     if ( defined('DOING_AJAX') && DOING_AJAX ) return;
     if ( defined('REST_REQUEST') && REST_REQUEST ) return;
-    // Allow email verification links
-    if ( ! empty( $_GET['verify_email'] ) ) return;
+    // Allow email verification links — also tell LiteSpeed not to cache these
+    if ( ! empty( $_GET['verify_email'] ) ) {
+        do_action( 'litespeed_control_set_nocache', 'vesho_verify' );
+        header( 'X-LiteSpeed-Cache-Control: no-cache' );
+        return;
+    }
     // Tell LiteSpeed Cache not to serve a cached version of this response
     do_action( 'litespeed_control_set_nocache', 'vesho_maintenance' );
     header( 'X-LiteSpeed-Cache-Control: no-cache' );
