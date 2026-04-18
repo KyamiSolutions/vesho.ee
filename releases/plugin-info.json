@@ -6,5 +6,5 @@
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-18",
-  "changelog": "<h4>2.2.44</h4><ul><li>Sidebar kuvab kõik kategooriad (ka 0 tootega)</li></ul><h4>2.2.43</h4><ul><li>Tootelehe redesign: breadcrumb, pilt, kategooria badge, seotud tooted</li></ul><h4>2.2.42</h4><ul><li>E-pood sidebar, grid/list, pagination</li></ul>"
+  "changelog": "<h4>2.2.44</h4><ul><li>Uus versioon</li></ul>"
 }
