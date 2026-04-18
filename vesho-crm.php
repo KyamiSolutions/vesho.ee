@@ -3,7 +3,7 @@
  * Plugin Name: Vesho CRM
  * Plugin URI:  https://vesho.ee
  * Description: CRM ja klientide portaal Vesho OÜ-le. Haldab kliente, seadmeid, hooldusi, arveid ja teenuseid.
- * Version:     2.0.7
+ * Version:     2.0.8
  * Author:      Vesho OÜ
  * Author URI:  https://vesho.ee
  * Text Domain: vesho-crm
@@ -15,7 +15,7 @@
 defined( 'ABSPATH' ) || exit;
 
 // ── Constants ──────────────────────────────────────────────────────────────────
-define('VESHO_CRM_VERSION', '2.0.7');
+define('VESHO_CRM_VERSION', '2.0.8');
 define( 'VESHO_CRM_FILE',     __FILE__ );
 define( 'VESHO_CRM_PATH',     plugin_dir_path( __FILE__ ) );
 define( 'VESHO_CRM_URL',      plugin_dir_url( __FILE__ ) );
@@ -131,42 +131,73 @@ function vesho_coming_soon_redirect() {
     do_action( 'litespeed_control_set_nocache', 'vesho_maintenance' );
     header( 'X-LiteSpeed-Cache-Control: no-cache' );
 
-    $title   = esc_html( get_option('vesho_coming_soon_title', 'Varsti tulekul') );
-    $message = esc_html( get_option('vesho_coming_soon_message', 'Töötame uue veebisaidi kallal. Peagi tagasi!') );
+    $is_maintenance = get_option('vesho_maintenance_mode','0') === '1';
     $logo    = get_option('vesho_company_logo', '');
     $name    = get_option('vesho_company_name', get_bloginfo('name'));
+    $email   = get_option('vesho_company_email', get_option('admin_email'));
+
+    if ( $is_maintenance ) {
+        $title   = 'Hooldus käib';
+        $message = esc_html( get_option('vesho_coming_soon_message_maintenance', get_option('vesho_maintenance_message', 'Hooldus käib. Palume vabandust ebamugavuse pärast!') ) );
+    } else {
+        $title   = esc_html( get_option('vesho_coming_soon_title', 'Varsti tulekul') );
+        $message = esc_html( get_option('vesho_coming_soon_message', 'Töötame uue veebisaidi kallal. Peagi tagasi!') );
+    }
+
+    // Dripping faucet SVG icon
+    $faucet_svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 100" width="80" height="100" style="margin:0 auto 24px;display:block">
+  <!-- Pipe body -->
+  <rect x="28" y="4" width="24" height="14" rx="4" fill="#00b4c8"/>
+  <!-- Handle -->
+  <rect x="16" y="8" width="48" height="8" rx="4" fill="#00d4e8"/>
+  <!-- Faucet neck -->
+  <rect x="34" y="18" width="12" height="22" rx="3" fill="#00b4c8"/>
+  <!-- Spout -->
+  <path d="M34 38 Q34 52 22 54 L22 60 Q22 64 26 64 L54 64 Q58 64 58 60 L58 54 Q46 52 46 38 Z" fill="#00b4c8"/>
+  <!-- Spout tip -->
+  <rect x="30" y="62" width="20" height="6" rx="3" fill="#008fa0"/>
+  <!-- Drop 1 -->
+  <ellipse cx="40" cy="76" rx="4" ry="5" fill="#00b4c8" opacity="0.9">
+    <animate attributeName="cy" values="72;88" dur="1.4s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.9;0" dur="1.4s" repeatCount="indefinite"/>
+  </ellipse>
+  <!-- Drop 2 -->
+  <ellipse cx="40" cy="76" rx="3" ry="4" fill="#00d4e8" opacity="0.7">
+    <animate attributeName="cy" values="72;88" dur="1.4s" begin="0.7s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.7;0" dur="1.4s" begin="0.7s" repeatCount="indefinite"/>
+  </ellipse>
+</svg>';
 
     http_response_code(503);
     header('Retry-After: 3600');
     echo '<!DOCTYPE html><html lang="et"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>' . $title . ' — ' . esc_html($name) . '</title>
+<title>' . esc_html($title) . ' — ' . esc_html($name) . '</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0d1f2d 0%,#1a3a50 100%);font-family:\'Segoe UI\',Arial,sans-serif;color:#fff;padding:20px}
 .cs-box{text-align:center;max-width:520px}
 .cs-logo{margin-bottom:32px}
 .cs-logo img{max-height:70px;filter:brightness(0) invert(1)}
-.cs-icon{font-size:72px;margin-bottom:24px;display:block}
 h1{font-size:clamp(28px,5vw,48px);font-weight:800;margin-bottom:16px;letter-spacing:-1px}
 p{font-size:17px;opacity:.75;line-height:1.6;margin-bottom:32px}
 .cs-divider{width:60px;height:3px;background:#00b4c8;border-radius:2px;margin:0 auto 28px}
 .cs-contact{font-size:14px;opacity:.55}
 .cs-contact a{color:#00b4c8;text-decoration:none}
 .cs-bar{width:100%;background:rgba(255,255,255,.1);border-radius:20px;height:4px;margin:32px 0 20px;overflow:hidden}
-.cs-bar-fill{height:100%;width:65%;background:linear-gradient(90deg,#00b4c8,#0ae);border-radius:20px;animation:progress 2s ease-in-out infinite alternate}
+.cs-bar-fill{height:100%;background:linear-gradient(90deg,#00b4c8,#0ae);border-radius:20px;animation:progress 2s ease-in-out infinite alternate}
 @keyframes progress{from{width:45%}to{width:80%}}
 </style>
 </head><body>
 <div class="cs-box">
   ' . ($logo ? '<div class="cs-logo"><img src="' . esc_url($logo) . '" alt="' . esc_attr($name) . '"></div>' : '<div class="cs-logo" style="font-size:28px;font-weight:800;color:#00b4c8">' . esc_html($name) . '</div>') . '
-  <span class="cs-icon">🚧</span>
-  <h1>' . $title . '</h1>
+  ' . $faucet_svg . '
+  <h1>' . esc_html($title) . '</h1>
   <div class="cs-divider"></div>
   <p>' . $message . '</p>
-  <div class="cs-bar"><div class="cs-bar-fill"></div></div>
-  <div class="cs-contact">Küsimused? <a href="mailto:' . esc_attr(get_option('vesho_company_email', get_option('admin_email'))) . '">' . esc_html(get_option('vesho_company_email', get_option('admin_email'))) . '</a></div>
+  ' . ( $is_maintenance ? '' : '<div class="cs-bar"><div class="cs-bar-fill"></div></div>' ) . '
+  <div class="cs-contact">Küsimused? <a href="mailto:' . esc_attr($email) . '">' . esc_html($email) . '</a></div>
 </div>
 </body></html>';
     exit;
