@@ -32,6 +32,8 @@ class Vesho_CRM_Worker_Portal {
             'vesho_worker_release_order',
             'vesho_worker_pick_item',
             'vesho_worker_pack_order',
+            // Location check
+            'vesho_check_warehouse_location',
         ];
         foreach ($nopriv as $a) {
             add_action('wp_ajax_nopriv_' . $a, [__CLASS__, 'ajax_' . str_replace('vesho_worker_', '', $a)]);
@@ -1442,7 +1444,11 @@ foreach ($notices as $notice) : ?>
       <label style="font-size:13px;color:#374151">Müügihind (€)<br>
         <input id="vwp-ai-price" type="number" min="0" step="0.01" placeholder="0.00" style="width:100%;margin-top:4px;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px;box-sizing:border-box"></label>
       <label style="font-size:13px;color:#374151">Laoasukoht<br>
-        <input id="vwp-ai-loc" placeholder="nt A-01-03" style="width:100%;margin-top:4px;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;font-family:monospace;box-sizing:border-box" oninput="this.value=this.value.toUpperCase()"></label>
+        <div style="display:flex;gap:6px;margin-top:4px">
+          <input id="vwp-ai-loc" placeholder="nt A-01-03" style="flex:1;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;font-family:monospace;box-sizing:border-box" oninput="this.value=this.value.toUpperCase()">
+          <button type="button" onclick="vwpScanAddItemLoc()" title="Skänni asukoht" style="padding:0 12px;background:rgba(0,180,200,.1);color:#00b4c8;border:1px solid rgba(0,180,200,.25);border-radius:8px;font-size:14px;cursor:pointer">&#128247;</button>
+        </div>
+      </label>
       <label style="font-size:13px;color:#374151">Märkused<br>
         <textarea id="vwp-ai-notes" rows="2" placeholder="Valikuline" style="width:100%;margin-top:4px;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;resize:vertical;box-sizing:border-box"></textarea></label>
       <div id="vwp-add-item-msg" style="color:#dc2626;font-size:13px;display:none"></div>
@@ -1458,6 +1464,74 @@ foreach ($notices as $notice) : ?>
 (function(){
   var AJAX='<?php echo $ajax; ?>', NONCE='<?php echo $nonce; ?>';
   var loaded={}, itemData={}, currentRecvId=null;
+
+  // Location ↔ EAN encoding (matches 3006 InventoryList.jsx)
+  function eanToLocation(code){
+    var s=String(code||'').replace(/\D/g,'');
+    if(s.length===13&&s[0]==='9'){
+      var blockNum=parseInt(s.slice(1,3),10);
+      if(blockNum>=1&&blockNum<=26){
+        var block=String.fromCharCode(64+blockNum);
+        var shelf=String(parseInt(s.slice(3,5),10)).padStart(2,'0');
+        var pos=String(parseInt(s.slice(5,7),10)).padStart(2,'0');
+        if(shelf&&pos) return block+'-'+shelf+'-'+pos;
+      }
+    }
+    return code.toUpperCase();
+  }
+  function locToEan12(loc){
+    var m=String(loc||'').toUpperCase().match(/^([A-Z])-(\d+)-(\d+)$/);
+    if(!m) return null;
+    var block=String(m[1].charCodeAt(0)-64).padStart(2,'0');
+    var shelf=m[2].padStart(2,'0');
+    var pos=m[3].padStart(2,'0');
+    return '9'+block+shelf+pos+'00000';
+  }
+
+  window.vwpScanLocation = function(rid, itemId){
+    if(typeof window.VeshoScanner==='undefined'){alert('Scanner ei ole saadaval');return;}
+    window.VeshoScanner.open({
+      title:'Skänni laoaadress',
+      autoConfirm:true,
+      manualInput:true,
+      wide:true,
+      onScan:function(code){
+        var loc=eanToLocation(code);
+        var inp=document.getElementById('rl-'+itemId);
+        if(inp) inp.value=loc;
+        if(itemData[rid]&&itemData[rid][itemId]) itemData[rid][itemId].location=loc;
+        // Occupancy check
+        var fd2=new FormData();
+        fd2.append('action','vesho_check_warehouse_location');
+        fd2.append('nonce',NONCE);
+        fd2.append('location_code',loc);
+        fetch(AJAX,{method:'POST',body:fd2}).then(r=>r.json()).then(function(d){
+          if(d.success&&d.data.occupied){
+            var ok=confirm('\u26a0\ufe0f Aadressil '+loc+' on juba:\n'+d.data.item_name+'\n\nKas soovid samale aadressile panna?');
+            if(!ok){
+              if(inp) inp.value='';
+              if(itemData[rid]&&itemData[rid][itemId]) itemData[rid][itemId].location='';
+            }
+          }
+        });
+      }
+    });
+  };
+
+  window.vwpScanAddItemLoc = function(){
+    if(typeof window.VeshoScanner==='undefined'){alert('Scanner ei ole saadaval');return;}
+    window.VeshoScanner.open({
+      title:'Skänni laoaadress',
+      autoConfirm:true,
+      manualInput:true,
+      wide:true,
+      onScan:function(code){
+        var loc=eanToLocation(code);
+        var inp=document.getElementById('vwp-ai-loc');
+        if(inp) inp.value=loc;
+      }
+    });
+  };
 
   window.toggleRecv = function(id, bref){
     var el=document.getElementById('recv-items-'+id);
@@ -1519,7 +1593,8 @@ foreach ($notices as $notice) : ?>
       html+='<input id="rl-'+it.id+'" value="'+(it.location||'')+'" placeholder="Laoasukoht (nt A-01-03)"'+(done?' disabled':'')+
         ' oninput="this.value=this.value.toUpperCase();itemData['+rid+']['+it.id+'].location=this.value"'+
         ' style="flex:1;padding:6px 10px;border:1.5px solid #e2e8f0;border-radius:6px;font-size:12px;font-family:monospace'+(done?';opacity:.5':'')+'">'+
-      '</div>';
+      (done?'':'<button type="button" onclick="vwpScanLocation('+rid+','+it.id+')" title="Skänni asukoht" style="flex-shrink:0;padding:0 8px;height:32px;background:rgba(0,180,200,.1);color:#00b4c8;border:1px solid rgba(0,180,200,.25);border-radius:6px;cursor:pointer;font-size:14px">&#128247;</button>');
+      html+='</div>';
       html+='</div>';
     });
     // Footer buttons
@@ -2950,6 +3025,25 @@ $all_picked = !empty($my_items) && count(array_filter($my_items, fn($i) => $i->p
             : 'Tellimus pakitud ja lõpetatud!';
 
         wp_send_json_success(['message' => $msg, 'refund_pending' => $refund_pending]);
+    }
+
+    // ── Warehouse location occupancy check ────────────────────────────────────
+
+    public static function ajax_check_warehouse_location() {
+        check_ajax_referer('vesho_portal_nonce', 'nonce');
+        $worker = self::get_current_worker();
+        if (!$worker) wp_send_json_error(['message' => 'Pole sisse logitud']);
+        global $wpdb;
+        $code = strtoupper(sanitize_text_field($_POST['location_code'] ?? ''));
+        if (!$code) wp_send_json_error(['message' => 'Kood puudub']);
+        $item = $wpdb->get_row($wpdb->prepare(
+            "SELECT id, name, sku FROM {$wpdb->prefix}vesho_inventory WHERE location=%s LIMIT 1", $code
+        ));
+        if ($item) {
+            wp_send_json_success(['occupied' => true, 'item_name' => $item->name, 'item_sku' => $item->sku ?? '']);
+        } else {
+            wp_send_json_success(['occupied' => false]);
+        }
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
