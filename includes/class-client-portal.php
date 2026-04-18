@@ -299,7 +299,7 @@ tbody tr:last-child td{border-bottom:none}
   <?php endif; ?>
 
   <div class="inv-print-btn">
-    <button onclick="window.print()">🖨️ Prindi / Salvesta PDF</button>
+    <button onclick="window.print()">📄 Laadi PDF</button>
   </div>
 
 </div>

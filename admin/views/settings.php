@@ -45,6 +45,7 @@ $services_page_subtitle = get_option('vesho_services_page_subtitle', '');
         <button type="button" class="crm-tab-btn" data-tab="kupsised">🍪 Küpsised</button>
         <button type="button" class="crm-tab-btn" data-tab="susteem">⚙️ Süsteem</button>
         <button type="button" class="crm-tab-btn" data-tab="valimus">🎨 Välimus</button>
+        <button type="button" class="crm-tab-btn" data-tab="adminid">👤 Adminid</button>
     </div>
     <style>
     .crm-tab-btn{padding:8px 16px;border:none;background:none;cursor:pointer;font-size:13px;font-weight:500;color:#64748b;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s}
@@ -657,7 +658,143 @@ $services_page_subtitle = get_option('vesho_services_page_subtitle', '');
             </div>
         </div>
 
+        <!-- ── TAB: Adminid ──────────────────────────────────────────── -->
+        <div class="crm-tab-section" data-tab-content="adminid">
+        </div>
     </form>
+
+    <?php
+    // ── Adminid tab content — OUTSIDE main form to avoid nesting ──
+    $current_user_id = get_current_user_id();
+    $admins = get_users(['role' => 'administrator', 'orderby' => 'login', 'order' => 'ASC']);
+    $admin_msg = sanitize_text_field($_GET['msg'] ?? '');
+    $tab_hash  = sanitize_text_field($_GET['tab_hash'] ?? '');
+    ?>
+    <div id="adminid-tab-content" style="display:none;margin-top:-20px" data-tab-inject="adminid">
+        <?php if ($tab_hash === 'adminid') : ?>
+        <?php if ($admin_msg === 'admin_added') echo '<div class="crm-alert crm-alert-success">Admin lisatud!</div>'; ?>
+        <?php if ($admin_msg === 'admin_updated') echo '<div class="crm-alert crm-alert-success">Admin uuendatud!</div>'; ?>
+        <?php if ($admin_msg === 'admin_deleted') echo '<div class="crm-alert crm-alert-success">Admin kustutatud!</div>'; ?>
+        <?php if ($admin_msg === 'user_exists') echo '<div class="crm-alert crm-alert-error" style="background:#fee2e2;border-color:#fca5a5;color:#991b1b">Kasutajanimi või e-post on juba kasutusel!</div>'; ?>
+        <?php if ($admin_msg === 'missing_fields') echo '<div class="crm-alert crm-alert-error" style="background:#fee2e2;border-color:#fca5a5;color:#991b1b">Kõik väljad on kohustuslikud!</div>'; ?>
+        <?php if ($admin_msg === 'err') echo '<div class="crm-alert crm-alert-error" style="background:#fee2e2;border-color:#fca5a5;color:#991b1b">Viga! Proovi uuesti.</div>'; ?>
+        <?php endif; ?>
+
+        <div class="crm-card" style="margin-bottom:20px">
+            <div class="crm-card-header"><span class="crm-card-title">👤 Admin kasutajad</span></div>
+            <div style="padding:20px">
+            <table class="crm-table">
+                <thead><tr><th>Kasutajanimi</th><th>E-post</th><th>Nimi</th><th>Viimane sisselogimine</th><th>2FA</th><th></th></tr></thead>
+                <tbody>
+                <?php foreach ($admins as $admin) :
+                    $last_login = get_user_meta($admin->ID, 'session_tokens', true);
+                    $last_login_str = '–';
+                    if (is_array($last_login) && !empty($last_login)) {
+                        $sessions = array_values($last_login);
+                        $last = end($sessions);
+                        if (isset($last['login'])) $last_login_str = date('d.m.Y H:i', $last['login']);
+                    }
+                    $totp_on = get_user_meta($admin->ID, 'vesho_totp_enabled', true);
+                ?>
+                <tr>
+                    <td><strong><?php echo esc_html($admin->user_login); ?></strong></td>
+                    <td><?php echo esc_html($admin->user_email); ?></td>
+                    <td><?php echo esc_html($admin->display_name); ?></td>
+                    <td><?php echo esc_html($last_login_str); ?></td>
+                    <td><?php echo $totp_on ? '<span class="crm-badge badge-success">Aktiivne</span>' : '<span class="crm-badge badge-gray">Keelatud</span>'; ?></td>
+                    <td style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+                        <button type="button" class="crm-btn crm-btn-outline crm-btn-sm"
+                                onclick="document.getElementById('edit-admin-<?php echo $admin->ID; ?>').style.display='block';this.style.display='none'">
+                            ✏️ Muuda
+                        </button>
+                        <?php if ($admin->ID !== $current_user_id) : ?>
+                        <a href="<?php echo wp_nonce_url(admin_url('admin-post.php?action=vesho_delete_admin_user&admin_user_id='.$admin->ID), 'vesho_delete_admin_user'); ?>"
+                           class="crm-btn crm-btn-outline crm-btn-sm"
+                           style="color:#ef4444;border-color:#ef4444"
+                           onclick="return confirm('Kustuta admin <?php echo esc_js($admin->user_login); ?>?')">🗑️ Kustuta</a>
+                        <?php else : ?>
+                        <span style="font-size:11px;color:#6b8599">(sina)</span>
+                        <?php endif; ?>
+                    </td>
+                </tr>
+                <tr id="edit-admin-<?php echo $admin->ID; ?>" style="display:none">
+                    <td colspan="6" style="background:#f8fafc">
+                    <form method="POST" action="<?php echo admin_url('admin-post.php'); ?>" style="padding:12px">
+                        <?php wp_nonce_field('vesho_save_admin_user'); ?>
+                        <input type="hidden" name="action" value="vesho_save_admin_user">
+                        <input type="hidden" name="admin_user_id" value="<?php echo $admin->ID; ?>">
+                        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:10px;align-items:end">
+                            <div>
+                                <label class="crm-form-label">E-post</label>
+                                <input class="crm-form-input" type="email" name="email" value="<?php echo esc_attr($admin->user_email); ?>">
+                            </div>
+                            <div>
+                                <label class="crm-form-label">Kuvataav nimi</label>
+                                <input class="crm-form-input" type="text" name="display_name" value="<?php echo esc_attr($admin->display_name); ?>">
+                            </div>
+                            <div>
+                                <label class="crm-form-label">Uus parool</label>
+                                <input class="crm-form-input" type="password" name="password" placeholder="Jäta tühjaks kui ei muuda">
+                            </div>
+                            <div>
+                                <button type="submit" class="crm-btn crm-btn-primary crm-btn-sm">💾 Salvesta</button>
+                                <button type="button" class="crm-btn crm-btn-outline crm-btn-sm"
+                                        onclick="document.getElementById('edit-admin-<?php echo $admin->ID; ?>').style.display='none'">Tühista</button>
+                            </div>
+                        </div>
+                    </form>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+            </div>
+        </div>
+
+        <div class="crm-card">
+            <div class="crm-card-header"><span class="crm-card-title">➕ Lisa admin</span></div>
+            <div style="padding:20px">
+            <form method="POST" action="<?php echo admin_url('admin-post.php'); ?>">
+                <?php wp_nonce_field('vesho_save_admin_user'); ?>
+                <input type="hidden" name="action" value="vesho_save_admin_user">
+                <input type="hidden" name="admin_user_id" value="0">
+                <div class="crm-form-grid">
+                    <div class="crm-form-group">
+                        <label class="crm-form-label">Kasutajanimi *</label>
+                        <input class="crm-form-input" type="text" name="username" required>
+                    </div>
+                    <div class="crm-form-group">
+                        <label class="crm-form-label">E-post *</label>
+                        <input class="crm-form-input" type="email" name="email" required>
+                    </div>
+                    <div class="crm-form-group">
+                        <label class="crm-form-label">Kuvataav nimi</label>
+                        <input class="crm-form-input" type="text" name="display_name">
+                    </div>
+                    <div class="crm-form-group">
+                        <label class="crm-form-label">Parool *</label>
+                        <input class="crm-form-input" type="password" name="password" required>
+                    </div>
+                </div>
+                <div class="crm-form-actions" style="justify-content:flex-start">
+                    <button type="submit" class="crm-btn crm-btn-primary">➕ Lisa admin</button>
+                </div>
+            </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    (function(){
+        var inject = document.getElementById('adminid-tab-content');
+        if (!inject) return;
+        var target = document.querySelector('[data-tab-content="adminid"]');
+        if (target) {
+            while (inject.firstChild) target.appendChild(inject.firstChild);
+            inject.parentNode.removeChild(inject);
+        }
+    })();
+    </script>
 
     <?php /* ── Notices — own form, OUTSIDE main settings form to avoid nested-form HTML bug ── */ ?>
     <div class="crm-card" style="margin-top:20px">
@@ -750,9 +887,10 @@ document.querySelectorAll('.crm-tab-btn').forEach(function(btn) {
         if (target) target.classList.add('active');
     });
 });
-// Activate tab from URL hash
+// Activate tab from URL hash or tab_hash GET param
 (function() {
     var hash = location.hash.replace('#', '');
+    <?php if (!empty($_GET['tab_hash'])) echo "if(!hash) hash = " . json_encode(sanitize_text_field($_GET['tab_hash'])) . ";"; ?>
     if (hash) {
         var btn = document.querySelector('[data-tab="' + hash + '"]');
         if (btn) btn.click();

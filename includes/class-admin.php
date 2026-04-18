@@ -65,6 +65,16 @@ class Vesho_CRM_Admin {
         add_action( 'admin_post_vesho_generate_worker_barcode', array( __CLASS__, 'handle_generate_worker_barcode' ) );
         add_action( 'admin_post_vesho_export_invoices_csv',     array( __CLASS__, 'handle_export_invoices_csv' ) );
         add_action( 'admin_post_vesho_export_maintenances_csv', array( __CLASS__, 'handle_export_maintenances_csv' ) );
+        // Feature: Admin user management
+        add_action( 'admin_post_vesho_save_admin_user',   array( __CLASS__, 'handle_save_admin_user' ) );
+        add_action( 'admin_post_vesho_delete_admin_user', array( __CLASS__, 'handle_delete_admin_user' ) );
+        // Feature: TOTP 2FA
+        add_action( 'admin_post_vesho_save_2fa',          array( __CLASS__, 'handle_save_2fa' ) );
+        add_action( 'admin_post_vesho_disable_2fa',       array( __CLASS__, 'handle_disable_2fa' ) );
+        add_action( 'admin_menu',                         array( __CLASS__, 'register_my_account_page' ) );
+        add_action( 'wp_login',                           array( __CLASS__, 'after_wp_login' ), 10, 2 );
+        add_action( 'login_form_vesho_2fa',               array( __CLASS__, 'render_2fa_login_page' ) );
+        add_action( 'admin_bar_menu',                     array( __CLASS__, 'add_my_account_admin_bar_link' ), 999 );
     }
 
     // ── Menu registration ──────────────────────────────────────────────────────
@@ -123,6 +133,79 @@ class Vesho_CRM_Admin {
                 include VESHO_CRM_PATH . 'admin/views/releases.php';
             }
         );
+    }
+
+    public static function register_my_account_page() {
+        add_submenu_page( null, 'Minu konto', 'Minu konto', 'manage_options', 'vesho-my-account', array( __CLASS__, 'page_my_account' ) );
+    }
+
+    public static function add_my_account_admin_bar_link( $wp_admin_bar ) {
+        if ( ! current_user_can( 'manage_options' ) ) return;
+        $wp_admin_bar->add_node( array(
+            'id'    => 'vesho-my-account',
+            'title' => '🔐 Minu konto (2FA)',
+            'href'  => admin_url( 'admin.php?page=vesho-my-account' ),
+            'parent'=> 'top-secondary',
+        ) );
+    }
+
+    public static function page_my_account() {
+        $user = wp_get_current_user();
+        $totp_enabled = get_user_meta( $user->ID, 'vesho_totp_enabled', true );
+        $secret       = get_user_meta( $user->ID, 'vesho_totp_secret',  true );
+        $msg = sanitize_text_field( $_GET['msg'] ?? '' );
+        ?>
+        <div class="wrap">
+            <h1>🔐 Minu konto — 2FA seaded</h1>
+            <?php if ( $msg === 'enabled' ) echo '<div class="notice notice-success"><p>2FA aktiveeritud!</p></div>'; ?>
+            <?php if ( $msg === 'disabled' ) echo '<div class="notice notice-success"><p>2FA keelatud.</p></div>'; ?>
+            <?php if ( $msg === 'bad_code' ) echo '<div class="notice notice-error"><p>Vale kood. Proovi uuesti.</p></div>'; ?>
+
+            <div style="max-width:520px;margin-top:20px">
+            <?php if ( $totp_enabled ) : ?>
+                <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:20px;margin-bottom:20px">
+                    <strong style="color:#166534">✅ 2FA on aktiivne</strong>
+                    <p style="margin:8px 0 0">Sisselogimisel nõutakse Google Authenticatori koodi.</p>
+                </div>
+                <form method="POST" action="<?php echo admin_url('admin-post.php'); ?>">
+                    <?php wp_nonce_field('vesho_disable_2fa'); ?>
+                    <input type="hidden" name="action" value="vesho_disable_2fa">
+                    <button type="submit" class="button button-secondary" onclick="return confirm('Keela 2FA?')">🔓 Keela 2FA</button>
+                </form>
+            <?php else :
+                // Generate a fresh secret for setup
+                $setup_secret = get_user_meta( $user->ID, 'vesho_totp_pending_secret', true );
+                if ( empty($setup_secret) ) {
+                    $setup_secret = self::totp_generate_secret();
+                    update_user_meta( $user->ID, 'vesho_totp_pending_secret', $setup_secret );
+                }
+                $qr_label = rawurlencode( 'Vesho:' . $user->user_email );
+                $qr_url   = 'otpauth://totp/' . $qr_label . '?secret=' . $setup_secret . '&issuer=Vesho';
+                $qr_img   = 'https://chart.googleapis.com/chart?chs=200x200&chld=M|0&cht=qr&chl=' . rawurlencode($qr_url);
+            ?>
+                <div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:20px;margin-bottom:20px">
+                    <h3 style="margin-top:0">Seadista Google Authenticator</h3>
+                    <p>1. Laadi alla <strong>Google Authenticator</strong> või <strong>Authy</strong> rakendus.</p>
+                    <p>2. Skaneeri QR-kood:</p>
+                    <img src="<?php echo esc_url($qr_img); ?>" alt="QR Code" style="display:block;margin:12px 0;border:1px solid #e2e8f0">
+                    <p style="font-size:12px;color:#6b8599">Või sisesta käsitsi: <code style="user-select:all;padding:4px 8px;background:#f1f5f9;border-radius:4px"><?php echo esc_html($setup_secret); ?></code></p>
+                    <p>3. Sisesta rakenduse 6-kohaline kood kinnituseks:</p>
+                    <form method="POST" action="<?php echo admin_url('admin-post.php'); ?>">
+                        <?php wp_nonce_field('vesho_save_2fa'); ?>
+                        <input type="hidden" name="action" value="vesho_save_2fa">
+                        <input type="hidden" name="setup_secret" value="<?php echo esc_attr($setup_secret); ?>">
+                        <div style="display:flex;gap:8px;align-items:center;margin-top:12px">
+                            <input type="text" name="totp_code" maxlength="6" minlength="6" pattern="[0-9]{6}"
+                                   placeholder="000000" required autocomplete="one-time-code"
+                                   style="width:120px;font-size:20px;letter-spacing:4px;text-align:center;padding:8px;border:1px solid #ccc;border-radius:6px">
+                            <button type="submit" class="button button-primary">✅ Aktiveeri 2FA</button>
+                        </div>
+                    </form>
+                </div>
+            <?php endif; ?>
+            </div>
+        </div>
+        <?php
     }
 
     // ── Page renderers ─────────────────────────────────────────────────────────
@@ -1890,5 +1973,230 @@ private static function load_view( $name ) {
         }
 
         return ['done' => false, 'message' => "Makse meetodit '$method' ei toetata automaatseks tagastuseks"];
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // Feature: Admin kasutajahaldus
+    // ══════════════════════════════════════════════════════════════════════════
+
+    public static function handle_save_admin_user() {
+        check_admin_referer( 'vesho_save_admin_user' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorized' );
+
+        $id           = absint( $_POST['admin_user_id'] ?? 0 );
+        $username     = sanitize_user( $_POST['username'] ?? '' );
+        $email        = sanitize_email( $_POST['email'] ?? '' );
+        $display_name = sanitize_text_field( $_POST['display_name'] ?? '' );
+        $password     = $_POST['password'] ?? '';
+
+        if ( $id ) {
+            // Update existing
+            $data = [];
+            if ( $email ) $data['user_email'] = $email;
+            if ( $display_name ) $data['display_name'] = $display_name;
+            if ( ! empty($password) ) $data['user_pass'] = $password;
+            if ( ! empty($data) ) {
+                $data['ID'] = $id;
+                $result = wp_update_user( $data );
+                if ( is_wp_error($result) ) {
+                    wp_redirect( add_query_arg( ['page' => 'vesho-crm-settings', 'tab_hash' => 'adminid', 'msg' => 'err'], admin_url('admin.php') ) );
+                    exit;
+                }
+            }
+            $msg = 'admin_updated';
+        } else {
+            // Create new admin
+            if ( ! $username || ! $email || ! $password ) {
+                wp_redirect( add_query_arg( ['page' => 'vesho-crm-settings', 'tab_hash' => 'adminid', 'msg' => 'missing_fields'], admin_url('admin.php') ) );
+                exit;
+            }
+            if ( username_exists($username) || email_exists($email) ) {
+                wp_redirect( add_query_arg( ['page' => 'vesho-crm-settings', 'tab_hash' => 'adminid', 'msg' => 'user_exists'], admin_url('admin.php') ) );
+                exit;
+            }
+            $new_user_id = wp_create_user( $username, $password, $email );
+            if ( is_wp_error($new_user_id) ) {
+                wp_redirect( add_query_arg( ['page' => 'vesho-crm-settings', 'tab_hash' => 'adminid', 'msg' => 'err'], admin_url('admin.php') ) );
+                exit;
+            }
+            $u = new WP_User( $new_user_id );
+            $u->set_role( 'administrator' );
+            if ( $display_name ) wp_update_user( ['ID' => $new_user_id, 'display_name' => $display_name] );
+            $msg = 'admin_added';
+        }
+
+        wp_redirect( add_query_arg( ['page' => 'vesho-crm-settings', 'tab_hash' => 'adminid', 'msg' => $msg], admin_url('admin.php') ) );
+        exit;
+    }
+
+    public static function handle_delete_admin_user() {
+        check_admin_referer( 'vesho_delete_admin_user' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorized' );
+
+        $id = absint( $_GET['admin_user_id'] ?? 0 );
+        $current_user_id = get_current_user_id();
+        if ( ! $id ) wp_die( 'Vigane kasutaja ID' );
+        if ( $id === $current_user_id ) wp_die( 'Ei saa iseennast kustutada' );
+
+        require_once ABSPATH . 'wp-admin/includes/user.php';
+        wp_delete_user( $id );
+
+        wp_redirect( add_query_arg( ['page' => 'vesho-crm-settings', 'tab_hash' => 'adminid', 'msg' => 'admin_deleted'], admin_url('admin.php') ) );
+        exit;
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // Feature: TOTP 2FA — pure PHP, no external libraries
+    // ══════════════════════════════════════════════════════════════════════════
+
+    public static function totp_generate_secret( $length = 16 ) {
+        $chars  = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+        $secret = '';
+        for ( $i = 0; $i < $length; $i++ ) {
+            $secret .= $chars[ random_int(0, 31) ];
+        }
+        return $secret;
+    }
+
+    private static function base32_decode( $secret ) {
+        $alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+        $output   = '';
+        $v        = 0;
+        $b        = 0;
+        foreach ( str_split( strtoupper($secret) ) as $c ) {
+            $pos = strpos( $alphabet, $c );
+            if ( $pos === false ) continue;
+            $v  = ( $v << 5 ) | $pos;
+            $b += 5;
+            if ( $b >= 8 ) {
+                $output .= chr( ($v >> ($b -= 8)) & 255 );
+            }
+        }
+        return $output;
+    }
+
+    private static function totp_get_code( $secret, $time = null ) {
+        $time = $time ?? floor( time() / 30 );
+        $msg  = pack( 'J', $time );
+        $hash = hash_hmac( 'sha1', $msg, self::base32_decode($secret), true );
+        $off  = ord( $hash[19] ) & 0xf;
+        $code = (
+            ( ( ord($hash[$off+0]) & 0x7f ) << 24 ) |
+            ( ( ord($hash[$off+1]) & 0xff ) << 16 ) |
+            ( ( ord($hash[$off+2]) & 0xff ) <<  8 ) |
+            ( ( ord($hash[$off+3]) & 0xff ) )
+        ) % 1000000;
+        return str_pad( $code, 6, '0', STR_PAD_LEFT );
+    }
+
+    public static function totp_verify( $secret, $code, $window = 1 ) {
+        $time = floor( time() / 30 );
+        for ( $i = -$window; $i <= $window; $i++ ) {
+            if ( self::totp_get_code($secret, $time + $i) === $code ) return true;
+        }
+        return false;
+    }
+
+    public static function handle_save_2fa() {
+        check_admin_referer( 'vesho_save_2fa' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorized' );
+
+        $user_id      = get_current_user_id();
+        $setup_secret = sanitize_text_field( $_POST['setup_secret'] ?? '' );
+        $totp_code    = sanitize_text_field( $_POST['totp_code'] ?? '' );
+
+        if ( ! self::totp_verify($setup_secret, $totp_code) ) {
+            wp_redirect( add_query_arg( ['page' => 'vesho-my-account', 'msg' => 'bad_code'], admin_url('admin.php') ) );
+            exit;
+        }
+
+        update_user_meta( $user_id, 'vesho_totp_secret',  $setup_secret );
+        update_user_meta( $user_id, 'vesho_totp_enabled', 1 );
+        delete_user_meta( $user_id, 'vesho_totp_pending_secret' );
+
+        wp_redirect( add_query_arg( ['page' => 'vesho-my-account', 'msg' => 'enabled'], admin_url('admin.php') ) );
+        exit;
+    }
+
+    public static function handle_disable_2fa() {
+        check_admin_referer( 'vesho_disable_2fa' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorized' );
+
+        $user_id = get_current_user_id();
+        update_user_meta( $user_id, 'vesho_totp_enabled', 0 );
+        delete_user_meta( $user_id, 'vesho_totp_secret' );
+        delete_user_meta( $user_id, 'vesho_totp_pending_secret' );
+
+        wp_redirect( add_query_arg( ['page' => 'vesho-my-account', 'msg' => 'disabled'], admin_url('admin.php') ) );
+        exit;
+    }
+
+    /**
+     * After WP login: if user has 2FA enabled, log them out and redirect to 2FA page.
+     */
+    public static function after_wp_login( $user_login, $user ) {
+        if ( ! in_array('administrator', (array) $user->roles) ) return;
+        if ( ! get_user_meta( $user->ID, 'vesho_totp_enabled', true ) ) return;
+
+        // Store token in transient
+        $token = wp_generate_password( 32, false );
+        set_transient( 'vesho_2fa_' . $token, $user->ID, 300 ); // 5 min
+
+        // Log them out
+        wp_logout();
+
+        // Redirect to 2FA page
+        $redirect = add_query_arg( ['action' => 'vesho_2fa', 'token' => $token], wp_login_url() );
+        wp_safe_redirect( $redirect );
+        exit;
+    }
+
+    /**
+     * Render the 2FA verification page on wp-login.php?action=vesho_2fa
+     */
+    public static function render_2fa_login_page() {
+        $token = sanitize_text_field( $_REQUEST['token'] ?? '' );
+        $code  = sanitize_text_field( $_POST['totp_code'] ?? '' );
+        $error = '';
+
+        if ( $_SERVER['REQUEST_METHOD'] === 'POST' ) {
+            $user_id = get_transient( 'vesho_2fa_' . $token );
+            if ( ! $user_id ) {
+                $error = 'Sessioon aegus. Palun logi uuesti sisse.';
+            } else {
+                $secret = get_user_meta( $user_id, 'vesho_totp_secret', true );
+                if ( self::totp_verify($secret, $code) ) {
+                    delete_transient( 'vesho_2fa_' . $token );
+                    // Log user in
+                    wp_set_current_user( $user_id );
+                    wp_set_auth_cookie( $user_id, false );
+                    do_action( 'wp_login', get_user_by('id', $user_id)->user_login, get_user_by('id', $user_id) );
+                    wp_safe_redirect( admin_url() );
+                    exit;
+                } else {
+                    $error = 'Vale kood. Proovi uuesti.';
+                }
+            }
+        }
+
+        // Render the 2FA form
+        login_header( '2FA kinnitus', '', null );
+        ?>
+        <form method="POST" action="<?php echo esc_url( add_query_arg(['action' => 'vesho_2fa', 'token' => $token], wp_login_url()) ); ?>">
+            <p><?php esc_html_e('Sisesta Google Authenticatori 6-kohaline kood:', 'vesho-crm'); ?></p>
+            <?php if ($error) echo '<div class="error" style="padding:8px;color:#d63638">' . esc_html($error) . '</div>'; ?>
+            <p>
+                <label for="totp_code">Autentimiskood</label>
+                <input type="text" name="totp_code" id="totp_code" class="input" maxlength="6" minlength="6"
+                       pattern="[0-9]{6}" autocomplete="one-time-code" autofocus required
+                       style="font-size:24px;letter-spacing:6px;text-align:center;width:100%;padding:10px">
+            </p>
+            <p class="submit">
+                <input type="submit" name="wp-submit" id="wp-submit" class="button button-primary button-large" value="Kinnita">
+            </p>
+        </form>
+        <?php
+        login_footer();
+        exit;
     }
 }

@@ -540,23 +540,39 @@ foreach ($notices as $notice) : ?>
 
   function showMsg(ok,txt){var m=document.getElementById('vwp-clock-msg');if(!m)return;m.style.display='block';m.className='vwp-msg '+(ok?'success':'error');m.textContent=txt;}
 
+  function getGPS(cb) {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        function(pos){ cb(pos.coords.latitude, pos.coords.longitude); },
+        function(){ cb(null, null); },
+        { timeout: 5000, maximumAge: 60000 }
+      );
+    } else { cb(null, null); }
+  }
+
   var ci=document.getElementById('vwp-clockin-btn');
   if(ci) ci.addEventListener('click',function(){
-    var fd=new FormData(); fd.append('action','vesho_worker_clock_in'); fd.append('nonce',NONCE);
     ci.disabled=true; ci.textContent='...';
-    fetch(AJAX,{method:'POST',body:fd}).then(function(r){return r.json();}).then(function(d){
-      if(d.success){ showMsg(true,d.data.message||'Sisse löödud!'); setTimeout(function(){window.location.reload();},800); }
-      else { showMsg(false,(d.data&&d.data.message)||'Viga'); ci.disabled=false; ci.textContent='▶ Alusta tööpäeva'; }
+    getGPS(function(lat,lng){
+      var fd=new FormData(); fd.append('action','vesho_worker_clock_in'); fd.append('nonce',NONCE);
+      if(lat!==null){ fd.append('lat',lat); fd.append('lng',lng); }
+      fetch(AJAX,{method:'POST',body:fd}).then(function(r){return r.json();}).then(function(d){
+        if(d.success){ showMsg(true,d.data.message||'Sisse löödud!'); setTimeout(function(){window.location.reload();},800); }
+        else { showMsg(false,(d.data&&d.data.message)||'Viga'); ci.disabled=false; ci.textContent='▶ Alusta tööpäeva'; }
+      });
     });
   });
 
   var co=document.getElementById('vwp-clockout-btn');
   if(co) co.addEventListener('click',function(){
-    var fd=new FormData(); fd.append('action','vesho_worker_clock_out'); fd.append('nonce',NONCE); fd.append('entry_id',co.dataset.id);
     co.disabled=true; co.textContent='...';
-    fetch(AJAX,{method:'POST',body:fd}).then(function(r){return r.json();}).then(function(d){
-      if(d.success){ showMsg(true,d.data.message||'Lõpetatud!'); setTimeout(function(){window.location.reload();},800); }
-      else { showMsg(false,(d.data&&d.data.message)||'Viga'); co.disabled=false; co.textContent='■ Lõpeta tööpäev'; }
+    getGPS(function(lat,lng){
+      var fd=new FormData(); fd.append('action','vesho_worker_clock_out'); fd.append('nonce',NONCE); fd.append('entry_id',co.dataset.id);
+      if(lat!==null){ fd.append('lat',lat); fd.append('lng',lng); }
+      fetch(AJAX,{method:'POST',body:fd}).then(function(r){return r.json();}).then(function(d){
+        if(d.success){ showMsg(true,d.data.message||'Lõpetatud!'); setTimeout(function(){window.location.reload();},800); }
+        else { showMsg(false,(d.data&&d.data.message)||'Viga'); co.disabled=false; co.textContent='■ Lõpeta tööpäev'; }
+      });
     });
   });
 
@@ -2283,13 +2299,20 @@ $all_picked = !empty($my_items) && count(array_filter($my_items, fn($i) => $i->p
         if ($open) wp_send_json_error(['message' => 'Oled juba sisse löödud']);
 
         $now = current_time('mysql');
-        $wpdb->insert($wpdb->prefix . 'vesho_work_hours', [
+        $lat = isset($_POST['lat']) ? (float) $_POST['lat'] : null;
+        $lng = isset($_POST['lng']) ? (float) $_POST['lng'] : null;
+        $row = [
             'worker_id'  => $wid,
             'date'       => current_time('Y-m-d'),
             'hours'      => 0,
             'start_time' => $now,
             'created_at' => $now,
-        ]);
+        ];
+        if ($lat !== null && $lng !== null && $lat !== 0.0 && $lng !== 0.0) {
+            $row['clock_in_lat'] = $lat;
+            $row['clock_in_lng'] = $lng;
+        }
+        $wpdb->insert($wpdb->prefix . 'vesho_work_hours', $row);
         wp_send_json_success(['message' => 'Sisse löödud kell ' . date('H:i', strtotime($now))]);
     }
 
@@ -2317,9 +2340,16 @@ $all_picked = !empty($my_items) && count(array_filter($my_items, fn($i) => $i->p
         $end_ts      = strtotime($now);
         $hours_float = round(($end_ts - $start_ts) / 3600, 2);
 
+        $update_data = ['end_time' => $now, 'hours' => max(0.01, $hours_float)];
+        $lat = isset($_POST['lat']) ? (float) $_POST['lat'] : null;
+        $lng = isset($_POST['lng']) ? (float) $_POST['lng'] : null;
+        if ($lat !== null && $lng !== null && $lat !== 0.0 && $lng !== 0.0) {
+            $update_data['clock_out_lat'] = $lat;
+            $update_data['clock_out_lng'] = $lng;
+        }
         $wpdb->update(
             $wpdb->prefix . 'vesho_work_hours',
-            ['end_time' => $now, 'hours' => max(0.01, $hours_float)],
+            $update_data,
             ['id' => $entry_id, 'worker_id' => $wid]
         );
         wp_send_json_success(['message' => sprintf('Välja löödud. Töötasid %.1f tundi.', $hours_float)]);
