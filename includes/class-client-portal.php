@@ -13,6 +13,8 @@ class Vesho_CRM_Client_Portal {
         add_action('template_redirect', [__CLASS__, 'maybe_print_invoice']);
 
         $nopriv_actions = ['vesho_client_login', 'vesho_client_register', 'vesho_client_logout'];
+        add_action('wp_ajax_vesho_resend_verification',        [__CLASS__, 'ajax_resend_verification']);
+        add_action('wp_ajax_nopriv_vesho_resend_verification', [__CLASS__, 'ajax_resend_verification']);
         add_action('wp_ajax_nopriv_vesho_forgot_password', [__CLASS__, 'ajax_forgot_password']);
         add_action('wp_ajax_vesho_forgot_password',        [__CLASS__, 'ajax_forgot_password']);
         $auth_actions   = [
@@ -382,6 +384,12 @@ tbody tr:last-child td{border-bottom:none}
             self::render_login_form();
             return ob_get_clean();
         }
+        // ── Email not verified — show blocked screen ──────────────────────────
+        if ( isset($client->email_verified) && (int)$client->email_verified === 0 ) {
+            ob_start();
+            self::render_verify_blocked($client);
+            return ob_get_clean();
+        }
         ob_start();
         self::render_portal($client);
         // Cookie consent
@@ -417,6 +425,98 @@ tbody tr:last-child td{border-bottom:none}
 HTML;
         }
         return ob_get_clean();
+    }
+
+    // ── Email verify blocked screen ───────────────────────────────────────────
+
+    private static function render_verify_blocked($client) {
+        $ajax  = esc_url(admin_url('admin-ajax.php'));
+        $nonce = wp_create_nonce('vesho_portal_nonce');
+        $email = esc_html($client->email ?? '');
+        $logout_url = esc_url(wp_logout_url(home_url('/klient/')));
+        ?>
+<style>
+@keyframes drip{0%,100%{transform:scaleY(1) translateY(0);opacity:1}50%{transform:scaleY(1.3) translateY(4px);opacity:.7}80%{transform:scaleY(.8) translateY(8px);opacity:.4}85%{opacity:0;transform:scaleY(.5) translateY(14px)}86%{opacity:0;transform:scaleY(1) translateY(0)}100%{opacity:1}}
+@keyframes drop-fall{0%{opacity:0;transform:translateY(0) scaleY(1)}20%{opacity:1}80%{opacity:1}100%{opacity:0;transform:translateY(36px) scaleY(1.6)}}
+.vverify-wrap{min-height:80vh;display:flex;align-items:center;justify-content:center;padding:32px 20px;font-family:'Barlow',sans-serif,Arial}
+.vverify-card{background:#fff;border-radius:16px;padding:48px 40px;box-shadow:0 20px 60px rgba(0,0,0,.1);max-width:440px;width:100%;text-align:center;position:relative}
+.vverify-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,#00b4c8,#0891a8);border-radius:16px 16px 0 0}
+.vverify-faucet{margin:0 auto 28px;width:72px;height:72px;position:relative}
+.vverify-faucet svg{width:72px;height:72px}
+.vverify-drop{position:absolute;left:50%;transform:translateX(-50%);bottom:-8px;width:10px;height:14px;background:#00b4c8;border-radius:50% 50% 60% 60%;animation:drop-fall 1.8s ease-in infinite;opacity:0}
+.vverify-drop:nth-child(2){animation-delay:.6s}
+.vverify-drop:nth-child(3){animation-delay:1.2s}
+.vverify-h{font-size:1.4rem;font-weight:800;color:#0d1f2d;margin:0 0 10px;font-family:'Barlow Condensed',sans-serif,Arial;text-transform:uppercase;letter-spacing:.5px}
+.vverify-sub{color:#6b8599;font-size:14px;line-height:1.6;margin:0 0 8px}
+.vverify-email{display:inline-block;background:#f0fbfc;color:#0891a8;border-radius:6px;padding:4px 12px;font-size:13px;font-weight:600;margin-bottom:24px}
+.vverify-btn{display:block;width:100%;padding:13px;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:10px;transition:.2s;font-family:inherit;letter-spacing:.3px}
+.vverify-btn-primary{background:#00b4c8;color:#fff}
+.vverify-btn-primary:hover{background:#0891a8}
+.vverify-btn-primary:disabled{background:#a0c8d0;cursor:not-allowed}
+.vverify-btn-ghost{background:transparent;color:#6b8599;border:1.5px solid #e0e6eb}
+.vverify-btn-ghost:hover{border-color:#00b4c8;color:#0891a8}
+.vverify-msg{font-size:13px;padding:8px 14px;border-radius:6px;margin-bottom:12px;display:none}
+.vverify-msg.ok{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0}
+.vverify-msg.err{background:#fef2f2;color:#b91c1c;border:1px solid #fecaca}
+.vverify-divider{border:none;border-top:1px solid #e8edf0;margin:20px 0}
+</style>
+<div class="vverify-wrap">
+  <div class="vverify-card">
+    <div class="vverify-faucet">
+      <svg viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- faucet body -->
+        <rect x="8" y="20" width="32" height="10" rx="5" fill="#0d1f2d"/>
+        <rect x="28" y="28" width="10" height="18" rx="4" fill="#0d1f2d"/>
+        <rect x="22" y="44" width="22" height="6" rx="3" fill="#1a3a4a"/>
+        <!-- handle -->
+        <rect x="36" y="16" width="22" height="7" rx="3.5" fill="#00b4c8"/>
+        <rect x="54" y="12" width="7" height="15" rx="3.5" fill="#00b4c8"/>
+        <!-- spout tip -->
+        <path d="M28 50 Q33 56 38 50" stroke="#00b4c8" stroke-width="2" fill="none"/>
+      </svg>
+      <div class="vverify-drop"></div>
+      <div class="vverify-drop"></div>
+      <div class="vverify-drop"></div>
+    </div>
+    <h2 class="vverify-h">Kinnita e-posti aadress</h2>
+    <p class="vverify-sub">Saatsime kinnituslingi aadressile</p>
+    <span class="vverify-email"><?php echo $email; ?></span>
+    <div class="vverify-msg" id="vverify-msg"></div>
+    <button class="vverify-btn vverify-btn-primary" id="vverify-resend-btn" onclick="veshoResendVerify()">
+      📧 Saada kinnituslink uuesti
+    </button>
+    <hr class="vverify-divider">
+    <p class="vverify-sub" style="font-size:12px;margin-bottom:14px">Kui oled kinnituslingil klikkinud, värskenda lehte:</p>
+    <button class="vverify-btn vverify-btn-ghost" onclick="window.location.reload()">🔄 Värskenda lehte</button>
+    <hr class="vverify-divider">
+    <a href="<?php echo $logout_url; ?>" style="font-size:12px;color:#a0b0bc;text-decoration:none">← Logi välja</a>
+  </div>
+</div>
+<script>
+function veshoResendVerify(){
+  var btn=document.getElementById('vverify-resend-btn');
+  var msg=document.getElementById('vverify-msg');
+  btn.disabled=true; btn.textContent='Saadan...';
+  msg.style.display='none';
+  var fd=new FormData();
+  fd.append('action','vesho_resend_verification');
+  fd.append('nonce','<?php echo $nonce; ?>');
+  fetch('<?php echo $ajax; ?>',{method:'POST',body:fd})
+    .then(function(r){return r.json();})
+    .then(function(d){
+      msg.style.display='block';
+      msg.className='vverify-msg '+(d.success?'ok':'err');
+      msg.textContent=(d.data&&d.data.message)||(d.success?'Saadetud!':'Viga');
+      btn.disabled=false;
+      btn.textContent='📧 Saada kinnituslink uuesti';
+    })
+    .catch(function(){
+      msg.style.display='block';msg.className='vverify-msg err';msg.textContent='Ühenduse viga';
+      btn.disabled=false;btn.textContent='📧 Saada kinnituslink uuesti';
+    });
+}
+</script>
+        <?php
     }
 
     // ── Login / Register form ─────────────────────────────────────────────────
@@ -1716,15 +1816,6 @@ function setMsg(m){document.getElementById('vcp-pay-msg').textContent=m;}
             wp_logout();
             wp_send_json_error(['message' => 'See konto ei ole kliendi konto']);
         }
-        // Check email verification (only for clients created after verification was added)
-        global $wpdb;
-        $client = $wpdb->get_row($wpdb->prepare(
-            "SELECT email_verified FROM {$wpdb->prefix}vesho_clients WHERE user_id=%d LIMIT 1", $user->ID
-        ));
-        if ($client && isset($client->email_verified) && (int)$client->email_verified === 0) {
-            wp_logout();
-            wp_send_json_error(['message' => 'E-posti aadress on kinnitamata. Palun kontrolli oma postkasti.', 'unverified' => true]);
-        }
         $portal = get_page_by_path('klient');
         wp_send_json_success(['message' => 'Sisselogimine õnnestus!', 'redirect' => $portal ? get_permalink($portal) : home_url('/klient/')]);
     }
@@ -1842,6 +1933,40 @@ function setMsg(m){document.getElementById('vcp-pay-msg').textContent=m;}
         );
 
         wp_send_json_success(['message' => 'Kui see e-posti aadress on registreeritud, saatsime parooli lähtestamise lingi.']);
+    }
+
+    // ── AJAX: Resend verification email ──────────────────────────────────────
+
+    public static function ajax_resend_verification() {
+        check_ajax_referer('vesho_portal_nonce', 'nonce');
+        if ( ! is_user_logged_in() ) wp_send_json_error(['message' => 'Pole sisse logitud']);
+        global $wpdb;
+        $user   = wp_get_current_user();
+        $client = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM {$wpdb->prefix}vesho_clients WHERE user_id=%d LIMIT 1", $user->ID
+        ));
+        if ( ! $client ) wp_send_json_error(['message' => 'Kliendi konto ei leitud']);
+        if ( (int)$client->email_verified === 1 ) {
+            wp_send_json_success(['message' => 'E-post on juba kinnitatud! Värskenda lehte.']);
+        }
+        // Generate fresh token
+        $token = wp_generate_password(32, false);
+        $wpdb->update(
+            $wpdb->prefix . 'vesho_clients',
+            ['email_verify_token' => $token],
+            ['id' => $client->id]
+        );
+        $portal     = get_page_by_path('klient');
+        $base_url   = $portal ? get_permalink($portal) : home_url('/klient/');
+        $verify_url = add_query_arg('verify_email', $token, $base_url);
+        $co         = get_option('vesho_company_name', 'Vesho OÜ');
+        $name       = $client->name ?? 'klient';
+        wp_mail(
+            $client->email,
+            $co . ' — Kinnita e-posti aadress',
+            "Tere, {$name}!\n\nKinnitamaks oma e-posti aadressi, palun klõpsa alloleval lingil (kehtib 24h):\n\n{$verify_url}\n\nLugupidamisega,\n{$co}"
+        );
+        wp_send_json_success(['message' => 'Kinnituslink saadetud! Kontrolli postkasti.']);
     }
 
     // ── AJAX: Update profile ──────────────────────────────────────────────────
