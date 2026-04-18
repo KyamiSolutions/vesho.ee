@@ -895,8 +895,7 @@ add_shortcode( 'vesho_shop_grid', function () {
     // Fetch categories from managed table (with colors), fall back to distinct values
     $managed_cats = $wpdb->get_results(
         "SELECT ic.name, ic.color FROM {$wpdb->prefix}vesho_inventory_categories ic
-         INNER JOIN {$wpdb->prefix}vesho_inventory inv ON inv.category=ic.name AND inv.archived=0 AND inv.shop_price>0 AND inv.shop_enabled=1
-         GROUP BY ic.id ORDER BY ic.sort_order ASC, ic.name ASC"
+         ORDER BY ic.sort_order ASC, ic.name ASC"
     );
     if ( empty( $managed_cats ) ) {
         $raw_cats    = $wpdb->get_col( "SELECT DISTINCT category FROM {$wpdb->prefix}vesho_inventory WHERE archived=0 AND shop_price>0 AND shop_enabled=1 AND category!='' ORDER BY category ASC" );
