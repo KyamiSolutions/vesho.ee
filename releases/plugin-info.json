@@ -1,10 +1,10 @@
 {
   "name": "Vesho CRM",
   "slug": "vesho-crm",
-  "version": "2.1.3",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.1.3/vesho-crm.zip",
+  "version": "2.1.4",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.1.4/vesho-crm.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-18",
-  "changelog": "<h4>2.1.3</h4><ul><li>Fix: installib alati vesho-crm/ kausta, uuendab active_plugins</li></ul>"
+  "changelog": "<h4>2.1.4</h4><ul><li>Uus: kinnitamata konto näitab tilkuva kraaniga ootekuva sisselogimisel</li></ul>"
 }
