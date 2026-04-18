@@ -2153,6 +2153,30 @@ function vesho_ajax_cart_add() {
     $qty = max(1, absint($_POST['qty'] ?? 1));
     if (!isset($_SESSION['vesho_cart'])) $_SESSION['vesho_cart'] = [];
     $_SESSION['vesho_cart'][$pid] = ($_SESSION['vesho_cart'][$pid] ?? 0) + $qty;
+
+    // Lock in active campaign discount at cart-add time so it survives campaign expiry
+    if (empty($_SESSION['vesho_cart_campaign'])) {
+        global $wpdb;
+        $today = date('Y-m-d');
+        $cam = $wpdb->get_row(
+            "SELECT name, discount_percent, free_shipping, visible_to_guests
+             FROM {$wpdb->prefix}vesho_campaigns
+             WHERE paused=0
+               AND (valid_from IS NULL OR valid_from <= '$today')
+               AND (valid_until IS NULL OR valid_until >= '$today')
+               AND (target='epood' OR target='both')
+             ORDER BY discount_percent DESC LIMIT 1"
+        );
+        if ($cam) {
+            $_SESSION['vesho_cart_campaign'] = [
+                'name'             => $cam->name,
+                'discount_percent' => (float)$cam->discount_percent,
+                'free_shipping'    => (bool)$cam->free_shipping,
+                'visible_to_guests'=> (bool)$cam->visible_to_guests,
+            ];
+        }
+    }
+
     wp_send_json_success(['count' => array_sum($_SESSION['vesho_cart'])]);
 }
 
@@ -2205,9 +2229,9 @@ function vesho_ajax_shop_place_order() {
     }
     if (empty($items_data)) wp_send_json_error('Ükski toode pole saadaval');
 
-    // Active campaign discount
+    // Active campaign discount — use current or session-locked campaign (whichever is better for customer)
     $today    = date('Y-m-d');
-    $is_guest = empty(get_option('vesho_client_session'));
+    $is_guest = !isset($_SESSION['vesho_client_id']);
     $campaign = $wpdb->get_row(
         "SELECT * FROM {$wpdb->prefix}vesho_campaigns
          WHERE paused=0
@@ -2223,6 +2247,15 @@ function vesho_ajax_shop_place_order() {
         $discount_pct  = (float)$campaign->discount_percent;
         $campaign_name = $campaign->name;
         $free_shipping = (bool)$campaign->free_shipping;
+    }
+    // Fall back to session-locked campaign if current one is worse or gone
+    $sess_cam = $_SESSION['vesho_cart_campaign'] ?? null;
+    if ($sess_cam && (!$is_guest || $sess_cam['visible_to_guests'])) {
+        if ($sess_cam['discount_percent'] > $discount_pct) {
+            $discount_pct  = $sess_cam['discount_percent'];
+            $campaign_name = $sess_cam['name'] . ' (lukustatud)';
+            $free_shipping = $free_shipping || $sess_cam['free_shipping'];
+        }
     }
     $discount_amount = $discount_pct > 0 ? round($subtotal * $discount_pct / 100, 2) : 0;
     $subtotal_after  = round($subtotal - $discount_amount, 2);
@@ -2283,7 +2316,7 @@ function vesho_ajax_shop_place_order() {
     }
 
     $_SESSION['vesho_last_order_id'] = $order_id;
-    unset($_SESSION['vesho_cart']);
+    unset($_SESSION['vesho_cart'], $_SESSION['vesho_cart_campaign']);
 
     $shop_page = get_page_by_path('pood');
     $shop_url  = $shop_page ? get_permalink($shop_page) : home_url('/pood/');
