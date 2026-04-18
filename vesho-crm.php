@@ -3,7 +3,7 @@
  * Plugin Name: Vesho CRM
  * Plugin URI:  https://vesho.ee
  * Description: CRM ja klientide portaal Vesho OÜ-le. Haldab kliente, seadmeid, hooldusi, arveid ja teenuseid.
- * Version:     2.2.32
+ * Version:     2.2.33
  * Author:      Vesho OÜ
  * Author URI:  https://vesho.ee
  * Text Domain: vesho-crm
@@ -15,7 +15,7 @@
 defined( 'ABSPATH' ) || exit;
 
 // ── Constants ──────────────────────────────────────────────────────────────────
-define('VESHO_CRM_VERSION', '2.2.32');
+define('VESHO_CRM_VERSION', '2.2.33');
 define( 'VESHO_CRM_FILE',     __FILE__ );
 define( 'VESHO_CRM_PATH',     plugin_dir_path( __FILE__ ) );
 define( 'VESHO_CRM_URL',      plugin_dir_url( __FILE__ ) );
@@ -2225,7 +2225,7 @@ function vesho_ajax_shop_place_order() {
         if (!$product) continue;
         $line_total   = $product->shop_price * $qty;
         $subtotal    += $line_total;
-        $items_data[] = ['product' => $product, 'qty' => $qty, 'price' => $product->shop_price, 'total' => $line_total];
+        $items_data[] = ['product' => $product, 'qty' => $qty, 'orig_price' => $product->shop_price, 'total' => $line_total];
     }
     if (empty($items_data)) wp_send_json_error('Ükski toode pole saadaval');
 
@@ -2299,15 +2299,17 @@ function vesho_ajax_shop_place_order() {
     ]);
     $order_id = $wpdb->insert_id;
 
-    // Insert order items & reserve stock
+    // Insert order items & reserve stock — unit_price is discounted price (like 3006)
     foreach ($items_data as $item) {
+        $disc_unit  = $discount_pct > 0 ? round($item['orig_price'] * (1 - $discount_pct / 100), 2) : $item['orig_price'];
+        $disc_total = round($disc_unit * $item['qty'], 2);
         $wpdb->insert($wpdb->prefix . 'vesho_shop_order_items', [
             'order_id'     => $order_id,
             'inventory_id' => $item['product']->id,
             'name'         => $item['product']->name,
             'quantity'     => $item['qty'],
-            'unit_price'   => $item['price'],
-            'total'        => $item['total'],
+            'unit_price'   => $disc_unit,
+            'total'        => $disc_total,
         ]);
         $wpdb->query($wpdb->prepare(
             "UPDATE {$wpdb->prefix}vesho_inventory SET quantity=quantity-%d WHERE id=%d",

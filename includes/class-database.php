@@ -538,6 +538,7 @@ class Vesho_CRM_Database {
         self::maybe_add_column( "{$wpdb->prefix}vesho_campaigns",   'visible_to_guests', "TINYINT(1) DEFAULT 1" );
         self::maybe_add_column( "{$wpdb->prefix}vesho_campaigns",   'paused',            "TINYINT(1) DEFAULT 0" );
         self::maybe_add_column( "{$wpdb->prefix}vesho_campaigns",   'maintenance_discount_percent', "DECIMAL(5,2) DEFAULT 0" );
+        self::maybe_add_column( "{$wpdb->prefix}vesho_campaigns",   'notes',             "TEXT DEFAULT ''" );
         self::maybe_add_column( "{$wpdb->prefix}vesho_maintenances", 'client_id',     'INT UNSIGNED DEFAULT NULL' );
         self::maybe_add_column( "{$wpdb->prefix}vesho_maintenances", 'service_id',    'INT UNSIGNED DEFAULT NULL' );
         self::maybe_add_column( "{$wpdb->prefix}vesho_workorder_photos", 'maintenance_id', 'INT UNSIGNED DEFAULT NULL' );
