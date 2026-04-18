@@ -434,7 +434,7 @@ function toggleReceiptItems(id) {
         if (loadedItems[id]) return;
         loadedItems[id] = true;
         fetch(ajaxUrl, {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
-            body:'action=vesho_worker_get_receipt_items&nonce='+veshoNonce+'&receipt_id='+id})
+            body:'action=vesho_admin_get_receipt_items&nonce='+veshoNonce+'&receipt_id='+id})
         .then(r=>r.json()).then(function(d){
             if (!d.success || !d.data) { el.innerHTML='<div style="color:#ef4444;padding:8px">Viga</div>'; return; }
             var items = d.data.items || d.data;

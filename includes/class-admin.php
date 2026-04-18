@@ -69,6 +69,7 @@ class Vesho_CRM_Admin {
         add_action( 'wp_ajax_vesho_update_invoice_status',  array( __CLASS__, 'ajax_update_invoice_status' ) );
         add_action( 'wp_ajax_vesho_admin_upload_maint_photo', array( __CLASS__, 'ajax_admin_upload_maint_photo' ) );
         add_action( 'wp_ajax_vesho_admin_delete_maint_photo', array( __CLASS__, 'ajax_admin_delete_maint_photo' ) );
+        add_action( 'wp_ajax_vesho_admin_get_receipt_items',  array( __CLASS__, 'ajax_admin_get_receipt_items' ) );
         add_action( 'wp_ajax_vesho_search_wp_users',        array( __CLASS__, 'ajax_search_wp_users' ) );
         add_action( 'wp_ajax_vesho_add_maintenance_ajax',   array( __CLASS__, 'ajax_add_maintenance' ) );
         add_action( 'wp_ajax_vesho_get_client_devices',     array( __CLASS__, 'ajax_get_client_devices' ) );
@@ -2061,6 +2062,28 @@ private static function load_view( $name ) {
         if ( ! $id || ! in_array( $status, $allowed ) ) wp_send_json_error( [ 'message' => 'Vigased andmed' ] );
         $wpdb->update( $wpdb->prefix . 'vesho_invoices', [ 'status' => $status ], [ 'id' => $id ] );
         wp_send_json_success( [ 'status' => $status ] );
+    }
+
+    // ── AJAX: admin get receipt items ─────────────────────────────────────────
+    public static function ajax_admin_get_receipt_items() {
+        check_ajax_referer( 'vesho_admin_nonce', 'nonce' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error();
+        global $wpdb;
+        $receipt_id = absint( $_POST['receipt_id'] ?? 0 );
+        $items = $wpdb->get_results( $wpdb->prepare(
+            "SELECT sri.*,
+                    COALESCE(inv.name, sri.product_name) AS name,
+                    COALESCE(inv.sku,  sri.product_sku)  AS sku,
+                    COALESCE(inv.unit, sri.product_unit) AS unit,
+                    COALESCE(inv.ean,  sri.ean)          AS ean
+             FROM {$wpdb->prefix}vesho_stock_receipt_items sri
+             LEFT JOIN {$wpdb->prefix}vesho_inventory inv ON inv.id=sri.inventory_id
+             WHERE sri.receipt_id=%d ORDER BY sri.id ASC", $receipt_id
+        ) );
+        foreach ( $items as &$item ) {
+            $item->expected_qty = $item->quantity ?? 0;
+        }
+        wp_send_json_success( ['items' => $items] );
     }
 
     // ── AJAX: admin upload maintenance photo ─────────────────────────────────

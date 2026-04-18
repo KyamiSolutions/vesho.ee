@@ -1597,8 +1597,13 @@ foreach ($notices as $notice) : ?>
       html+='</div>';
       html+='</div>';
     });
+    // Empty state
+    if (!items.length) {
+      html+='<div style="padding:20px 16px;text-align:center;color:#94a3b8;font-size:13px">Admin ei lisanud tooteid — kasuta <strong>+ Lisa tundmatu kaup</strong></div>';
+    }
     // Footer buttons
     html+='<div style="border-top:1px solid #f1f5f9;padding:12px 16px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">';
+    html+='<button type="button" onclick="vwpScanReceiptEan('+rid+',\''+escJ(bref)+'\')" style="padding:7px 14px;background:rgba(245,158,11,.1);color:#d97706;border:1px solid rgba(245,158,11,.3);border-radius:8px;font-size:12px;cursor:pointer">📷 Skänni EAN</button>';
     html+='<button type="button" onclick="vwpOpenAddItem('+rid+',\''+escJ(bref)+'\')" style="padding:7px 14px;background:rgba(0,180,200,.08);color:#00b4c8;border:1px dashed rgba(0,180,200,.4);border-radius:8px;font-size:12px;cursor:pointer">+ Lisa tundmatu kaup</button>';
     html+='<button type="button" onclick="vwpSubmitBatch('+rid+')" id="recv-submit-'+rid+'" style="margin-left:auto;padding:7px 20px;background:rgba(16,185,129,.12);color:#10b981;border:1px solid rgba(16,185,129,.25);border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">✓ Saada adminile</button>';
     html+='</div>';
@@ -2818,7 +2823,7 @@ $all_picked = !empty($my_items) && count(array_filter($my_items, fn($i) => $i->p
 
     public static function ajax_get_receipt_items() {
         check_ajax_referer('vesho_portal_nonce','nonce');
-        if (!self::get_current_worker()) wp_send_json_error(['message'=>'Pole sisse logitud']);
+        if (!self::get_current_worker() && !current_user_can('manage_options')) wp_send_json_error(['message'=>'Pole sisse logitud']);
         global $wpdb;
         $receipt_id = absint($_POST['receipt_id']??0);
         $items = $wpdb->get_results($wpdb->prepare(
