@@ -506,6 +506,7 @@ class Vesho_CRM_Database {
         self::maybe_add_column( "{$wpdb->prefix}vesho_stock_receipt_items", 'ean',        "VARCHAR(20) DEFAULT ''" );
         self::maybe_add_column( "{$wpdb->prefix}vesho_stock_receipt_items", 'notes',      "TEXT DEFAULT ''" );
         self::maybe_add_column( "{$wpdb->prefix}vesho_stock_receipts",      'worker_id',  "INT UNSIGNED DEFAULT NULL" );
+        self::maybe_add_column( "{$wpdb->prefix}vesho_warehouse_locations", 'description', "VARCHAR(255) DEFAULT ''" );
         self::maybe_add_column( "{$wpdb->prefix}vesho_work_hours", 'start_time',     'DATETIME DEFAULT NULL' );
         self::maybe_add_column( "{$wpdb->prefix}vesho_work_hours", 'end_time',       'DATETIME DEFAULT NULL' );
         self::maybe_add_column( "{$wpdb->prefix}vesho_work_hours", 'clock_in_lat',   'DECIMAL(10,7) DEFAULT NULL' );
