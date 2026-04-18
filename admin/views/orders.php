@@ -10,13 +10,14 @@ $all_clients   = $wpdb->get_results("SELECT id, name, email FROM {$wpdb->prefix}
 $all_inventory = $wpdb->get_results("SELECT id, name, sku, unit, sell_price, shop_price, quantity FROM {$wpdb->prefix}vesho_inventory WHERE archived=0 AND (shop_price > 0 OR sell_price > 0) ORDER BY name ASC");
 
 $statuses = [
-    'new'       => ['Uus',            '#ef4444', '#fee2e2'],
-    'picking'   => ['Komplekteerimisel','#f59e0b','#fef9c3'],
-    'ready'     => ['Valmis',         '#3b82f6', '#dbeafe'],
-    'shipped'   => ['Saadetud',       '#8b5cf6', '#ede9fe'],
-    'fulfilled' => ['Täidetud',       '#10b981', '#dcfce7'],
-    'cancelled' => ['Tühistatud',     '#6b7280', '#f3f4f6'],
-    'returned'  => ['Tagastatud',     '#f97316', '#ffedd5'],
+    'new'              => ['Uus',              '#ef4444', '#fee2e2'],
+    'picking'          => ['Komplekteerimisel','#f59e0b', '#fef9c3'],
+    'ready'            => ['Valmis',           '#3b82f6', '#dbeafe'],
+    'shipped'          => ['Saadetud',         '#8b5cf6', '#ede9fe'],
+    'fulfilled'        => ['Täidetud',         '#10b981', '#dcfce7'],
+    'cancelled'        => ['Tühistatud',       '#6b7280', '#f3f4f6'],
+    'returned'         => ['Tagastatud',       '#f97316', '#ffedd5'],
+    'return_requested' => ['Tagastus ootel',   '#f97316', '#fff7ed'],
 ];
 
 // ── Detail / edit view ───────────────────────────────────────────────────────
@@ -70,8 +71,20 @@ function vesho_so_badge($status, $statuses) {
     <?php endif; ?>
 </h1>
 
-<?php if (isset($_GET['msg'])): $msgs=['added'=>'Tellimus lisatud!','updated'=>'Tellimus uuendatud!','deleted'=>'Tellimus kustutatud!','status'=>'Staatus uuendatud!','sent'=>'Saadetud töötajatele!']; ?>
-<div class="crm-alert crm-alert-success"><?php echo esc_html($msgs[$_GET['msg']]??'Salvestatud!'); ?></div>
+<?php if (isset($_GET['msg'])):
+    $msgs=[
+        'added'           => 'Tellimus lisatud!',
+        'updated'         => 'Tellimus uuendatud!',
+        'deleted'         => 'Tellimus kustutatud!',
+        'status'          => 'Staatus uuendatud!',
+        'sent'            => 'Saadetud töötajatele!',
+        'return_approved' => '✅ Tagastus kinnitatud, tagasimakse väljastatud!',
+        'return_rejected' => 'Tagastustaotlus lükati tagasi.',
+    ];
+    $is_err = in_array($_GET['msg'], ['err']);
+    $cls = $is_err ? 'crm-alert crm-alert-error' : 'crm-alert crm-alert-success';
+?>
+<div class="<?php echo $cls; ?>"><?php echo esc_html($msgs[$_GET['msg']]??'Salvestatud!'); ?></div>
 <?php endif; ?>
 
 <?php /* ─── DETAIL / EDIT VIEW ─────────────────────────────────────────── */ ?>
@@ -248,6 +261,55 @@ if ( $refund_pending > 0 ):
             style="background:#ea580c;color:#fff;border:none;padding:9px 18px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap">
         💸 Väljasta tagasimakse <?php echo number_format($refund_pending,2,',','.'); ?> €
     </button>
+</div>
+<?php endif; ?>
+
+<?php
+// ── Tagastustaotluse bänner ──────────────────────────────────────────────────
+if ( $edit->status === 'return_requested' ):
+?>
+<div style="background:#fff7ed;border:2px solid #f97316;border-radius:10px;padding:16px 20px;margin-bottom:16px">
+    <div style="font-weight:700;color:#c2410c;font-size:15px;margin-bottom:10px">📦 Klient on esitanud tagastustaotluse</div>
+    <?php if ($edit->return_reason): ?>
+    <div style="font-size:13px;margin-bottom:6px"><strong>Põhjus:</strong> <?php echo esc_html($edit->return_reason); ?></div>
+    <?php endif; ?>
+    <?php if (!empty($edit->return_description)): ?>
+    <div style="font-size:13px;margin-bottom:6px"><strong>Kirjeldus:</strong> <?php echo esc_html($edit->return_description); ?></div>
+    <?php endif; ?>
+    <?php if (!empty($edit->return_photo_url)): ?>
+    <div style="margin-bottom:12px">
+        <a href="<?php echo esc_url($edit->return_photo_url); ?>" target="_blank">
+            <img src="<?php echo esc_url($edit->return_photo_url); ?>" alt="Tagastuse foto" style="max-width:240px;max-height:160px;border-radius:6px;border:1px solid #fed7aa;cursor:pointer">
+        </a>
+    </div>
+    <?php endif; ?>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
+        <!-- Approve return with disposition -->
+        <form method="POST" action="<?php echo admin_url('admin-post.php'); ?>" style="display:inline-flex;gap:6px;align-items:center">
+            <?php wp_nonce_field('vesho_approve_return'); ?>
+            <input type="hidden" name="action" value="vesho_approve_return">
+            <input type="hidden" name="order_id" value="<?php echo $edit->id; ?>">
+            <select name="disposition" style="padding:7px 10px;border:1px solid #fed7aa;border-radius:6px;font-size:13px;background:#fff">
+                <option value="stock">📦 Tagasta lattu</option>
+                <option value="used">🔧 Märgi kasutatud</option>
+                <option value="writeoff">🗑️ Mahakandmine</option>
+            </select>
+            <button type="submit" class="crm-btn crm-btn-primary" style="background:#16a34a"
+                    onclick="return confirm('Kinnita tagastus ja väljasta tagasimakse?')">
+                ✓ Kinnita tagastus
+            </button>
+        </form>
+        <!-- Reject return -->
+        <form method="POST" action="<?php echo admin_url('admin-post.php'); ?>" style="display:inline">
+            <?php wp_nonce_field('vesho_reject_return'); ?>
+            <input type="hidden" name="action" value="vesho_reject_return">
+            <input type="hidden" name="order_id" value="<?php echo $edit->id; ?>">
+            <button type="submit" class="crm-btn crm-btn-outline" style="color:#dc2626;border-color:#dc2626"
+                    onclick="return confirm('Lükka tagastustaotlus tagasi?')">
+                ✕ Lükka tagasi
+            </button>
+        </form>
+    </div>
 </div>
 <?php endif; ?>
 

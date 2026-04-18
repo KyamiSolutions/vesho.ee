@@ -63,6 +63,8 @@ class Vesho_CRM_Admin {
         add_action( 'wp_ajax_vesho_order_issue_refund',      array( __CLASS__, 'ajax_order_issue_refund' ) );
         add_action( 'wp_ajax_vesho_order_manual_refund',     array( __CLASS__, 'ajax_order_manual_refund' ) );
         add_action( 'admin_post_vesho_generate_worker_barcode', array( __CLASS__, 'handle_generate_worker_barcode' ) );
+        add_action( 'admin_post_vesho_approve_return',           array( __CLASS__, 'handle_approve_return' ) );
+        add_action( 'admin_post_vesho_reject_return',            array( __CLASS__, 'handle_reject_return' ) );
         add_action( 'admin_post_vesho_export_invoices_csv',     array( __CLASS__, 'handle_export_invoices_csv' ) );
         add_action( 'admin_post_vesho_export_maintenances_csv', array( __CLASS__, 'handle_export_maintenances_csv' ) );
         // Feature: Admin user management
@@ -1823,6 +1825,89 @@ private static function load_view( $name ) {
             'worker_id' => $id,
             'msg'       => 'barcode_generated',
         ), admin_url( 'admin.php' ) ) );
+        exit;
+    }
+
+    // ── Approve return request ────────────────────────────────────────────────
+
+    public static function handle_approve_return() {
+        check_admin_referer( 'vesho_approve_return' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorized' );
+        global $wpdb;
+
+        $order_id    = absint( $_POST['order_id'] ?? 0 );
+        $disposition = sanitize_text_field( $_POST['disposition'] ?? 'stock' );
+        if ( ! in_array( $disposition, ['stock','used','writeoff'], true ) ) $disposition = 'stock';
+
+        $order = $wpdb->get_row( $wpdb->prepare(
+            "SELECT * FROM {$wpdb->prefix}vesho_shop_orders WHERE id=%d AND status='return_requested'", $order_id
+        ) );
+        if ( ! $order ) {
+            wp_redirect( add_query_arg( ['page'=>'vesho-crm-orders','msg'=>'err'], admin_url('admin.php') ) );
+            exit;
+        }
+
+        $items = $wpdb->get_results( $wpdb->prepare(
+            "SELECT soi.inventory_id, soi.quantity, soi.name FROM {$wpdb->prefix}vesho_shop_order_items soi
+             WHERE soi.order_id=%d AND soi.inventory_id IS NOT NULL AND soi.inventory_id > 0", $order_id
+        ) );
+
+        foreach ( $items as $item ) {
+            if ( $disposition === 'stock' ) {
+                $wpdb->query( $wpdb->prepare(
+                    "UPDATE {$wpdb->prefix}vesho_inventory SET quantity = quantity + %f WHERE id=%d",
+                    $item->quantity, $item->inventory_id
+                ) );
+            } elseif ( $disposition === 'used' ) {
+                $wpdb->query( $wpdb->prepare(
+                    "UPDATE {$wpdb->prefix}vesho_inventory SET quantity = quantity + %f, used_quantity = used_quantity + %f WHERE id=%d",
+                    $item->quantity, $item->quantity, $item->inventory_id
+                ) );
+            } elseif ( $disposition === 'writeoff' ) {
+                $wpdb->insert( $wpdb->prefix . 'vesho_inventory_writeoffs', [
+                    'inventory_id' => $item->inventory_id,
+                    'product_name' => $item->name,
+                    'quantity'     => $item->quantity,
+                    'reason'       => 'Tellimuse tagastus #' . $order->order_number,
+                    'written_off_at' => current_time('mysql'),
+                ] );
+            }
+        }
+
+        // Issue refund if paid
+        if ( $order->paid_at && $order->payment_method ) {
+            self::do_payment_refund( $order, (float) $order->total );
+        }
+
+        $wpdb->update( $wpdb->prefix . 'vesho_shop_orders', ['status' => 'returned'], ['id' => $order_id] );
+
+        wp_redirect( add_query_arg( ['page'=>'vesho-crm-orders','action'=>'view','order_id'=>$order_id,'msg'=>'return_approved'], admin_url('admin.php') ) );
+        exit;
+    }
+
+    // ── Reject return request ─────────────────────────────────────────────────
+
+    public static function handle_reject_return() {
+        check_admin_referer( 'vesho_reject_return' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorized' );
+        global $wpdb;
+
+        $order_id = absint( $_POST['order_id'] ?? 0 );
+        $order = $wpdb->get_row( $wpdb->prepare(
+            "SELECT * FROM {$wpdb->prefix}vesho_shop_orders WHERE id=%d AND status='return_requested'", $order_id
+        ) );
+        if ( ! $order ) {
+            wp_redirect( add_query_arg( ['page'=>'vesho-crm-orders','msg'=>'err'], admin_url('admin.php') ) );
+            exit;
+        }
+
+        // Revert to fulfilled (order was fulfilled before return request)
+        $wpdb->update( $wpdb->prefix . 'vesho_shop_orders',
+            ['status' => 'fulfilled', 'return_reason' => '', 'return_description' => ''],
+            ['id' => $order_id]
+        );
+
+        wp_redirect( add_query_arg( ['page'=>'vesho-crm-orders','action'=>'view','order_id'=>$order_id,'msg'=>'return_rejected'], admin_url('admin.php') ) );
         exit;
     }
 
