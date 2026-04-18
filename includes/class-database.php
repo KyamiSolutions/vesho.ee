@@ -22,21 +22,29 @@ class Vesho_CRM_Database {
 
         // ── clients ─────────────────────────────────────────────────────────
         dbDelta( "CREATE TABLE {$wpdb->prefix}vesho_clients (
-            id          INT UNSIGNED NOT NULL AUTO_INCREMENT,
-            user_id     BIGINT(20)   DEFAULT NULL,
-            name        VARCHAR(255) NOT NULL,
-            email       VARCHAR(255) NOT NULL,
-            phone       VARCHAR(50)  DEFAULT '',
-            address     TEXT         DEFAULT '',
-            client_type VARCHAR(20)  DEFAULT 'eraisik',
-            reg_code    VARCHAR(50)  DEFAULT '',
-            vat_number  VARCHAR(50)  DEFAULT '',
-            password    VARCHAR(255) DEFAULT '',
-            notes       TEXT         DEFAULT '',
-            created_at  DATETIME     DEFAULT CURRENT_TIMESTAMP,
+            id                 INT UNSIGNED NOT NULL AUTO_INCREMENT,
+            user_id            BIGINT(20)   DEFAULT NULL,
+            name               VARCHAR(255) NOT NULL,
+            email              VARCHAR(255) NOT NULL,
+            phone              VARCHAR(50)  DEFAULT '',
+            address            TEXT         DEFAULT '',
+            client_type        VARCHAR(20)  DEFAULT 'eraisik',
+            company            VARCHAR(255) DEFAULT '',
+            reg_code           VARCHAR(50)  DEFAULT '',
+            vat_number         VARCHAR(50)  DEFAULT '',
+            password           VARCHAR(255) DEFAULT '',
+            notes              TEXT         DEFAULT '',
+            email_verified     TINYINT(1)   DEFAULT 0,
+            email_verify_token VARCHAR(100) DEFAULT '',
+            created_at         DATETIME     DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY  (id),
             UNIQUE KEY   uq_client_email (email)
         ) $charset;" );
+
+        // Add missing columns to existing installs (safe to run multiple times)
+        $wpdb->query( "ALTER TABLE {$wpdb->prefix}vesho_clients ADD COLUMN IF NOT EXISTS company VARCHAR(255) DEFAULT ''" );
+        $wpdb->query( "ALTER TABLE {$wpdb->prefix}vesho_clients ADD COLUMN IF NOT EXISTS email_verified TINYINT(1) DEFAULT 0" );
+        $wpdb->query( "ALTER TABLE {$wpdb->prefix}vesho_clients ADD COLUMN IF NOT EXISTS email_verify_token VARCHAR(100) DEFAULT ''" );
 
         // ── devices ─────────────────────────────────────────────────────────
         dbDelta( "CREATE TABLE {$wpdb->prefix}vesho_devices (
