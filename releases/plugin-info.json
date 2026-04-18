@@ -1,10 +1,10 @@
 {
   "name": "Vesho CRM",
   "slug": "vesho-crm",
-  "version": "2.2.36",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.2.36/vesho-crm.zip",
+  "version": "2.2.37",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.2.37/vesho-crm.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-18",
-  "changelog": "<h4>2.2.36</h4><ul><li>Uus versioon</li></ul>"
+  "changelog": "<h4>2.2.37</h4><ul><li>E-poes tootekaardil klõps avab tootelehe</li><li>Tootelehel täiskirjeldus, kampaania allahindlus, koguse valik</li></ul><h4>2.2.36</h4><ul><li>Teenusepäring lukustab kampaania allahindluse</li></ul>"
 }
