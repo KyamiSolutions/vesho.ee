@@ -812,7 +812,7 @@ class Vesho_CRM_Updater {
         set_transient( "vesho_{$type}_update_status", [
             'status'  => is_wp_error( $result ) ? 'error' : 'done',
             'message' => is_wp_error( $result ) ? $result->get_error_message() : $result,
-        ], 120 );
+        ], 600 );
 
         wp_die( 'ok' );
     }

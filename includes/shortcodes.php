@@ -807,9 +807,16 @@ add_shortcode( 'vesho_shop_grid', function () {
         "SELECT id, name, sku, category, unit, shop_price, shop_description, description, quantity, image_url
          FROM {$wpdb->prefix}vesho_inventory WHERE $where ORDER BY $sort_sql LIMIT 200"
     );
-    $categories = $wpdb->get_col(
-        "SELECT DISTINCT category FROM {$wpdb->prefix}vesho_inventory WHERE archived=0 AND shop_price>0 AND category!='' ORDER BY category ASC"
+    // Fetch categories from managed table (with colors), fall back to distinct values
+    $managed_cats = $wpdb->get_results(
+        "SELECT ic.name, ic.color FROM {$wpdb->prefix}vesho_inventory_categories ic
+         INNER JOIN {$wpdb->prefix}vesho_inventory inv ON inv.category=ic.name AND inv.archived=0 AND inv.shop_price>0
+         GROUP BY ic.id ORDER BY ic.sort_order ASC, ic.name ASC"
     );
+    if ( empty( $managed_cats ) ) {
+        $raw_cats    = $wpdb->get_col( "SELECT DISTINCT category FROM {$wpdb->prefix}vesho_inventory WHERE archived=0 AND shop_price>0 AND category!='' ORDER BY category ASC" );
+        $managed_cats = array_map( fn($n) => (object)['name'=>$n,'color'=>'#00b4c8'], $raw_cats );
+    }
     $cart_count = array_sum( $_SESSION['vesho_cart'] ?? [] );
 
     // ── Active campaign ────────────────────────────────────────────────────
@@ -838,8 +845,9 @@ add_shortcode( 'vesho_shop_grid', function () {
     .vshop-sort{padding:10px 14px;border:2px solid #e5edf4;border-radius:10px;font-size:13px;font-weight:600;color:#4b6174;background:#fff;cursor:pointer}
     .vshop-cats{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}
     .vshop-cat{padding:7px 16px;border-radius:20px;font-size:13px;font-weight:600;text-decoration:none;color:#4b6174;background:#f0f4f8;transition:all .15s;border:2px solid transparent}
-    .vshop-cat:hover{background:#e0f7fa;color:#0097aa}
-    .vshop-cat.active{background:#00b4c8;color:#fff;border-color:#00b4c8}
+    .vshop-cat:hover{opacity:.85}
+    .vshop-cat.active{color:#fff}
+    .vshop-results{font-size:13px;color:#94a3b8;margin-bottom:16px}
     .vshop-cam{display:flex;align-items:center;gap:16px;background:linear-gradient(135deg,#e0f7fa,#b2ebf2);border:2px solid #00b4c8;border-radius:14px;padding:16px 22px;margin-bottom:24px;flex-wrap:wrap}
     .vshop-cam-badge{background:#00b4c8;color:#fff;font-size:17px;font-weight:900;padding:8px 18px;border-radius:10px;white-space:nowrap}
     .vshop-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
@@ -863,11 +871,11 @@ add_shortcode( 'vesho_shop_grid', function () {
     .vshop-price.sale{color:#00b4c8}
     .vshop-price-unit{font-size:11px;color:#6b8599;font-weight:400}
     .vshop-savings{font-size:11px;color:#059669;font-weight:700}
-    .vshop-atc{display:flex;flex-direction:column;gap:5px;align-items:flex-end}
-    .vshop-qty{width:52px;padding:5px;border:1.5px solid #d0dce8;border-radius:6px;font-size:13px;text-align:center}
-    .vshop-btn{padding:8px 14px;background:#00b4c8;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;transition:background .15s}
+    .vshop-btn{width:100%;padding:10px;background:#00b4c8;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;transition:background .15s;margin-top:12px}
     .vshop-btn:hover{background:#0097aa}
-    .vshop-btn:disabled{background:#9ca3af;cursor:not-allowed}
+    .vshop-btn:disabled{background:#d1d5db;cursor:not-allowed;color:#9ca3af}
+    .vshop-stock-ok{font-size:11px;color:#059669;font-weight:600}
+    .vshop-stock-no{font-size:11px;color:#ef4444;font-weight:600}
     .vshop-fab{position:fixed;bottom:24px;right:24px;z-index:999}
     .vshop-fab a{display:flex;align-items:center;gap:10px;background:#0d1f2d;color:#fff;padding:14px 22px;border-radius:50px;text-decoration:none;font-weight:700;font-size:15px;box-shadow:0 4px 24px rgba(13,31,45,.3)}
     .vshop-fab-badge{background:#00b4c8;color:#fff;font-size:12px;font-weight:800;padding:2px 9px;border-radius:20px}
@@ -906,15 +914,24 @@ add_shortcode( 'vesho_shop_grid', function () {
       </select>
     </div>
 
-    <?php if ( ! empty( $categories ) ) : ?>
+    <?php if ( ! empty( $managed_cats ) ) : ?>
     <div class="vshop-cats">
-      <a href="<?php echo esc_url( add_query_arg( array_filter( [ 's' => $search, 'sort' => $sort === 'name' ? null : $sort ] ), $page_url ) ); ?>" class="vshop-cat <?php echo ! $category ? 'active' : ''; ?>">Kõik</a>
-      <?php foreach ( $categories as $cat ) :
-        $href = add_query_arg( array_filter( [ 's' => $search, 'cat' => $cat, 'sort' => $sort === 'name' ? null : $sort ] ), $page_url ); ?>
-      <a href="<?php echo esc_url( $href ); ?>" class="vshop-cat <?php echo $category === $cat ? 'active' : ''; ?>"><?php echo esc_html( $cat ); ?></a>
+      <a href="<?php echo esc_url( add_query_arg( array_filter( [ 's' => $search, 'sort' => $sort === 'name' ? null : $sort ] ), $page_url ) ); ?>"
+         class="vshop-cat <?php echo ! $category ? 'active' : ''; ?>"
+         style="<?php echo ! $category ? 'background:#0d1f2d;border-color:#0d1f2d' : ''; ?>">Kõik</a>
+      <?php foreach ( $managed_cats as $cat ) :
+        $is_active = $category === $cat->name;
+        $clr       = esc_attr( $cat->color );
+        $href      = add_query_arg( array_filter( [ 's' => $search, 'cat' => $cat->name, 'sort' => $sort === 'name' ? null : $sort ] ), $page_url );
+        $active_style = $is_active ? "background:{$clr};border-color:{$clr}" : "border-color:{$clr}20;color:{$clr}";
+      ?>
+      <a href="<?php echo esc_url( $href ); ?>"
+         class="vshop-cat <?php echo $is_active ? 'active' : ''; ?>"
+         style="<?php echo $active_style; ?>"><?php echo esc_html( $cat->name ); ?></a>
       <?php endforeach; ?>
     </div>
     <?php endif; ?>
+    <div class="vshop-results"><?php echo count( $items ); ?> toodet<?php if ( $search ) echo ' · otsing: "' . esc_html( $search ) . '"'; if ( $category ) echo ' · ' . esc_html( $category ); ?></div>
 
     <?php if ( empty( $items ) ) : ?>
     <div style="text-align:center;padding:80px 20px;color:#6b8599">
@@ -948,21 +965,22 @@ add_shortcode( 'vesho_shop_grid', function () {
           <a href="<?php echo esc_url( $detail_url ); ?>" class="vshop-card-name"><?php echo esc_html( $item->name ); ?></a>
           <?php if ( $desc_text ) echo '<div class="vshop-card-desc">' . esc_html( wp_trim_words( $desc_text, 14, '…' ) ) . '</div>'; ?>
           <div class="vshop-card-footer">
-            <div>
-              <?php if ( $disc !== null ) : ?>
-              <div class="vshop-price-orig"><?php echo number_format( $orig, 2, ',', ' ' ); ?> €</div>
-              <div class="vshop-price sale"><?php echo number_format( $disc, 2, ',', ' ' ); ?> €</div>
-              <div class="vshop-savings">Säästad <?php echo number_format( $orig - $disc, 2, ',', ' ' ) . ' €'; ?></div>
-              <?php else : ?>
-              <div class="vshop-price"><?php echo number_format( $orig, 2, ',', ' ' ); ?> €</div>
-              <div class="vshop-price-unit">/ <?php echo esc_html( $item->unit ?: 'tk' ); ?></div>
-              <?php endif; ?>
-            </div>
-            <div class="vshop-atc">
-              <input type="number" id="qty_<?php echo $item->id; ?>" class="vshop-qty" value="1" min="1" max="<?php echo (int) $item->quantity; ?>">
-              <button class="vshop-btn" onclick="veshoAddToCart(<?php echo $item->id; ?>, '<?php echo esc_js( $item->name ); ?>')" <?php echo $in_stock ? '' : 'disabled'; ?>>+ Korvi</button>
-            </div>
+            <?php if ( $disc !== null ) : ?>
+            <div class="vshop-price-orig"><?php echo number_format( $orig, 2, ',', ' ' ); ?> €</div>
+            <div class="vshop-price sale"><?php echo number_format( $disc, 2, ',', ' ' ); ?> € <span class="vshop-price-unit">/ <?php echo esc_html( $item->unit ?: 'tk' ); ?></span></div>
+            <div class="vshop-savings">Säästad <?php echo number_format( $orig - $disc, 2, ',', ' ' ) . ' €'; ?></div>
+            <?php else : ?>
+            <div class="vshop-price"><?php echo number_format( $orig, 2, ',', ' ' ); ?> € <span class="vshop-price-unit">/ <?php echo esc_html( $item->unit ?: 'tk' ); ?></span></div>
+            <?php endif; ?>
+            <?php if ( $in_stock ) : ?>
+            <div class="vshop-stock-ok">✓ Laos (<?php echo (int) $item->quantity; ?> <?php echo esc_html( $item->unit ?: 'tk' ); ?>)</div>
+            <?php else : ?>
+            <div class="vshop-stock-no">✗ Laost otsas</div>
+            <?php endif; ?>
           </div>
+          <button class="vshop-btn" onclick="veshoAddToCart(<?php echo $item->id; ?>, '<?php echo esc_js( $item->name ); ?>')" <?php echo $in_stock ? '' : 'disabled'; ?>>
+            🛒 Lisa korvi
+          </button>
         </div>
       </div>
     <?php endforeach; ?>
@@ -996,18 +1014,18 @@ add_shortcode( 'vesho_shop_grid', function () {
     }
 
     function veshoAddToCart(pid, name) {
-      var btn = event.target;
-      btn.disabled = true; btn.textContent = '✓';
+      var btn = event.currentTarget;
+      btn.disabled = true; btn.textContent = '✓ Lisatud';
       var form = new FormData();
       form.append('action', 'vesho_cart_add');
       form.append('nonce', veshoCartNonce);
       form.append('pid', pid);
-      form.append('qty', document.getElementById('qty_'+pid)?.value || 1);
+      form.append('qty', 1);
       fetch(ajaxurl, {method:'POST', body:form})
         .then(r=>r.json())
         .then(d=>{
-          if (d.success) { veshoUpdateCartBadge(d.data.count); showToast(name + ' lisatud ✓'); }
-          setTimeout(function(){ btn.disabled = false; btn.textContent = '+ Korvi'; }, 1500);
+          if (d.success) { veshoUpdateCartBadge(d.data.count); showToast('🛒 ' + name + ' lisatud!'); }
+          setTimeout(function(){ btn.disabled = false; btn.innerHTML = '🛒 Lisa korvi'; }, 1800);
         });
     }
     </script>

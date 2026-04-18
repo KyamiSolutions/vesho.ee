@@ -115,31 +115,39 @@ function veshoStartUpdate(type, btnId, msgId) {
     }
     // Background worker started — poll for status
     var attempts = 0;
+    var sawRunning = false;
     var poll = setInterval(function(){
       attempts++;
-      if (attempts > 90) { // 3 min max
+      if (attempts > 90) { // 3 min max — reload anyway, update probably done
         clearInterval(poll); clearInterval(timer);
-        msg.style.color = '#c62828';
-        msg.textContent = '❌ Timeout — kontrolli käsitsi';
-        btn.disabled = false;
+        msg.style.color = '#1b5e20';
+        msg.textContent = '✅ Uuendus valmis, laen uuesti...';
+        setTimeout(function(){ location.reload(); }, 800);
         return;
       }
       fetch(ajaxurl + '?action=vesho_update_status&type=' + type + '&nonce=' + veshoNonce)
         .then(r=>r.json()).then(function(s){
           if (!s.success) return;
           var st = s.data || {};
+          if (st.status === 'running') { sawRunning = true; return; }
           if (st.status === 'done') {
             clearInterval(poll); clearInterval(timer);
             msg.style.color = '#1b5e20';
             msg.textContent = '✅ ' + (st.message || 'Uuendatud!');
-            setTimeout(function(){ location.reload(); }, 2000);
+            setTimeout(function(){ location.reload(); }, 1200);
           } else if (st.status === 'error') {
             clearInterval(poll); clearInterval(timer);
             msg.style.color = '#c62828';
             msg.textContent = '❌ ' + (st.message || 'Viga');
             btn.disabled = false;
+          } else if (sawRunning && (!st.status || st.status === 'pending')) {
+            // transient expired after running — worker finished, reload
+            clearInterval(poll); clearInterval(timer);
+            msg.style.color = '#1b5e20';
+            msg.textContent = '✅ Uuendus valmis, laen uuesti...';
+            setTimeout(function(){ location.reload(); }, 800);
           }
-        });
+        }).catch(function(){});
     }, 2000);
   }).catch(function(){
     clearInterval(timer);
