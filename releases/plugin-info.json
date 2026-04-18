@@ -1,10 +1,10 @@
 {
   "name": "Vesho CRM",
   "slug": "vesho-crm",
-  "version": "2.2.29",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.2.29/vesho-crm.zip",
+  "version": "2.2.30",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.2.30/vesho-crm.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-18",
-  "changelog": "<h4>2.2.29</h4><ul><li>Demo seeder localhost jaoks</li><li>Admin menüü uuendused</li></ul>"
+  "changelog": "<h4>2.2.30</h4><ul><li>Demo seeder localhost jaoks</li><li>Admin menüü uuendused</li></ul>"
 }
