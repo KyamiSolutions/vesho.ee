@@ -270,9 +270,9 @@ class Vesho_CRM_Worker_Portal {
             'schedule'   => ['icon' => '&#128197;','label' => 'Graafik'],
             'tellimused' => ['icon' => '&#128722;','label' => 'Tellimused', 'badge' => $shop_count ?: null],
         ];
+        $nav_items['vastuvott'] = ['icon' => '&#128230;','label' => 'Vastuvõtt'];
         if ( ! empty( $worker->can_inventory ) ) {
             $nav_items['inventuur'] = ['icon' => '&#128270;','label' => 'Inventuur'];
-            $nav_items['vastuvott'] = ['icon' => '&#128230;','label' => 'Vastuvõtt'];
         }
         ?>
 <div class="vwp-wrap">
@@ -335,8 +335,7 @@ class Vesho_CRM_Worker_Portal {
               else { echo '<div class="vwp-empty">Juurdepääs puudub.</div>'; }
               break;
           case 'vastuvott':
-              if ( ! empty( $worker->can_inventory ) ) { self::tab_vastuvott($wid, $nonce, $ajax); }
-              else { echo '<div class="vwp-empty">Juurdepääs puudub.</div>'; }
+              self::tab_vastuvott($wid, $nonce, $ajax);
               break;
           case 'tellimused': self::tab_tellimused($wid, $nonce, $ajax); break;
           default:           self::tab_overview($worker, $wid, $nonce, $ajax);
