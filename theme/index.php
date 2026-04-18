@@ -16,15 +16,15 @@ if ( ! is_front_page() ) {
                 <!-- Main content -->
                 <div class="blog-content">
                     <?php if ( have_posts() ) : ?>
-                        <div class="blog-grid">
+                        <div class="blog-list">
                             <?php while ( have_posts() ) : the_post(); ?>
-                                <article id="post-<?php the_ID(); ?>" <?php post_class( 'blog-card' ); ?>>
+                                <article id="post-<?php the_ID(); ?>" <?php post_class( 'blog-list-item' ); ?>>
                                     <?php if ( has_post_thumbnail() ) : ?>
-                                        <a class="blog-card__thumb" href="<?php the_permalink(); ?>">
+                                        <a class="blog-list-item__thumb" href="<?php the_permalink(); ?>">
                                             <?php the_post_thumbnail( 'vesho-card' ); ?>
                                         </a>
                                     <?php endif; ?>
-                                    <div class="blog-card__body">
+                                    <div class="blog-list-item__body">
                                         <div class="blog-card__meta">
                                             <time datetime="<?php the_time( 'Y-m-d' ); ?>"><?php the_time( 'd.m.Y' ); ?></time>
                                             <span>·</span>

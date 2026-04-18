@@ -373,7 +373,7 @@ function vesho_page_banner( $title, $subtitle = '' ) {
         <div class="container">
             <h1 class="page-banner__title"><?php echo esc_html( $title ); ?></h1>
             <?php if ( $subtitle ) : ?>
-                <p class="page-banner__sub"><?php echo esc_html( $subtitle ); ?></p>
+                <p class="page-banner__sub"><?php echo wp_kses_post( $subtitle ); ?></p>
             <?php endif; ?>
             <nav class="breadcrumb">
                 <a href="<?php echo home_url( '/' ); ?>"><?php _e( 'Avaleht', 'vesho' ); ?></a>
