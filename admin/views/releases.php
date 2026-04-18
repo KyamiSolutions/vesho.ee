@@ -90,42 +90,75 @@ document.getElementById('btn-force-check').addEventListener('click', function(){
   });
 });
 
+function veshoStartUpdate(type, btnId, msgId) {
+  var btn = document.getElementById(btnId);
+  var msg = document.getElementById(msgId);
+  btn.disabled = true;
+  msg.style.color = '#555';
+  var dots = 0;
+  var label = type === 'theme' ? 'teema' : 'plugin';
+
+  var timer = setInterval(function(){
+    dots = (dots + 1) % 4;
+    msg.textContent = '⏳ Allalaadin ' + label + '...' + '.'.repeat(dots);
+  }, 600);
+
+  fetch(ajaxurl, {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
+    body:'action=vesho_install_'+type+'&nonce='+veshoNonce})
+  .then(r=>r.json()).then(function(d){
+    if (!d.success) {
+      clearInterval(timer);
+      msg.style.color = '#c62828';
+      msg.textContent = '❌ ' + (d.data || 'Viga');
+      btn.disabled = false;
+      return;
+    }
+    // Background worker started — poll for status
+    var attempts = 0;
+    var poll = setInterval(function(){
+      attempts++;
+      if (attempts > 90) { // 3 min max
+        clearInterval(poll); clearInterval(timer);
+        msg.style.color = '#c62828';
+        msg.textContent = '❌ Timeout — kontrolli käsitsi';
+        btn.disabled = false;
+        return;
+      }
+      fetch(ajaxurl + '?action=vesho_update_status&type=' + type + '&nonce=' + veshoNonce)
+        .then(r=>r.json()).then(function(s){
+          if (!s.success) return;
+          var st = s.data || {};
+          if (st.status === 'done') {
+            clearInterval(poll); clearInterval(timer);
+            msg.style.color = '#1b5e20';
+            msg.textContent = '✅ ' + (st.message || 'Uuendatud!');
+            setTimeout(function(){ location.reload(); }, 2000);
+          } else if (st.status === 'error') {
+            clearInterval(poll); clearInterval(timer);
+            msg.style.color = '#c62828';
+            msg.textContent = '❌ ' + (st.message || 'Viga');
+            btn.disabled = false;
+          }
+        });
+    }, 2000);
+  }).catch(function(){
+    clearInterval(timer);
+    msg.style.color = '#c62828';
+    msg.textContent = '❌ Ühenduse viga';
+    btn.disabled = false;
+  });
+}
+
 var btnInstallPlugin = document.getElementById('btn-install-plugin');
 if(btnInstallPlugin) btnInstallPlugin.addEventListener('click', function(){
   if(!confirm('Uuenda plugin? Vana plugin kustutakse ja uus paigaldatakse GitHubist.')) return;
-  this.disabled = true;
-  var msg = document.getElementById('install-plugin-msg');
-  msg.style.color='#555'; msg.textContent = '⏳ Installin...';
-  fetch(ajaxurl,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},
-    body:'action=vesho_install_plugin&nonce='+veshoNonce})
-  .then(r=>r.json()).then(d=>{
-    if(d.success){
-      msg.style.color='#1b5e20'; msg.textContent='✅ '+d.data;
-      setTimeout(()=>location.reload(),2000);
-    } else {
-      msg.style.color='#c62828'; msg.textContent='❌ '+(d.data||'Viga');
-      document.getElementById('btn-install-plugin').disabled=false;
-    }
-  }).catch(()=>{ msg.style.color='#c62828'; msg.textContent='❌ Ühenduse viga'; document.getElementById('btn-install-plugin').disabled=false; });
+  veshoStartUpdate('plugin', 'btn-install-plugin', 'install-plugin-msg');
 });
 
 var btnInstall = document.getElementById('btn-install-theme');
 if(btnInstall) btnInstall.addEventListener('click', function(){
   if(!confirm('Uuenda teema? Vana teema kustutakse ja uus paigaldatakse GitHubist.')) return;
-  this.disabled = true;
-  var msg = document.getElementById('install-theme-msg');
-  msg.style.color='#555'; msg.textContent = '⏳ Installin...';
-  fetch(ajaxurl,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},
-    body:'action=vesho_install_theme&nonce='+veshoNonce})
-  .then(r=>r.json()).then(d=>{
-    if(d.success){
-      msg.style.color='#1b5e20'; msg.textContent='✅ '+d.data;
-      setTimeout(()=>location.reload(),2000);
-    } else {
-      msg.style.color='#c62828'; msg.textContent='❌ '+(d.data||'Viga');
-      document.getElementById('btn-install-theme').disabled=false;
-    }
-  }).catch(()=>{ msg.style.color='#c62828'; msg.textContent='❌ Ühenduse viga'; document.getElementById('btn-install-theme').disabled=false; });
+  veshoStartUpdate('theme', 'btn-install-theme', 'install-theme-msg');
 });
 
 document.getElementById('btn-import-content').addEventListener('click', function(){

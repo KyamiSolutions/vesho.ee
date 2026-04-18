@@ -792,146 +792,191 @@ add_shortcode( 'vesho_shop_grid', function () {
     // ══════════════════════════════════════════════════════════════════════
     $search   = isset( $_GET['s'] )   ? sanitize_text_field( $_GET['s'] )   : '';
     $category = isset( $_GET['cat'] ) ? sanitize_text_field( $_GET['cat'] ) : '';
+    $sort     = isset( $_GET['sort'] ) ? sanitize_key( $_GET['sort'] ) : 'name';
+    $sort_sql = match( $sort ) {
+        'price_asc'  => 'shop_price ASC',
+        'price_desc' => 'shop_price DESC',
+        default      => 'name ASC',
+    };
 
     $where = "archived=0 AND shop_price > 0";
-    if ( $search )   $where .= $wpdb->prepare( " AND (name LIKE %s OR sku LIKE %s)", '%' . $wpdb->esc_like( $search ) . '%', '%' . $wpdb->esc_like( $search ) . '%' );
+    if ( $search )   $where .= $wpdb->prepare( " AND (name LIKE %s OR sku LIKE %s OR shop_description LIKE %s)", '%' . $wpdb->esc_like( $search ) . '%', '%' . $wpdb->esc_like( $search ) . '%', '%' . $wpdb->esc_like( $search ) . '%' );
     if ( $category ) $where .= $wpdb->prepare( " AND category=%s", $category );
 
     $items = $wpdb->get_results(
-        "SELECT id, name, sku, category, unit, shop_price, description, quantity
-         FROM {$wpdb->prefix}vesho_inventory WHERE $where ORDER BY category ASC, name ASC LIMIT 200"
+        "SELECT id, name, sku, category, unit, shop_price, shop_description, description, quantity, image_url
+         FROM {$wpdb->prefix}vesho_inventory WHERE $where ORDER BY $sort_sql LIMIT 200"
     );
     $categories = $wpdb->get_col(
         "SELECT DISTINCT category FROM {$wpdb->prefix}vesho_inventory WHERE archived=0 AND shop_price>0 AND category!='' ORDER BY category ASC"
     );
-
     $cart_count = array_sum( $_SESSION['vesho_cart'] ?? [] );
 
     // ── Active campaign ────────────────────────────────────────────────────
     $today_grid    = date( 'Y-m-d' );
     $is_client     = ! empty( $_SESSION['vesho_client_id'] );
     $grid_campaign = $wpdb->get_row( $wpdb->prepare(
-        "SELECT * FROM {$wpdb->prefix}vesho_campaigns
-         WHERE paused=0 AND valid_from<=%s AND valid_until>=%s AND (target='epood' OR target='both')
-         ORDER BY discount_percent DESC LIMIT 1",
+        "SELECT * FROM {$wpdb->prefix}vesho_campaigns WHERE paused=0 AND valid_from<=%s AND valid_until>=%s AND (target='epood' OR target='both') ORDER BY discount_percent DESC LIMIT 1",
         $today_grid, $today_grid
     ) );
-    if ( $grid_campaign && ! $is_client && ! $grid_campaign->visible_to_guests ) {
-        $grid_campaign = null;
-    }
-    // Also check session-locked campaign (persists after campaign expires)
+    if ( $grid_campaign && ! $is_client && ! $grid_campaign->visible_to_guests ) $grid_campaign = null;
     $sess_cam_grid = $_SESSION['vesho_cart_campaign'] ?? null;
     if ( $sess_cam_grid && ( ! $grid_campaign || $sess_cam_grid['discount_percent'] > $grid_campaign->discount_percent ) ) {
-        $eff_discount = (float) $sess_cam_grid['discount_percent'];
-        $eff_name     = $sess_cam_grid['name'];
-        $eff_locked   = true;
+        $eff_discount = (float) $sess_cam_grid['discount_percent']; $eff_name = $sess_cam_grid['name']; $eff_locked = true;
     } elseif ( $grid_campaign ) {
-        $eff_discount = (float) $grid_campaign->discount_percent;
-        $eff_name     = $grid_campaign->name;
-        $eff_locked   = false;
+        $eff_discount = (float) $grid_campaign->discount_percent; $eff_name = $grid_campaign->name; $eff_locked = false;
     } else {
-        $eff_discount = 0;
-        $eff_name     = '';
-        $eff_locked   = false;
+        $eff_discount = 0; $eff_name = ''; $eff_locked = false;
     }
-
-    // ── Campaign banner ────────────────────────────────────────────────────
-    if ( $eff_discount > 0 ) {
-        $badge_text = $eff_locked ? $eff_name . ' (lukustatud)' : $eff_name;
-        $disc_disp  = '-' . (int) $eff_discount . '%';
-        echo '<div style="background:linear-gradient(135deg,#e0f7fa,#b2ebf2);border:1.5px solid #00b4c8;border-radius:14px;padding:16px 22px;margin-bottom:24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">';
-        echo '<div style="background:#00b4c8;color:#fff;font-size:18px;font-weight:900;padding:8px 16px;border-radius:10px;white-space:nowrap">' . esc_html( $disc_disp ) . '</div>';
-        echo '<div>';
-        echo '<div style="font-weight:700;color:#0d1f2d;font-size:16px">🏷️ ' . esc_html( $badge_text ) . '</div>';
-        if ( $grid_campaign && $grid_campaign->description ) {
-            echo '<div style="color:#4b6174;font-size:13px;margin-top:3px">' . esc_html( $grid_campaign->description ) . '</div>';
-        }
-        if ( $grid_campaign && $grid_campaign->valid_until ) {
-            echo '<div style="color:#00b4c8;font-size:12px;font-weight:600;margin-top:3px">Kehtib kuni ' . esc_html( date_i18n( 'd.m.Y', strtotime( $grid_campaign->valid_until ) ) ) . '</div>';
-        }
-        echo '</div>';
-        echo '</div>';
-    }
-
-    // Filter bar
-    echo '<div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:28px">';
-    echo '<form method="GET" style="display:flex;gap:8px;flex:1;min-width:200px;max-width:380px">';
-    if ( $category ) echo '<input type="hidden" name="cat" value="' . esc_attr( $category ) . '">';
-    echo '<input type="search" name="s" value="' . esc_attr( $search ) . '" placeholder="Otsi toodet…" style="flex:1;padding:10px 14px;border:1.5px solid #d0dce8;border-radius:8px;font-size:14px">';
-    echo '<button type="submit" style="padding:10px 18px;background:#00b4c8;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer">Otsi</button>';
-    echo '</form>';
-
-    if ( ! empty( $categories ) ) {
-        echo '<div style="display:flex;gap:8px;flex-wrap:wrap">';
-        $all_active = ! $category ? 'background:#00b4c8;color:#fff' : 'background:#f0f4f8;color:#4b6174';
-        echo '<a href="' . esc_url( $page_url ) . ( $search ? '?s=' . urlencode( $search ) : '' ) . '" style="padding:7px 14px;border-radius:20px;font-size:13px;font-weight:600;text-decoration:none;' . $all_active . '">Kõik</a>';
-        foreach ( $categories as $cat ) {
-            $href   = $page_url . '?cat=' . urlencode( $cat ) . ( $search ? '&s=' . urlencode( $search ) : '' );
-            $active = ( $category === $cat ) ? 'background:#00b4c8;color:#fff' : 'background:#f0f4f8;color:#4b6174';
-            echo '<a href="' . esc_url( $href ) . '" style="padding:7px 14px;border-radius:20px;font-size:13px;font-weight:600;text-decoration:none;' . $active . '">' . esc_html( $cat ) . '</a>';
-        }
-        echo '</div>';
-    }
-    echo '</div>';
-
-    if ( empty( $items ) ) {
-        echo '<div style="text-align:center;padding:60px 20px"><div style="font-size:48px;margin-bottom:16px">🔧</div>';
-        echo '<p style="color:#6b8599">' . ( $search || $category ? 'Tooteid ei leitud.' : 'Pood on varsti avatud.' ) . '</p></div>';
-        return ob_get_clean();
-    }
-
-    echo '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:22px">';
-    foreach ( $items as $item ) :
-        $in_stock    = $item->quantity > 0;
-        $orig_price  = (float) $item->shop_price;
-        $disc_price  = $eff_discount > 0 ? round( $orig_price * ( 1 - $eff_discount / 100 ), 2 ) : null;
-        $savings     = $disc_price !== null ? round( $orig_price - $disc_price, 2 ) : 0;
-        $detail_url  = add_query_arg( [ 'shop_view' => 'product', 'pid' => $item->id ], $page_url );
-
-        echo '<div style="background:#fff;border-radius:14px;padding:24px;box-shadow:0 2px 12px rgba(13,31,45,.07);display:flex;flex-direction:column;gap:10px;position:relative">';
-        // Badges
-        if ( $disc_price !== null ) {
-            echo '<span style="position:absolute;top:12px;left:12px;background:#00b4c8;color:#fff;font-size:11px;font-weight:800;padding:3px 9px;border-radius:20px">-' . (int) $eff_discount . '%</span>';
-        }
-        if ( ! $in_stock ) echo '<span style="position:absolute;top:12px;right:12px;background:#fee2e2;color:#b91c1c;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px">Otsas</span>';
-        echo '<a href="' . esc_url( $detail_url ) . '" style="width:56px;height:56px;background:linear-gradient(135deg,#e0f7fa,#b2ebf2);border-radius:12px;display:flex;align-items:center;justify-content:center;margin-top:' . ( $disc_price !== null ? '14px' : '0' ) . ';text-decoration:none">';
-        echo '<svg width="28" height="28" viewBox="0 0 32 32" fill="none"><path d="M16 4C16 4 6 14 6 20C6 25.5228 10.4772 30 16 30C21.5228 30 26 25.5228 26 20C26 14 16 4 16 4Z" fill="#00b4c8" opacity=".7"/></svg></a>';
-        if ( $item->category ) echo '<span style="font-size:11px;font-weight:600;color:#00b4c8;text-transform:uppercase">' . esc_html( $item->category ) . '</span>';
-        echo '<h3 style="font-size:15px;font-weight:700;color:#0d1f2d;margin:0;line-height:1.35"><a href="' . esc_url( $detail_url ) . '" style="color:inherit;text-decoration:none">' . esc_html( $item->name ) . '</a></h3>';
-        if ( $item->sku ) echo '<span style="font-size:11px;color:#6b8599;font-family:monospace">SKU: ' . esc_html( $item->sku ) . '</span>';
-        if ( $item->description ) echo '<p style="font-size:13px;color:#4b6174;line-height:1.55;margin:0">' . esc_html( wp_trim_words( $item->description, 18, '…' ) ) . '</p>';
-        echo '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:auto;padding-top:8px;border-top:1px solid #f0f4f8">';
-        echo '<div>';
-        if ( $disc_price !== null ) {
-            echo '<div style="font-size:13px;color:#9ca3af;text-decoration:line-through">' . number_format( $orig_price, 2, ',', ' ' ) . ' €</div>';
-            echo '<div style="font-size:20px;font-weight:800;color:#00b4c8">' . number_format( $disc_price, 2, ',', ' ' ) . ' €</div>';
-            echo '<div style="font-size:11px;color:#059669;font-weight:600">Säästad ' . number_format( $savings, 2, ',', ' ' ) . ' €</div>';
-        } else {
-            echo '<div style="font-size:20px;font-weight:800;color:#0d1f2d">' . number_format( $orig_price, 2, ',', ' ' ) . ' €</div>';
-            echo '<div style="font-size:11px;color:#6b8599">/ tükk</div>';
-        }
-        echo '</div>';
-        $btn_bg  = $in_stock ? '#00b4c8' : '#9ca3af';
-        $btn_cur = $in_stock ? 'pointer' : 'not-allowed';
-        $disabled = $in_stock ? '' : 'disabled';
-        echo '<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">';
-        echo '<input type="number" id="qty_' . $item->id . '" value="1" min="1" max="' . (int) $item->quantity . '" style="width:54px;padding:5px 6px;border:1.5px solid #d0dce8;border-radius:6px;font-size:13px;text-align:center">';
-        echo '<button onclick="veshoAddToCart(' . $item->id . ',\'' . esc_js( $item->name ) . '\')" style="padding:8px 14px;background:' . $btn_bg . ';color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:' . $btn_cur . '" ' . $disabled . '>Lisa korvi</button>';
-        echo '</div>';
-        echo '</div></div>';
-    endforeach;
-    echo '</div>';
-
-    // Floating cart button
     ?>
-    <div id="vesho-cart-fab" style="position:fixed;bottom:24px;right:24px;z-index:999;<?php echo $cart_count > 0 ? '' : 'display:none'; ?>">
-      <a href="<?php echo esc_url( add_query_arg( 'shop_view', 'cart', $page_url ) ); ?>" style="display:flex;align-items:center;gap:8px;background:#00b4c8;color:#fff;padding:12px 20px;border-radius:50px;text-decoration:none;font-weight:700;box-shadow:0 4px 20px rgba(0,180,200,.4)">
-        🛒 Korv <span id="vesho-cart-count" style="background:rgba(255,255,255,.3);padding:2px 8px;border-radius:20px"><?php echo $cart_count; ?></span>
-      </a>
+    <style>
+    .vshop-wrap{font-family:inherit}
+    .vshop-topbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:20px}
+    .vshop-search-form{display:flex;gap:0;flex:1;min-width:200px;max-width:420px;border:2px solid #e5edf4;border-radius:10px;overflow:hidden;background:#fff}
+    .vshop-search-form input{flex:1;border:none;padding:11px 16px;font-size:14px;outline:none;color:#0d1f2d}
+    .vshop-search-form button{padding:0 18px;background:#00b4c8;color:#fff;border:none;font-size:14px;font-weight:700;cursor:pointer}
+    .vshop-sort{padding:10px 14px;border:2px solid #e5edf4;border-radius:10px;font-size:13px;font-weight:600;color:#4b6174;background:#fff;cursor:pointer}
+    .vshop-cats{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}
+    .vshop-cat{padding:7px 16px;border-radius:20px;font-size:13px;font-weight:600;text-decoration:none;color:#4b6174;background:#f0f4f8;transition:all .15s;border:2px solid transparent}
+    .vshop-cat:hover{background:#e0f7fa;color:#0097aa}
+    .vshop-cat.active{background:#00b4c8;color:#fff;border-color:#00b4c8}
+    .vshop-cam{display:flex;align-items:center;gap:16px;background:linear-gradient(135deg,#e0f7fa,#b2ebf2);border:2px solid #00b4c8;border-radius:14px;padding:16px 22px;margin-bottom:24px;flex-wrap:wrap}
+    .vshop-cam-badge{background:#00b4c8;color:#fff;font-size:17px;font-weight:900;padding:8px 18px;border-radius:10px;white-space:nowrap}
+    .vshop-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+    @media(max-width:900px){.vshop-grid{grid-template-columns:repeat(2,1fr)}}
+    @media(max-width:540px){.vshop-grid{grid-template-columns:1fr}}
+    .vshop-card{background:#fff;border-radius:16px;box-shadow:0 2px 16px rgba(13,31,45,.07);overflow:hidden;display:flex;flex-direction:column;transition:box-shadow .2s,transform .2s;position:relative}
+    .vshop-card:hover{box-shadow:0 8px 32px rgba(13,31,45,.13);transform:translateY(-2px)}
+    .vshop-card-img{height:180px;background:linear-gradient(145deg,#e0f7fa,#b2ebf2);display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;text-decoration:none}
+    .vshop-card-img img{width:100%;height:100%;object-fit:cover}
+    .vshop-card-img svg{width:64px;height:64px;opacity:.8}
+    .vshop-disc-badge{position:absolute;top:10px;left:10px;background:#00b4c8;color:#fff;font-size:12px;font-weight:800;padding:4px 10px;border-radius:20px;z-index:1}
+    .vshop-out-badge{position:absolute;top:10px;right:10px;background:rgba(0,0,0,.6);color:#fff;font-size:11px;font-weight:700;padding:4px 8px;border-radius:20px}
+    .vshop-card-body{padding:16px;display:flex;flex-direction:column;gap:8px;flex:1}
+    .vshop-card-cat{font-size:10px;font-weight:800;color:#00b4c8;text-transform:uppercase;letter-spacing:.8px}
+    .vshop-card-name{font-size:15px;font-weight:700;color:#0d1f2d;line-height:1.35;text-decoration:none;display:block}
+    .vshop-card-name:hover{color:#00b4c8}
+    .vshop-card-desc{font-size:12px;color:#6b8599;line-height:1.5;flex:1}
+    .vshop-card-footer{margin-top:auto;padding-top:12px;border-top:1px solid #f0f4f8;display:flex;align-items:flex-end;justify-content:space-between;gap:8px}
+    .vshop-price-orig{font-size:12px;color:#9ca3af;text-decoration:line-through}
+    .vshop-price{font-size:22px;font-weight:900;color:#0d1f2d;line-height:1}
+    .vshop-price.sale{color:#00b4c8}
+    .vshop-price-unit{font-size:11px;color:#6b8599;font-weight:400}
+    .vshop-savings{font-size:11px;color:#059669;font-weight:700}
+    .vshop-atc{display:flex;flex-direction:column;gap:5px;align-items:flex-end}
+    .vshop-qty{width:52px;padding:5px;border:1.5px solid #d0dce8;border-radius:6px;font-size:13px;text-align:center}
+    .vshop-btn{padding:8px 14px;background:#00b4c8;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;transition:background .15s}
+    .vshop-btn:hover{background:#0097aa}
+    .vshop-btn:disabled{background:#9ca3af;cursor:not-allowed}
+    .vshop-fab{position:fixed;bottom:24px;right:24px;z-index:999}
+    .vshop-fab a{display:flex;align-items:center;gap:10px;background:#0d1f2d;color:#fff;padding:14px 22px;border-radius:50px;text-decoration:none;font-weight:700;font-size:15px;box-shadow:0 4px 24px rgba(13,31,45,.3)}
+    .vshop-fab-badge{background:#00b4c8;color:#fff;font-size:12px;font-weight:800;padding:2px 9px;border-radius:20px}
+    .vshop-toast{display:none;position:fixed;bottom:88px;right:24px;z-index:10000;background:#0d1f2d;color:#fff;padding:12px 20px;border-radius:10px;font-size:14px;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.25);animation:vfadeIn .2s}
+    @keyframes vfadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+    </style>
+
+    <div class="vshop-wrap">
+
+    <?php if ( $eff_discount > 0 ) : ?>
+    <div class="vshop-cam">
+      <div class="vshop-cam-badge">-<?php echo (int) $eff_discount; ?>%</div>
+      <div>
+        <div style="font-weight:700;color:#0d1f2d;font-size:15px">🏷️ <?php echo esc_html( $eff_locked ? $eff_name . ' (lukustatud)' : $eff_name ); ?></div>
+        <?php if ( $grid_campaign && $grid_campaign->description ) : ?><div style="font-size:13px;color:#4b6174;margin-top:2px"><?php echo esc_html( $grid_campaign->description ); ?></div><?php endif; ?>
+        <?php if ( $grid_campaign && $grid_campaign->valid_until ) : ?><div style="font-size:12px;color:#00b4c8;font-weight:600;margin-top:2px">Kehtib kuni <?php echo esc_html( date_i18n( 'd.m.Y', strtotime( $grid_campaign->valid_until ) ) ); ?></div><?php endif; ?>
+      </div>
+    </div>
+    <?php endif; ?>
+
+    <div class="vshop-topbar">
+      <form class="vshop-search-form" method="GET">
+        <?php if ( $category ) echo '<input type="hidden" name="cat" value="' . esc_attr( $category ) . '">'; ?>
+        <?php if ( $sort !== 'name' ) echo '<input type="hidden" name="sort" value="' . esc_attr( $sort ) . '">'; ?>
+        <input type="search" name="s" value="<?php echo esc_attr( $search ); ?>" placeholder="Otsi toodet...">
+        <button type="submit">Otsi</button>
+      </form>
+      <select class="vshop-sort" onchange="window.location=this.value">
+        <?php
+        $sort_opts = [ 'name' => 'Nimi A–Z', 'price_asc' => 'Hind kasvav', 'price_desc' => 'Hind kahanev' ];
+        foreach ( $sort_opts as $v => $l ) {
+            $href = add_query_arg( array_filter( [ 's' => $search, 'cat' => $category, 'sort' => $v ] ), $page_url );
+            echo '<option value="' . esc_url( $href ) . '"' . selected( $sort, $v, false ) . '>' . esc_html( $l ) . '</option>';
+        }
+        ?>
+      </select>
     </div>
 
-    <!-- Toast notification -->
-    <div id="vesho-toast" style="display:none;position:fixed;bottom:80px;right:24px;z-index:10000;background:#0d1f2d;color:#fff;padding:12px 20px;border-radius:10px;font-size:14px;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.2)"></div>
+    <?php if ( ! empty( $categories ) ) : ?>
+    <div class="vshop-cats">
+      <a href="<?php echo esc_url( add_query_arg( array_filter( [ 's' => $search, 'sort' => $sort === 'name' ? null : $sort ] ), $page_url ) ); ?>" class="vshop-cat <?php echo ! $category ? 'active' : ''; ?>">Kõik</a>
+      <?php foreach ( $categories as $cat ) :
+        $href = add_query_arg( array_filter( [ 's' => $search, 'cat' => $cat, 'sort' => $sort === 'name' ? null : $sort ] ), $page_url ); ?>
+      <a href="<?php echo esc_url( $href ); ?>" class="vshop-cat <?php echo $category === $cat ? 'active' : ''; ?>"><?php echo esc_html( $cat ); ?></a>
+      <?php endforeach; ?>
+    </div>
+    <?php endif; ?>
+
+    <?php if ( empty( $items ) ) : ?>
+    <div style="text-align:center;padding:80px 20px;color:#6b8599">
+      <div style="font-size:56px;margin-bottom:16px">🔧</div>
+      <p style="font-size:16px"><?php echo $search || $category ? 'Tooteid ei leitud.' : 'Pood on varsti avatud.'; ?></p>
+      <?php if ( $search || $category ) : ?>
+      <a href="<?php echo esc_url( $page_url ); ?>" style="display:inline-block;margin-top:12px;padding:10px 22px;background:#00b4c8;color:#fff;border-radius:8px;text-decoration:none;font-weight:600">← Kõik tooted</a>
+      <?php endif; ?>
+    </div>
+    <?php else : ?>
+    <div class="vshop-grid">
+    <?php foreach ( $items as $item ) :
+        $in_stock   = $item->quantity > 0;
+        $orig       = (float) $item->shop_price;
+        $disc       = $eff_discount > 0 ? round( $orig * ( 1 - $eff_discount / 100 ), 2 ) : null;
+        $detail_url = add_query_arg( [ 'shop_view' => 'product', 'pid' => $item->id ], $page_url );
+        $desc_text  = $item->shop_description ?: $item->description;
+    ?>
+      <div class="vshop-card">
+        <a href="<?php echo esc_url( $detail_url ); ?>" class="vshop-card-img">
+          <?php if ( $disc !== null ) echo '<span class="vshop-disc-badge">-' . (int) $eff_discount . '%</span>'; ?>
+          <?php if ( ! $in_stock ) echo '<span class="vshop-out-badge">Otsas</span>'; ?>
+          <?php if ( ! empty( $item->image_url ) ) : ?>
+            <img src="<?php echo esc_url( $item->image_url ); ?>" alt="<?php echo esc_attr( $item->name ); ?>" loading="lazy">
+          <?php else : ?>
+            <svg viewBox="0 0 32 32" fill="none"><path d="M16 4C16 4 6 14 6 20C6 25.5228 10.4772 30 16 30C21.5228 30 26 25.5228 26 20C26 14 16 4 16 4Z" fill="#00b4c8"/></svg>
+          <?php endif; ?>
+        </a>
+        <div class="vshop-card-body">
+          <?php if ( $item->category ) echo '<div class="vshop-card-cat">' . esc_html( $item->category ) . '</div>'; ?>
+          <a href="<?php echo esc_url( $detail_url ); ?>" class="vshop-card-name"><?php echo esc_html( $item->name ); ?></a>
+          <?php if ( $desc_text ) echo '<div class="vshop-card-desc">' . esc_html( wp_trim_words( $desc_text, 14, '…' ) ) . '</div>'; ?>
+          <div class="vshop-card-footer">
+            <div>
+              <?php if ( $disc !== null ) : ?>
+              <div class="vshop-price-orig"><?php echo number_format( $orig, 2, ',', ' ' ); ?> €</div>
+              <div class="vshop-price sale"><?php echo number_format( $disc, 2, ',', ' ' ); ?> €</div>
+              <div class="vshop-savings">Säästad <?php echo number_format( $orig - $disc, 2, ',', ' ' ) . ' €'; ?></div>
+              <?php else : ?>
+              <div class="vshop-price"><?php echo number_format( $orig, 2, ',', ' ' ); ?> €</div>
+              <div class="vshop-price-unit">/ <?php echo esc_html( $item->unit ?: 'tk' ); ?></div>
+              <?php endif; ?>
+            </div>
+            <div class="vshop-atc">
+              <input type="number" id="qty_<?php echo $item->id; ?>" class="vshop-qty" value="1" min="1" max="<?php echo (int) $item->quantity; ?>">
+              <button class="vshop-btn" onclick="veshoAddToCart(<?php echo $item->id; ?>, '<?php echo esc_js( $item->name ); ?>')" <?php echo $in_stock ? '' : 'disabled'; ?>>+ Korvi</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    <?php endforeach; ?>
+    </div>
+    <?php endif; ?>
+
+    </div><!-- .vshop-wrap -->
+
+    <div class="vshop-fab" id="vesho-cart-fab" <?php echo $cart_count > 0 ? '' : 'style="display:none"'; ?>>
+      <a href="<?php echo esc_url( add_query_arg( 'shop_view', 'cart', $page_url ) ); ?>">
+        🛒 Ostukorv <span class="vshop-fab-badge" id="vesho-cart-count"><?php echo $cart_count; ?></span>
+      </a>
+    </div>
+    <div class="vshop-toast" id="vesho-toast"></div>
 
     <script>
     var veshoCartNonce = '<?php echo esc_js( $cart_nonce ); ?>';
@@ -941,16 +986,18 @@ add_shortcode( 'vesho_shop_grid', function () {
       var fab = document.getElementById('vesho-cart-fab');
       var badge = document.getElementById('vesho-cart-count');
       if (badge) badge.textContent = count;
-      if (fab) fab.style.display = count > 0 ? 'block' : 'none';
+      if (fab) fab.style.display = count > 0 ? '' : 'none';
     }
 
     function showToast(msg) {
       var t = document.getElementById('vesho-toast');
       t.textContent = msg; t.style.display = 'block';
-      setTimeout(function(){ t.style.display='none'; }, 3000);
+      setTimeout(function(){ t.style.display = 'none'; }, 2800);
     }
 
     function veshoAddToCart(pid, name) {
+      var btn = event.target;
+      btn.disabled = true; btn.textContent = '✓';
       var form = new FormData();
       form.append('action', 'vesho_cart_add');
       form.append('nonce', veshoCartNonce);
@@ -958,7 +1005,10 @@ add_shortcode( 'vesho_shop_grid', function () {
       form.append('qty', document.getElementById('qty_'+pid)?.value || 1);
       fetch(ajaxurl, {method:'POST', body:form})
         .then(r=>r.json())
-        .then(d=>{ if(d.success){ veshoUpdateCartBadge(d.data.count); showToast(name+' lisatud korvi ✓'); } });
+        .then(d=>{
+          if (d.success) { veshoUpdateCartBadge(d.data.count); showToast(name + ' lisatud ✓'); }
+          setTimeout(function(){ btn.disabled = false; btn.textContent = '+ Korvi'; }, 1500);
+        });
     }
     </script>
     <?php

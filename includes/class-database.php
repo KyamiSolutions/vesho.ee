@@ -573,6 +573,9 @@ class Vesho_CRM_Database {
         self::maybe_add_column( "{$wpdb->prefix}vesho_guest_requests", 'campaign_name',             "VARCHAR(255) DEFAULT ''" );
         self::maybe_add_column( "{$wpdb->prefix}vesho_guest_requests", 'campaign_discount_percent', "DECIMAL(5,2) DEFAULT 0" );
 
+        // Inventory product image
+        self::maybe_add_column( "{$wpdb->prefix}vesho_inventory", 'image_url', "VARCHAR(500) DEFAULT ''" );
+
         // Return request extra fields
         self::maybe_add_column( "{$wpdb->prefix}vesho_shop_orders", 'return_description', "TEXT DEFAULT NULL" );
         self::maybe_add_column( "{$wpdb->prefix}vesho_shop_orders", 'return_photo_url',   "VARCHAR(500) DEFAULT NULL" );

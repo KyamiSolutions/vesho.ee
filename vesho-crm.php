@@ -3,7 +3,7 @@
  * Plugin Name: Vesho CRM
  * Plugin URI:  https://vesho.ee
  * Description: CRM ja klientide portaal Vesho OÜ-le. Haldab kliente, seadmeid, hooldusi, arveid ja teenuseid.
- * Version:     2.2.37
+ * Version:     2.2.38
  * Author:      Vesho OÜ
  * Author URI:  https://vesho.ee
  * Text Domain: vesho-crm
@@ -15,7 +15,7 @@
 defined( 'ABSPATH' ) || exit;
 
 // ── Constants ──────────────────────────────────────────────────────────────────
-define('VESHO_CRM_VERSION', '2.2.37');
+define('VESHO_CRM_VERSION', '2.2.38');
 define( 'VESHO_CRM_FILE',     __FILE__ );
 define( 'VESHO_CRM_PATH',     plugin_dir_path( __FILE__ ) );
 define( 'VESHO_CRM_URL',      plugin_dir_url( __FILE__ ) );
@@ -1458,6 +1458,7 @@ function vesho_ajax_save_inventory_inline() {
         'shop_enabled'     => isset( $_POST['shop_enabled'] ) ? 1 : 0,
         'shop_description' => sanitize_textarea_field( $_POST['shop_description'] ?? '' ),
         'shop_price'       => strlen( $_POST['shop_price'] ?? '' ) ? (float) $_POST['shop_price'] : null,
+        'image_url'        => esc_url_raw( $_POST['image_url'] ?? '' ),
     ];
 
     if ( empty( $data['name'] ) ) {
