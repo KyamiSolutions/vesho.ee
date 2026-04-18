@@ -484,9 +484,14 @@
                 if (d.success) {
                     msg.style.background='#d1fae5'; msg.style.color='#065f46'; msg.style.border='1px solid #a7f3d0';
                     msg.textContent = (d.data && d.data.message) || 'Õnnestus!';
-                    setTimeout(function(){
-                        window.location.href = (d.data && d.data.redirect) || portalUrl;
-                    }, 600);
+                    if (d.data && d.data.verify) {
+                        // Registration with email verify — don't redirect, just show message
+                        if (btn) { btn.disabled=true; btn.textContent='✅'; }
+                    } else {
+                        setTimeout(function(){
+                            window.location.href = (d.data && d.data.redirect) || portalUrl;
+                        }, 600);
+                    }
                 } else {
                     msg.style.background='#fee2e2'; msg.style.color='#991b1b'; msg.style.border='1px solid #fecaca';
                     msg.textContent = (d.data && d.data.message) || 'Viga! Proovi uuesti.';
