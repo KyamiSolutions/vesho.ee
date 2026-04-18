@@ -501,6 +501,7 @@ private static function load_view( $name ) {
             'role'       => sanitize_text_field( $_POST['role'] ?? 'technician' ),
             'active'          => isset($_POST['active']) ? 1 : 0,
             'show_on_website' => isset($_POST['show_on_website']) ? 1 : 0,
+            'can_inventory'   => isset($_POST['can_inventory']) ? 1 : 0,
         );
         if ( ! empty($pin) ) {
             $data['password'] = wp_hash_password($pin);

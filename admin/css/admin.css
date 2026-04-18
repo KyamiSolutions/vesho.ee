@@ -1365,5 +1365,28 @@
 }
 
 /* --------------------------------------------------------------------------
+   22. Sidebar Navigation Group Labels
+   -------------------------------------------------------------------------- */
+
+/* Group separator labels injected via JS into #adminmenu */
+#adminmenu li.vesho-nav-group {
+  padding: 14px 12px 3px 14px !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.1em !important;
+  text-transform: uppercase !important;
+  color: #5a8fa8 !important;
+  cursor: default !important;
+  background: transparent !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+  margin-top: 2px !important;
+  line-height: 1 !important;
+  pointer-events: none !important;
+}
+#adminmenu li.vesho-nav-group > a,
+#adminmenu li.vesho-nav-group:hover > a { display: none !important; }
+#adminmenu li.vesho-nav-group:hover { background: transparent !important; }
+
+/* --------------------------------------------------------------------------
    End of Vesho CRM Admin Stylesheet
    ========================================================================== */

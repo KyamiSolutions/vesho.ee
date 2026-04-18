@@ -90,7 +90,7 @@ function vesho_worker_is_clocked_in($worker_id) {
                     </div>
                 </div>
                 <?php endif; ?>
-                <div class="crm-form-group" style="justify-content:flex-end;flex-direction:row;align-items:center;gap:20px;">
+                <div class="crm-form-group crm-form-full" style="flex-direction:row;align-items:center;gap:24px;flex-wrap:wrap;">
                     <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
                         <input type="checkbox" name="active" id="worker_active" value="1" <?php checked($edit->active??1,1); ?> style="accent-color:#00b4c8">
                         <span class="crm-form-label" style="margin:0">Aktiivne</span>
@@ -98,6 +98,10 @@ function vesho_worker_is_clocked_in($worker_id) {
                     <label style="display:flex;align-items:center;gap:6px;cursor:pointer" title="Kuvatakse veebilehel 'Meist' meeskonna sektsioonis">
                         <input type="checkbox" name="show_on_website" id="worker_website" value="1" <?php checked($edit->show_on_website??0,1); ?> style="accent-color:#00b4c8">
                         <span class="crm-form-label" style="margin:0">🌐 Kuva veebilehel</span>
+                    </label>
+                    <label style="display:flex;align-items:center;gap:6px;cursor:pointer" title="Töötajal on juurdepääs töötajaportaali laoseisu moodulile">
+                        <input type="checkbox" name="can_inventory" id="worker_inventory" value="1" <?php checked($edit->can_inventory??0,1); ?> style="accent-color:#00b4c8">
+                        <span class="crm-form-label" style="margin:0">📦 Ladu (portaal)</span>
                     </label>
                 </div>
                 <?php if ($edit) : ?>

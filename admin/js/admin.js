@@ -169,6 +169,23 @@
 
     // ── Init page-specific scripts ─────────────────────────────────────────────
     $(document).ready(function() {
+
+        // ── Sidebar navigation group labels ───────────────────────────────────
+        var navGroups = [
+            { page: 'vesho-crm-clients',   label: '👥 KLIENDID' },
+            { page: 'vesho-crm-calendar',  label: '🔧 HOOLDUSED' },
+            { page: 'vesho-crm-workers',   label: '👷 TÖÖ' },
+            { page: 'vesho-crm-invoices',  label: '💰 ARVELDUS' },
+            { page: 'vesho-crm-inventory', label: '📦 LADU' },
+            { page: 'vesho-crm-services',  label: '⚙️ SEADED' },
+        ];
+        navGroups.forEach(function(g) {
+            var $a = $('#adminmenu a[href*="page=' + g.page + '"]').first();
+            if ($a.length) {
+                $a.closest('li').before('<li class="vesho-nav-group">' + g.label + '</li>');
+            }
+        });
+
         // Show alert from URL param
         var params = new URLSearchParams(window.location.search);
         var msg = params.get('msg');

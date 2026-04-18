@@ -499,6 +499,7 @@ class Vesho_CRM_Database {
         self::maybe_add_column( "{$wpdb->prefix}vesho_workers",    'work_email',      "VARCHAR(255) DEFAULT ''" );
         self::maybe_add_column( "{$wpdb->prefix}vesho_workers",    'pin',             "VARCHAR(10) DEFAULT ''" );
         self::maybe_add_column( "{$wpdb->prefix}vesho_workers",    'show_on_website', "TINYINT(1) DEFAULT 0" );
+        self::maybe_add_column( "{$wpdb->prefix}vesho_workers",    'can_inventory',   "TINYINT(1) DEFAULT 0" );
         self::maybe_add_column( "{$wpdb->prefix}vesho_stock_receipt_items", 'actual_qty', "DECIMAL(10,3) DEFAULT NULL" );
         self::maybe_add_column( "{$wpdb->prefix}vesho_stock_receipt_items", 'location',   "VARCHAR(255) DEFAULT ''" );
         self::maybe_add_column( "{$wpdb->prefix}vesho_stock_receipt_items", 'ean',        "VARCHAR(20) DEFAULT ''" );
