@@ -6,10 +6,5 @@
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-18",
-<<<<<<< HEAD
-  "changelog": "<h4>2.2.62</h4><ul><li>Uus versioon</li></ul>"
+  "changelog": "<h4>2.2.63</h4><ul><li>Uus versioon</li></ul>"
 }
-=======
-  "changelog": "<h4>2.2.63</h4><ul><li>Lisa artikkel vormi uus kujundus (3006 stiil) + asukoha skännimine vormis</li></ul><h4>2.2.62</h4><ul><li>Parandus: Lisa artikkel null viga</li></ul>"
-}
->>>>>>> ca23d88 (v2.2.63 - Lisa artikkel vormi redesign (3006 stiil, sektsioonid, asukoha skänner))
