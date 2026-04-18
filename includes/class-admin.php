@@ -70,6 +70,7 @@ class Vesho_CRM_Admin {
         add_action( 'wp_ajax_vesho_admin_upload_maint_photo', array( __CLASS__, 'ajax_admin_upload_maint_photo' ) );
         add_action( 'wp_ajax_vesho_admin_delete_maint_photo', array( __CLASS__, 'ajax_admin_delete_maint_photo' ) );
         add_action( 'wp_ajax_vesho_admin_get_receipt_items',  array( __CLASS__, 'ajax_admin_get_receipt_items' ) );
+        add_action( 'wp_ajax_vesho_admin_add_receipt_item',   array( __CLASS__, 'ajax_admin_add_receipt_item' ) );
         add_action( 'wp_ajax_vesho_search_wp_users',        array( __CLASS__, 'ajax_search_wp_users' ) );
         add_action( 'wp_ajax_vesho_add_maintenance_ajax',   array( __CLASS__, 'ajax_add_maintenance' ) );
         add_action( 'wp_ajax_vesho_get_client_devices',     array( __CLASS__, 'ajax_get_client_devices' ) );
@@ -2084,6 +2085,38 @@ private static function load_view( $name ) {
             $item->expected_qty = $item->quantity ?? 0;
         }
         wp_send_json_success( ['items' => $items] );
+    }
+
+    // ── AJAX: admin add item to existing receipt ──────────────────────────────
+    public static function ajax_admin_add_receipt_item() {
+        check_ajax_referer( 'vesho_admin_nonce', 'nonce' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error();
+        global $wpdb;
+        $receipt_id = absint( $_POST['receipt_id'] ?? 0 );
+        $inv_id     = absint( $_POST['inventory_id'] ?? 0 );
+        $pname      = sanitize_text_field( $_POST['product_name'] ?? '' );
+        $pean       = sanitize_text_field( $_POST['product_ean'] ?? '' );
+        $punit      = sanitize_text_field( $_POST['product_unit'] ?? 'tk' );
+        $qty        = (float)( $_POST['quantity'] ?? 0 );
+        if ( ! $receipt_id || ( ! $inv_id && ! $pname ) || $qty <= 0 ) {
+            wp_send_json_error( ['message' => 'Puudulikud andmed'] );
+        }
+        if ( ! $inv_id && $pean ) {
+            $inv_id = (int)$wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$wpdb->prefix}vesho_inventory WHERE ean=%s LIMIT 1", $pean ) );
+        }
+        if ( $inv_id && ! $pname ) {
+            $pname = $wpdb->get_var( $wpdb->prepare( "SELECT name FROM {$wpdb->prefix}vesho_inventory WHERE id=%d", $inv_id ) ) ?? '';
+        }
+        $wpdb->insert( $wpdb->prefix . 'vesho_stock_receipt_items', [
+            'receipt_id'   => $receipt_id,
+            'inventory_id' => $inv_id ?: null,
+            'quantity'     => $qty,
+            'product_name' => $pname,
+            'product_ean'  => $pean,
+            'product_unit' => $punit,
+        ] );
+        if ( ! $wpdb->insert_id ) wp_send_json_error( ['message' => 'Salvestamine ebaõnnestus'] );
+        wp_send_json_success( ['message' => 'Kaup lisatud'] );
     }
 
     // ── AJAX: admin upload maintenance photo ─────────────────────────────────

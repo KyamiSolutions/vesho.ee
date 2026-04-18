@@ -234,8 +234,10 @@ endif; ?>
 var veshoNonce = '<?php echo esc_js($nonce); ?>';
 var ajaxUrl    = '<?php echo esc_js(admin_url('admin-ajax.php')); ?>';
 var invData    = <?php echo json_encode(array_map(fn($i)=>['id'=>(int)$i->id,'name'=>$i->name,'sku'=>$i->sku??'','ean'=>$i->ean??'','unit'=>$i->unit??'tk','price'=>(float)$i->purchase_price,'sell'=>(float)$i->shop_price], $inventory_items)); ?>;
+var receiptStatuses = <?php echo json_encode(array_reduce($receipts, fn($c,$r)=>array_merge($c,[(int)$r->id=>$r->status??'draft']), [])); ?>;
 var loadedItems = {};
 var lineIdx = 0;
+var adminAddItemRid = 0;
 
 function closeModal(id) { document.getElementById(id).style.display='none'; }
 function openModal(id)  { document.getElementById(id).style.display='flex'; }
@@ -438,21 +440,132 @@ function toggleReceiptItems(id) {
         .then(r=>r.json()).then(function(d){
             if (!d.success || !d.data) { el.innerHTML='<div style="color:#ef4444;padding:8px">Viga</div>'; return; }
             var items = d.data.items || d.data;
-            var html = '<table class="crm-table"><thead><tr><th>Toode</th><th>SKU/EAN</th><th>Oodatav</th><th>Tegelik</th><th>Asukoht</th></tr></thead><tbody>';
-            items.forEach(function(item){
-                html += '<tr>'
-                    +'<td><strong>'+(item.name||item.item_name||'–')+'</strong></td>'
-                    +'<td style="font-family:monospace;font-size:12px">'+(item.sku||'–')+'</td>'
-                    +'<td>'+(item.expected_qty||item.quantity||'–')+' '+(item.unit||'tk')+'</td>'
-                    +'<td style="color:'+(item.actual_qty!=null?'#16a34a':'#94a3b8')+';font-weight:600">'+(item.actual_qty!=null?item.actual_qty+' '+(item.unit||'tk'):'–')+'</td>'
-                    +'<td style="font-family:monospace;font-size:12px">'+(item.location||'–')+'</td>'
-                    +'</tr>';
-            });
-            html += '</tbody></table>';
+            var status = receiptStatuses[id] || 'draft';
+            var canEdit = status === 'draft' || status === 'pending';
+            var html = '';
+            if (items.length === 0) {
+                html += '<div style="padding:20px;text-align:center;color:#94a3b8;font-size:13px">Tooteid pole lisatud</div>';
+            } else {
+                html += '<table class="crm-table"><thead><tr><th>Toode</th><th>SKU/EAN</th><th>Oodatav</th><th>Tegelik</th><th>Asukoht</th></tr></thead><tbody>';
+                items.forEach(function(item){
+                    html += '<tr>'
+                        +'<td><strong>'+(item.name||item.item_name||'–')+'</strong></td>'
+                        +'<td style="font-family:monospace;font-size:12px">'+(item.sku||'–')+'</td>'
+                        +'<td>'+(item.expected_qty||item.quantity||'–')+' '+(item.unit||'tk')+'</td>'
+                        +'<td style="color:'+(item.actual_qty!=null?'#16a34a':'#94a3b8')+';font-weight:600">'+(item.actual_qty!=null?item.actual_qty+' '+(item.unit||'tk'):'–')+'</td>'
+                        +'<td style="font-family:monospace;font-size:12px">'+(item.location||'–')+'</td>'
+                        +'</tr>';
+                });
+                html += '</tbody></table>';
+            }
+            if (canEdit) {
+                html += '<div style="padding:10px 0 4px;display:flex;gap:8px">'
+                    +'<button onclick="openAdminAddItem('+id+')" style="padding:6px 14px;font-size:12px;background:#e0f7fa;border:1px solid #00b4c8;color:#007a8a;border-radius:6px;cursor:pointer">+ Lisa kaup</button>'
+                    +'</div>';
+            }
             el.innerHTML = html;
         }).catch(function(){ el.innerHTML = '<div style="color:#ef4444;padding:8px">Ühenduse viga</div>'; });
     } else {
         el.style.display = 'none';
     }
 }
+
+function openAdminAddItem(rid) {
+    adminAddItemRid = rid;
+    document.getElementById('aai-inv').value = '';
+    document.getElementById('aai-name').value = '';
+    document.getElementById('aai-ean').value = '';
+    document.getElementById('aai-qty').value = '';
+    document.getElementById('aai-unit').value = 'tk';
+    document.getElementById('aai-msg').style.display = 'none';
+    openModal('modal-add-item');
+}
+
+function onAaiInvChange(sel) {
+    var opt = sel.options[sel.selectedIndex];
+    if (!opt || !opt.value) return;
+    var inv = invData.find(function(i){ return i.id == opt.value; });
+    if (!inv) return;
+    document.getElementById('aai-name').value = inv.name;
+    document.getElementById('aai-ean').value  = inv.ean || '';
+    document.getElementById('aai-unit').value = inv.unit || 'tk';
+}
+
+function doAdminAddItem() {
+    var inv_id = document.getElementById('aai-inv').value;
+    var name   = document.getElementById('aai-name').value.trim();
+    var ean    = document.getElementById('aai-ean').value.trim();
+    var qty    = document.getElementById('aai-qty').value;
+    var unit   = document.getElementById('aai-unit').value;
+    var msg    = document.getElementById('aai-msg');
+    if (!name || !qty || parseFloat(qty) <= 0) { msg.textContent='Nimi ja kogus on kohustuslikud'; msg.style.display=''; return; }
+    var btn = document.getElementById('aai-btn');
+    btn.disabled = true; btn.textContent = 'Lisamine...';
+    fetch(ajaxUrl, {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body:'action=vesho_admin_add_receipt_item&nonce='+veshoNonce
+            +'&receipt_id='+adminAddItemRid
+            +'&inventory_id='+encodeURIComponent(inv_id)
+            +'&product_name='+encodeURIComponent(name)
+            +'&product_ean='+encodeURIComponent(ean)
+            +'&product_unit='+encodeURIComponent(unit)
+            +'&quantity='+encodeURIComponent(qty)
+    }).then(r=>r.json()).then(function(d){
+        btn.disabled=false; btn.textContent='Lisa kaup';
+        if (d.success) {
+            closeModal('modal-add-item');
+            loadedItems[adminAddItemRid] = false;
+            var el = document.getElementById('recv-items-'+adminAddItemRid);
+            if (el) { el.innerHTML='<div style="color:#94a3b8;font-size:13px;padding:8px">Laen...</div>'; }
+            toggleReceiptItems(adminAddItemRid);
+        } else {
+            msg.textContent = d.data?.message || 'Viga'; msg.style.display='';
+        }
+    });
+}
 </script>
+
+<!-- Add item to receipt modal -->
+<div id="modal-add-item" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.5);align-items:center;justify-content:center">
+<div style="background:#fff;border-radius:14px;padding:24px;width:100%;max-width:420px;margin:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <strong style="font-size:16px">Lisa kaup arvetele</strong>
+        <button onclick="closeModal('modal-add-item')" style="background:none;border:none;font-size:20px;cursor:pointer;color:#94a3b8">✕</button>
+    </div>
+    <div style="margin-bottom:12px">
+        <label class="crm-form-label">Toode laost (valikuline)</label>
+        <select id="aai-inv" class="crm-form-select crm-form-select-search" onchange="onAaiInvChange(this)">
+            <option value="">— Vali olemasolev toode —</option>
+            <?php foreach ($inventory_items as $inv): ?>
+            <option value="<?php echo (int)$inv->id; ?>"><?php echo esc_html($inv->name); ?> <?php if($inv->sku): ?>(<?php echo esc_html($inv->sku); ?>)<?php endif; ?></option>
+            <?php endforeach; ?>
+        </select>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+        <div>
+            <label class="crm-form-label">Toote nimi *</label>
+            <input id="aai-name" class="crm-form-input" type="text" placeholder="Toote nimi">
+        </div>
+        <div>
+            <label class="crm-form-label">EAN</label>
+            <input id="aai-ean" class="crm-form-input" type="text" placeholder="EAN kood" style="font-family:monospace">
+        </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 80px;gap:10px;margin-bottom:16px">
+        <div>
+            <label class="crm-form-label">Kogus *</label>
+            <input id="aai-qty" class="crm-form-input" type="number" min="0.01" step="0.01" placeholder="Kogus">
+        </div>
+        <div>
+            <label class="crm-form-label">Ühik</label>
+            <select id="aai-unit" class="crm-form-select" style="height:38px">
+                <option>tk</option><option>kg</option><option>l</option><option>m</option><option>pk</option><option>kast</option>
+            </select>
+        </div>
+    </div>
+    <div id="aai-msg" style="display:none;color:#ef4444;font-size:13px;margin-bottom:10px"></div>
+    <div style="display:flex;gap:8px">
+        <button onclick="closeModal('modal-add-item')" class="crm-btn crm-btn-outline" style="flex:1">Tühista</button>
+        <button id="aai-btn" onclick="doAdminAddItem()" class="crm-btn crm-btn-primary" style="flex:2">Lisa kaup</button>
+    </div>
+</div>
+</div>

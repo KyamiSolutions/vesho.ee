@@ -1640,17 +1640,35 @@ foreach ($notices as $notice) : ?>
     });
   };
 
-  window.vwpOpenAddItem = function(rid, bref){
+  window.vwpOpenAddItem = function(rid, bref, preEan){
     currentRecvId=rid;
     document.getElementById('vwp-add-item-bref').textContent=bref;
     document.getElementById('vwp-ai-name').value='';
-    document.getElementById('vwp-ai-ean').value='';
+    document.getElementById('vwp-ai-ean').value=preEan||'';
     document.getElementById('vwp-ai-qty').value='';
     document.getElementById('vwp-ai-price').value='';
     document.getElementById('vwp-ai-loc').value='';
     document.getElementById('vwp-ai-notes').value='';
     document.getElementById('vwp-add-item-msg').style.display='none';
     document.getElementById('vwp-add-item-modal').style.display='flex';
+  };
+
+  window.vwpScanReceiptEan = function(rid, bref){
+    if(typeof window.VeshoScanner==='undefined'){alert('Scanner ei ole saadaval');return;}
+    window.VeshoScanner.open({
+      title:'Skänni EAN',
+      autoConfirm:true,
+      onScan:function(code){
+        var data=itemData[rid]||{};
+        var match=Object.entries(data).find(function(e){return e[1].ean===code;});
+        if(match){
+          var row=document.getElementById('recv-row-'+match[0]);
+          if(row){row.style.transition='background .3s';row.style.background='rgba(0,180,200,.15)';row.scrollIntoView({behavior:'smooth',block:'center'});setTimeout(function(){row.style.background='';},2000);}
+        } else {
+          vwpOpenAddItem(rid,bref,code);
+        }
+      }
+    });
   };
 
   window.vwpAddItem = function(){
