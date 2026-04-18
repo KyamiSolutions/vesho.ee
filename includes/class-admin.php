@@ -1019,7 +1019,7 @@ private static function load_view( $name ) {
         // Checkboxes — unchecked = 0, checked = 1
         foreach ( array(
             'portal_registration','portal_show_devices','portal_show_maintenances',
-            'portal_show_services','portal_show_invoices','portal_show_support',
+            'portal_show_services','portal_show_invoices','portal_show_support','show_contract_terms',
             'notify_new_request','notify_new_ticket','notify_invoice_paid','notify_new_client',
             'notify_maintenance_reminder','notify_low_stock','notify_worker_shift',
             'low_stock_alert','worker_reminder','cookie_banner','maintenance_mode','coming_soon_mode',

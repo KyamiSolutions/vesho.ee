@@ -730,6 +730,8 @@ function veshoResendVerify(){
         $show_invoices     = get_option('vesho_portal_show_invoices',     '1') === '1';
         $show_support      = get_option('vesho_portal_show_support',      '1') === '1';
 
+        $show_contract = get_option('vesho_show_contract_terms', '0') === '1';
+
         $nav_items = ['dashboard' => ['icon' => '&#9634;', 'label' => 'Ülevaade']];
         if ($show_devices)      $nav_items['devices']      = ['icon' => '&#128297;', 'label' => 'Seadmed'];
         if ($show_maintenances) $nav_items['maintenances'] = ['icon' => '&#128295;', 'label' => 'Hooldused'];
@@ -737,6 +739,7 @@ function veshoResendVerify(){
         if ($show_invoices)     $nav_items['invoices']     = ['icon' => '&#128196;', 'label' => 'Arved'];
         if ($show_support)      $nav_items['support']      = ['icon' => '&#127881;', 'label' => 'Tugi'];
         $nav_items['orders']  = ['icon' => '&#128722;', 'label' => 'Tellimused'];
+        if ($show_contract)     $nav_items['contract']     = ['icon' => '&#128221;', 'label' => 'Lepingutingimused'];
         $nav_items['profile'] = ['icon' => '&#128100;', 'label' => 'Profiil'];
 
         $avatar   = strtoupper(mb_substr($client->name ?? 'K', 0, 1));
@@ -785,6 +788,7 @@ function veshoResendVerify(){
           case 'invoices':    self::tab_invoices($cid); break;
           case 'support':     self::tab_support($cid, $nonce, $ajax); break;
           case 'orders':      self::tab_orders($client, $cid); break;
+          case 'contract':    self::tab_contract(); break;
           case 'profile':     self::tab_profile($client, $nonce, $ajax); break;
           default:            self::tab_dashboard($client, $cid, $base, $nonce);
       }
@@ -1828,6 +1832,22 @@ function setMsg(m){document.getElementById('vcp-pay-msg').textContent=m;}
   }
 })();
 </script>
+        <?php
+    }
+
+    // ── Tab: Contract terms ───────────────────────────────────────────────────
+
+    private static function tab_contract() {
+        $terms = get_option('vesho_contract_terms', '');
+        ?>
+<h2 class="vcp-section-title">Lepingutingimused</h2>
+<?php if (empty($terms)): ?>
+  <div class="vcp-empty">Lepingutingimused pole veel lisatud.</div>
+<?php else: ?>
+  <div class="vcp-card" style="line-height:1.7;font-size:14px;color:#334155;max-width:800px">
+    <?php echo wp_kses_post(wpautop($terms)); ?>
+  </div>
+<?php endif; ?>
         <?php
     }
 

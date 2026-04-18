@@ -5,7 +5,7 @@ class Vesho_CRM_Worker_Portal {
     public static function init() {
         add_shortcode('vesho_worker_portal', [__CLASS__, 'shortcode']);
 
-        $nopriv = ['vesho_worker_login', 'vesho_worker_logout', 'vesho_worker_scan_checkin'];
+        $nopriv = ['vesho_worker_login', 'vesho_worker_logout', 'vesho_worker_scan_checkin', 'vesho_worker_barcode_login'];
         $auth   = [
             'vesho_worker_start_order',
             'vesho_worker_complete_order',
@@ -1998,6 +1998,38 @@ $all_picked = !empty($my_items) && count(array_filter($my_items, fn($i) => $i->p
         check_ajax_referer('vesho_portal_nonce', 'nonce');
         wp_logout();
         wp_send_json_success(['message' => 'Väljalogimine õnnestus', 'redirect' => home_url('/worker/')]);
+    }
+
+    // ── AJAX: Barcode (QR kaart) login ───────────────────────────────────────
+
+    public static function ajax_barcode_login() {
+        check_ajax_referer('vesho_portal_nonce', 'nonce');
+        $token = sanitize_text_field($_POST['token'] ?? '');
+        if (empty($token)) {
+            wp_send_json_error(['message' => 'Token puudub']);
+        }
+        global $wpdb;
+        // Workers have a barcode_token field — look up by it
+        $worker = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM {$wpdb->prefix}vesho_workers WHERE barcode_token = %s AND active = 1 LIMIT 1",
+            $token
+        ));
+        if (!$worker) {
+            wp_send_json_error(['message' => 'Kehtetu kaart — töötajat ei leitud']);
+        }
+        if (empty($worker->user_id)) {
+            wp_send_json_error(['message' => 'Konto seadistus puudub. Pöördu administraatori poole.']);
+        }
+        $user = get_user_by('id', (int) $worker->user_id);
+        if (!$user || !in_array('vesho_worker', (array) $user->roles)) {
+            wp_send_json_error(['message' => 'Konto seadistus puudub. Pöördu administraatori poole.']);
+        }
+        wp_set_auth_cookie($user->ID, true, is_ssl());
+        wp_send_json_success([
+            'message'  => 'Tere, ' . esc_html($worker->name) . '!',
+            'name'     => esc_html($worker->name),
+            'redirect' => home_url('/worker/'),
+        ]);
     }
 
     // ── AJAX: Start order ─────────────────────────────────────────────────────

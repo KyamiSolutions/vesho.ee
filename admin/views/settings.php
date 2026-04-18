@@ -23,6 +23,7 @@ $portal_show_maintenances = get_option('vesho_portal_show_maintenances', '1');
 $portal_show_services     = get_option('vesho_portal_show_services',     '1');
 $portal_show_invoices     = get_option('vesho_portal_show_invoices',     '1');
 $portal_show_support      = get_option('vesho_portal_show_support',      '1');
+$show_contract_terms      = get_option('vesho_show_contract_terms',      '0');
 
 // Sisu
 $services_page_title    = get_option('vesho_services_page_title',    '');
@@ -259,6 +260,7 @@ $services_page_subtitle = get_option('vesho_services_page_subtitle', '');
                                 'portal_show_services'     => 'Teenused (broneerimine)',
                                 'portal_show_invoices'     => 'Arved',
                                 'portal_show_support'      => 'Tugi / Piletid',
+                                'show_contract_terms'      => 'Lepingutingimused (eraldi tab)',
                             ];
                             foreach ($tabs as $key => $label) :
                                 $val = get_option('vesho_'.$key, '1');
