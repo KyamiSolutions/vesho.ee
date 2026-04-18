@@ -67,15 +67,27 @@ function inv_fmt($n) { return rtrim(rtrim(number_format((float)$n, 3, '.', ''), 
 .inv-empty-icon{font-size:48px;opacity:.3}
 .inv-empty-text{font-size:15px;color:#94a3b8;font-weight:500}
 /* ── Inline form ──────────────────────────────────────────────────────────── */
-#inv-inline-form{display:none;background:#fff;border:1px solid #00b4c8;border-radius:14px;padding:24px;margin-bottom:20px;box-shadow:0 4px 24px rgba(0,180,200,.1)}
+#inv-inline-form{display:none;background:#fff;border:1.5px solid rgba(0,180,200,.35);border-radius:16px;padding:0;margin-bottom:20px;box-shadow:0 8px 32px rgba(0,180,200,.08);overflow:hidden}
 #inv-inline-form.open{display:block}
-.inv-form-title{font-size:16px;font-weight:700;color:#0d1f2d;margin:0 0 18px}
-.inv-fg{margin-bottom:14px}
-.inv-fg label{display:block;font-size:11px;font-weight:700;color:#6b8599;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px}
-.inv-fg input,.inv-fg select,.inv-fg textarea{width:100%;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;color:#0d1f2d;background:#fff}
-.inv-fg input:focus,.inv-fg select:focus,.inv-fg textarea:focus{outline:none;border-color:#00b4c8}
-.inv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
-.inv-full{grid-column:1/-1}
+.isf-header{display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid #f1f5f9;background:linear-gradient(to right,rgba(0,180,200,.04),transparent)}
+.isf-header-left{display:flex;align-items:center;gap:12px}
+.isf-header-icon{width:36px;height:36px;background:rgba(0,180,200,.12);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.isf-header h3{margin:0;font-size:16px;font-weight:700;color:#0d1f2d}
+.isf-body{padding:24px;display:flex;flex-direction:column;gap:20px}
+.isf-section{display:flex;flex-direction:column;gap:14px}
+.isf-section-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#94a3b8;margin-bottom:2px;padding-bottom:6px;border-bottom:1px solid #f1f5f9}
+.isf-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
+.isf-full{grid-column:1/-1}
+.isf-box{padding:14px;background:rgba(0,180,200,.04);border-radius:10px;border:1px solid rgba(0,180,200,.15)}
+.isf-box-gray{padding:14px;background:#f8fafc;border-radius:10px;border:1px solid #f1f5f9}
+.inv-fg{margin-bottom:0}
+.inv-fg label,.isf-label{display:block;font-size:12px;font-weight:600;color:#64748b;margin-bottom:5px}
+.inv-fg input,.inv-fg select,.inv-fg textarea,
+.isf-input{width:100%;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;color:#0d1f2d;background:#fff;transition:border-color .15s}
+.inv-fg input:focus,.inv-fg select:focus,.inv-fg textarea:focus,.isf-input:focus{outline:none;border-color:#00b4c8;box-shadow:0 0 0 3px rgba(0,180,200,.08)}
+.inv-grid,.isf-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
+.inv-full,.isf-full{grid-column:1/-1}
+.isf-actions{display:flex;gap:10px;padding:16px 24px;border-top:1px solid #f1f5f9;background:#fafcfe}
 /* ── Write-off modal ──────────────────────────────────────────────────────── */
 #wo-modal{display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.5);align-items:center;justify-content:center}
 #wo-modal.open{display:flex}
@@ -177,113 +189,151 @@ function inv_fmt($n) { return rtrim(rtrim(number_format((float)$n, 3, '.', ''), 
 
 <!-- ── Inline Add/Edit Form ───────────────────────────────────────────────── -->
 <div id="inv-inline-form">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
-    <h3 class="inv-form-title" id="inv-form-title">+ Lisa artikkel</h3>
-    <button type="button" onclick="closeInlineForm()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#94a3b8">✕</button>
+  <div class="isf-header">
+    <div class="isf-header-left">
+      <div class="isf-header-icon">📦</div>
+      <h3 id="inv-form-title">Lisa artikkel</h3>
+    </div>
+    <button type="button" onclick="closeInlineForm()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#94a3b8;line-height:1;padding:4px">✕</button>
   </div>
+
   <form id="inv-save-form">
     <input type="hidden" id="isf-id" name="inventory_id" value="">
-    <div class="inv-grid">
-      <div class="inv-fg inv-full">
-        <label>Toote nimi *</label>
-        <input type="text" id="isf-name" name="name" required placeholder="Toote nimi">
+    <div class="isf-body">
+
+      <!-- Põhiandmed -->
+      <div class="isf-section">
+        <div class="isf-section-title">Põhiandmed</div>
+        <div class="isf-grid">
+          <div class="isf-full">
+            <label class="isf-label">Toote nimi *</label>
+            <input type="text" id="isf-name" name="name" required placeholder="Toote nimetus" class="isf-input">
+          </div>
+          <div>
+            <label class="isf-label">SKU / Kood</label>
+            <input type="text" id="isf-sku" name="sku" placeholder="FILT-5M-1" class="isf-input">
+          </div>
+          <div>
+            <label class="isf-label">Kategooria</label>
+            <select id="isf-category" name="category" class="isf-input">
+              <option value="">— Vali —</option>
+              <?php foreach ($categories as $cat): ?>
+              <option value="<?php echo esc_attr($cat->name); ?>"><?php echo esc_html($cat->name); ?></option>
+              <?php endforeach; ?>
+            </select>
+          </div>
+          <div>
+            <label class="isf-label">Ühik</label>
+            <select id="isf-unit" name="unit" class="isf-input">
+              <?php foreach (['tk','kg','l','m','m²','pakk','paar'] as $u) echo '<option value="'.$u.'">'.$u.'</option>'; ?>
+            </select>
+          </div>
+          <div>
+            <label class="isf-label">Kogus laos</label>
+            <input type="number" id="isf-qty" name="quantity" step="0.001" value="0" class="isf-input">
+          </div>
+          <div>
+            <label class="isf-label">Min kogus (hoiatus)</label>
+            <input type="number" id="isf-minqty" name="min_quantity" step="0.001" placeholder="0" class="isf-input">
+          </div>
+        </div>
       </div>
-      <div class="inv-fg">
-        <label>SKU / Kood</label>
-        <input type="text" id="isf-sku" name="sku" placeholder="FILT-5M-1">
+
+      <!-- EAN + asukoht -->
+      <div class="isf-section">
+        <div class="isf-section-title">Vöötkood &amp; asukoht</div>
+        <div class="isf-grid">
+          <div>
+            <label class="isf-label">EAN vöötkood</label>
+            <div style="display:flex;gap:6px">
+              <input type="text" id="isf-ean" name="ean" maxlength="20" placeholder="1234567890123" class="isf-input" style="margin:0;flex:1">
+              <button type="button" onclick="isf_genEAN()" title="Genereeri" style="flex-shrink:0;padding:0 10px;height:38px;background:rgba(16,185,129,.12);color:#10b981;border:1px solid rgba(16,185,129,.3);border-radius:8px;cursor:pointer;font-size:13px">✦</button>
+              <button type="button" onclick="isf_scanEAN()" title="Skänni" style="flex-shrink:0;padding:0 10px;height:38px;background:rgba(0,180,200,.1);color:#00b4c8;border:1px solid rgba(0,180,200,.25);border-radius:8px;cursor:pointer;font-size:14px">📷</button>
+              <button type="button" onclick="isf_printEAN()" title="Prindi silt" style="flex-shrink:0;padding:0 10px;height:38px;background:rgba(0,180,200,.1);color:#00b4c8;border:1px solid rgba(0,180,200,.25);border-radius:8px;cursor:pointer;font-size:14px">🖨️</button>
+            </div>
+          </div>
+          <div>
+            <label class="isf-label">Laoasukoht</label>
+            <div style="display:flex;gap:6px">
+              <input type="text" id="isf-loc" name="location" placeholder="A-01-03" class="isf-input" style="margin:0;flex:1;font-family:monospace">
+              <button type="button" onclick="isf_scanLocation()" title="Skänni asukoht" style="flex-shrink:0;padding:0 10px;height:38px;background:rgba(0,180,200,.1);color:#00b4c8;border:1px solid rgba(0,180,200,.25);border-radius:8px;cursor:pointer;font-size:14px">📷</button>
+              <button type="button" onclick="isf_printLocation()" title="Prindi asukoha silt" style="flex-shrink:0;padding:0 10px;height:38px;background:rgba(0,180,200,.1);color:#00b4c8;border:1px solid rgba(0,180,200,.25);border-radius:8px;cursor:pointer;font-size:14px">🖨️</button>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="inv-fg">
-        <label>EAN vöötkood
-          <button type="button" onclick="isf_genEAN()" style="margin-left:6px;padding:2px 7px;font-size:11px;background:#f1f5f9;border:1px solid #cbd5e1;border-radius:4px;cursor:pointer">✦ Genereeri</button>
-          <button type="button" onclick="isf_scanEAN()" style="margin-left:4px;padding:2px 7px;font-size:11px;background:#e0f7fa;border:1px solid #00b4c8;color:#007a8a;border-radius:4px;cursor:pointer">📷 Skänni</button>
-          <button type="button" onclick="isf_printEAN()" style="margin-left:4px;padding:2px 7px;font-size:11px;background:#e0f7fa;border:1px solid #00b4c8;color:#007a8a;border-radius:4px;cursor:pointer">🖨 Prindi</button>
-        </label>
-        <input type="text" id="isf-ean" name="ean" maxlength="20" placeholder="1234567890123">
+
+      <!-- Hinnad -->
+      <div class="isf-section">
+        <div class="isf-section-title">Hinnad</div>
+        <div class="isf-grid">
+          <div>
+            <label class="isf-label">Ostuhind € (KM-ta)</label>
+            <input type="number" id="isf-purchase" name="purchase_price" step="0.01" placeholder="0.00" class="isf-input">
+          </div>
+          <div>
+            <label class="isf-label">Müügihind € (KM-ta)</label>
+            <input type="number" id="isf-sell" name="sell_price" step="0.01" placeholder="0.00" class="isf-input">
+          </div>
+        </div>
       </div>
-      <div class="inv-fg">
-        <label>Kategooria
-          <a href="<?php echo esc_url(admin_url('admin.php?page=vesho-crm-inventory&tab=categories')); ?>" target="_blank" style="font-size:10px;color:#00b4c8;font-weight:600;margin-left:6px">+ Halda</a>
-        </label>
-        <select id="isf-category" name="category">
-          <option value="">— Vali kategooria —</option>
-          <?php foreach ($categories as $cat): ?>
-          <option value="<?php echo esc_attr($cat->name); ?>" data-color="<?php echo esc_attr($cat->color); ?>"><?php echo esc_html($cat->name); ?></option>
-          <?php endforeach; ?>
-        </select>
+
+      <!-- Märkmed -->
+      <div>
+        <label class="isf-label">Märkmed</label>
+        <textarea id="isf-notes" name="notes" rows="2" placeholder="Lisainfo..." class="isf-input" style="resize:vertical"></textarea>
       </div>
-      <div class="inv-fg">
-        <label>Ühik</label>
-        <select id="isf-unit" name="unit">
-          <?php foreach (['tk','kg','l','m','pakk','paar','ruut.m'] as $u) echo '<option value="'.$u.'">'.$u.'</option>'; ?>
-        </select>
-      </div>
-      <div class="inv-fg">
-        <label>Kogus laos</label>
-        <input type="number" id="isf-qty" name="quantity" step="0.001" value="0">
-      </div>
-      <div class="inv-fg">
-        <label>Min kogus (hoiatus)</label>
-        <input type="number" id="isf-minqty" name="min_quantity" step="0.001" placeholder="0">
-      </div>
-      <div class="inv-fg">
-        <label>Ühiku hind € (KM-ta)</label>
-        <input type="number" id="isf-purchase" name="purchase_price" step="0.01" placeholder="0.00">
-      </div>
-      <div class="inv-fg">
-        <label>Müügihind € (KM-ta)</label>
-        <input type="number" id="isf-sell" name="sell_price" step="0.01" placeholder="0.00">
-      </div>
-      <div class="inv-fg">
-        <label>Laoasukoht
-          <button type="button" onclick="isf_printLocation()" style="margin-left:6px;padding:2px 7px;font-size:11px;background:#e0f7fa;border:1px solid #00b4c8;color:#007a8a;border-radius:4px;cursor:pointer">🖨 Prindi silt</button>
-        </label>
-        <input type="text" id="isf-loc" name="location" placeholder="A-01-03">
-      </div>
-      <div class="inv-fg inv-full">
-        <label>Märkmed</label>
-        <textarea id="isf-notes" name="notes" rows="2" placeholder="Lisainfo..."></textarea>
-      </div>
-      <div class="inv-fg inv-full">
-        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
-          <input type="checkbox" id="isf-shop-enabled" name="shop_enabled" value="1" onchange="toggleShopDesc(this.checked)">
+
+      <!-- E-pood -->
+      <div class="isf-box">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:600;color:#0d1f2d;margin-bottom:0">
+          <input type="checkbox" id="isf-shop-enabled" name="shop_enabled" value="1" onchange="toggleShopDesc(this.checked)" style="width:16px;height:16px;accent-color:#00b4c8">
           🛒 Müügis e-poes
         </label>
+        <div id="isf-shop-desc-row" style="display:none;margin-top:12px;display:none;flex-direction:column;gap:10px">
+          <div>
+            <label class="isf-label">E-poe kirjeldus</label>
+            <textarea id="isf-shop-desc" name="shop_description" rows="2" placeholder="Lühikirjeldus e-poes..." class="isf-input" style="resize:vertical"></textarea>
+          </div>
+          <div>
+            <label class="isf-label">E-poe hind €</label>
+            <input type="number" id="isf-shop-price" name="shop_price" step="0.01" placeholder="0.00" class="isf-input" style="max-width:180px">
+          </div>
+        </div>
       </div>
-      <div class="inv-fg inv-full" id="isf-shop-desc-row" style="display:none">
-        <label>E-poe kirjeldus</label>
-        <textarea id="isf-shop-desc" name="shop_description" rows="3" placeholder="Toote kirjeldus e-poes..."></textarea>
-      </div>
-      <div class="inv-fg" id="isf-shop-price-row" style="display:none">
-        <label>E-poe hind €</label>
-        <input type="number" id="isf-shop-price" name="shop_price" step="0.01" placeholder="0.00">
-      </div>
-      <div class="inv-fg inv-full" id="isf-image-row" style="display:none">
-        <label>Toote pilt</label>
+
+      <!-- Toote pilt -->
+      <div class="isf-box-gray">
+        <div style="font-size:12px;font-weight:600;color:#64748b;margin-bottom:10px">🖼️ Toote pilt</div>
         <div id="isf-img-current" style="display:none;margin-bottom:10px;align-items:flex-start;gap:10px">
-          <img id="isf-img-thumb" src="" style="max-height:100px;border-radius:8px;border:1px solid #e5edf4;display:block">
+          <img id="isf-img-thumb" src="" style="width:80px;height:80px;object-fit:cover;border-radius:10px;border:1px solid #e5edf4;display:block">
           <div style="display:flex;flex-direction:column;gap:6px">
-            <span style="font-size:11px;color:#94a3b8" id="isf-img-label">Praegune pilt</span>
-            <button type="button" onclick="isf_removeImage()" style="font-size:12px;padding:4px 10px;background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;border-radius:6px;cursor:pointer;width:fit-content">🗑️ Eemalda</button>
+            <span style="font-size:11px;color:#94a3b8">Praegune pilt</span>
+            <button type="button" onclick="isf_removeImage()" style="font-size:12px;padding:4px 10px;background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;border-radius:6px;cursor:pointer">🗑️ Eemalda</button>
           </div>
         </div>
         <div id="isf-img-new-preview" style="display:none;margin-bottom:10px;align-items:flex-start;gap:10px">
-          <img id="isf-img-new-thumb" src="" style="max-height:100px;border-radius:8px;border:2px solid #00b4c8;display:block">
+          <img id="isf-img-new-thumb" src="" style="width:80px;height:80px;object-fit:cover;border-radius:10px;border:2px solid #00b4c8;display:block">
           <div style="display:flex;flex-direction:column;gap:4px">
-            <span style="font-size:11px;color:#00b4c8;font-weight:600">Uus pilt (salvestatakse koos tootega)</span>
+            <span style="font-size:11px;color:#00b4c8;font-weight:600">Salvestatakse koos tootega</span>
             <span style="font-size:11px;color:#94a3b8" id="isf-img-new-name"></span>
-            <button type="button" onclick="isf_cancelNewImage()" style="font-size:12px;padding:4px 10px;background:#f1f5f9;color:#64748b;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer;width:fit-content">✕ Tühista</button>
+            <button type="button" onclick="isf_cancelNewImage()" style="font-size:12px;padding:4px 10px;background:#f1f5f9;color:#64748b;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer">✕ Tühista</button>
           </div>
         </div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <button type="button" onclick="document.getElementById('isf-image-file').click()" style="padding:7px 16px;background:#e0f7fa;border:1px solid #00b4c8;color:#007a8a;border-radius:6px;font-size:13px;cursor:pointer;font-weight:500">📤 Laadi pilt üles</button>
+        <div style="display:flex;align-items:center;gap:10px">
+          <label style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:#fff;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;cursor:pointer;font-weight:500;color:#374151">
+            📤 Laadi üles
+            <input type="file" id="isf-image-file" name="image_file" accept="image/jpeg,image/png,image/webp,image/gif" style="display:none">
+          </label>
           <span style="font-size:11px;color:#94a3b8">Max 5 MB · JPG, PNG, WebP</span>
         </div>
-        <input type="file" id="isf-image-file" name="image_file" accept="image/jpeg,image/png,image/webp,image/gif" style="display:none">
         <input type="hidden" id="isf-image-url" name="image_url">
         <input type="hidden" id="isf-image-delete" name="image_delete" value="0">
       </div>
-    </div>
-    <div style="display:flex;gap:10px;margin-top:20px">
+
+    </div><!-- /.isf-body -->
+
+    <div class="isf-actions">
       <button type="submit" class="crm-btn crm-btn-primary">💾 Salvesta</button>
       <button type="button" onclick="closeInlineForm()" class="crm-btn crm-btn-outline">Tühista</button>
       <span id="isf-saving" style="display:none;font-size:13px;color:#6b8599;align-self:center">Salvestan...</span>
@@ -1068,11 +1118,9 @@ function post(action, data) {
 window.openInlineForm = function() {
   var f = document.getElementById('inv-inline-form');
   document.getElementById('isf-id').value = '';
-  document.getElementById('inv-form-title').textContent = '+ Lisa artikkel';
+  document.getElementById('inv-form-title').textContent = 'Lisa artikkel';
   document.getElementById('inv-save-form').reset();
   document.getElementById('isf-shop-desc-row').style.display = 'none';
-  document.getElementById('isf-shop-price-row').style.display = 'none';
-  document.getElementById('isf-image-row').style.display = 'none';
   document.getElementById('isf-img-current').style.display = 'none';
   document.getElementById('isf-img-new-preview').style.display = 'none';
   document.getElementById('isf-image-file').value = '';
@@ -1104,33 +1152,43 @@ window.openEditForm = function(item) {
   document.getElementById('isf-notes').value       = item.notes || '';
   var shopOn = item.shop_enabled == 1 || item.shop_enabled === true;
   document.getElementById('isf-shop-enabled').checked = shopOn;
-  document.getElementById('isf-shop-desc-row').style.display = shopOn ? '' : 'none';
-  document.getElementById('isf-shop-price-row').style.display = shopOn ? '' : 'none';
-  document.getElementById('isf-image-row').style.display = shopOn ? '' : 'none';
+  document.getElementById('isf-shop-desc-row').style.display = shopOn ? 'flex' : 'none';
   if (shopOn) {
     document.getElementById('isf-shop-desc').value  = item.shop_description || '';
     document.getElementById('isf-shop-price').value = item.shop_price || '';
-    var imgUrl = item.image_url || '';
-    document.getElementById('isf-image-url').value = imgUrl;
-    document.getElementById('isf-image-delete').value = '0';
-    document.getElementById('isf-image-file').value = '';
-    document.getElementById('isf-img-new-preview').style.display = 'none';
-    var cur = document.getElementById('isf-img-current');
-    if (imgUrl) { document.getElementById('isf-img-thumb').src = imgUrl; cur.style.display = 'flex'; }
-    else { cur.style.display = 'none'; }
   }
+  var imgUrl = item.image_url || '';
+  document.getElementById('isf-image-url').value = imgUrl;
+  document.getElementById('isf-image-delete').value = '0';
+  document.getElementById('isf-image-file').value = '';
+  document.getElementById('isf-img-new-preview').style.display = 'none';
+  var cur = document.getElementById('isf-img-current');
+  if (imgUrl) { document.getElementById('isf-img-thumb').src = imgUrl; cur.style.display = 'flex'; }
+  else { cur.style.display = 'none'; }
   f.classList.add('open');
   f.scrollIntoView({ behavior: 'smooth', block: 'start' });
 };
 
 window.toggleShopDesc = function(checked) {
-  document.getElementById('isf-shop-desc-row').style.display  = checked ? '' : 'none';
-  document.getElementById('isf-shop-price-row').style.display = checked ? '' : 'none';
-  document.getElementById('isf-image-row').style.display      = checked ? '' : 'none';
-  if (!checked) {
-    document.getElementById('isf-img-current').style.display = 'none';
-    document.getElementById('isf-img-new-preview').style.display = 'none';
-  }
+  document.getElementById('isf-shop-desc-row').style.display = checked ? 'flex' : 'none';
+};
+
+window.isf_scanLocation = function() {
+  window.VeshoScanner && window.VeshoScanner.open({
+    title: 'Skänni laoaadress', autoConfirm: true, manualInput: true, wide: true,
+    onScan: function(code) {
+      var s = String(code).replace(/\D/g,'');
+      var loc = code.toUpperCase();
+      if (s.length === 13 && s[0] === '9') {
+        var bn = parseInt(s.slice(1,3),10);
+        if (bn >= 1 && bn <= 26) {
+          var b = String.fromCharCode(64+bn);
+          loc = b+'-'+String(parseInt(s.slice(3,5),10)).padStart(2,'0')+'-'+String(parseInt(s.slice(5,7),10)).padStart(2,'0');
+        }
+      }
+      document.getElementById('isf-loc').value = loc;
+    }
+  });
 };
 
 document.getElementById('isf-image-file').addEventListener('change', function() {
