@@ -1,10 +1,10 @@
 {
   "name": "Vesho CRM",
   "slug": "vesho-crm",
-  "version": "2.2.55",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.2.55/vesho-crm.zip",
+  "version": "2.2.56",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.2.56/vesho-crm.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-18",
-  "changelog": "<h4>2.2.55</h4><ul><li>Uus versioon</li></ul>"
+  "changelog": "<h4>2.2.56</h4><ul><li>Inventuur ja Vastuvõtt tabid alati nähtavad (nagu 3006)</li></ul>"
 }
