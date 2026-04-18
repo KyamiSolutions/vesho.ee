@@ -86,7 +86,7 @@ document.getElementById('btn-force-check').addEventListener('click', function(){
   .then(r=>r.json()).then(d=>{
     document.getElementById('force-check-msg').textContent = d.success ? '✅ '+d.data.message : '❌ Viga';
     document.getElementById('btn-force-check').disabled = false;
-    if(d.success) setTimeout(()=>window.location.href='/wp-admin/update-core.php',1500);
+    if(d.success) setTimeout(()=>window.location.reload(),1500);
   });
 });
 
@@ -364,7 +364,7 @@ document.getElementById('btn-force-check').addEventListener('click', function() 
   .then(d => {
     document.getElementById('force-check-msg').textContent = d.success ? '✅ ' + d.data.message : '❌ Viga';
     document.getElementById('btn-force-check').disabled = false;
-    if (d.success) setTimeout(() => window.location.href = '/wp-admin/update-core.php', 1500);
+    if (d.success) setTimeout(() => window.location.reload(), 1500);
   });
 });
 
