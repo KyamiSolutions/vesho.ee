@@ -1350,7 +1350,7 @@ foreach ($notices as $notice) : ?>
             "SELECT sr.*, COUNT(sri.id) as item_count
              FROM {$wpdb->prefix}vesho_stock_receipts sr
              LEFT JOIN {$wpdb->prefix}vesho_stock_receipt_items sri ON sri.receipt_id=sr.id
-             WHERE (sr.worker_id=%d OR sr.status='pending') AND sr.status NOT IN ('approved','rejected')
+             WHERE sr.worker_id=%d AND sr.status IN ('pending','received')
              GROUP BY sr.id ORDER BY sr.created_at DESC LIMIT 30", $wid
         ));
         $history = $wpdb->get_results($wpdb->prepare(
