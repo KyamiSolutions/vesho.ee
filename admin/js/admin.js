@@ -172,18 +172,15 @@
 
         // ── Select2: searchable dropdowns for all CRM selects ─────────────────
         if (typeof $.fn.select2 !== 'undefined') {
-            $('.crm-form-select, .crm-form-select-search').each(function() {
-                var $modal = $(this).closest('[id^="modal-"]');
-                $(this).select2({
-                    width: '100%',
-                    allowClear: true,
-                    dropdownParent: $modal.length ? $modal : $(document.body),
-                    placeholder: function() { return $(this).find('option[value=""]').text() || '— Vali —'; },
-                    language: {
-                        noResults: function() { return 'Tulemusi ei leitud'; },
-                        searching: function() { return 'Otsin...'; }
-                    }
-                });
+            $('.crm-form-select, .crm-form-select-search').select2({
+                width: '100%',
+                allowClear: true,
+                dropdownParent: $(document.body),
+                placeholder: function() { return $(this).find('option[value=""]').text() || '— Vali —'; },
+                language: {
+                    noResults: function() { return 'Tulemusi ei leitud'; },
+                    searching: function() { return 'Otsin...'; }
+                }
             });
         }
 

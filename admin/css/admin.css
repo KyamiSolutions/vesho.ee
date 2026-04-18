@@ -1440,6 +1440,9 @@
 #adminmenu li.vesho-nav-group:hover > a { display: none !important; }
 #adminmenu li.vesho-nav-group:hover { background: transparent !important; }
 
+/* Select2 inside modals — must be above modal overlay (z-index:99999) */
+.select2-container--open { z-index: 100000 !important; }
+
 /* --------------------------------------------------------------------------
    End of Vesho CRM Admin Stylesheet
    ========================================================================== */
