@@ -1,10 +1,10 @@
 {
   "name": "Vesho",
   "slug": "vesho",
-  "version": "2.2.42",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.2.42/vesho-theme.zip",
+  "version": "2.2.43",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.2.43/vesho-theme.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-18",
-  "changelog": "<h4>2.2.42</h4><ul><li>Uus versioon</li></ul>"
+  "changelog": "<h4>2.2.43</h4><ul><li>Tootelehe redesign, sidebar filtreerimine</li></ul><h4>2.2.42</h4><ul><li>E-pood sidebar, grid/list, pagination</li></ul>"
 }

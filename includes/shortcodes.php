@@ -626,124 +626,202 @@ add_shortcode( 'vesho_shop_grid', function () {
         $unit_lbl   = esc_html( $item->unit ?: 'tk' );
         ?>
         <style>
-        .vpd-wrap{max-width:860px;margin:0 auto;font-family:inherit}
-        .vpd-back{display:inline-flex;align-items:center;gap:6px;color:#6b8599;font-size:13px;font-weight:600;text-decoration:none;padding:8px 14px;border-radius:8px;border:1.5px solid #e5edf4;margin-bottom:24px;transition:background .15s}
-        .vpd-back:hover{background:#f0f4f8}
-        .vpd-cam-bar{display:flex;align-items:center;gap:14px;background:linear-gradient(135deg,#e0f7fa,#b2ebf2);border:1.5px solid #00b4c8;border-radius:14px;padding:14px 22px;margin-bottom:20px}
-        .vpd-cam-badge{background:#00b4c8;color:#fff;font-size:15px;font-weight:900;padding:6px 16px;border-radius:8px;white-space:nowrap}
-        .vpd-cam-name{font-weight:700;color:#0d1f2d;font-size:15px}
-        .vpd-card{background:#fff;border-radius:20px;box-shadow:0 4px 32px rgba(13,31,45,.09);overflow:hidden;display:grid;grid-template-columns:280px 1fr}
-        @media(max-width:640px){.vpd-card{grid-template-columns:1fr}}
-        .vpd-img{background:linear-gradient(145deg,#e0f7fa,#b2ebf2);display:flex;align-items:center;justify-content:center;min-height:260px;position:relative;padding:32px}
-        .vpd-img svg{width:96px;height:96px;opacity:.85}
-        .vpd-disc-badge{position:absolute;top:16px;left:16px;background:#00b4c8;color:#fff;font-size:13px;font-weight:800;padding:5px 12px;border-radius:20px}
-        .vpd-out-badge{position:absolute;top:16px;right:16px;background:#fee2e2;color:#b91c1c;font-size:12px;font-weight:700;padding:5px 10px;border-radius:20px}
-        .vpd-body{padding:32px;display:flex;flex-direction:column;gap:16px}
-        .vpd-cat{font-size:11px;font-weight:800;color:#00b4c8;text-transform:uppercase;letter-spacing:1px}
-        .vpd-title{font-size:26px;font-weight:800;color:#0d1f2d;margin:0;line-height:1.25}
-        .vpd-sku{font-size:12px;color:#9ca3af;font-family:monospace}
-        .vpd-desc{font-size:14px;color:#4b6174;line-height:1.75;margin:0}
-        .vpd-divider{border:none;border-top:1px solid #f0f4f8;margin:0}
-        .vpd-price-orig{font-size:14px;color:#9ca3af;text-decoration:line-through;margin-bottom:2px}
-        .vpd-price-main{font-size:36px;font-weight:900;line-height:1;color:#0d1f2d}
-        .vpd-price-main.discount{color:#00b4c8}
-        .vpd-price-unit{font-size:14px;color:#6b8599;font-weight:400;margin-left:4px}
-        .vpd-savings{font-size:13px;color:#059669;font-weight:700;margin-top:4px}
-        .vpd-stock-ok{font-size:13px;color:#059669;font-weight:600}
-        .vpd-stock-no{font-size:13px;color:#b91c1c;font-weight:600}
-        .vpd-atc{display:flex;gap:12px;align-items:stretch;flex-wrap:wrap}
-        .vpd-qty{display:flex;align-items:center;border:2px solid #e5edf4;border-radius:10px;overflow:hidden;background:#f8fafc}
-        .vpd-qty button{background:none;border:none;padding:12px 16px;font-size:20px;cursor:pointer;color:#4b6174;line-height:1;transition:background .1s}
-        .vpd-qty button:hover{background:#e0f7fa}
-        .vpd-qty input{width:52px;border:none;background:none;text-align:center;font-size:16px;font-weight:700;color:#0d1f2d;padding:0}
-        .vpd-atc-btn{flex:1;min-width:180px;padding:14px 28px;background:#00b4c8;color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;transition:background .15s;letter-spacing:.2px}
+        <style>
+        .vpd-wrap{font-family:inherit}
+        /* Breadcrumb */
+        .vpd-bread{display:flex;align-items:center;gap:8px;font-size:13px;margin-bottom:24px;flex-wrap:wrap}
+        .vpd-bread a{color:#6b8599;text-decoration:none;font-weight:500}
+        .vpd-bread a:hover{color:#00b4c8}
+        .vpd-bread-sep{color:#d0dce8}
+        .vpd-bread-cur{color:#0d1f2d;font-weight:600}
+        /* Campaign */
+        .vpd-cam{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,#e0f7fa,#b2ebf2);border:1.5px solid #00b4c8;border-radius:10px;padding:12px 18px;margin-bottom:20px}
+        .vpd-cam-badge{background:#00b4c8;color:#fff;font-size:14px;font-weight:900;padding:5px 12px;border-radius:7px;white-space:nowrap}
+        /* Main layout */
+        .vpd-main{display:grid;grid-template-columns:1fr 1fr;gap:32px;align-items:start}
+        @media(max-width:700px){.vpd-main{grid-template-columns:1fr}}
+        /* Image */
+        .vpd-img-wrap{position:relative;background:#f8fafc;border-radius:16px;overflow:hidden;aspect-ratio:1;display:flex;align-items:center;justify-content:center;border:1.5px solid #f0f4f8}
+        .vpd-img-wrap img{width:100%;height:100%;object-fit:cover}
+        .vpd-img-wrap svg{width:80px;height:80px;opacity:.35}
+        .vpd-disc-badge{position:absolute;top:14px;left:14px;background:#00b4c8;color:#fff;font-size:13px;font-weight:800;padding:5px 12px;border-radius:20px}
+        .vpd-out-badge{position:absolute;top:14px;right:14px;background:#ef4444;color:#fff;font-size:12px;font-weight:700;padding:5px 10px;border-radius:20px}
+        /* Details panel */
+        .vpd-panel{display:flex;flex-direction:column;gap:14px}
+        .vpd-cat-tag{display:inline-block;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;padding:3px 10px;border-radius:20px;color:#fff}
+        .vpd-title{font-size:28px;font-weight:800;color:#0d1f2d;margin:0;line-height:1.2}
+        .vpd-sku{font-size:12px;color:#94a3b8;font-family:monospace}
+        .vpd-desc{font-size:14px;color:#4b6174;line-height:1.7;margin:0;padding:16px;background:#f8fafc;border-radius:10px;border-left:3px solid #e2e8f0}
+        .vpd-price-box{background:#fff;border:1.5px solid #f0f4f8;border-radius:12px;padding:18px 20px}
+        .vpd-price-orig{font-size:14px;color:#9ca3af;text-decoration:line-through}
+        .vpd-price-main{font-size:34px;font-weight:900;color:#0d1f2d;line-height:1.1}
+        .vpd-price-main.disc{color:#00b4c8}
+        .vpd-price-unit{font-size:13px;color:#9ca3af;font-weight:400;margin-left:4px}
+        .vpd-savings{font-size:12px;color:#059669;font-weight:700;margin-top:3px}
+        .vpd-stock-ok{font-size:13px;color:#059669;font-weight:600;margin-top:8px}
+        .vpd-stock-no{font-size:13px;color:#ef4444;font-weight:600;margin-top:8px}
+        /* ATC */
+        .vpd-atc-row{display:flex;gap:10px;align-items:stretch}
+        .vpd-qty{display:flex;align-items:center;border:1.5px solid #e2e8f0;border-radius:10px;overflow:hidden;background:#f8fafc}
+        .vpd-qty button{background:none;border:none;padding:12px 16px;font-size:18px;cursor:pointer;color:#4b6174;line-height:1;transition:.1s}
+        .vpd-qty button:hover{background:#e0f7fa;color:#0097aa}
+        .vpd-qty input{width:46px;border:none;background:none;text-align:center;font-size:16px;font-weight:700;color:#0d1f2d;padding:0}
+        .vpd-atc-btn{flex:1;padding:14px 20px;background:#00b4c8;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;transition:.15s;white-space:nowrap}
         .vpd-atc-btn:hover{background:#0097aa}
-        .vpd-atc-btn:disabled{background:#9ca3af;cursor:not-allowed}
-        .vpd-added{display:none;align-items:center;gap:8px;background:#ecfdf5;color:#065f46;font-weight:700;font-size:14px;padding:12px 20px;border-radius:10px;border:1.5px solid #6ee7b7}
+        .vpd-atc-btn:disabled{background:#e2e8f0;color:#9ca3af;cursor:not-allowed}
+        .vpd-added{display:none;align-items:center;gap:8px;background:#ecfdf5;color:#065f46;font-weight:700;font-size:14px;padding:12px 18px;border-radius:10px;border:1.5px solid #6ee7b7;margin-top:4px}
+        /* Related */
+        .vpd-related-title{font-size:17px;font-weight:800;color:#0d1f2d;margin:32px 0 16px}
+        .vpd-related-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+        @media(max-width:700px){.vpd-related-grid{grid-template-columns:repeat(2,1fr)}}
+        .vpd-rel-card{background:#fff;border-radius:10px;border:1.5px solid #f0f4f8;overflow:hidden;text-decoration:none;display:block;transition:.15s}
+        .vpd-rel-card:hover{border-color:#00b4c8;box-shadow:0 4px 16px rgba(0,180,200,.1)}
+        .vpd-rel-img{height:100px;background:#f8fafc;display:flex;align-items:center;justify-content:center}
+        .vpd-rel-img img{width:100%;height:100%;object-fit:cover}
+        .vpd-rel-img svg{width:36px;height:36px;opacity:.3}
+        .vpd-rel-body{padding:10px}
+        .vpd-rel-name{font-size:12px;font-weight:700;color:#0d1f2d;line-height:1.3;margin-bottom:4px}
+        .vpd-rel-price{font-size:13px;font-weight:800;color:#00b4c8}
+        /* FAB */
+        .vpd-fab{position:fixed;bottom:24px;right:24px;z-index:999}
+        .vpd-fab a{display:flex;align-items:center;gap:8px;background:#0d1f2d;color:#fff;padding:12px 20px;border-radius:50px;text-decoration:none;font-weight:700;font-size:14px;box-shadow:0 4px 20px rgba(13,31,45,.3)}
+        .vpd-fab-badge{background:#00b4c8;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:800}
         </style>
 
-        <div class="vpd-wrap">
-          <a href="<?php echo esc_url( $page_url ); ?>" class="vpd-back">← Tagasi poodi</a>
+        <?php
+        // Related products (same category, not this product)
+        $related = $item->category ? $wpdb->get_results( $wpdb->prepare(
+            "SELECT id,name,shop_price,image_url FROM {$wpdb->prefix}vesho_inventory
+             WHERE archived=0 AND shop_price>0 AND shop_enabled=1 AND category=%s AND id!=%d ORDER BY RAND() LIMIT 4",
+            $item->category, $item->id
+        ) ) : [];
+        // category color
+        $pd_cat_color = '#00b4c8';
+        $pd_cat_obj   = $wpdb->get_row( $wpdb->prepare("SELECT color FROM {$wpdb->prefix}vesho_inventory_categories WHERE name=%s", $item->category) );
+        if ( $pd_cat_obj ) $pd_cat_color = $pd_cat_obj->color;
+        $cart_count_pd = array_sum( $_SESSION['vesho_cart'] ?? [] );
+        ?>
 
-          <?php if ( $pd_disc > 0 ) : ?>
-          <div class="vpd-cam-bar">
-            <div class="vpd-cam-badge">-<?php echo (int) $pd_disc; ?>%</div>
+        <div class="vpd-wrap">
+
+          <!-- Breadcrumb -->
+          <div class="vpd-bread">
+            <a href="<?php echo esc_url($page_url); ?>">Pood</a>
+            <?php if ($item->category): ?>
+            <span class="vpd-bread-sep">›</span>
+            <a href="<?php echo esc_url(add_query_arg('cat', $item->category, $page_url)); ?>"><?php echo esc_html($item->category); ?></a>
+            <?php endif; ?>
+            <span class="vpd-bread-sep">›</span>
+            <span class="vpd-bread-cur"><?php echo esc_html($item->name); ?></span>
+          </div>
+
+          <!-- Campaign -->
+          <?php if ($pd_disc > 0): ?>
+          <div class="vpd-cam">
+            <div class="vpd-cam-badge">-<?php echo (int)$pd_disc; ?>%</div>
             <div>
-              <div class="vpd-cam-name">🏷️ <?php echo esc_html( $pd_cam_name ); ?></div>
-              <?php if ( $pd_campaign && $pd_campaign->valid_until ) : ?>
-              <div style="font-size:12px;color:#00b4c8;font-weight:600;margin-top:2px">Kehtib kuni <?php echo esc_html( date_i18n( 'd.m.Y', strtotime( $pd_campaign->valid_until ) ) ); ?></div>
+              <div style="font-weight:700;color:#0d1f2d;font-size:14px">🏷️ <?php echo esc_html($pd_cam_name); ?></div>
+              <?php if ($pd_campaign && $pd_campaign->valid_until): ?>
+              <div style="font-size:12px;color:#0097aa;font-weight:600;margin-top:2px">Kehtib kuni <?php echo esc_html(date_i18n('d.m.Y', strtotime($pd_campaign->valid_until))); ?></div>
               <?php endif; ?>
             </div>
           </div>
           <?php endif; ?>
 
-          <div class="vpd-card">
-            <div class="vpd-img">
-              <svg viewBox="0 0 32 32" fill="none"><path d="M16 4C16 4 6 14 6 20C6 25.5228 10.4772 30 16 30C21.5228 30 26 25.5228 26 20C26 14 16 4 16 4Z" fill="#00b4c8"/></svg>
-              <?php if ( $pd_disc > 0 ) : ?><span class="vpd-disc-badge">-<?php echo (int) $pd_disc; ?>%</span><?php endif; ?>
-              <?php if ( ! $in_stock ) : ?><span class="vpd-out-badge">Laost otsas</span><?php endif; ?>
+          <!-- Main 2-col -->
+          <div class="vpd-main">
+
+            <!-- Image -->
+            <div class="vpd-img-wrap">
+              <?php if (!empty($item->image_url)): ?>
+                <img src="<?php echo esc_url($item->image_url); ?>" alt="<?php echo esc_attr($item->name); ?>">
+              <?php else: ?>
+                <svg viewBox="0 0 32 32" fill="none"><path d="M16 4C16 4 6 14 6 20C6 25.5228 10.4772 30 16 30C21.5228 30 26 25.5228 26 20C26 14 16 4 16 4Z" fill="<?php echo esc_attr($pd_cat_color); ?>"/></svg>
+              <?php endif; ?>
+              <?php if ($pd_disc > 0) echo '<span class="vpd-disc-badge">-'.(int)$pd_disc.'%</span>'; ?>
+              <?php if (!$in_stock) echo '<span class="vpd-out-badge">Laost otsas</span>'; ?>
             </div>
 
-            <div class="vpd-body">
-              <?php if ( $item->category ) : ?>
-              <div class="vpd-cat"><?php echo esc_html( $item->category ); ?></div>
+            <!-- Details -->
+            <div class="vpd-panel">
+              <?php if ($item->category): ?>
+              <div><span class="vpd-cat-tag" style="background:<?php echo esc_attr($pd_cat_color); ?>"><?php echo esc_html($item->category); ?></span></div>
               <?php endif; ?>
 
-              <h1 class="vpd-title"><?php echo esc_html( $item->name ); ?></h1>
+              <h1 class="vpd-title"><?php echo esc_html($item->name); ?></h1>
 
-              <?php if ( $item->sku ) : ?>
-              <div class="vpd-sku">SKU: <?php echo esc_html( $item->sku ); ?></div>
+              <?php if ($item->sku): ?>
+              <div class="vpd-sku">Kood: <?php echo esc_html($item->sku); ?></div>
               <?php endif; ?>
 
-              <?php if ( $item->description ) : ?>
-              <p class="vpd-desc"><?php echo nl2br( esc_html( $item->description ) ); ?></p>
+              <?php $desc = $item->shop_description ?: $item->description; if ($desc): ?>
+              <p class="vpd-desc"><?php echo nl2br(esc_html($desc)); ?></p>
               <?php endif; ?>
 
-              <hr class="vpd-divider">
-
-              <div>
-                <?php if ( $disc_price !== null ) : ?>
-                <div class="vpd-price-orig"><?php echo number_format( $orig_price, 2, ',', ' ' ); ?> €</div>
-                <div class="vpd-price-main discount"><?php echo number_format( $disc_price, 2, ',', ' ' ); ?> €<span class="vpd-price-unit">/ <?php echo $unit_lbl; ?></span></div>
-                <div class="vpd-savings">Säästad <?php echo number_format( $orig_price - $disc_price, 2, ',', ' ' ); ?> €</div>
-                <?php else : ?>
-                <div class="vpd-price-main"><?php echo number_format( $orig_price, 2, ',', ' ' ); ?> €<span class="vpd-price-unit">/ <?php echo $unit_lbl; ?></span></div>
+              <div class="vpd-price-box">
+                <?php if ($disc_price !== null): ?>
+                <div class="vpd-price-orig"><?php echo number_format($orig_price, 2, ',', ' '); ?> €</div>
+                <div class="vpd-price-main disc"><?php echo number_format($disc_price, 2, ',', ' '); ?> €<span class="vpd-price-unit">/ <?php echo esc_html($unit_lbl); ?></span></div>
+                <div class="vpd-savings">Säästad <?php echo number_format($orig_price - $disc_price, 2, ',', ' '); ?> €</div>
+                <?php else: ?>
+                <div class="vpd-price-main"><?php echo number_format($orig_price, 2, ',', ' '); ?> €<span class="vpd-price-unit">/ <?php echo esc_html($unit_lbl); ?></span></div>
                 <?php endif; ?>
-                <div style="margin-top:8px">
-                  <?php if ( $in_stock ) : ?>
-                  <span class="vpd-stock-ok">✓ Laos (<?php echo (int) $item->quantity; ?> <?php echo $unit_lbl; ?>)</span>
-                  <?php else : ?>
-                  <span class="vpd-stock-no">✗ Laost otsas</span>
-                  <?php endif; ?>
-                </div>
+                <?php if ($in_stock): ?>
+                <div class="vpd-stock-ok">✓ Laos (<?php echo (int)$item->quantity; ?> <?php echo esc_html($unit_lbl); ?>)</div>
+                <?php else: ?>
+                <div class="vpd-stock-no">✗ Laost otsas</div>
+                <?php endif; ?>
               </div>
 
-              <div class="vpd-atc">
-                <?php if ( $in_stock ) : ?>
+              <div class="vpd-atc-row">
+                <?php if ($in_stock): ?>
                 <div class="vpd-qty">
                   <button type="button" onclick="var i=document.getElementById('pd-qty');i.value=Math.max(1,+i.value-1)">−</button>
-                  <input type="number" id="pd-qty" value="1" min="1" max="<?php echo (int) $item->quantity; ?>">
-                  <button type="button" onclick="var i=document.getElementById('pd-qty');i.value=Math.min(<?php echo (int) $item->quantity; ?>,+i.value+1)">+</button>
+                  <input type="number" id="pd-qty" value="1" min="1" max="<?php echo (int)$item->quantity; ?>">
+                  <button type="button" onclick="var i=document.getElementById('pd-qty');i.value=Math.min(<?php echo (int)$item->quantity; ?>,+i.value+1)">+</button>
                 </div>
-                <button class="vpd-atc-btn" id="pd-atc-btn" onclick="veshoAddToCartPD(<?php echo $item->id; ?>, '<?php echo esc_js( $item->name ); ?>')">
+                <button class="vpd-atc-btn" id="pd-atc-btn" onclick="veshoAddToCartPD(<?php echo $item->id; ?>,'<?php echo esc_js($item->name); ?>')">
                   🛒 Lisa korvi
                 </button>
-                <?php else : ?>
-                <button class="vpd-atc-btn" disabled>Laost otsas</button>
+                <?php else: ?>
+                <button class="vpd-atc-btn" disabled style="flex:1">Laost otsas</button>
                 <?php endif; ?>
               </div>
               <div class="vpd-added" id="pd-added">✓ Lisatud ostukorvi!</div>
             </div>
           </div>
+
+          <?php if (!empty($related)): ?>
+          <div class="vpd-related-title">Samast kategooriast</div>
+          <div class="vpd-related-grid">
+          <?php foreach($related as $rel):
+            $rel_url = add_query_arg(['shop_view'=>'product','pid'=>$rel->id], $page_url);
+          ?>
+            <a href="<?php echo esc_url($rel_url); ?>" class="vpd-rel-card">
+              <div class="vpd-rel-img">
+                <?php if (!empty($rel->image_url)): ?>
+                  <img src="<?php echo esc_url($rel->image_url); ?>" alt="<?php echo esc_attr($rel->name); ?>">
+                <?php else: ?>
+                  <svg viewBox="0 0 32 32" fill="none"><path d="M16 4C16 4 6 14 6 20C6 25.5228 10.4772 30 16 30C21.5228 30 26 25.5228 26 20C26 14 16 4 16 4Z" fill="<?php echo esc_attr($pd_cat_color); ?>"/></svg>
+                <?php endif; ?>
+              </div>
+              <div class="vpd-rel-body">
+                <div class="vpd-rel-name"><?php echo esc_html($rel->name); ?></div>
+                <div class="vpd-rel-price"><?php echo number_format((float)$rel->shop_price,2,',',' '); ?> €</div>
+              </div>
+            </a>
+          <?php endforeach; ?>
+          </div>
+          <?php endif; ?>
+
         </div>
 
-        <!-- Toast + cart fab -->
-        <div id="vesho-cart-fab" style="position:fixed;bottom:24px;right:24px;z-index:999;<?php echo array_sum( $_SESSION['vesho_cart'] ?? [] ) > 0 ? '' : 'display:none'; ?>">
-          <a href="<?php echo esc_url( add_query_arg( 'shop_view', 'cart', $page_url ) ); ?>" style="display:flex;align-items:center;gap:8px;background:#00b4c8;color:#fff;padding:12px 20px;border-radius:50px;text-decoration:none;font-weight:700;box-shadow:0 4px 20px rgba(0,180,200,.4)">
-            🛒 Korv <span id="vesho-cart-count" style="background:rgba(255,255,255,.3);padding:2px 8px;border-radius:20px"><?php echo array_sum( $_SESSION['vesho_cart'] ?? [] ); ?></span>
+        <div class="vpd-fab" id="vesho-cart-fab" <?php echo $cart_count_pd>0?'':'style="display:none"'; ?>>
+          <a href="<?php echo esc_url(add_query_arg('shop_view','cart',$page_url)); ?>">
+            🛒 Korv <span class="vpd-fab-badge" id="vesho-cart-count"><?php echo $cart_count_pd; ?></span>
           </a>
         </div>
-        <div id="vesho-toast" style="display:none;position:fixed;bottom:80px;right:24px;z-index:10000;background:#0d1f2d;color:#fff;padding:12px 20px;border-radius:10px;font-size:14px;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.2)"></div>
+        <div id="vesho-toast" style="display:none;position:fixed;bottom:80px;right:24px;z-index:10000;background:#0d1f2d;color:#fff;padding:11px 18px;border-radius:9px;font-size:13px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.22)"></div>
 
         <script>
         var veshoCartNonce = '<?php echo esc_js( $cart_nonce ); ?>';
@@ -817,11 +895,11 @@ add_shortcode( 'vesho_shop_grid', function () {
     // Fetch categories from managed table (with colors), fall back to distinct values
     $managed_cats = $wpdb->get_results(
         "SELECT ic.name, ic.color FROM {$wpdb->prefix}vesho_inventory_categories ic
-         INNER JOIN {$wpdb->prefix}vesho_inventory inv ON inv.category=ic.name AND inv.archived=0 AND inv.shop_price>0
+         INNER JOIN {$wpdb->prefix}vesho_inventory inv ON inv.category=ic.name AND inv.archived=0 AND inv.shop_price>0 AND inv.shop_enabled=1
          GROUP BY ic.id ORDER BY ic.sort_order ASC, ic.name ASC"
     );
     if ( empty( $managed_cats ) ) {
-        $raw_cats    = $wpdb->get_col( "SELECT DISTINCT category FROM {$wpdb->prefix}vesho_inventory WHERE archived=0 AND shop_price>0 AND category!='' ORDER BY category ASC" );
+        $raw_cats    = $wpdb->get_col( "SELECT DISTINCT category FROM {$wpdb->prefix}vesho_inventory WHERE archived=0 AND shop_price>0 AND shop_enabled=1 AND category!='' ORDER BY category ASC" );
         $managed_cats = array_map( fn($n) => (object)['name'=>$n,'color'=>'#00b4c8'], $raw_cats );
     }
     $cart_count = array_sum( $_SESSION['vesho_cart'] ?? [] );
@@ -948,7 +1026,7 @@ add_shortcode( 'vesho_shop_grid', function () {
         <?php
         // count per category
         $cat_cnts = [];
-        foreach ( $wpdb->get_results("SELECT category, COUNT(*) c FROM {$wpdb->prefix}vesho_inventory WHERE archived=0 AND shop_price>0 AND category!='' GROUP BY category") as $r ) {
+        foreach ( $wpdb->get_results("SELECT category, COUNT(*) c FROM {$wpdb->prefix}vesho_inventory WHERE archived=0 AND shop_price>0 AND shop_enabled=1 AND category!='' GROUP BY category") as $r ) {
             $cat_cnts[$r->category] = (int)$r->c;
         }
         $all_href = add_query_arg( array_filter( ['s'=>$search,'sort'=>$sort==='name'?null:$sort] ), $page_url );
