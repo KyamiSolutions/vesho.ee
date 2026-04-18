@@ -296,19 +296,7 @@ tbody tr:last-child td{border-bottom:none}
 
     public static function shortcode_portal() {
 
-        // ── Maintenance mode ──────────────────────────────────────────────────
-        if (get_option('vesho_maintenance_mode','0') === '1' && !current_user_can('manage_options')) {
-            $msg = esc_html(get_option('vesho_maintenance_message','Hooldus käib. Palume vabandust ebamugavuse pärast!'));
-            return '<div style="min-height:60vh;display:flex;align-items:center;justify-content:center;padding:40px 20px;text-align:center">
-                <div>
-                    <div style="font-size:64px;margin-bottom:20px">🔧</div>
-                    <h2 style="font-size:24px;font-weight:700;color:#0d1f2d;margin-bottom:12px">Hooldus käib</h2>
-                    <p style="color:#6b8599;font-size:15px;max-width:400px;margin:0 auto">' . $msg . '</p>
-                </div>
-            </div>';
-        }
-
-        // Handle email verification via ?verify_email=TOKEN
+        // ── Email verification (must run before maintenance mode check) ───────
         $verify_token = isset($_GET['verify_email']) ? sanitize_text_field($_GET['verify_email']) : '';
         if ($verify_token) {
             global $wpdb;
@@ -328,6 +316,20 @@ tbody tr:last-child td{border-bottom:none}
             }
             return ob_get_clean();
         }
+
+        // ── Maintenance mode ──────────────────────────────────────────────────
+        if (get_option('vesho_maintenance_mode','0') === '1' && !current_user_can('manage_options')) {
+            $msg = esc_html(get_option('vesho_maintenance_message','Hooldus käib. Palume vabandust ebamugavuse pärast!'));
+            return '<div style="min-height:60vh;display:flex;align-items:center;justify-content:center;padding:40px 20px;text-align:center">
+                <div>
+                    <div style="font-size:64px;margin-bottom:20px">🔧</div>
+                    <h2 style="font-size:24px;font-weight:700;color:#0d1f2d;margin-bottom:12px">Hooldus käib</h2>
+                    <p style="color:#6b8599;font-size:15px;max-width:400px;margin:0 auto">' . $msg . '</p>
+                </div>
+            </div>';
+        }
+
+
 
         // ── Payment return handlers ───────────────────────────────────────────
         if (!empty($_GET['vesho_mc_return']) && !empty($_GET['invoice_id'])) {
