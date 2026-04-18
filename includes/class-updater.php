@@ -744,42 +744,15 @@ class Vesho_CRM_Updater {
             wp_send_json_error( 'Plugina kausta ei leitud ZIP-is' );
         }
 
-        // Always install to canonical vesho-crm/ directory
-        $plugin_dest    = WP_PLUGIN_DIR . '/' . self::PLUGIN_SLUG;
-        $old_plugin_dir = defined('VESHO_CRM_FILE') ? dirname( VESHO_CRM_FILE ) : $plugin_dest;
-        $old_plugin_rel = plugin_basename( defined('VESHO_CRM_FILE') ? VESHO_CRM_FILE : $plugin_dest . '/vesho-crm.php' );
-        $new_plugin_rel = self::PLUGIN_SLUG . '/vesho-crm.php';
-
-        // Backup old dir
-        $plugin_backup = $plugin_dest . '_backup_' . time();
-        if ( is_dir( $plugin_dest ) ) {
-            rename( $plugin_dest, $plugin_backup );
-        }
-
+        // Install to the directory where plugin is currently running — never delete, just overwrite
+        $plugin_dest = defined('VESHO_CRM_FILE') ? dirname( VESHO_CRM_FILE ) : WP_PLUGIN_DIR . '/' . self::PLUGIN_SLUG;
         wp_mkdir_p( $plugin_dest );
+
         $copy_result = copy_dir( $plugin_src, $plugin_dest );
         $wp_filesystem->delete( $tmp_dir, true );
 
         if ( is_wp_error( $copy_result ) ) {
-            self::recursive_rmdir( $plugin_dest );
-            if ( is_dir( $plugin_backup ) ) rename( $plugin_backup, $plugin_dest );
             wp_send_json_error( 'Kopeerimine ebaõnnestus: ' . $copy_result->get_error_message() );
-        }
-
-        // Remove backup
-        if ( is_dir( $plugin_backup ) ) self::recursive_rmdir( $plugin_backup );
-
-        // Update active_plugins to point to canonical path
-        $active = get_option( 'active_plugins', [] );
-        if ( ! in_array( $new_plugin_rel, $active ) ) {
-            $active = array_filter( $active, fn($p) => strpos($p, 'vesho-crm') === false );
-            $active[] = $new_plugin_rel;
-            update_option( 'active_plugins', array_values( $active ) );
-        }
-
-        // Remove old non-canonical plugin dir if different
-        if ( $old_plugin_dir !== $plugin_dest && is_dir( $old_plugin_dir ) ) {
-            self::recursive_rmdir( $old_plugin_dir );
         }
 
         delete_site_transient( 'update_plugins' );
