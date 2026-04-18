@@ -108,8 +108,6 @@ class Vesho_CRM_Worker_Portal {
     // ── Login form ────────────────────────────────────────────────────────────
 
     private static function render_login() {
-        global $wpdb;
-        $workers = $wpdb->get_results("SELECT id, name FROM {$wpdb->prefix}vesho_workers WHERE active=1 ORDER BY name");
         $ajax  = esc_url(admin_url('admin-ajax.php'));
         $nonce = wp_create_nonce('vesho_portal_nonce');
         ?>
@@ -124,8 +122,11 @@ class Vesho_CRM_Worker_Portal {
 .vwauth-card h2{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:1.5rem;text-transform:uppercase;color:#0d1f2d;text-align:center;margin:0 0 24px}
 .vwauth-group{margin-bottom:18px}
 .vwauth-group label{display:block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:#0d1f2d;margin-bottom:6px}
-.vwauth-group input,.vwauth-group select{width:100%;padding:12px 14px;border:2px solid #e0e6eb;border-radius:6px;font-family:'Barlow',sans-serif;font-size:15px;color:#0d1f2d;background:#f4f7f9;box-sizing:border-box;transition:.2s;outline:none;appearance:none}
-.vwauth-group input:focus,.vwauth-group select:focus{border-color:#10b981;background:#fff;box-shadow:0 0 0 3px rgba(16,185,129,.1)}
+.vwauth-group input{width:100%;padding:12px 14px;border:2px solid #e0e6eb;border-radius:6px;font-family:'Barlow',sans-serif;font-size:15px;color:#0d1f2d;background:#f4f7f9;box-sizing:border-box;transition:.2s;outline:none}
+.vwauth-group input:focus{border-color:#10b981;background:#fff;box-shadow:0 0 0 3px rgba(16,185,129,.1)}
+.vwauth-pin-wrap{display:flex;gap:10px;justify-content:center;margin-bottom:4px}
+.vwauth-pin-dot{width:16px;height:16px;border-radius:50%;border:2px solid #c0cdd6;background:transparent;transition:.2s}
+.vwauth-pin-dot.filled{background:#10b981;border-color:#10b981}
 .vwauth-btn{width:100%;padding:14px;background:#10b981;color:#fff;border:none;border-radius:6px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1.05rem;text-transform:uppercase;letter-spacing:1px;cursor:pointer;transition:.2s;margin-top:6px}
 .vwauth-btn:hover{background:#059669}
 .vwauth-btn:disabled{background:#a0b0bc;cursor:not-allowed}
@@ -148,21 +149,14 @@ class Vesho_CRM_Worker_Portal {
       <form id="vwauth-form">
         <input type="hidden" name="nonce" value="<?php echo $nonce; ?>">
         <div class="vwauth-group">
-          <label>Töötaja</label>
-          <?php if (!empty($workers)): ?>
-          <select name="worker_name" required>
-            <option value="">— Vali töötaja —</option>
-            <?php foreach ($workers as $w): ?>
-              <option value="<?php echo esc_attr($w->name); ?>"><?php echo esc_html($w->name); ?></option>
-            <?php endforeach; ?>
-          </select>
-          <?php else: ?>
-          <input type="text" name="worker_name" required placeholder="Sinu nimi">
-          <?php endif; ?>
-        </div>
-        <div class="vwauth-group">
           <label>PIN-kood</label>
-          <input type="password" name="pin" required placeholder="••••" maxlength="10" inputmode="numeric" autocomplete="off">
+          <div class="vwauth-pin-wrap" id="vwauth-pin-dots">
+            <div class="vwauth-pin-dot" id="vwdot-0"></div>
+            <div class="vwauth-pin-dot" id="vwdot-1"></div>
+            <div class="vwauth-pin-dot" id="vwdot-2"></div>
+            <div class="vwauth-pin-dot" id="vwdot-3"></div>
+          </div>
+          <input type="password" name="pin" id="vwauth-pin" required placeholder="Sisesta PIN" maxlength="10" inputmode="numeric" autocomplete="off" style="text-align:center;font-size:1.4rem;letter-spacing:6px">
         </div>
         <button type="submit" class="vwauth-btn">Logi sisse</button>
       </form>
@@ -179,6 +173,18 @@ class Vesho_CRM_Worker_Portal {
 (function(){
   var ajaxUrl='<?php echo $ajax; ?>';
   var nonce='<?php echo $nonce; ?>';
+
+  // PIN dot indicator
+  var pinInput=document.getElementById('vwauth-pin');
+  if(pinInput){
+    pinInput.addEventListener('input',function(){
+      var len=this.value.length;
+      for(var i=0;i<4;i++){
+        var dot=document.getElementById('vwdot-'+i);
+        if(dot) dot.className='vwauth-pin-dot'+(i<len?' filled':'');
+      }
+    });
+  }
 
   var form=document.getElementById('vwauth-form');
   if(form){
@@ -1889,18 +1895,33 @@ $all_picked = !empty($my_items) && count(array_filter($my_items, fn($i) => $i->p
 
     public static function ajax_login() {
         check_ajax_referer('vesho_portal_nonce', 'nonce');
-        $name = sanitize_text_field($_POST['worker_name'] ?? '');
-        $pin  = $_POST['pin'] ?? '';
-        $creds = ['user_login' => $name, 'user_password' => $pin, 'remember' => true];
+        $pin = sanitize_text_field($_POST['pin'] ?? '');
+        if ( empty($pin) ) {
+            wp_send_json_error(['message' => 'Sisesta PIN-kood']);
+        }
+        global $wpdb;
+        $worker = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM {$wpdb->prefix}vesho_workers WHERE pin=%s AND active=1 LIMIT 1",
+            $pin
+        ));
+        if ( ! $worker ) {
+            wp_send_json_error(['message' => 'Vale PIN-kood']);
+        }
+        // Log in via linked WordPress user if available
+        if ( ! empty($worker->user_id) ) {
+            $user = get_user_by('id', (int)$worker->user_id);
+            if ( $user && in_array('vesho_worker', (array)$user->roles) ) {
+                wp_set_auth_cookie($user->ID, true, is_ssl());
+                wp_send_json_success(['message' => 'Tere, ' . esc_html($worker->name) . '!', 'redirect' => home_url('/worker/')]);
+            }
+        }
+        // Fallback: try wp_signon with worker name + pin (legacy)
+        $creds = ['user_login' => $worker->name, 'user_password' => $pin, 'remember' => true];
         $user = wp_signon($creds, is_ssl());
-        if (is_wp_error($user)) {
-            wp_send_json_error(['message' => 'Vale nimi või PIN']);
+        if ( is_wp_error($user) ) {
+            wp_send_json_error(['message' => 'Konto seadistus puudub. Palun pöördu administraatori poole.']);
         }
-        if (!in_array('vesho_worker', (array) $user->roles)) {
-            wp_logout();
-            wp_send_json_error(['message' => 'See konto ei ole töötaja konto']);
-        }
-        wp_send_json_success(['message' => 'Sisselogimine õnnestus!', 'redirect' => home_url('/worker/')]);
+        wp_send_json_success(['message' => 'Tere, ' . esc_html($worker->name) . '!', 'redirect' => home_url('/worker/')]);
     }
 
     // ── AJAX: Logout ──────────────────────────────────────────────────────────
