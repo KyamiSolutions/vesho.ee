@@ -2563,40 +2563,7 @@ function setMsg(m){document.getElementById('vcp-pay-msg').textContent=m;}
                 });
             });
 
-            // Unverified email — show waiting screen instead of red error
-            var loginForm = document.getElementById('vauth-login-form');
-            if (!loginForm) return;
-
-            // Intercept the AJAX response by monkey-patching fetch
-            var _origFetch = window.fetch;
-            window.fetch = function() {
-                return _origFetch.apply(this, arguments).then(function(resp) {
-                    return resp.clone().json().then(function(data) {
-                        if (data && !data.success && data.data && data.data.unverified) {
-                            // Show unverified waiting screen — replace login panel content
-                            var panel = document.getElementById('vauth-panel-login') || loginForm.closest('.vauth-card') || loginForm.parentElement;
-                            if (panel) {
-                                panel.innerHTML = '<div style="text-align:center;padding:32px 20px">' +
-                                    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 100" width="70" height="88" style="margin:0 auto 20px;display:block">' +
-                                    '<rect x="28" y="4" width="24" height="14" rx="4" fill="#00b4c8"/>' +
-                                    '<rect x="16" y="8" width="48" height="8" rx="4" fill="#00d4e8"/>' +
-                                    '<rect x="34" y="18" width="12" height="22" rx="3" fill="#00b4c8"/>' +
-                                    '<path d="M34 38 Q34 52 22 54 L22 60 Q22 64 26 64 L54 64 Q58 64 58 60 L58 54 Q46 52 46 38 Z" fill="#00b4c8"/>' +
-                                    '<rect x="30" y="62" width="20" height="6" rx="3" fill="#008fa0"/>' +
-                                    '<ellipse cx="40" cy="76" rx="4" ry="5" fill="#00b4c8" opacity="0.9">' +
-                                    '<animate attributeName="cy" values="72;88" dur="1.4s" repeatCount="indefinite"/>' +
-                                    '<animate attributeName="opacity" values="0.9;0" dur="1.4s" repeatCount="indefinite"/>' +
-                                    '</ellipse></svg>' +
-                                    '<h3 style="font-size:20px;font-weight:800;color:#0d1f2d;margin-bottom:10px">Konto ootab kinnitust</h3>' +
-                                    '<p style="font-size:14px;color:#5a7080;margin-bottom:20px">Saatsime Sulle kinnitusmeili.<br>Palun klõpsa kirjas oleval lingil.</p>' +
-                                    '<p style="font-size:12px;color:#8a9bb0">Ei leidnud meili? Kontrolli rämpsposti kausta.</p>' +
-                                    '</div>';
-                            }
-                        }
-                        return new Response(JSON.stringify(data), {status: resp.status, headers: resp.headers});
-                    }).catch(function() { return resp; });
-                });
-            };
+            // (unverified handling moved to server-side portal blocked screen)
         });
         </script>
         <?php
