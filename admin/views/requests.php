@@ -76,6 +76,15 @@ $statuses = ['new'=>'Uus','open'=>'Avatud','resolved'=>'Lahendatud','spam'=>'Rä
                     <div class="crm-form-label">Saadetud</div>
                     <div><?php echo vesho_crm_format_date($edit->created_at, 'd.m.Y H:i'); ?></div>
                 </div>
+                <?php if (!empty($edit->campaign_name) && (float)($edit->campaign_discount_percent ?? 0) > 0) : ?>
+                <div style="background:#e0f7fa;border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:10px">
+                    <span style="background:#00b4c8;color:#fff;font-size:12px;font-weight:800;padding:3px 10px;border-radius:20px">-<?php echo (int)$edit->campaign_discount_percent; ?>%</span>
+                    <div>
+                        <div class="crm-form-label" style="margin-bottom:2px">Kampaania hind (lukustatud)</div>
+                        <div style="font-size:13px;font-weight:600;color:#0d1f2d"><?php echo esc_html($edit->campaign_name); ?></div>
+                    </div>
+                </div>
+                <?php endif; ?>
             </div>
 
             <div class="crm-form-label" style="margin-bottom:6px">Kirjeldus</div>

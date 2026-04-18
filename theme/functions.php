@@ -391,15 +391,26 @@ add_action( 'wp_ajax_vesho_guest_request', 'vesho_ajax_guest_request' );
 function vesho_ajax_guest_request() {
     check_ajax_referer( 'vesho_nonce', 'nonce' );
 
+    // Lock active maintenance campaign at request time
+    $today_gr     = date( 'Y-m-d' );
+    $gr_campaign  = $wpdb->get_row( $wpdb->prepare(
+        "SELECT name, maintenance_discount_percent FROM {$wpdb->prefix}vesho_campaigns
+         WHERE paused=0 AND valid_from<=%s AND valid_until>=%s AND (target='hooldus' OR target='both')
+         ORDER BY maintenance_discount_percent DESC LIMIT 1",
+        $today_gr, $today_gr
+    ) );
+
     $data = array(
-        'name'           => sanitize_text_field( $_POST['name'] ?? '' ),
-        'email'          => sanitize_email( $_POST['email'] ?? '' ),
-        'phone'          => sanitize_text_field( $_POST['phone'] ?? '' ),
-        'device_name'    => sanitize_text_field( $_POST['device_name'] ?? '' ),
-        'service_type'   => sanitize_text_field( $_POST['service_type'] ?? '' ),
-        'preferred_date' => sanitize_text_field( $_POST['preferred_date'] ?? '' ),
-        'description'    => sanitize_textarea_field( $_POST['description'] ?? '' ),
-        'created_at'     => current_time( 'mysql' ),
+        'name'                       => sanitize_text_field( $_POST['name'] ?? '' ),
+        'email'                      => sanitize_email( $_POST['email'] ?? '' ),
+        'phone'                      => sanitize_text_field( $_POST['phone'] ?? '' ),
+        'device_name'                => sanitize_text_field( $_POST['device_name'] ?? '' ),
+        'service_type'               => sanitize_text_field( $_POST['service_type'] ?? '' ),
+        'preferred_date'             => sanitize_text_field( $_POST['preferred_date'] ?? '' ),
+        'description'                => sanitize_textarea_field( $_POST['description'] ?? '' ),
+        'created_at'                 => current_time( 'mysql' ),
+        'campaign_name'              => $gr_campaign ? $gr_campaign->name : '',
+        'campaign_discount_percent'  => $gr_campaign ? (float) $gr_campaign->maintenance_discount_percent : 0,
     );
 
     if ( empty( $data['name'] ) || empty( $data['email'] ) ) {

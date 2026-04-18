@@ -42,6 +42,11 @@ class Vesho_CRM_Updater {
         add_action( 'wp_ajax_vesho_install_theme', [ __CLASS__, 'ajax_install_theme' ] );
         // Admin AJAX: direct plugin installer (bypasses WP_Upgrader)
         add_action( 'wp_ajax_vesho_install_plugin', [ __CLASS__, 'ajax_install_plugin' ] );
+        // Admin AJAX: background download worker (called by loopback, no gateway timeout)
+        add_action( 'wp_ajax_vesho_bg_update',        [ __CLASS__, 'ajax_bg_update' ] );
+        add_action( 'wp_ajax_nopriv_vesho_bg_update', [ __CLASS__, 'ajax_bg_update' ] );
+        // Admin AJAX: poll update status
+        add_action( 'wp_ajax_vesho_update_status', [ __CLASS__, 'ajax_update_status' ] );
     }
 
     /**
@@ -650,162 +655,174 @@ class Vesho_CRM_Updater {
         return self::fetch_remote_info( $type );
     }
 
-    /**
-     * Direct theme installer — bypasses WP_Upgrader and move_to_rollback_cache entirely.
-     * Downloads ZIP, deletes old theme, extracts and copies new theme.
-     */
-    public static function ajax_install_theme() {
-        check_ajax_referer( 'vesho_admin_nonce', 'nonce' );
-        if ( ! current_user_can( 'install_themes' ) ) {
-            wp_send_json_error( 'Pole õigusi' );
-        }
+    // ── Shared install helpers ────────────────────────────────────────────────────
 
-        // Always fetch fresh info — never use cached version
-        delete_transient( 'vesho_remote_theme_info' );
-
+    private static function do_install_theme() {
         require_once ABSPATH . 'wp-admin/includes/file.php';
         require_once ABSPATH . 'wp-admin/includes/misc.php';
         WP_Filesystem();
         global $wp_filesystem;
 
-        // Get download URL
+        delete_transient( 'vesho_remote_theme_info' );
         $info = self::fetch_remote_info( 'theme' );
         if ( ! $info || empty( $info->download_url ) ) {
-            wp_send_json_error( 'Uuenduse info puudub — kontrolli GitHubi' );
+            return new WP_Error( 'no_info', 'Uuenduse info puudub — kontrolli GitHubi' );
         }
 
-        // Download ZIP to temp file
-        $tmp_zip = download_url( $info->download_url );
-        if ( is_wp_error( $tmp_zip ) ) {
-            wp_send_json_error( 'Allalaadimine ebaõnnestus: ' . $tmp_zip->get_error_message() );
-        }
+        $tmp_zip = download_url( $info->download_url, 300 );
+        if ( is_wp_error( $tmp_zip ) ) return $tmp_zip;
 
-        // Extract ZIP to temp directory
         $tmp_dir = WP_CONTENT_DIR . '/upgrade/vesho-theme-tmp-' . time();
         wp_mkdir_p( $tmp_dir );
-
         $unzip = unzip_file( $tmp_zip, $tmp_dir );
         @unlink( $tmp_zip );
+        if ( is_wp_error( $unzip ) ) { $wp_filesystem->delete( $tmp_dir, true ); return $unzip; }
 
-        if ( is_wp_error( $unzip ) ) {
-            $wp_filesystem->delete( $tmp_dir, true );
-            wp_send_json_error( 'Lahtipakkimine ebaõnnestus: ' . $unzip->get_error_message() );
-        }
-
-        // Find extracted theme dir (should be vesho/ inside tmp_dir)
         $theme_src = $tmp_dir . '/' . self::THEME_SLUG;
         if ( ! is_dir( $theme_src ) ) {
             $dirs = glob( $tmp_dir . '/*', GLOB_ONLYDIR );
             $theme_src = ! empty( $dirs ) ? $dirs[0] : '';
         }
-
         if ( empty( $theme_src ) || ! is_dir( $theme_src ) ) {
             $wp_filesystem->delete( $tmp_dir, true );
-            wp_send_json_error( 'Teema kausta ei leitud ZIP-is' );
+            return new WP_Error( 'no_dir', 'Teema kausta ei leitud ZIP-is' );
         }
 
         $theme_dest = get_theme_root() . '/' . self::THEME_SLUG;
-
-        // Delete old theme (no backup — this is the whole point)
         if ( $wp_filesystem && $wp_filesystem->is_dir( $theme_dest ) ) {
             $wp_filesystem->delete( $theme_dest, true );
         } elseif ( is_dir( $theme_dest ) ) {
             self::recursive_rmdir( $theme_dest );
         }
 
-        // Copy new theme into place
         $copy_result = copy_dir( $theme_src, $theme_dest );
         $wp_filesystem->delete( $tmp_dir, true );
+        if ( is_wp_error( $copy_result ) ) return $copy_result;
 
-        if ( is_wp_error( $copy_result ) ) {
-            wp_send_json_error( 'Kopeerimine ebaõnnestus: ' . $copy_result->get_error_message() );
-        }
-
-        // Clear caches
         wp_clean_themes_cache();
         delete_site_transient( 'update_themes' );
         delete_transient( 'vesho_remote_theme_info' );
         do_action( 'litespeed_purge_all' );
         if ( function_exists( 'wp_cache_flush' ) ) wp_cache_flush();
 
-        wp_send_json_success( 'Teema uuendatud versioonile ' . esc_html( $info->version ) . ' ✅' );
+        return 'Teema uuendatud versioonile ' . $info->version . ' ✅';
     }
 
-    // ── Direct plugin installer (bypasses WP_Upgrader) ───────────────────────────
-    public static function ajax_install_plugin() {
-        check_ajax_referer( 'vesho_admin_nonce', 'nonce' );
-        if ( ! current_user_can( 'update_plugins' ) ) {
-            wp_send_json_error( 'Pole õigusi' );
-        }
-
-        // Always fetch fresh info — never use cached version
-        delete_transient( 'vesho_remote_plugin_info' );
-
+    private static function do_install_plugin() {
         require_once ABSPATH . 'wp-admin/includes/file.php';
         require_once ABSPATH . 'wp-admin/includes/misc.php';
         require_once ABSPATH . 'wp-admin/includes/plugin.php';
         WP_Filesystem();
         global $wp_filesystem;
 
+        delete_transient( 'vesho_remote_plugin_info' );
         $info = self::fetch_remote_info( 'plugin' );
         if ( ! $info || empty( $info->download_url ) ) {
-            wp_send_json_error( 'Uuenduse info puudub — kontrolli GitHubi' );
+            return new WP_Error( 'no_info', 'Uuenduse info puudub — kontrolli GitHubi' );
         }
 
-        $tmp_zip = download_url( $info->download_url );
-        if ( is_wp_error( $tmp_zip ) ) {
-            wp_send_json_error( 'Allalaadimine ebaõnnestus: ' . $tmp_zip->get_error_message() );
-        }
+        $tmp_zip = download_url( $info->download_url, 300 );
+        if ( is_wp_error( $tmp_zip ) ) return $tmp_zip;
 
         $tmp_dir = WP_CONTENT_DIR . '/upgrade/vesho-plugin-tmp-' . time();
         wp_mkdir_p( $tmp_dir );
-
         $unzip = unzip_file( $tmp_zip, $tmp_dir );
         @unlink( $tmp_zip );
+        if ( is_wp_error( $unzip ) ) { $wp_filesystem->delete( $tmp_dir, true ); return $unzip; }
 
-        if ( is_wp_error( $unzip ) ) {
-            $wp_filesystem->delete( $tmp_dir, true );
-            wp_send_json_error( 'Lahtipakkimine ebaõnnestus: ' . $unzip->get_error_message() );
-        }
-
-        // Find extracted plugin dir (should be vesho-crm/ inside tmp_dir)
         $plugin_src = $tmp_dir . '/' . self::PLUGIN_SLUG;
         if ( ! is_dir( $plugin_src ) ) {
             $dirs = glob( $tmp_dir . '/*', GLOB_ONLYDIR );
             $plugin_src = ! empty( $dirs ) ? $dirs[0] : '';
         }
-
         if ( empty( $plugin_src ) || ! is_dir( $plugin_src ) ) {
             $wp_filesystem->delete( $tmp_dir, true );
-            wp_send_json_error( 'Plugina kausta ei leitud ZIP-is' );
+            return new WP_Error( 'no_dir', 'Plugina kausta ei leitud ZIP-is' );
         }
 
-        // Install to the directory where plugin is currently running — never delete, just overwrite
         $plugin_dest = defined('VESHO_CRM_FILE') ? dirname( VESHO_CRM_FILE ) : WP_PLUGIN_DIR . '/' . self::PLUGIN_SLUG;
         wp_mkdir_p( $plugin_dest );
-
         $copy_result = copy_dir( $plugin_src, $plugin_dest );
         $wp_filesystem->delete( $tmp_dir, true );
-
-        if ( is_wp_error( $copy_result ) ) {
-            wp_send_json_error( 'Kopeerimine ebaõnnestus: ' . $copy_result->get_error_message() );
-        }
+        if ( is_wp_error( $copy_result ) ) return $copy_result;
 
         delete_site_transient( 'update_plugins' );
         delete_transient( 'vesho_remote_plugin_info' );
         do_action( 'litespeed_purge_all' );
         if ( function_exists( 'wp_cache_flush' ) ) wp_cache_flush();
-
         if ( function_exists( 'opcache_reset' ) ) opcache_reset();
-        if ( function_exists( 'opcache_invalidate' ) ) {
-            opcache_invalidate( $plugin_dest . '/vesho-crm.php', true );
-        }
 
-        // Verify: read actual version from disk after copy
         clearstatcache( true, $plugin_dest . '/vesho-crm.php' );
         $verify_data    = function_exists('get_plugin_data') ? get_plugin_data( $plugin_dest . '/vesho-crm.php', false, false ) : [];
-        $actual_version = $verify_data['Version'] ?? 'ei leidnud';
+        $actual_version = $verify_data['Version'] ?? '?';
 
-        wp_send_json_success( 'Sihtkaust: ' . $plugin_dest . ' | ZIP versioon: ' . esc_html( $info->version ) . ' | Failis: ' . $actual_version );
+        return 'Plugin uuendatud versioonile ' . $info->version . ' (failis: ' . $actual_version . ') ✅';
+    }
+
+    // ── AJAX: spawn background download job (returns immediately to avoid gateway timeout) ──
+
+    public static function ajax_install_theme() {
+        check_ajax_referer( 'vesho_admin_nonce', 'nonce' );
+        if ( ! current_user_can( 'install_themes' ) ) wp_send_json_error( 'Pole õigusi' );
+        self::spawn_bg_update( 'theme' );
+        wp_send_json_success( [ 'status' => 'started' ] );
+    }
+
+    public static function ajax_install_plugin() {
+        check_ajax_referer( 'vesho_admin_nonce', 'nonce' );
+        if ( ! current_user_can( 'update_plugins' ) ) wp_send_json_error( 'Pole õigusi' );
+        self::spawn_bg_update( 'plugin' );
+        wp_send_json_success( [ 'status' => 'started' ] );
+    }
+
+    private static function spawn_bg_update( $type ) {
+        $token = wp_generate_password( 32, false );
+        set_transient( "vesho_{$type}_bg_token",  $token,                          300 );
+        set_transient( "vesho_{$type}_update_status", [ 'status' => 'running', 'message' => 'Allalaadimine GitHub\'ist...' ], 300 );
+
+        wp_remote_post( admin_url( 'admin-ajax.php' ), [
+            'timeout'   => 1,
+            'blocking'  => false,
+            'sslverify' => apply_filters( 'https_local_ssl_verify', false ),
+            'body'      => [
+                'action' => 'vesho_bg_update',
+                'type'   => $type,
+                'token'  => $token,
+            ],
+        ] );
+    }
+
+    // ── AJAX: background worker — called by loopback, no nginx timeout constraint ──
+
+    public static function ajax_bg_update() {
+        $type  = sanitize_key( $_POST['type'] ?? '' );
+        $token = sanitize_text_field( $_POST['token'] ?? '' );
+
+        if ( ! in_array( $type, [ 'theme', 'plugin' ], true ) ) wp_die( 'bad type' );
+
+        $stored = get_transient( "vesho_{$type}_bg_token" );
+        if ( ! $token || ! $stored || ! hash_equals( $stored, $token ) ) wp_die( 'bad token' );
+        delete_transient( "vesho_{$type}_bg_token" );
+
+        set_time_limit( 0 );
+        ignore_user_abort( true );
+
+        $result = $type === 'theme' ? self::do_install_theme() : self::do_install_plugin();
+
+        set_transient( "vesho_{$type}_update_status", [
+            'status'  => is_wp_error( $result ) ? 'error' : 'done',
+            'message' => is_wp_error( $result ) ? $result->get_error_message() : $result,
+        ], 120 );
+
+        wp_die( 'ok' );
+    }
+
+    // ── AJAX: poll update status ──────────────────────────────────────────────────
+
+    public static function ajax_update_status() {
+        check_ajax_referer( 'vesho_admin_nonce', 'nonce' );
+        $type   = sanitize_key( $_GET['type'] ?? 'plugin' );
+        $status = get_transient( "vesho_{$type}_update_status" );
+        wp_send_json_success( $status ?: [ 'status' => 'pending', 'message' => '' ] );
     }
 }
