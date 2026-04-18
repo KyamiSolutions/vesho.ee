@@ -1,10 +1,10 @@
 {
   "name": "Vesho",
   "slug": "vesho",
-  "version": "2.2.49",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.2.49/vesho-theme.zip",
+  "version": "2.2.50",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.2.50/vesho-theme.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-18",
-  "changelog": "<h4>2.2.49</h4><ul><li>Uus versioon</li></ul>"
+  "changelog": "<h4>2.2.50</h4><ul><li>Uuendamine parandatud: otsene install (ei sõltu loopback HTTP-st)</li></ul>"
 }

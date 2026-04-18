@@ -79,6 +79,13 @@ $is_local = in_array($_SERVER['HTTP_HOST'] ?? '', ['localhost', '127.0.0.1'])
 </div>
 <script>
 var veshoNonce = '<?php echo $nonce; ?>';
+
+function veshoReload() {
+  var url = window.location.href.replace(/[?&]_t=\d+/, '');
+  url += (url.indexOf('?') === -1 ? '?' : '&') + '_t=' + Date.now();
+  window.location.href = url;
+}
+
 document.getElementById('btn-force-check').addEventListener('click', function(){
   this.disabled = true;
   document.getElementById('force-check-msg').textContent = 'Kontrollin...';
@@ -87,16 +94,9 @@ document.getElementById('btn-force-check').addEventListener('click', function(){
   .then(r=>r.json()).then(d=>{
     document.getElementById('force-check-msg').textContent = d.success ? '✅ '+d.data.message : '❌ Viga';
     document.getElementById('btn-force-check').disabled = false;
-    if(d.success) setTimeout(()=>window.location.reload(),1500);
+    if(d.success) setTimeout(veshoReload, 800);
   });
 });
-
-function veshoReload() {
-  // Cache-busting reload — bypasses LiteSpeed page cache
-  var url = window.location.href.replace(/[?&]_t=\d+/, '');
-  url += (url.indexOf('?') === -1 ? '?' : '&') + '_t=' + Date.now();
-  window.location.href = url;
-}
 
 function veshoStartUpdate(type, btnId, msgId) {
   var btn = document.getElementById(btnId);
@@ -112,32 +112,15 @@ function veshoStartUpdate(type, btnId, msgId) {
   fetch(ajaxurl, {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
     body:'action=vesho_install_'+type+'&nonce='+veshoNonce})
   .then(r=>r.json()).then(function(d){
-    if (!d.success) {
-      clearInterval(anim);
+    clearInterval(anim);
+    if (d.success && d.data && d.data.status === 'done') {
+      msg.textContent = '✅ ' + (d.data.message || 'Uuendatud!');
+      veshoReload();
+    } else {
       msg.style.color = '#c62828';
       msg.textContent = '❌ ' + (d.data || 'Viga');
       btn.disabled = false;
-      return;
     }
-    // Poll every 1s via POST (not GET — POST bypasses LiteSpeed page cache)
-    var poll = setInterval(function(){
-      fetch(ajaxurl, {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
-        body:'action=vesho_update_status&type='+type+'&nonce='+veshoNonce})
-        .then(r=>r.json()).then(function(s){
-          var st = (s.success && s.data) ? s.data : {};
-          if (st.status === 'done' || st.status === 'error') {
-            clearInterval(poll); clearInterval(anim);
-            if (st.status === 'done') {
-              msg.textContent = '✅ ' + (st.message || 'Uuendatud!');
-              veshoReload();
-            } else {
-              msg.style.color = '#c62828';
-              msg.textContent = '❌ ' + (st.message || 'Viga');
-              btn.disabled = false;
-            }
-          }
-        }).catch(function(){});
-    }, 1000);
   }).catch(function(){
     clearInterval(anim);
     msg.style.color = '#c62828';

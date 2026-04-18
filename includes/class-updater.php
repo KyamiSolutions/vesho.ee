@@ -764,57 +764,25 @@ class Vesho_CRM_Updater {
     public static function ajax_install_theme() {
         check_ajax_referer( 'vesho_admin_nonce', 'nonce' );
         if ( ! current_user_can( 'install_themes' ) ) wp_send_json_error( 'Pole õigusi' );
-        self::spawn_bg_update( 'theme' );
-        wp_send_json_success( [ 'status' => 'started' ] );
+        set_time_limit( 0 );
+        ignore_user_abort( true );
+        $result = self::do_install_theme();
+        if ( is_wp_error( $result ) ) wp_send_json_error( $result->get_error_message() );
+        wp_send_json_success( [ 'status' => 'done', 'message' => $result ] );
     }
 
     public static function ajax_install_plugin() {
         check_ajax_referer( 'vesho_admin_nonce', 'nonce' );
         if ( ! current_user_can( 'update_plugins' ) ) wp_send_json_error( 'Pole õigusi' );
-        self::spawn_bg_update( 'plugin' );
-        wp_send_json_success( [ 'status' => 'started' ] );
-    }
-
-    private static function spawn_bg_update( $type ) {
-        $token = wp_generate_password( 32, false );
-        set_transient( "vesho_{$type}_bg_token",  $token,                          300 );
-        set_transient( "vesho_{$type}_update_status", [ 'status' => 'running', 'message' => 'Allalaadimine GitHub\'ist...' ], 300 );
-
-        wp_remote_post( admin_url( 'admin-ajax.php' ), [
-            'timeout'   => 1,
-            'blocking'  => false,
-            'sslverify' => apply_filters( 'https_local_ssl_verify', false ),
-            'body'      => [
-                'action' => 'vesho_bg_update',
-                'type'   => $type,
-                'token'  => $token,
-            ],
-        ] );
-    }
-
-    // ── AJAX: background worker — called by loopback, no nginx timeout constraint ──
-
-    public static function ajax_bg_update() {
-        $type  = sanitize_key( $_POST['type'] ?? '' );
-        $token = sanitize_text_field( $_POST['token'] ?? '' );
-
-        if ( ! in_array( $type, [ 'theme', 'plugin' ], true ) ) wp_die( 'bad type' );
-
-        $stored = get_transient( "vesho_{$type}_bg_token" );
-        if ( ! $token || ! $stored || ! hash_equals( $stored, $token ) ) wp_die( 'bad token' );
-        delete_transient( "vesho_{$type}_bg_token" );
-
         set_time_limit( 0 );
         ignore_user_abort( true );
+        $result = self::do_install_plugin();
+        if ( is_wp_error( $result ) ) wp_send_json_error( $result->get_error_message() );
+        wp_send_json_success( [ 'status' => 'done', 'message' => $result ] );
+    }
 
-        $result = $type === 'theme' ? self::do_install_theme() : self::do_install_plugin();
-
-        set_transient( "vesho_{$type}_update_status", [
-            'status'  => is_wp_error( $result ) ? 'error' : 'done',
-            'message' => is_wp_error( $result ) ? $result->get_error_message() : $result,
-        ], 600 );
-
-        wp_die( 'ok' );
+    public static function ajax_bg_update() {
+        wp_die( 'disabled' );
     }
 
     // ── AJAX: poll update status ──────────────────────────────────────────────────
