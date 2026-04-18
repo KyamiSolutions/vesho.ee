@@ -161,7 +161,6 @@ class Vesho_CRM_Updater {
 
     public static function check_plugin_update( $transient ) {
         if ( empty( $transient->checked ) ) return $transient;
-        if ( self::is_local() ) return $transient;
 
         $info = self::fetch_remote_info( 'plugin' );
         if ( ! $info ) return $transient;
@@ -199,7 +198,6 @@ class Vesho_CRM_Updater {
 
     public static function check_theme_update( $transient ) {
         if ( empty( $transient->checked ) ) return $transient;
-        if ( self::is_local() ) return $transient;
 
         $info = self::fetch_remote_info( 'theme' );
         if ( ! $info ) return $transient;

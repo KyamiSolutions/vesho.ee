@@ -1,10 +1,10 @@
 {
   "name": "Vesho CRM",
   "slug": "vesho-crm",
-  "version": "2.2.25",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.2.25/vesho-crm.zip",
+  "version": "2.2.26",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.2.26/vesho-crm.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-18",
-  "changelog": "<h4>2.2.25</h4><ul><li>Uus versioon</li></ul>"
+  "changelog": "<h4>2.2.26</h4><ul><li>Parandatud: uuendused nähtavad ka localhost arenduskeskkonnas</li></ul><h4>2.2.25</h4><ul><li>Mobiili kaamera skänner tellimuste, lao ja kviitungite lehtedel</li><li>Tagastuspäringute kinnitamine/tagasilükkamine koos laoseisumuutustega</li><li>Sundparoolivahetus uuele administraatorile</li><li>Parandatud 2FA lõputu suunamissilmus</li></ul>"
 }
