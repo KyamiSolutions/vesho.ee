@@ -6,5 +6,5 @@
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-18",
-  "changelog": "<h4>2.2.40</h4><ul><li>E-pood: kategooria värvid pillides, laoseisu kuva, puhtamad kaardid</li><li>Uuendus auto-reload fikseeritud (transient TTL+600s, pending detect)</li></ul><h4>2.2.39</h4><ul><li>Inventari kategooriate haldamine</li></ul>"
+  "changelog": "<h4>2.2.40</h4><ul><li>Uus versioon</li></ul>"
 }
