@@ -51,18 +51,48 @@ add_shortcode( 'vesho_services_cards', function() {
         ];
     }
 
+    // Active maintenance campaign
+    $today_svc = date( 'Y-m-d' );
+    $svc_campaign = $wpdb->get_row( $wpdb->prepare(
+        "SELECT * FROM {$wpdb->prefix}vesho_campaigns
+         WHERE paused=0 AND valid_from<=%s AND valid_until>=%s AND (target='hooldus' OR target='both')
+         ORDER BY maintenance_discount_percent DESC LIMIT 1",
+        $today_svc, $today_svc
+    ) );
+    $svc_disc = $svc_campaign ? (float) $svc_campaign->maintenance_discount_percent : 0;
+
     $modal_url = '';
-    ob_start(); ?>
+    ob_start();
+
+    if ( $svc_disc > 0 ) : ?>
+    <div style="background:linear-gradient(135deg,#e0f7fa,#b2ebf2);border:1.5px solid #00b4c8;border-radius:14px;padding:16px 22px;margin-bottom:24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+        <div style="background:#00b4c8;color:#fff;font-size:18px;font-weight:900;padding:8px 16px;border-radius:10px;white-space:nowrap">-<?php echo (int) $svc_disc; ?>%</div>
+        <div>
+            <div style="font-weight:700;color:#0d1f2d;font-size:16px">🏷️ <?php echo esc_html( $svc_campaign->name ); ?></div>
+            <?php if ( $svc_campaign->description ) : ?><div style="color:#4b6174;font-size:13px;margin-top:3px"><?php echo esc_html( $svc_campaign->description ); ?></div><?php endif; ?>
+            <?php if ( $svc_campaign->valid_until ) : ?><div style="color:#00b4c8;font-size:12px;font-weight:600;margin-top:3px">Kehtib kuni <?php echo esc_html( date_i18n( 'd.m.Y', strtotime( $svc_campaign->valid_until ) ) ); ?></div><?php endif; ?>
+        </div>
+    </div>
+    <?php endif; ?>
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:24px">
-    <?php foreach ( $services as $svc ) : ?>
+    <?php foreach ( $services as $svc ) :
+        $svc_orig  = ! empty( $svc->price ) ? (float) $svc->price : null;
+        $svc_discounted = ( $svc_orig !== null && $svc_disc > 0 ) ? round( $svc_orig * ( 1 - $svc_disc / 100 ), 2 ) : null;
+    ?>
         <div style="background:#fff;border-radius:16px;padding:28px;box-shadow:0 2px 16px rgba(13,31,45,.07);display:flex;flex-direction:column;gap:12px;border-top:3px solid #00b4c8">
             <div style="font-size:36px;line-height:1"><?php echo esc_html( $svc->icon ?? '💧' ); ?></div>
             <h3 style="font-size:17px;font-weight:700;color:#0d1f2d;margin:0"><?php echo esc_html( $svc->name ); ?></h3>
             <p style="color:#4b6174;font-size:14px;line-height:1.65;margin:0;flex:1"><?php echo esc_html( $svc->description ?? '' ); ?></p>
-            <?php if ( !empty($svc->price) ) : ?>
+            <?php if ( $svc_orig !== null ) : ?>
             <div style="font-size:13px;color:#6b8599">
-                alates <strong style="color:#0d1f2d;font-size:16px"><?php echo number_format((float)$svc->price, 2, ',', ' '); ?> €</strong>
-                <?php if ($svc->price_unit) echo '/ '.esc_html($svc->price_unit); ?>
+                <?php if ( $svc_discounted !== null ) : ?>
+                    alates <span style="text-decoration:line-through;color:#9ca3af"><?php echo number_format( $svc_orig, 2, ',', ' ' ); ?> €</span>
+                    <strong style="color:#00b4c8;font-size:16px"><?php echo number_format( $svc_discounted, 2, ',', ' ' ); ?> €</strong>
+                    <?php if ( $svc->price_unit ) echo '/ ' . esc_html( $svc->price_unit ); ?>
+                <?php else : ?>
+                    alates <strong style="color:#0d1f2d;font-size:16px"><?php echo number_format( $svc_orig, 2, ',', ' ' ); ?> €</strong>
+                    <?php if ( $svc->price_unit ) echo '/ ' . esc_html( $svc->price_unit ); ?>
+                <?php endif; ?>
             </div>
             <?php endif; ?>
             <button aria-controls="service-modal"
@@ -151,11 +181,20 @@ add_shortcode( 'vesho_shop_grid', function () {
         $qty = max( 1, absint( $_POST['qty'] ?? 1 ) );
         if ( ! isset( $_SESSION['vesho_cart'] ) ) $_SESSION['vesho_cart'] = [];
         $_SESSION['vesho_cart'][ $pid ] = ( $_SESSION['vesho_cart'][ $pid ] ?? 0 ) + $qty;
-    } elseif ( $post_action === 'update_cart' && isset( $_POST['pid'] ) ) {
-        $pid = absint( $_POST['pid'] );
-        $qty = absint( $_POST['qty'] ?? 0 );
-        if ( $qty <= 0 ) unset( $_SESSION['vesho_cart'][ $pid ] );
-        else $_SESSION['vesho_cart'][ $pid ] = $qty;
+    } elseif ( $post_action === 'update_cart' ) {
+        // Remove buttons: vesho_remove[pid]
+        foreach ( $_POST['vesho_remove'] ?? [] as $pid => $v ) {
+            unset( $_SESSION['vesho_cart'][ absint( $pid ) ] );
+        }
+        // Quantity updates: vesho_cart_qty[pid]
+        foreach ( $_POST['vesho_cart_qty'] ?? [] as $pid => $qty ) {
+            $pid = absint( $pid );
+            $qty = absint( $qty );
+            if ( ! isset( $_POST['vesho_remove'][ $pid ] ) ) {
+                if ( $qty <= 0 ) unset( $_SESSION['vesho_cart'][ $pid ] );
+                else $_SESSION['vesho_cart'][ $pid ] = $qty;
+            }
+        }
     } elseif ( $post_action === 'clear_cart' ) {
         unset( $_SESSION['vesho_cart'] );
     }
@@ -237,6 +276,32 @@ add_shortcode( 'vesho_shop_grid', function () {
     if ( $shop_view === 'cart' ) {
         $cart_items = vesho_get_cart_items();
         $subtotal   = array_sum( array_column( $cart_items, 'total' ) );
+
+        // Active campaign for cart view
+        $today_cart   = date( 'Y-m-d' );
+        $is_cli_cart  = ! empty( $_SESSION['vesho_client_id'] );
+        $cart_campaign = $wpdb->get_row( $wpdb->prepare(
+            "SELECT * FROM {$wpdb->prefix}vesho_campaigns
+             WHERE paused=0 AND valid_from<=%s AND valid_until>=%s AND (target='epood' OR target='both')
+             ORDER BY discount_percent DESC LIMIT 1",
+            $today_cart, $today_cart
+        ) );
+        if ( $cart_campaign && ! $is_cli_cart && ! $cart_campaign->visible_to_guests ) {
+            $cart_campaign = null;
+        }
+        $sess_cam_cart = $_SESSION['vesho_cart_campaign'] ?? null;
+        if ( $sess_cam_cart && ( ! $cart_campaign || $sess_cam_cart['discount_percent'] > $cart_campaign->discount_percent ) ) {
+            $cart_disc_pct  = (float) $sess_cam_cart['discount_percent'];
+            $cart_disc_name = $sess_cam_cart['name'] . ' (lukustatud)';
+        } elseif ( $cart_campaign ) {
+            $cart_disc_pct  = (float) $cart_campaign->discount_percent;
+            $cart_disc_name = $cart_campaign->name;
+        } else {
+            $cart_disc_pct  = 0;
+            $cart_disc_name = '';
+        }
+        $cart_disc_amount = $cart_disc_pct > 0 ? round( $subtotal * $cart_disc_pct / 100, 2 ) : 0;
+        $cart_total_after = round( $subtotal - $cart_disc_amount, 2 );
         ?>
         <h2 style="font-size:22px;font-weight:700;color:#0d1f2d;margin:0 0 24px">Ostukorv</h2>
         <?php if ( empty( $cart_items ) ) : ?>
@@ -279,9 +344,21 @@ add_shortcode( 'vesho_shop_grid', function () {
             <tfoot>
                 <tr>
                     <td colspan="3" style="text-align:right;padding:16px 8px 0;font-size:15px;color:#6b8599">Vahesumma:</td>
-                    <td style="text-align:right;padding:16px 8px 0;font-size:18px;font-weight:800;color:#0d1f2d"><?php echo number_format( $subtotal, 2, ',', ' ' ); ?> €</td>
+                    <td style="text-align:right;padding:16px 8px 0;font-size:<?php echo $cart_disc_pct > 0 ? '15px;color:#6b8599' : '18px;font-weight:800;color:#0d1f2d'; ?>"><?php echo number_format( $subtotal, 2, ',', ' ' ); ?> €</td>
                     <td></td>
                 </tr>
+                <?php if ( $cart_disc_pct > 0 ) : ?>
+                <tr>
+                    <td colspan="3" style="text-align:right;padding:4px 8px;font-size:13px;color:#059669">🏷️ <?php echo esc_html( $cart_disc_name ); ?> (-<?php echo (int) $cart_disc_pct; ?>%):</td>
+                    <td style="text-align:right;padding:4px 8px;font-size:13px;font-weight:700;color:#059669">-<?php echo number_format( $cart_disc_amount, 2, ',', ' ' ); ?> €</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td colspan="3" style="text-align:right;padding:4px 8px;font-size:17px;font-weight:800;color:#0d1f2d;border-top:2px solid #e5edf4">Kokku:</td>
+                    <td style="text-align:right;padding:4px 8px;font-size:17px;font-weight:800;color:#0d1f2d;border-top:2px solid #e5edf4"><?php echo number_format( $cart_total_after, 2, ',', ' ' ); ?> €</td>
+                    <td style="border-top:2px solid #e5edf4"></td>
+                </tr>
+                <?php endif; ?>
             </tfoot>
         </table>
         <div style="display:flex;gap:12px;justify-content:space-between;flex-wrap:wrap">
@@ -526,6 +603,52 @@ add_shortcode( 'vesho_shop_grid', function () {
 
     $cart_count = array_sum( $_SESSION['vesho_cart'] ?? [] );
 
+    // ── Active campaign ────────────────────────────────────────────────────
+    $today_grid    = date( 'Y-m-d' );
+    $is_client     = ! empty( $_SESSION['vesho_client_id'] );
+    $grid_campaign = $wpdb->get_row( $wpdb->prepare(
+        "SELECT * FROM {$wpdb->prefix}vesho_campaigns
+         WHERE paused=0 AND valid_from<=%s AND valid_until>=%s AND (target='epood' OR target='both')
+         ORDER BY discount_percent DESC LIMIT 1",
+        $today_grid, $today_grid
+    ) );
+    if ( $grid_campaign && ! $is_client && ! $grid_campaign->visible_to_guests ) {
+        $grid_campaign = null;
+    }
+    // Also check session-locked campaign (persists after campaign expires)
+    $sess_cam_grid = $_SESSION['vesho_cart_campaign'] ?? null;
+    if ( $sess_cam_grid && ( ! $grid_campaign || $sess_cam_grid['discount_percent'] > $grid_campaign->discount_percent ) ) {
+        $eff_discount = (float) $sess_cam_grid['discount_percent'];
+        $eff_name     = $sess_cam_grid['name'];
+        $eff_locked   = true;
+    } elseif ( $grid_campaign ) {
+        $eff_discount = (float) $grid_campaign->discount_percent;
+        $eff_name     = $grid_campaign->name;
+        $eff_locked   = false;
+    } else {
+        $eff_discount = 0;
+        $eff_name     = '';
+        $eff_locked   = false;
+    }
+
+    // ── Campaign banner ────────────────────────────────────────────────────
+    if ( $eff_discount > 0 ) {
+        $badge_text = $eff_locked ? $eff_name . ' (lukustatud)' : $eff_name;
+        $disc_disp  = '-' . (int) $eff_discount . '%';
+        echo '<div style="background:linear-gradient(135deg,#e0f7fa,#b2ebf2);border:1.5px solid #00b4c8;border-radius:14px;padding:16px 22px;margin-bottom:24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">';
+        echo '<div style="background:#00b4c8;color:#fff;font-size:18px;font-weight:900;padding:8px 16px;border-radius:10px;white-space:nowrap">' . esc_html( $disc_disp ) . '</div>';
+        echo '<div>';
+        echo '<div style="font-weight:700;color:#0d1f2d;font-size:16px">🏷️ ' . esc_html( $badge_text ) . '</div>';
+        if ( $grid_campaign && $grid_campaign->description ) {
+            echo '<div style="color:#4b6174;font-size:13px;margin-top:3px">' . esc_html( $grid_campaign->description ) . '</div>';
+        }
+        if ( $grid_campaign && $grid_campaign->valid_until ) {
+            echo '<div style="color:#00b4c8;font-size:12px;font-weight:600;margin-top:3px">Kehtib kuni ' . esc_html( date_i18n( 'd.m.Y', strtotime( $grid_campaign->valid_until ) ) ) . '</div>';
+        }
+        echo '</div>';
+        echo '</div>';
+    }
+
     // Filter bar
     echo '<div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:28px">';
     echo '<form method="GET" style="display:flex;gap:8px;flex:1;min-width:200px;max-width:380px">';
@@ -555,18 +678,34 @@ add_shortcode( 'vesho_shop_grid', function () {
 
     echo '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:22px">';
     foreach ( $items as $item ) :
-        $in_stock = $item->quantity > 0;
+        $in_stock    = $item->quantity > 0;
+        $orig_price  = (float) $item->shop_price;
+        $disc_price  = $eff_discount > 0 ? round( $orig_price * ( 1 - $eff_discount / 100 ), 2 ) : null;
+        $savings     = $disc_price !== null ? round( $orig_price - $disc_price, 2 ) : 0;
+
         echo '<div style="background:#fff;border-radius:14px;padding:24px;box-shadow:0 2px 12px rgba(13,31,45,.07);display:flex;flex-direction:column;gap:10px;position:relative">';
+        // Badges
+        if ( $disc_price !== null ) {
+            echo '<span style="position:absolute;top:12px;left:12px;background:#00b4c8;color:#fff;font-size:11px;font-weight:800;padding:3px 9px;border-radius:20px">-' . (int) $eff_discount . '%</span>';
+        }
         if ( ! $in_stock ) echo '<span style="position:absolute;top:12px;right:12px;background:#fee2e2;color:#b91c1c;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px">Otsas</span>';
-        echo '<div style="width:56px;height:56px;background:linear-gradient(135deg,#e0f7fa,#b2ebf2);border-radius:12px;display:flex;align-items:center;justify-content:center">';
+        echo '<div style="width:56px;height:56px;background:linear-gradient(135deg,#e0f7fa,#b2ebf2);border-radius:12px;display:flex;align-items:center;justify-content:center;margin-top:' . ( $disc_price !== null ? '14px' : '0' ) . '">';
         echo '<svg width="28" height="28" viewBox="0 0 32 32" fill="none"><path d="M16 4C16 4 6 14 6 20C6 25.5228 10.4772 30 16 30C21.5228 30 26 25.5228 26 20C26 14 16 4 16 4Z" fill="#00b4c8" opacity=".7"/></svg></div>';
         if ( $item->category ) echo '<span style="font-size:11px;font-weight:600;color:#00b4c8;text-transform:uppercase">' . esc_html( $item->category ) . '</span>';
         echo '<h3 style="font-size:15px;font-weight:700;color:#0d1f2d;margin:0;line-height:1.35">' . esc_html( $item->name ) . '</h3>';
         if ( $item->sku ) echo '<span style="font-size:11px;color:#6b8599;font-family:monospace">SKU: ' . esc_html( $item->sku ) . '</span>';
         if ( $item->description ) echo '<p style="font-size:13px;color:#4b6174;line-height:1.55;margin:0">' . esc_html( wp_trim_words( $item->description, 18, '…' ) ) . '</p>';
         echo '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:auto;padding-top:8px;border-top:1px solid #f0f4f8">';
-        echo '<div><div style="font-size:20px;font-weight:800;color:#0d1f2d">' . number_format( $item->shop_price, 2, ',', ' ' ) . ' €</div>';
-        echo '<div style="font-size:11px;color:#6b8599">/ tükk</div></div>';
+        echo '<div>';
+        if ( $disc_price !== null ) {
+            echo '<div style="font-size:13px;color:#9ca3af;text-decoration:line-through">' . number_format( $orig_price, 2, ',', ' ' ) . ' €</div>';
+            echo '<div style="font-size:20px;font-weight:800;color:#00b4c8">' . number_format( $disc_price, 2, ',', ' ' ) . ' €</div>';
+            echo '<div style="font-size:11px;color:#059669;font-weight:600">Säästad ' . number_format( $savings, 2, ',', ' ' ) . ' €</div>';
+        } else {
+            echo '<div style="font-size:20px;font-weight:800;color:#0d1f2d">' . number_format( $orig_price, 2, ',', ' ' ) . ' €</div>';
+            echo '<div style="font-size:11px;color:#6b8599">/ tükk</div>';
+        }
+        echo '</div>';
         $btn_bg  = $in_stock ? '#00b4c8' : '#9ca3af';
         $btn_cur = $in_stock ? 'pointer' : 'not-allowed';
         $disabled = $in_stock ? '' : 'disabled';
