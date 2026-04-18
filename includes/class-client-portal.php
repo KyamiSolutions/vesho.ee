@@ -1712,7 +1712,16 @@ function setMsg(m){document.getElementById('vcp-pay-msg').textContent=m;}
             wp_send_json_error(['message' => 'See e-posti aadress on juba registreeritud']);
         }
         global $wpdb;
-        $user_id = wp_create_user($email, $password, $email);
+        // Generate username from full name (e.g. "Sandro Mägi" → "sandro.magi")
+        $username_base = sanitize_user( str_replace( ' ', '.', strtolower( $name ) ), true );
+        if ( empty( $username_base ) ) $username_base = strtolower( strstr( $email, '@', true ) );
+        $username = $username_base;
+        $i = 1;
+        while ( username_exists( $username ) ) {
+            $username = $username_base . $i;
+            $i++;
+        }
+        $user_id = wp_create_user($username, $password, $email);
         if (is_wp_error($user_id)) {
             wp_send_json_error(['message' => $user_id->get_error_message()]);
         }
