@@ -1060,7 +1060,7 @@ private static function load_view( $name ) {
             'company_name','company_reg','company_vat','company_address',
             'company_phone','company_email','company_bank','company_iban',
             'invoice_prefix','invoice_start','portal_page','login_page','worker_page',
-            'portal_title','notify_email','maintenance_reminder_days',
+            'portal_title','portal_login_sub','notify_email','maintenance_reminder_days',
             'vat_rate','invoice_due_days','ga_id',
             'services_page_title','services_page_subtitle','maintenance_message',
             'coming_soon_title','coming_soon_message',

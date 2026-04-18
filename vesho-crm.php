@@ -2205,9 +2205,31 @@ function vesho_ajax_shop_place_order() {
     }
     if (empty($items_data)) wp_send_json_error('Ükski toode pole saadaval');
 
+    // Active campaign discount
+    $today    = date('Y-m-d');
+    $is_guest = empty(get_option('vesho_client_session'));
+    $campaign = $wpdb->get_row(
+        "SELECT * FROM {$wpdb->prefix}vesho_campaigns
+         WHERE paused=0
+           AND (valid_from IS NULL OR valid_from <= '$today')
+           AND (valid_until IS NULL OR valid_until >= '$today')
+           AND (target='epood' OR target='both')
+         ORDER BY discount_percent DESC LIMIT 1"
+    );
+    $discount_pct  = 0;
+    $campaign_name = '';
+    $free_shipping = false;
+    if ($campaign && (!$is_guest || $campaign->visible_to_guests)) {
+        $discount_pct  = (float)$campaign->discount_percent;
+        $campaign_name = $campaign->name;
+        $free_shipping = (bool)$campaign->free_shipping;
+    }
+    $discount_amount = $discount_pct > 0 ? round($subtotal * $discount_pct / 100, 2) : 0;
+    $subtotal_after  = round($subtotal - $discount_amount, 2);
+
     $shipping_costs = ['omniva' => 3.99, 'dpd' => 3.99, 'courier' => 6.99, 'pickup' => 0.00];
-    $shipping_cost  = $shipping_costs[$shipping_method] ?? 3.99;
-    $total          = $subtotal + $shipping_cost;
+    $shipping_cost  = $free_shipping ? 0.00 : ($shipping_costs[$shipping_method] ?? 3.99);
+    $total          = $subtotal_after + $shipping_cost;
 
     // Find existing client by email
     $client_id = null;
@@ -2233,9 +2255,11 @@ function vesho_ajax_shop_place_order() {
         'client_company'   => $company,
         'shipping_address' => "$address, $city $postcode",
         'shipping_method'  => $shipping_method,
-        'shipping_cost'    => $shipping_cost,
+        'shipping_price'   => $shipping_cost,
         'subtotal'         => $subtotal,
+        'discount_amount'  => $discount_amount,
         'total'            => $total,
+        'notes'            => $campaign_name ? "Kampaania: $campaign_name" : '',
         'status'           => 'new',
         'payment_method'   => $payment_method,
         'created_at'       => current_time('mysql'),

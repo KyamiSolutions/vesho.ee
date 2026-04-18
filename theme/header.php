@@ -315,8 +315,8 @@
 
         <div class="modal__header" style="padding-bottom:0">
             <span class="modal__icon" aria-hidden="true">💧</span>
-            <h2 class="modal__title" id="login-modal-title">Klientide Portaal</h2>
-            <p class="modal__sub">Logi sisse või registreeru uue kliendina</p>
+            <h2 class="modal__title" id="login-modal-title"><?php echo esc_html(get_option('vesho_portal_title','Klientide Portaal')); ?></h2>
+            <p class="modal__sub"><?php echo esc_html(get_option('vesho_portal_login_sub','Logi sisse või registreeru uue kliendina')); ?></p>
         </div>
 
         <!-- Tabs -->

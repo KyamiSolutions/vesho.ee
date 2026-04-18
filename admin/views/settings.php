@@ -239,6 +239,11 @@ $services_page_subtitle = get_option('vesho_services_page_subtitle', '');
                         <input class="crm-form-input" type="text" name="portal_title" value="<?php echo esc_attr($portal_title); ?>">
                     </div>
                     <div class="crm-form-group">
+                        <label class="crm-form-label">Sisselogimise alapealkiri</label>
+                        <input class="crm-form-input" type="text" name="portal_login_sub"
+                               value="<?php echo esc_attr(get_option('vesho_portal_login_sub','Logi sisse või registreeru uue kliendina')); ?>">
+                    </div>
+                    <div class="crm-form-group">
                         <label class="crm-form-label">Registreerimine</label>
                         <select class="crm-form-select" name="portal_registration">
                             <option value="1" <?php selected($portal_registration,'1'); ?>>Lubatud</option>
