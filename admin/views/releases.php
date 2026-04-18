@@ -120,7 +120,7 @@ function veshoStartUpdate(type, btnId, msgId) {
     }
     // Poll every 1s — reload immediately when done
     var poll = setInterval(function(){
-      fetch(ajaxurl + '?action=vesho_update_status&type=' + type + '&nonce=' + veshoNonce)
+      fetch(ajaxurl + '?action=vesho_update_status&type=' + type + '&nonce=' + veshoNonce + '&_=' + Date.now())
         .then(r=>r.json()).then(function(s){
           var st = (s.success && s.data) ? s.data : {};
           if (st.status === 'done' || st.status === 'error') {
