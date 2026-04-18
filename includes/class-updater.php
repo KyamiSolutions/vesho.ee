@@ -691,6 +691,8 @@ class Vesho_CRM_Updater {
         wp_clean_themes_cache();
         delete_site_transient( 'update_themes' );
         delete_transient( 'vesho_remote_theme_info' );
+        do_action( 'litespeed_purge_all' );
+        if ( function_exists( 'wp_cache_flush' ) ) wp_cache_flush();
 
         wp_send_json_success( 'Teema uuendatud versioonile ' . esc_html( $info->version ) . ' ✅' );
     }
@@ -757,6 +759,8 @@ class Vesho_CRM_Updater {
 
         delete_site_transient( 'update_plugins' );
         delete_transient( 'vesho_remote_plugin_info' );
+        do_action( 'litespeed_purge_all' );
+        if ( function_exists( 'wp_cache_flush' ) ) wp_cache_flush();
 
         if ( function_exists( 'opcache_reset' ) ) opcache_reset();
         if ( function_exists( 'opcache_invalidate' ) ) {
