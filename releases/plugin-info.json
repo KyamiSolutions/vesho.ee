@@ -6,5 +6,5 @@
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-18",
-  "changelog": "<h4>2.1.8</h4><ul><li>Registreerimise järel näitab kinnitusekraani (tilkuv kraan + emaili teade)</li></ul><h4>2.1.7</h4><ul><li>Fix: kinnitamata emailiga sisselogimisel näitab ootekuva</li><li>Fix: emaili kinnituslink ei kuvata LiteSpeed cache kaudu</li></ul>"
+  "changelog": "<h4>2.1.8</h4><ul><li>Uus versioon</li></ul>"
 }
