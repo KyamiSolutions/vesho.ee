@@ -2833,6 +2833,38 @@ $all_picked = !empty($my_items) && count(array_filter($my_items, fn($i) => $i->p
              WHERE sri.receipt_id=%d
              ORDER BY sri.id ASC", $receipt_id
         ));
+
+        // Fallback: if no items in detail table, read from main receipts row (legacy format)
+        if (empty($items)) {
+            $sr = $wpdb->get_row($wpdb->prepare(
+                "SELECT sr.*, inv.selling_price AS inv_selling_price
+                 FROM {$wpdb->prefix}vesho_stock_receipts sr
+                 LEFT JOIN {$wpdb->prefix}vesho_inventory inv ON inv.id=sr.inventory_id
+                 WHERE sr.id=%d", $receipt_id
+            ));
+            if ($sr && !empty($sr->item_name)) {
+                $fake = (object)[
+                    'id'           => 'sr_' . $sr->id,
+                    'receipt_id'   => $sr->id,
+                    'product_name' => $sr->item_name,
+                    'product_sku'  => $sr->sku ?? '',
+                    'product_ean'  => $sr->ean ?? '',
+                    'product_unit' => $sr->unit ?? 'tk',
+                    'quantity'     => $sr->quantity ?? 0,
+                    'actual_qty'   => $sr->actual_quantity ?? null,
+                    'location'     => $sr->location ?? '',
+                    'ean'          => $sr->ean ?? '',
+                    'name'         => $sr->item_name,
+                    'sku'          => $sr->sku ?? '',
+                    'unit'         => $sr->unit ?? 'tk',
+                    'selling_price'=> $sr->selling_price ?? $sr->inv_selling_price ?? null,
+                    'inventory_id' => $sr->inventory_id ?? null,
+                    '_legacy'      => true,
+                ];
+                $items = [$fake];
+            }
+        }
+
         foreach ($items as &$item) {
             if (!isset($item->actual_qty)) $item->actual_qty = null;
             if (!isset($item->location))   $item->location   = '';
