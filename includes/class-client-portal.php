@@ -545,6 +545,29 @@ HTML;
       btn.disabled=true; btn.textContent='...';
       msg.style.display='none';
       fetch(AJAX,{method:'POST',body:fd}).then(function(r){return r.json();}).then(function(d){
+        // Registration success with email verify — show confirmation screen
+        if(d.success && d.data && d.data.verify) {
+          var card = form.closest('.vauth-card') || form.closest('.vauth-wrap') || form.parentElement;
+          if(card) {
+            card.innerHTML = '<div style="text-align:center;padding:40px 24px">' +
+              '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 100" width="64" height="80" style="margin:0 auto 20px;display:block">' +
+              '<rect x="28" y="4" width="24" height="14" rx="4" fill="#00b4c8"/>' +
+              '<rect x="16" y="8" width="48" height="8" rx="4" fill="#00d4e8"/>' +
+              '<rect x="34" y="18" width="12" height="22" rx="3" fill="#00b4c8"/>' +
+              '<path d="M34 38 Q34 52 22 54 L22 60 Q22 64 26 64 L54 64 Q58 64 58 60 L58 54 Q46 52 46 38 Z" fill="#00b4c8"/>' +
+              '<rect x="30" y="62" width="20" height="6" rx="3" fill="#008fa0"/>' +
+              '<ellipse cx="40" cy="76" rx="4" ry="5" fill="#00b4c8" opacity="0.9">' +
+              '<animate attributeName="cy" values="72;88" dur="1.4s" repeatCount="indefinite"/>' +
+              '<animate attributeName="opacity" values="0.9;0" dur="1.4s" repeatCount="indefinite"/>' +
+              '</ellipse></svg>' +
+              '<h3 style="font-size:20px;font-weight:800;color:#0d1f2d;margin-bottom:10px">Konto loodud! ✅</h3>' +
+              '<p style="font-size:15px;color:#5a7080;margin-bottom:8px">Saatsime Sulle kinnitusmeili.</p>' +
+              '<p style="font-size:15px;color:#5a7080;margin-bottom:20px">Palun klõpsa kirjas oleval lingil et aktiveerida konto.</p>' +
+              '<p style="font-size:12px;color:#8a9bb0">Ei leidnud meili? Kontrolli rämpsposti kausta.</p>' +
+              '</div>';
+          }
+          return;
+        }
         msg.style.display='block';
         msg.className='vauth-msg '+(d.success?'success':'error');
         msg.textContent=(d.data&&d.data.message)||(d.success?'Õnnestus!':'Viga!');
