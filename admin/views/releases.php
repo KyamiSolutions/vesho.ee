@@ -148,13 +148,11 @@ function veshoStartUpdate(type, btnId, msgId) {
 
 var btnInstallPlugin = document.getElementById('btn-install-plugin');
 if(btnInstallPlugin) btnInstallPlugin.addEventListener('click', function(){
-  if(!confirm('Uuenda plugin? Vana plugin kustutakse ja uus paigaldatakse GitHubist.')) return;
   veshoStartUpdate('plugin', 'btn-install-plugin', 'install-plugin-msg');
 });
 
 var btnInstall = document.getElementById('btn-install-theme');
 if(btnInstall) btnInstall.addEventListener('click', function(){
-  if(!confirm('Uuenda teema? Vana teema kustutakse ja uus paigaldatakse GitHubist.')) return;
   veshoStartUpdate('theme', 'btn-install-theme', 'install-theme-msg');
 });
 
