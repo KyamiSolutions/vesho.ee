@@ -573,6 +573,10 @@ class Vesho_CRM_Database {
         self::maybe_add_column( "{$wpdb->prefix}vesho_guest_requests", 'campaign_name',             "VARCHAR(255) DEFAULT ''" );
         self::maybe_add_column( "{$wpdb->prefix}vesho_guest_requests", 'campaign_discount_percent', "DECIMAL(5,2) DEFAULT 0" );
 
+        // Maintenance campaign lock — discount locked at booking time
+        self::maybe_add_column( "{$wpdb->prefix}vesho_maintenances", 'campaign_discount', "DECIMAL(5,2) DEFAULT 0" );
+        self::maybe_add_column( "{$wpdb->prefix}vesho_maintenances", 'campaign_name',     "VARCHAR(100) DEFAULT ''" );
+
         // Inventory product image
         self::maybe_add_column( "{$wpdb->prefix}vesho_inventory", 'image_url', "VARCHAR(500) DEFAULT ''" );
 

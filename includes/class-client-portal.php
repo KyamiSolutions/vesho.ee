@@ -2097,15 +2097,29 @@ function setMsg(m){document.getElementById('vcp-pay-msg').textContent=m;}
 
         $desc = $description ? $service_name . ' — ' . $description : $service_name;
 
+        // Lock active maintenance campaign discount at booking time
+        $today = current_time('Y-m-d');
+        $campaign = $wpdb->get_row( $wpdb->prepare(
+            "SELECT name, maintenance_discount_percent FROM {$wpdb->prefix}vesho_campaigns
+             WHERE paused=0 AND valid_from<=%s AND valid_until>=%s
+               AND (target='hooldus' OR target='both')
+             ORDER BY maintenance_discount_percent DESC LIMIT 1",
+            $today, $today
+        ) );
+        $campaign_discount = $campaign ? (float) $campaign->maintenance_discount_percent : 0;
+        $campaign_name     = $campaign ? (string) $campaign->name : '';
+
         if ($device_id) {
             $wpdb->insert($wpdb->prefix . 'vesho_maintenances', [
-                'device_id'      => $device_id,
-                'client_id'      => $cid,
-                'scheduled_date' => $preferred_date,
-                'description'    => $desc,
-                'status'         => 'pending',
-                'service_id'     => $service_id,
-                'created_at'     => current_time('mysql'),
+                'device_id'         => $device_id,
+                'client_id'         => $cid,
+                'scheduled_date'    => $preferred_date,
+                'description'       => $desc,
+                'status'            => 'pending',
+                'service_id'        => $service_id,
+                'campaign_discount' => $campaign_discount,
+                'campaign_name'     => $campaign_name,
+                'created_at'        => current_time('mysql'),
             ]);
         } else {
             // No device on account — insert into work_orders table

@@ -523,6 +523,20 @@ private static function load_view( $name ) {
                             $data['device_id']
                         ) );
                         if ( $dev_client && $dev_client->client_id ) {
+                            // Apply campaign discount locked at booking time
+                            $maint_row   = $wpdb->get_row( $wpdb->prepare(
+                                "SELECT campaign_discount, campaign_name FROM {$wpdb->prefix}vesho_maintenances WHERE id=%d",
+                                $id
+                            ) );
+                            $camp_disc   = $maint_row ? (float) $maint_row->campaign_discount : 0;
+                            $camp_name   = $maint_row ? (string) $maint_row->campaign_name : '';
+                            $inv_amount  = $camp_disc > 0
+                                ? round( $locked_price * ( 1 - $camp_disc / 100 ), 2 )
+                                : $locked_price;
+                            $inv_desc    = 'Automaatselt loodud hooldusest #' . $id;
+                            if ( $camp_disc > 0 ) {
+                                $inv_desc .= ' (kampaania "' . $camp_name . '" -' . (int) $camp_disc . '%)';
+                            }
                             $inv_number = Vesho_CRM_Database::get_next_invoice_number();
                             $wpdb->insert( $wpdb->prefix . 'vesho_invoices', array(
                                 'client_id'      => $dev_client->client_id,
@@ -530,9 +544,9 @@ private static function load_view( $name ) {
                                 'status'         => 'draft',
                                 'invoice_date'   => current_time('Y-m-d'),
                                 'due_date'       => date('Y-m-d', strtotime('+14 days')),
-                                'amount'         => $locked_price,
+                                'amount'         => $inv_amount,
                                 'maintenance_id' => $id,
-                                'description'    => 'Automaatselt loodud hooldusest #' . $id,
+                                'description'    => $inv_desc,
                                 'created_at'     => current_time('mysql'),
                             ) );
                         }
