@@ -6,6 +6,8 @@ class Vesho_CRM_Client_Portal {
         if (!session_id() && !headers_sent()) {
             session_start();
         }
+        // Hide WP admin bar on portal pages
+        add_filter('show_admin_bar', [__CLASS__, 'maybe_hide_admin_bar']);
         add_shortcode('vesho_client_portal', [__CLASS__, 'shortcode_portal']);
         add_shortcode('vesho_client_login',  [__CLASS__, 'shortcode_login']);
         add_shortcode('vesho_price_list',    [__CLASS__, 'shortcode_price_list']);
@@ -39,6 +41,17 @@ class Vesho_CRM_Client_Portal {
 
         add_action('wp_enqueue_scripts', [__CLASS__, 'enqueue_assets']);
         add_action('wp_footer', [__CLASS__, 'register_form_fix_script']);
+    }
+
+    public static function maybe_hide_admin_bar($show) {
+        global $post;
+        if ( $post && (
+            has_shortcode($post->post_content, 'vesho_client_portal') ||
+            has_shortcode($post->post_content, 'vesho_client_login')
+        )) {
+            return false;
+        }
+        return $show;
     }
 
     // ── Auth ──────────────────────────────────────────────────────────────────
@@ -973,7 +986,7 @@ foreach ($notices as $notice) : ?>
                LEFT JOIN {$wpdb->prefix}vesho_workers w ON m.worker_id = w.id
                WHERE m.device_id = %d
                ORDER BY m.scheduled_date DESC
-               LIMIT 5",
+               LIMIT 10",
               $d->id
           ));
           if (empty($maints)): ?>
@@ -996,6 +1009,35 @@ foreach ($notices as $notice) : ?>
               <td style="padding:6px 8px"><?php echo self::status_badge($m->status, 'maintenance'); ?></td>
               <td style="padding:6px 8px"><?php echo esc_html($m->worker_name ?: '—'); ?></td>
             </tr>
+            <?php if (!empty($m->worker_notes)): ?>
+            <tr style="border-top:none">
+              <td colspan="4" style="padding:0 8px 8px">
+                <div style="background:#f0f9ff;border-left:3px solid #00b4c8;padding:8px 10px;border-radius:0 4px 4px 0;font-size:12px;color:#0d1f2d;line-height:1.5">
+                  💬 <?php echo esc_html($m->worker_notes); ?>
+                </div>
+              </td>
+            </tr>
+            <?php endif; ?>
+            <?php
+            // Photos for this maintenance
+            $maint_photos = $wpdb->get_results($wpdb->prepare(
+                "SELECT filename FROM {$wpdb->prefix}vesho_workorder_photos WHERE maintenance_id=%d ORDER BY created_at ASC",
+                $m->id
+            ));
+            if ($maint_photos): ?>
+            <tr style="border-top:none">
+              <td colspan="4" style="padding:0 8px 10px">
+                <div style="display:flex;gap:6px;flex-wrap:wrap">
+                  <?php foreach ($maint_photos as $mp): ?>
+                  <a href="<?php echo esc_url($mp->filename); ?>" target="_blank"
+                     style="display:block;width:60px;height:60px;border-radius:6px;overflow:hidden;border:1.5px solid #e2e8f0">
+                    <img src="<?php echo esc_url($mp->filename); ?>" style="width:100%;height:100%;object-fit:cover" alt="foto">
+                  </a>
+                  <?php endforeach; ?>
+                </div>
+              </td>
+            </tr>
+            <?php endif; ?>
             <?php endforeach; ?>
             </tbody>
           </table>
