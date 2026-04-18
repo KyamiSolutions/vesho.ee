@@ -379,13 +379,16 @@ if ( $can_refund && in_array($edit->status, ['ready','shipped','fulfilled','retu
         <a href="<?php echo admin_url('admin.php?page=vesho-crm-orders&action=add'); ?>" class="crm-btn crm-btn-primary">+ Uus tellimus</a>
 
         <!-- Barcode / package scan -->
-        <div style="display:flex;align-items:center;gap:6px;background:#f8fafc;border:1px solid #dce3e9;border-radius:8px;padding:5px 10px">
-            <span style="font-size:14px">📦</span>
+        <div style="display:flex;align-items:center;gap:6px">
             <input type="text" id="order-barcode-scan"
-                   placeholder="Skänni pakikaart / jälgimisnumber..."
+                   placeholder="📦 Pakikaart / jälgimisnumber..."
                    autocomplete="off"
-                   style="border:none;background:transparent;outline:none;font-size:13px;min-width:220px;color:#1a2a38"
-                   title="Skänni pakikaart (EAN / jälgimisnumber) — leiab tellimuse automaatselt">
+                   style="padding:7px 10px;border:1px solid #dce3e9;border-radius:8px;font-size:13px;color:#1a2a38;min-width:200px"
+                   title="HID skänner või kirjuta käsitsi">
+            <button type="button" id="order-camera-scan-btn"
+                    style="background:#00b4c8;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:5px">
+                📷 Skänni
+            </button>
         </div>
 
         <!-- Bulk send to workers -->
@@ -689,28 +692,40 @@ function openManualRefund(orderId) {
 }
 
 // ── Package barcode / tracking number scanner ────────────────────────────────
+var ORDERS_URL = '<?php echo admin_url('admin.php?page=vesho-crm-orders&s='); ?>';
+
+function doOrderSearch(val) {
+    val = (val || '').trim();
+    if (val.length > 0) {
+        window.location.href = ORDERS_URL + encodeURIComponent(val);
+    }
+}
+
+// HID barcode scanner (text input — fires Enter / change)
 var barcodeInput = document.getElementById('order-barcode-scan');
 if (barcodeInput) {
-    // Handle barcode scanner input (fires 'change' on scanner Enter, or submit on Enter key)
-    barcodeInput.addEventListener('change', function() {
-        var val = this.value.trim();
-        if (val.length > 2) {
-            window.location.href = '<?php echo admin_url('admin.php?page=vesho-crm-orders&'); ?>' + 's=' + encodeURIComponent(val);
-        }
-    });
+    barcodeInput.addEventListener('change', function() { doOrderSearch(this.value); });
     barcodeInput.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            var val = this.value.trim();
-            if (val.length > 0) {
-                window.location.href = '<?php echo admin_url('admin.php?page=vesho-crm-orders&'); ?>' + 's=' + encodeURIComponent(val);
-            }
-        }
+        if (e.key === 'Enter') { e.preventDefault(); doOrderSearch(this.value); }
     });
-    // Auto-focus if no other input is focused on page load
-    setTimeout(function(){
-        if (document.activeElement === document.body) barcodeInput.focus();
-    }, 200);
+}
+
+// Camera scan button
+var camBtn = document.getElementById('order-camera-scan-btn');
+if (camBtn) {
+    camBtn.addEventListener('click', function() {
+        if (typeof window.VeshoScanner === 'undefined') {
+            alert('Skänner laadib... Proovi uuesti sekundi pärast.');
+            return;
+        }
+        window.VeshoScanner.open({
+            title: '📦 Skänni pakikaart / jälgimisnumber',
+            autoConfirm: true,
+            manualInput: true,
+            wide: true,
+            onScan: function(code) { doOrderSearch(code); }
+        });
+    });
 }
 
 })();

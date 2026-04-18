@@ -78,6 +78,38 @@ class Vesho_CRM_Admin {
         // Feature: Force password change
         add_action( 'admin_init',                         array( __CLASS__, 'check_force_password_change' ) );
         add_action( 'admin_post_vesho_change_password',   array( __CLASS__, 'handle_change_password' ) );
+        // Admin barcode scanner assets
+        add_action( 'admin_enqueue_scripts',              array( __CLASS__, 'enqueue_scanner_assets' ) );
+    }
+
+    // ── Scanner assets ─────────────────────────────────────────────────────────
+
+    public static function enqueue_scanner_assets( $hook ) {
+        // Load on Vesho CRM pages that use barcode scanning
+        $screen = get_current_screen();
+        if ( ! $screen ) return;
+        $page = sanitize_text_field( $_GET['page'] ?? '' );
+        $scanner_pages = [
+            'vesho-crm-orders',
+            'vesho-crm-inventory',
+            'vesho-crm-receipts',
+        ];
+        if ( ! in_array( $page, $scanner_pages, true ) ) return;
+
+        wp_enqueue_script(
+            'zxing-library',
+            'https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js',
+            [],
+            '0.21.3',
+            true
+        );
+        wp_enqueue_script(
+            'vesho-ean-scanner',
+            VESHO_CRM_URL . 'admin/js/ean-scanner.js',
+            [ 'zxing-library' ],
+            VESHO_CRM_VERSION,
+            true
+        );
     }
 
     // ── Menu registration ──────────────────────────────────────────────────────
