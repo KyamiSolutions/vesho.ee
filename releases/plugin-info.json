@@ -6,5 +6,5 @@
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-18",
-  "changelog": "<h4>2.2.31</h4><ul><li>Admin: olemasoleva kasutaja otsing</li><li>Demo seeder parandused</li><li>Uuenduse kontroll GitHub API kaudu</li></ul>"
+  "changelog": "<h4>2.2.31</h4><ul><li>Uus versioon</li></ul>"
 }
