@@ -17,6 +17,7 @@ class Vesho_CRM_Updater {
     const PLUGIN_SLUG  = 'vesho-crm';
     const THEME_SLUG   = 'vesho';
     const GITHUB_RAW   = 'https://raw.githubusercontent.com/KyamiSolutions/vesho.ee/main/releases';
+    const GITHUB_API   = 'https://api.github.com/repos/KyamiSolutions/vesho.ee/contents/releases';
 
     public static function init() {
         // Hook into WordPress update checks
@@ -133,18 +134,30 @@ class Vesho_CRM_Updater {
         $cached    = get_transient( $cache_key );
         if ( $cached !== false ) return $cached;
 
-        $url      = self::get_server_url() . '/' . $type . '-info.json?nocache=' . time();
-        $response = wp_remote_get( $url, [
-            'timeout'   => 10,
-            'sslverify' => apply_filters( 'https_local_ssl_verify', false ),
-            'headers'   => [ 'Cache-Control' => 'no-cache', 'Pragma' => 'no-cache' ],
+        // Try GitHub API first (no CDN cache, always fresh)
+        $api_url  = self::GITHUB_API . '/' . $type . '-info.json';
+        $response = wp_remote_get( $api_url, [
+            'timeout' => 10,
+            'headers' => [
+                'Accept'     => 'application/vnd.github.v3.raw',
+                'User-Agent' => 'Vesho-CRM-Updater/1.0',
+            ],
         ] );
 
-        if ( is_wp_error( $response ) ) return null;
+        if ( is_wp_error( $response ) || wp_remote_retrieve_response_code( $response ) !== 200 ) {
+            // Fallback to raw CDN
+            $url      = self::get_server_url() . '/' . $type . '-info.json';
+            $response = wp_remote_get( $url, [
+                'timeout' => 10,
+                'headers' => [ 'Cache-Control' => 'no-cache', 'Pragma' => 'no-cache' ],
+            ] );
+            if ( is_wp_error( $response ) ) return null;
+        }
+
         $body = wp_remote_retrieve_body( $response );
         $data = json_decode( $body );
         if ( $data && ! empty( $data->version ) ) {
-            set_transient( $cache_key, $data, 6 * HOUR_IN_SECONDS );
+            set_transient( $cache_key, $data, 5 * MINUTE_IN_SECONDS );
         }
         return $data ?: null;
     }
