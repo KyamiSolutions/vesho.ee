@@ -909,6 +909,10 @@ private static function load_view( $name ) {
         if ( function_exists('vesho_crm_log_activity') ) {
             vesho_crm_log_activity('settings_saved', 'Seaded salvestatud');
         }
+        // Purge all caches when maintenance/coming-soon mode changes
+        do_action( 'litespeed_purge_all' );
+        do_action( 'w3tc_flush_all' );
+        if ( function_exists( 'wp_cache_flush' ) ) wp_cache_flush();
         wp_redirect( add_query_arg( array('page'=>'vesho-crm-settings','msg'=>'saved'), admin_url('admin.php') ) );
         exit;
     }
