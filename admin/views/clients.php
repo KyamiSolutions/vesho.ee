@@ -93,7 +93,146 @@ if ( $action === 'history-pdf' && $client_id ) {
         <div class="crm-alert crm-alert-success"><?php echo esc_html($msgs[$_GET['msg']] ?? 'Muudatused salvestatud!'); ?></div>
     <?php endif; ?>
 
-    <?php if ($action === 'edit' || $action === 'add') : ?>
+    <?php if ($action === 'view' && $client_id) :
+        $c = Vesho_CRM_Database::get_client($client_id);
+        if (!$c) { echo '<div class="crm-alert crm-alert-error">Klienti ei leitud.</div>'; return; }
+        // Load related data
+        $devices = $wpdb->get_results($wpdb->prepare(
+            "SELECT * FROM {$wpdb->prefix}vesho_devices WHERE client_id=%d ORDER BY name ASC", $client_id));
+        $invoices = $wpdb->get_results($wpdb->prepare(
+            "SELECT * FROM {$wpdb->prefix}vesho_invoices WHERE client_id=%d ORDER BY created_at DESC LIMIT 50", $client_id));
+        $maintenances = $wpdb->get_results($wpdb->prepare(
+            "SELECT m.*, d.name as device_name FROM {$wpdb->prefix}vesho_maintenances m
+             LEFT JOIN {$wpdb->prefix}vesho_devices d ON d.id=m.device_id
+             WHERE d.client_id=%d ORDER BY m.scheduled_date DESC LIMIT 50", $client_id));
+        $workorders = $wpdb->get_results($wpdb->prepare(
+            "SELECT wo.*, w.name as worker_name FROM {$wpdb->prefix}vesho_workorders wo
+             LEFT JOIN {$wpdb->prefix}vesho_workers w ON w.id=wo.worker_id
+             WHERE wo.client_id=%d ORDER BY wo.created_at DESC LIMIT 50", $client_id));
+        $status_labels = ['pending'=>'Ootel','scheduled'=>'Planeeritud','completed'=>'Tehtud','cancelled'=>'Tühistatud','open'=>'Avatud','assigned'=>'Määratud','in_progress'=>'Töös','paid'=>'Makstud','overdue'=>'Tähtaeg möödas','sent'=>'Saadetud','draft'=>'Mustand'];
+    ?>
+    <div class="crm-card" style="margin-bottom:20px">
+        <div class="crm-card-header">
+            <div>
+                <span class="crm-card-title"><?php echo esc_html($c->name); ?></span>
+                <?php if (!empty($c->company)) echo '<span style="margin-left:8px;color:#64748b;font-size:13px">'.esc_html($c->company).'</span>'; ?>
+            </div>
+            <div style="display:flex;gap:8px">
+                <a href="<?php echo admin_url('admin.php?page=vesho-crm-clients&action=edit&client_id='.$c->id); ?>" class="crm-btn crm-btn-outline crm-btn-sm">✏️ Muuda</a>
+                <a href="<?php echo admin_url('admin.php?page=vesho-crm-clients'); ?>" class="crm-btn crm-btn-outline crm-btn-sm">← Tagasi</a>
+            </div>
+        </div>
+        <div style="padding:16px 20px;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px 24px">
+            <?php if (!empty($c->email))   echo '<div><span style="font-size:11px;color:#94a3b8;text-transform:uppercase;font-weight:600">E-post</span><br><a href="mailto:'.esc_attr($c->email).'">'.esc_html($c->email).'</a></div>'; ?>
+            <?php if (!empty($c->phone))   echo '<div><span style="font-size:11px;color:#94a3b8;text-transform:uppercase;font-weight:600">Telefon</span><br>'.esc_html($c->phone).'</div>'; ?>
+            <?php if (!empty($c->address)) echo '<div><span style="font-size:11px;color:#94a3b8;text-transform:uppercase;font-weight:600">Aadress</span><br>'.esc_html($c->address).'</div>'; ?>
+            <?php if (!empty($c->reg_code))echo '<div><span style="font-size:11px;color:#94a3b8;text-transform:uppercase;font-weight:600">Reg. kood</span><br>'.esc_html($c->reg_code).'</div>'; ?>
+            <?php if (!empty($c->vat_number))echo '<div><span style="font-size:11px;color:#94a3b8;text-transform:uppercase;font-weight:600">KMKR</span><br>'.esc_html($c->vat_number).'</div>'; ?>
+        </div>
+    </div>
+
+    <!-- Quick-add buttons -->
+    <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+        <a href="<?php echo admin_url('admin.php?page=vesho-crm-devices&action=add&client_id='.$client_id); ?>" class="crm-btn crm-btn-outline crm-btn-sm">+ Seade</a>
+        <a href="<?php echo admin_url('admin.php?page=vesho-crm-invoices&action=add&client_id='.$client_id); ?>" class="crm-btn crm-btn-outline crm-btn-sm">+ Arve</a>
+        <a href="<?php echo admin_url('admin.php?page=vesho-crm-maintenances&action=add&device_id=0&client_id='.$client_id); ?>" class="crm-btn crm-btn-outline crm-btn-sm">+ Hooldus</a>
+        <a href="<?php echo admin_url('admin.php?page=vesho-crm-workorders&action=add&client_id='.$client_id); ?>" class="crm-btn crm-btn-outline crm-btn-sm">+ Töökäsk</a>
+        <a href="<?php echo admin_url('admin.php?page=vesho-crm-clients&action=history-pdf&client_id='.$client_id); ?>" class="crm-btn crm-btn-outline crm-btn-sm" target="_blank">📋 Hooldusajalugu PDF</a>
+    </div>
+
+    <!-- Tabs -->
+    <div class="crm-tabs" style="margin-bottom:0">
+        <a class="crm-tab is-active" href="#" data-tab="devices">🔧 Seadmed <span class="crm-tab__count"><?php echo count($devices); ?></span></a>
+        <a class="crm-tab" href="#" data-tab="invoices">🧾 Arved <span class="crm-tab__count"><?php echo count($invoices); ?></span></a>
+        <a class="crm-tab" href="#" data-tab="maintenances">📅 Hooldused <span class="crm-tab__count"><?php echo count($maintenances); ?></span></a>
+        <a class="crm-tab" href="#" data-tab="workorders">🛠️ Töökäsud <span class="crm-tab__count"><?php echo count($workorders); ?></span></a>
+    </div>
+
+    <!-- Devices -->
+    <div class="crm-card crm-client-tab" id="tab-devices">
+        <?php if (empty($devices)) : ?><div class="crm-empty">Seadmeid pole.</div><?php else : ?>
+        <table class="crm-table"><thead><tr><th>Seade</th><th>Mudel</th><th>Seerianumber</th><th>Lisatud</th><th class="td-actions">Toimingud</th></tr></thead><tbody>
+        <?php foreach ($devices as $d) : ?>
+        <tr>
+            <td><strong><?php echo esc_html($d->name); ?></strong></td>
+            <td><?php echo esc_html($d->model ?? '–'); ?></td>
+            <td><?php echo esc_html($d->serial_number ?? '–'); ?></td>
+            <td><?php echo vesho_crm_format_date($d->created_at, 'd.m.Y'); ?></td>
+            <td class="td-actions">
+                <a href="<?php echo admin_url('admin.php?page=vesho-crm-devices&action=edit&device_id='.$d->id); ?>" class="crm-btn crm-btn-icon crm-btn-sm" title="Muuda">✏️</a>
+                <a href="<?php echo admin_url('admin.php?page=vesho-crm-maintenances&device_id='.$d->id); ?>" class="crm-btn crm-btn-icon crm-btn-sm" title="Hooldused">📅</a>
+            </td>
+        </tr>
+        <?php endforeach; ?></tbody></table><?php endif; ?>
+    </div>
+
+    <!-- Invoices -->
+    <div class="crm-card crm-client-tab" id="tab-invoices" style="display:none">
+        <?php if (empty($invoices)) : ?><div class="crm-empty">Arveid pole.</div><?php else : ?>
+        <table class="crm-table"><thead><tr><th>Nr</th><th>Kuupäev</th><th>Tähtaeg</th><th>Summa</th><th>Staatus</th><th class="td-actions">Toimingud</th></tr></thead><tbody>
+        <?php foreach ($invoices as $inv) : ?>
+        <tr>
+            <td><strong><?php echo esc_html($inv->invoice_number); ?></strong></td>
+            <td><?php echo vesho_crm_format_date($inv->invoice_date); ?></td>
+            <td><?php echo vesho_crm_format_date($inv->due_date); ?></td>
+            <td><?php echo vesho_crm_format_money($inv->amount); ?></td>
+            <td><?php echo vesho_crm_status_badge($inv->status); ?></td>
+            <td class="td-actions">
+                <a href="<?php echo admin_url('admin.php?page=vesho-crm-invoices&action=edit&invoice_id='.$inv->id); ?>" class="crm-btn crm-btn-icon crm-btn-sm" title="Muuda">✏️</a>
+            </td>
+        </tr>
+        <?php endforeach; ?></tbody></table><?php endif; ?>
+    </div>
+
+    <!-- Maintenances -->
+    <div class="crm-card crm-client-tab" id="tab-maintenances" style="display:none">
+        <?php if (empty($maintenances)) : ?><div class="crm-empty">Hooldusi pole.</div><?php else : ?>
+        <table class="crm-table"><thead><tr><th>Seade</th><th>Planeeritud</th><th>Tehtud</th><th>Staatus</th><th>Hind</th><th class="td-actions">Toimingud</th></tr></thead><tbody>
+        <?php foreach ($maintenances as $m) : ?>
+        <tr>
+            <td><?php echo esc_html($m->device_name ?? '–'); ?></td>
+            <td><?php echo vesho_crm_format_date($m->scheduled_date); ?></td>
+            <td><?php echo vesho_crm_format_date($m->completed_date); ?></td>
+            <td><?php echo vesho_crm_status_badge($m->status); ?></td>
+            <td><?php echo $m->locked_price !== null ? vesho_crm_format_money($m->locked_price) : '–'; ?></td>
+            <td class="td-actions">
+                <a href="<?php echo admin_url('admin.php?page=vesho-crm-maintenances&action=edit&maintenance_id='.$m->id); ?>" class="crm-btn crm-btn-icon crm-btn-sm" title="Muuda">✏️</a>
+            </td>
+        </tr>
+        <?php endforeach; ?></tbody></table><?php endif; ?>
+    </div>
+
+    <!-- Workorders -->
+    <div class="crm-card crm-client-tab" id="tab-workorders" style="display:none">
+        <?php if (empty($workorders)) : ?><div class="crm-empty">Töökäske pole.</div><?php else : ?>
+        <table class="crm-table"><thead><tr><th>Pealkiri</th><th>Töötaja</th><th>Kuupäev</th><th>Prioriteet</th><th>Staatus</th><th class="td-actions">Toimingud</th></tr></thead><tbody>
+        <?php foreach ($workorders as $wo) : ?>
+        <tr>
+            <td><strong><?php echo esc_html($wo->title); ?></strong></td>
+            <td><?php echo esc_html($wo->worker_name ?? '–'); ?></td>
+            <td><?php echo vesho_crm_format_date($wo->scheduled_date); ?></td>
+            <td><?php echo vesho_crm_status_badge($wo->priority ?? 'normal'); ?></td>
+            <td><?php echo vesho_crm_status_badge($wo->status); ?></td>
+            <td class="td-actions">
+                <a href="<?php echo admin_url('admin.php?page=vesho-crm-workorders&action=edit&workorder_id='.$wo->id); ?>" class="crm-btn crm-btn-icon crm-btn-sm" title="Muuda">✏️</a>
+            </td>
+        </tr>
+        <?php endforeach; ?></tbody></table><?php endif; ?>
+    </div>
+
+    <script>
+    document.querySelectorAll('.crm-tab[data-tab]').forEach(function(tab) {
+        tab.addEventListener('click', function(e) {
+            e.preventDefault();
+            document.querySelectorAll('.crm-tab[data-tab]').forEach(function(t) { t.classList.remove('is-active'); });
+            document.querySelectorAll('.crm-client-tab').forEach(function(p) { p.style.display = 'none'; });
+            this.classList.add('is-active');
+            document.getElementById('tab-' + this.dataset.tab).style.display = '';
+        });
+    });
+    </script>
+
+    <?php elseif ($action === 'edit' || $action === 'add') : ?>
     <!-- ── Add / Edit form ── -->
     <div class="crm-card">
         <div class="crm-card-header">
@@ -242,7 +381,7 @@ if ( $action === 'history-pdf' && $client_id ) {
             <?php foreach ($clients as $c) : ?>
             <tr>
                 <td style="color:#6b8599">#<?php echo $c->id; ?></td>
-                <td><strong><?php echo esc_html($c->name); ?></strong></td>
+                <td><a href="<?php echo admin_url('admin.php?page=vesho-crm-clients&action=view&client_id='.$c->id); ?>" style="font-weight:600"><?php echo esc_html($c->name); ?></a></td>
                 <td><?php echo esc_html($c->company ?? '–'); ?></td>
                 <td><a href="mailto:<?php echo esc_attr($c->email); ?>"><?php echo esc_html($c->email); ?></a></td>
                 <td><?php echo esc_html($c->phone ?: '–'); ?></td>
