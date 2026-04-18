@@ -8,7 +8,8 @@ $theme        = wp_get_theme('vesho');
 if ( ! function_exists( 'get_plugin_data' ) ) {
     require_once ABSPATH . 'wp-admin/includes/plugin.php';
 }
-$_plugin_file_data      = get_plugin_data( WP_PLUGIN_DIR . '/vesho-crm/vesho-crm.php', false, false );
+$_plugin_actual_file    = defined('VESHO_CRM_FILE') ? VESHO_CRM_FILE : WP_PLUGIN_DIR . '/vesho-crm/vesho-crm.php';
+$_plugin_file_data      = file_exists( $_plugin_actual_file ) ? get_plugin_data( $_plugin_actual_file, false, false ) : [];
 $installed_plugin_version = $_plugin_file_data['Version'] ?? VESHO_CRM_VERSION;
 $server_url   = Vesho_CRM_Updater::get_server_url();
 $upload       = wp_upload_dir();
