@@ -259,14 +259,14 @@ function inv_fmt($n) { return rtrim(rtrim(number_format((float)$n, 3, '.', ''), 
       </div>
       <div class="inv-fg inv-full" id="isf-image-row" style="display:none">
         <label>Toote pilt</label>
-        <div id="isf-img-current" style="display:none;margin-bottom:10px;display:flex;align-items:flex-start;gap:10px">
+        <div id="isf-img-current" style="display:none;margin-bottom:10px;align-items:flex-start;gap:10px">
           <img id="isf-img-thumb" src="" style="max-height:100px;border-radius:8px;border:1px solid #e5edf4;display:block">
           <div style="display:flex;flex-direction:column;gap:6px">
             <span style="font-size:11px;color:#94a3b8" id="isf-img-label">Praegune pilt</span>
             <button type="button" onclick="isf_removeImage()" style="font-size:12px;padding:4px 10px;background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;border-radius:6px;cursor:pointer;width:fit-content">🗑️ Eemalda</button>
           </div>
         </div>
-        <div id="isf-img-new-preview" style="display:none;margin-bottom:10px;display:flex;align-items:flex-start;gap:10px">
+        <div id="isf-img-new-preview" style="display:none;margin-bottom:10px;align-items:flex-start;gap:10px">
           <img id="isf-img-new-thumb" src="" style="max-height:100px;border-radius:8px;border:2px solid #00b4c8;display:block">
           <div style="display:flex;flex-direction:column;gap:4px">
             <span style="font-size:11px;color:#00b4c8;font-weight:600">Uus pilt (salvestatakse koos tootega)</span>
@@ -1073,7 +1073,11 @@ window.openInlineForm = function() {
   document.getElementById('isf-shop-desc-row').style.display = 'none';
   document.getElementById('isf-shop-price-row').style.display = 'none';
   document.getElementById('isf-image-row').style.display = 'none';
-  document.getElementById('isf-img-preview').style.display = 'none';
+  document.getElementById('isf-img-current').style.display = 'none';
+  document.getElementById('isf-img-new-preview').style.display = 'none';
+  document.getElementById('isf-image-file').value = '';
+  document.getElementById('isf-image-url').value = '';
+  document.getElementById('isf-image-delete').value = '0';
   f.classList.add('open');
   f.scrollIntoView({ behavior: 'smooth', block: 'start' });
   document.getElementById('isf-name').focus();
