@@ -267,6 +267,15 @@ class Vesho_CRM_Updater {
         delete_transient( 'vesho_remote_theme_info' );
         delete_site_transient( 'update_plugins' );
         delete_site_transient( 'update_themes' );
+        // Also delete local info JSON files so get_release_info() re-fetches from GitHub
+        $upload = wp_upload_dir();
+        $dir    = $upload['basedir'] . '/vesho-releases/';
+        foreach ( [ 'plugin-info.json', 'theme-info.json' ] as $f ) {
+            $path = $dir . $f;
+            if ( file_exists( $path ) ) {
+                @unlink( $path );
+            }
+        }
         wp_send_json_success( [ 'message' => 'Cache tühjendatud. WordPress kontrollib uuesti.' ] );
     }
 
