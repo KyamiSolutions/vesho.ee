@@ -606,10 +606,14 @@ class Vesho_CRM_Updater {
     // ── Get current info.json contents (for admin UI) ─────────────────────────
 
     public static function get_release_info( $type ) {
+        // On live server: fetch from GitHub. On local: try local file first.
         $upload = wp_upload_dir();
         $file   = $upload['basedir'] . '/vesho-releases/' . $type . '-info.json';
-        if ( ! file_exists( $file ) ) return null;
-        return json_decode( file_get_contents( $file ) );
+        if ( file_exists( $file ) ) {
+            return json_decode( file_get_contents( $file ) );
+        }
+        // Fall back to remote GitHub info
+        return self::fetch_remote_info( $type );
     }
 
     /**
