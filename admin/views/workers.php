@@ -101,7 +101,7 @@ function vesho_worker_is_clocked_in($worker_id) {
                     </label>
                     <label style="display:flex;align-items:center;gap:6px;cursor:pointer" title="Töötajal on juurdepääs töötajaportaali laoseisu moodulile">
                         <input type="checkbox" name="can_inventory" id="worker_inventory" value="1" <?php checked($edit->can_inventory??0,1); ?> style="accent-color:#00b4c8">
-                        <span class="crm-form-label" style="margin:0">📦 Ladu (portaal)</span>
+                        <span class="crm-form-label" style="margin:0">📦 Inventuur (portaal)</span>
                     </label>
                 </div>
                 <?php if ($edit) : ?>
