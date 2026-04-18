@@ -149,10 +149,19 @@ class Vesho_CRM_Updater {
         return $data ?: null;
     }
 
+    // ── Localhost detection ───────────────────────────────────────────────────
+
+    private static function is_local() {
+        $host = $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? '';
+        return in_array( $host, [ 'localhost', '127.0.0.1', '::1' ], true )
+            || str_starts_with( $host, 'localhost:' );
+    }
+
     // ── Plugin update check ───────────────────────────────────────────────────
 
     public static function check_plugin_update( $transient ) {
         if ( empty( $transient->checked ) ) return $transient;
+        if ( self::is_local() ) return $transient;
 
         $info = self::fetch_remote_info( 'plugin' );
         if ( ! $info ) return $transient;
@@ -190,6 +199,7 @@ class Vesho_CRM_Updater {
 
     public static function check_theme_update( $transient ) {
         if ( empty( $transient->checked ) ) return $transient;
+        if ( self::is_local() ) return $transient;
 
         $info = self::fetch_remote_info( 'theme' );
         if ( ! $info ) return $transient;
