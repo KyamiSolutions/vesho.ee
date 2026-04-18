@@ -759,6 +759,11 @@ class Vesho_CRM_Updater {
         delete_site_transient( 'update_plugins' );
         delete_transient( 'vesho_remote_plugin_info' );
 
-        wp_send_json_success( 'Plugin uuendatud versioonile ' . esc_html( $info->version ) . ' ✅' );
+        if ( function_exists( 'opcache_reset' ) ) opcache_reset();
+        if ( function_exists( 'opcache_invalidate' ) ) {
+            opcache_invalidate( $plugin_dest . '/vesho-crm.php', true );
+        }
+
+        wp_send_json_success( 'Plugin uuendatud versioonile ' . esc_html( $info->version ) . ' ✅ — tee leht uuesti (F5)' );
     }
 }
