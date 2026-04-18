@@ -790,22 +790,29 @@ add_shortcode( 'vesho_shop_grid', function () {
     // ══════════════════════════════════════════════════════════════════════
     // VIEW: GRID (default)
     // ══════════════════════════════════════════════════════════════════════
-    $search   = isset( $_GET['s'] )   ? sanitize_text_field( $_GET['s'] )   : '';
-    $category = isset( $_GET['cat'] ) ? sanitize_text_field( $_GET['cat'] ) : '';
-    $sort     = isset( $_GET['sort'] ) ? sanitize_key( $_GET['sort'] ) : 'name';
+    $search   = isset( $_GET['s'] )    ? sanitize_text_field( $_GET['s'] )    : '';
+    $category = isset( $_GET['cat'] )  ? sanitize_text_field( $_GET['cat'] )  : '';
+    $sort     = isset( $_GET['sort'] ) ? sanitize_key( $_GET['sort'] )        : 'name';
+    $paged    = max( 1, absint( $_GET['paged'] ?? 1 ) );
+    $per_page = 12;
     $sort_sql = match( $sort ) {
         'price_asc'  => 'shop_price ASC',
         'price_desc' => 'shop_price DESC',
         default      => 'name ASC',
     };
 
-    $where = "archived=0 AND shop_price > 0";
-    if ( $search )   $where .= $wpdb->prepare( " AND (name LIKE %s OR sku LIKE %s OR shop_description LIKE %s)", '%' . $wpdb->esc_like( $search ) . '%', '%' . $wpdb->esc_like( $search ) . '%', '%' . $wpdb->esc_like( $search ) . '%' );
+    $where = "archived=0 AND shop_price > 0 AND shop_enabled=1";
+    if ( $search )   $where .= $wpdb->prepare( " AND (name LIKE %s OR sku LIKE %s OR shop_description LIKE %s OR description LIKE %s)", '%'.$wpdb->esc_like($search).'%', '%'.$wpdb->esc_like($search).'%', '%'.$wpdb->esc_like($search).'%', '%'.$wpdb->esc_like($search).'%' );
     if ( $category ) $where .= $wpdb->prepare( " AND category=%s", $category );
+
+    $total_items = (int)$wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}vesho_inventory WHERE $where");
+    $total_pages = max(1, (int)ceil($total_items / $per_page));
+    $paged       = min($paged, $total_pages);
+    $offset      = ($paged - 1) * $per_page;
 
     $items = $wpdb->get_results(
         "SELECT id, name, sku, category, unit, shop_price, shop_description, description, quantity, image_url
-         FROM {$wpdb->prefix}vesho_inventory WHERE $where ORDER BY $sort_sql LIMIT 200"
+         FROM {$wpdb->prefix}vesho_inventory WHERE $where ORDER BY $sort_sql LIMIT $per_page OFFSET $offset"
     );
     // Fetch categories from managed table (with colors), fall back to distinct values
     $managed_cats = $wpdb->get_results(
@@ -838,49 +845,85 @@ add_shortcode( 'vesho_shop_grid', function () {
     ?>
     <style>
     .vshop-wrap{font-family:inherit}
-    .vshop-topbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:20px}
-    .vshop-search-form{display:flex;gap:0;flex:1;min-width:200px;max-width:420px;border:2px solid #e5edf4;border-radius:10px;overflow:hidden;background:#fff}
-    .vshop-search-form input{flex:1;border:none;padding:11px 16px;font-size:14px;outline:none;color:#0d1f2d}
-    .vshop-search-form button{padding:0 18px;background:#00b4c8;color:#fff;border:none;font-size:14px;font-weight:700;cursor:pointer}
-    .vshop-sort{padding:10px 14px;border:2px solid #e5edf4;border-radius:10px;font-size:13px;font-weight:600;color:#4b6174;background:#fff;cursor:pointer}
-    .vshop-cats{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}
-    .vshop-cat{padding:7px 16px;border-radius:20px;font-size:13px;font-weight:600;text-decoration:none;color:#4b6174;background:#f0f4f8;transition:all .15s;border:2px solid transparent}
-    .vshop-cat:hover{opacity:.85}
-    .vshop-cat.active{color:#fff}
-    .vshop-results{font-size:13px;color:#94a3b8;margin-bottom:16px}
-    .vshop-cam{display:flex;align-items:center;gap:16px;background:linear-gradient(135deg,#e0f7fa,#b2ebf2);border:2px solid #00b4c8;border-radius:14px;padding:16px 22px;margin-bottom:24px;flex-wrap:wrap}
-    .vshop-cam-badge{background:#00b4c8;color:#fff;font-size:17px;font-weight:900;padding:8px 18px;border-radius:10px;white-space:nowrap}
-    .vshop-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
-    @media(max-width:900px){.vshop-grid{grid-template-columns:repeat(2,1fr)}}
-    @media(max-width:540px){.vshop-grid{grid-template-columns:1fr}}
-    .vshop-card{background:#fff;border-radius:16px;box-shadow:0 2px 16px rgba(13,31,45,.07);overflow:hidden;display:flex;flex-direction:column;transition:box-shadow .2s,transform .2s;position:relative}
-    .vshop-card:hover{box-shadow:0 8px 32px rgba(13,31,45,.13);transform:translateY(-2px)}
-    .vshop-card-img{height:180px;background:linear-gradient(145deg,#e0f7fa,#b2ebf2);display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;text-decoration:none}
+    /* Campaign bar */
+    .vshop-cam{display:flex;align-items:center;gap:16px;background:linear-gradient(135deg,#e0f7fa,#b2ebf2);border:1.5px solid #00b4c8;border-radius:12px;padding:14px 20px;margin-bottom:24px;flex-wrap:wrap}
+    .vshop-cam-badge{background:#00b4c8;color:#fff;font-size:15px;font-weight:900;padding:6px 14px;border-radius:8px;white-space:nowrap}
+    /* Two-column layout */
+    .vshop-layout{display:grid;grid-template-columns:220px 1fr;gap:28px;align-items:start}
+    @media(max-width:820px){.vshop-layout{grid-template-columns:1fr}}
+    /* Sidebar */
+    .vshop-sidebar{position:sticky;top:24px}
+    @media(max-width:820px){.vshop-sidebar{position:static}}
+    .vshop-sidebar-box{background:#fff;border-radius:12px;padding:20px;box-shadow:0 2px 12px rgba(13,31,45,.06);margin-bottom:14px}
+    .vshop-sidebar-title{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#94a3b8;margin:0 0 12px}
+    .vshop-cat-link{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;text-decoration:none;color:#4b6174;font-size:13px;font-weight:500;transition:.12s;cursor:pointer;border:none;background:none;width:100%;text-align:left}
+    .vshop-cat-link:hover{background:#f0f4f8;color:#0d1f2d}
+    .vshop-cat-link.active{background:#f0f9ff;color:#0097aa;font-weight:700}
+    .vshop-cat-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+    .vshop-cat-count{margin-left:auto;font-size:11px;color:#94a3b8;font-weight:400}
+    /* Topbar */
+    .vshop-topbar{display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
+    .vshop-search-form{display:flex;flex:1;min-width:160px;border:1.5px solid #e2e8f0;border-radius:9px;overflow:hidden;background:#fff}
+    .vshop-search-form input{flex:1;border:none;padding:10px 14px;font-size:13px;outline:none;color:#0d1f2d;background:transparent}
+    .vshop-search-form button{padding:0 16px;background:#00b4c8;color:#fff;border:none;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
+    .vshop-sort{padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:13px;color:#4b6174;background:#fff;cursor:pointer}
+    .vshop-results{font-size:12px;color:#94a3b8;margin-bottom:14px}
+    /* Grid */
+    .vshop-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+    @media(max-width:1100px){.vshop-grid{grid-template-columns:repeat(2,1fr)}}
+    @media(max-width:820px){.vshop-grid{grid-template-columns:repeat(3,1fr)}}
+    @media(max-width:560px){.vshop-grid{grid-template-columns:repeat(2,1fr)}}
+    @media(max-width:380px){.vshop-grid{grid-template-columns:1fr}}
+    /* Cards */
+    .vshop-card{background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(13,31,45,.07);overflow:hidden;display:flex;flex-direction:column;transition:box-shadow .18s,transform .18s;border:1.5px solid #f0f4f8}
+    .vshop-card:hover{box-shadow:0 6px 24px rgba(13,31,45,.11);transform:translateY(-2px);border-color:#e0f7fa}
+    .vshop-card-img{height:160px;background:linear-gradient(145deg,#e8f8fa,#d0f0f5);display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;text-decoration:none;flex-shrink:0}
     .vshop-card-img img{width:100%;height:100%;object-fit:cover}
-    .vshop-card-img svg{width:64px;height:64px;opacity:.8}
-    .vshop-disc-badge{position:absolute;top:10px;left:10px;background:#00b4c8;color:#fff;font-size:12px;font-weight:800;padding:4px 10px;border-radius:20px;z-index:1}
-    .vshop-out-badge{position:absolute;top:10px;right:10px;background:rgba(0,0,0,.6);color:#fff;font-size:11px;font-weight:700;padding:4px 8px;border-radius:20px}
-    .vshop-card-body{padding:16px;display:flex;flex-direction:column;gap:8px;flex:1}
-    .vshop-card-cat{font-size:10px;font-weight:800;color:#00b4c8;text-transform:uppercase;letter-spacing:.8px}
-    .vshop-card-name{font-size:15px;font-weight:700;color:#0d1f2d;line-height:1.35;text-decoration:none;display:block}
+    .vshop-card-img svg{width:52px;height:52px;opacity:.6}
+    .vshop-disc-badge{position:absolute;top:8px;left:8px;background:#00b4c8;color:#fff;font-size:11px;font-weight:800;padding:3px 8px;border-radius:20px;z-index:1}
+    .vshop-out-badge{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.55);color:#fff;font-size:10px;font-weight:700;padding:3px 7px;border-radius:20px}
+    .vshop-card-body{padding:14px;display:flex;flex-direction:column;flex:1}
+    .vshop-card-cat{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px}
+    .vshop-card-name{font-size:14px;font-weight:700;color:#0d1f2d;line-height:1.35;text-decoration:none;display:block;margin-bottom:4px}
     .vshop-card-name:hover{color:#00b4c8}
-    .vshop-card-desc{font-size:12px;color:#6b8599;line-height:1.5;flex:1}
-    .vshop-card-footer{margin-top:auto;padding-top:12px;border-top:1px solid #f0f4f8;display:flex;align-items:flex-end;justify-content:space-between;gap:8px}
-    .vshop-price-orig{font-size:12px;color:#9ca3af;text-decoration:line-through}
-    .vshop-price{font-size:22px;font-weight:900;color:#0d1f2d;line-height:1}
+    .vshop-card-desc{font-size:11px;color:#6b8599;line-height:1.5;flex:1;margin-bottom:10px}
+    .vshop-price-orig{font-size:11px;color:#9ca3af;text-decoration:line-through}
+    .vshop-price{font-size:20px;font-weight:900;color:#0d1f2d;line-height:1.1}
     .vshop-price.sale{color:#00b4c8}
-    .vshop-price-unit{font-size:11px;color:#6b8599;font-weight:400}
-    .vshop-savings{font-size:11px;color:#059669;font-weight:700}
-    .vshop-btn{width:100%;padding:10px;background:#00b4c8;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;transition:background .15s;margin-top:12px}
+    .vshop-price-unit{font-size:10px;color:#9ca3af;font-weight:400}
+    .vshop-savings{font-size:10px;color:#059669;font-weight:700;margin-bottom:4px}
+    .vshop-stock-ok{font-size:11px;color:#059669;font-weight:600;margin-bottom:8px}
+    .vshop-stock-no{font-size:11px;color:#ef4444;font-weight:600;margin-bottom:8px}
+    .vshop-btn{width:100%;padding:9px;background:#00b4c8;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;transition:background .15s}
     .vshop-btn:hover{background:#0097aa}
-    .vshop-btn:disabled{background:#d1d5db;cursor:not-allowed;color:#9ca3af}
-    .vshop-stock-ok{font-size:11px;color:#059669;font-weight:600}
-    .vshop-stock-no{font-size:11px;color:#ef4444;font-weight:600}
+    .vshop-btn:disabled{background:#e2e8f0;cursor:not-allowed;color:#9ca3af}
+    /* View toggle */
+    .vshop-view-toggle{display:flex;gap:4px;margin-left:auto}
+    .vshop-vbtn{padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;background:#fff;cursor:pointer;font-size:14px;color:#94a3b8;transition:.12s;line-height:1}
+    .vshop-vbtn.active{background:#0d1f2d;border-color:#0d1f2d;color:#fff}
+    /* List view */
+    .vshop-grid.list-view{grid-template-columns:1fr;gap:10px}
+    .vshop-grid.list-view .vshop-card{flex-direction:row;border-radius:10px}
+    .vshop-grid.list-view .vshop-card-img{width:130px;height:auto;min-height:110px;flex-shrink:0;border-radius:10px 0 0 10px}
+    .vshop-grid.list-view .vshop-card-body{padding:14px 16px;flex-direction:row;flex-wrap:wrap;align-items:center;gap:0}
+    .vshop-grid.list-view .vshop-card-cat{width:100%;margin-bottom:2px}
+    .vshop-grid.list-view .vshop-card-name{font-size:15px;flex:1;margin-bottom:0;margin-right:16px}
+    .vshop-grid.list-view .vshop-card-desc{display:none}
+    .vshop-grid.list-view .vshop-price{font-size:18px}
+    .vshop-grid.list-view .vshop-stock-ok,.vshop-grid.list-view .vshop-stock-no{margin-left:12px;margin-bottom:0}
+    .vshop-grid.list-view .vshop-btn{width:auto;padding:8px 16px;margin-left:auto;flex-shrink:0;white-space:nowrap}
+    /* Pagination */
+    .vshop-pag{display:flex;gap:6px;align-items:center;justify-content:center;margin-top:24px;flex-wrap:wrap}
+    .vshop-pag a,.vshop-pag span{padding:7px 13px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;border:1.5px solid #e2e8f0;color:#4b6174;background:#fff;transition:.12s}
+    .vshop-pag a:hover{background:#f0f9ff;border-color:#00b4c8;color:#00b4c8}
+    .vshop-pag span.current{background:#00b4c8;border-color:#00b4c8;color:#fff}
+    .vshop-pag span.dots{border:none;background:none;color:#94a3b8}
+    /* FAB + toast */
     .vshop-fab{position:fixed;bottom:24px;right:24px;z-index:999}
-    .vshop-fab a{display:flex;align-items:center;gap:10px;background:#0d1f2d;color:#fff;padding:14px 22px;border-radius:50px;text-decoration:none;font-weight:700;font-size:15px;box-shadow:0 4px 24px rgba(13,31,45,.3)}
-    .vshop-fab-badge{background:#00b4c8;color:#fff;font-size:12px;font-weight:800;padding:2px 9px;border-radius:20px}
-    .vshop-toast{display:none;position:fixed;bottom:88px;right:24px;z-index:10000;background:#0d1f2d;color:#fff;padding:12px 20px;border-radius:10px;font-size:14px;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.25);animation:vfadeIn .2s}
-    @keyframes vfadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+    .vshop-fab a{display:flex;align-items:center;gap:10px;background:#0d1f2d;color:#fff;padding:13px 20px;border-radius:50px;text-decoration:none;font-weight:700;font-size:14px;box-shadow:0 4px 20px rgba(13,31,45,.3)}
+    .vshop-fab-badge{background:#00b4c8;color:#fff;font-size:11px;font-weight:800;padding:2px 8px;border-radius:20px}
+    .vshop-toast{display:none;position:fixed;bottom:84px;right:24px;z-index:10000;background:#0d1f2d;color:#fff;padding:11px 18px;border-radius:9px;font-size:13px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.22);animation:vfadeIn .18s}
+    @keyframes vfadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
     </style>
 
     <div class="vshop-wrap">
@@ -889,103 +932,150 @@ add_shortcode( 'vesho_shop_grid', function () {
     <div class="vshop-cam">
       <div class="vshop-cam-badge">-<?php echo (int) $eff_discount; ?>%</div>
       <div>
-        <div style="font-weight:700;color:#0d1f2d;font-size:15px">🏷️ <?php echo esc_html( $eff_locked ? $eff_name . ' (lukustatud)' : $eff_name ); ?></div>
-        <?php if ( $grid_campaign && $grid_campaign->description ) : ?><div style="font-size:13px;color:#4b6174;margin-top:2px"><?php echo esc_html( $grid_campaign->description ); ?></div><?php endif; ?>
-        <?php if ( $grid_campaign && $grid_campaign->valid_until ) : ?><div style="font-size:12px;color:#00b4c8;font-weight:600;margin-top:2px">Kehtib kuni <?php echo esc_html( date_i18n( 'd.m.Y', strtotime( $grid_campaign->valid_until ) ) ); ?></div><?php endif; ?>
+        <div style="font-weight:700;color:#0d1f2d;font-size:14px">🏷️ <?php echo esc_html( $eff_locked ? $eff_name . ' (lukustatud)' : $eff_name ); ?></div>
+        <?php if ( $grid_campaign && $grid_campaign->valid_until ) : ?><div style="font-size:12px;color:#0097aa;font-weight:600;margin-top:2px">Kehtib kuni <?php echo esc_html( date_i18n( 'd.m.Y', strtotime( $grid_campaign->valid_until ) ) ); ?></div><?php endif; ?>
       </div>
     </div>
     <?php endif; ?>
 
-    <div class="vshop-topbar">
-      <form class="vshop-search-form" method="GET">
-        <?php if ( $category ) echo '<input type="hidden" name="cat" value="' . esc_attr( $category ) . '">'; ?>
-        <?php if ( $sort !== 'name' ) echo '<input type="hidden" name="sort" value="' . esc_attr( $sort ) . '">'; ?>
-        <input type="search" name="s" value="<?php echo esc_attr( $search ); ?>" placeholder="Otsi toodet...">
-        <button type="submit">Otsi</button>
-      </form>
-      <select class="vshop-sort" onchange="window.location=this.value">
+    <div class="vshop-layout">
+
+    <!-- ── LEFT SIDEBAR ────────────────────────────────── -->
+    <aside class="vshop-sidebar">
+      <?php if ( ! empty( $managed_cats ) ) : ?>
+      <div class="vshop-sidebar-box">
+        <div class="vshop-sidebar-title">Kategooriad</div>
         <?php
-        $sort_opts = [ 'name' => 'Nimi A–Z', 'price_asc' => 'Hind kasvav', 'price_desc' => 'Hind kahanev' ];
-        foreach ( $sort_opts as $v => $l ) {
-            $href = add_query_arg( array_filter( [ 's' => $search, 'cat' => $category, 'sort' => $v ] ), $page_url );
-            echo '<option value="' . esc_url( $href ) . '"' . selected( $sort, $v, false ) . '>' . esc_html( $l ) . '</option>';
+        // count per category
+        $cat_cnts = [];
+        foreach ( $wpdb->get_results("SELECT category, COUNT(*) c FROM {$wpdb->prefix}vesho_inventory WHERE archived=0 AND shop_price>0 AND category!='' GROUP BY category") as $r ) {
+            $cat_cnts[$r->category] = (int)$r->c;
         }
+        $all_href = add_query_arg( array_filter( ['s'=>$search,'sort'=>$sort==='name'?null:$sort] ), $page_url );
         ?>
-      </select>
-    </div>
-
-    <?php if ( ! empty( $managed_cats ) ) : ?>
-    <div class="vshop-cats">
-      <a href="<?php echo esc_url( add_query_arg( array_filter( [ 's' => $search, 'sort' => $sort === 'name' ? null : $sort ] ), $page_url ) ); ?>"
-         class="vshop-cat <?php echo ! $category ? 'active' : ''; ?>"
-         style="<?php echo ! $category ? 'background:#0d1f2d;border-color:#0d1f2d' : ''; ?>">Kõik</a>
-      <?php foreach ( $managed_cats as $cat ) :
-        $is_active = $category === $cat->name;
-        $clr       = esc_attr( $cat->color );
-        $href      = add_query_arg( array_filter( [ 's' => $search, 'cat' => $cat->name, 'sort' => $sort === 'name' ? null : $sort ] ), $page_url );
-        $active_style = $is_active ? "background:{$clr};border-color:{$clr}" : "border-color:{$clr}20;color:{$clr}";
-      ?>
-      <a href="<?php echo esc_url( $href ); ?>"
-         class="vshop-cat <?php echo $is_active ? 'active' : ''; ?>"
-         style="<?php echo $active_style; ?>"><?php echo esc_html( $cat->name ); ?></a>
-      <?php endforeach; ?>
-    </div>
-    <?php endif; ?>
-    <div class="vshop-results"><?php echo count( $items ); ?> toodet<?php if ( $search ) echo ' · otsing: "' . esc_html( $search ) . '"'; if ( $category ) echo ' · ' . esc_html( $category ); ?></div>
-
-    <?php if ( empty( $items ) ) : ?>
-    <div style="text-align:center;padding:80px 20px;color:#6b8599">
-      <div style="font-size:56px;margin-bottom:16px">🔧</div>
-      <p style="font-size:16px"><?php echo $search || $category ? 'Tooteid ei leitud.' : 'Pood on varsti avatud.'; ?></p>
-      <?php if ( $search || $category ) : ?>
-      <a href="<?php echo esc_url( $page_url ); ?>" style="display:inline-block;margin-top:12px;padding:10px 22px;background:#00b4c8;color:#fff;border-radius:8px;text-decoration:none;font-weight:600">← Kõik tooted</a>
-      <?php endif; ?>
-    </div>
-    <?php else : ?>
-    <div class="vshop-grid">
-    <?php foreach ( $items as $item ) :
-        $in_stock   = $item->quantity > 0;
-        $orig       = (float) $item->shop_price;
-        $disc       = $eff_discount > 0 ? round( $orig * ( 1 - $eff_discount / 100 ), 2 ) : null;
-        $detail_url = add_query_arg( [ 'shop_view' => 'product', 'pid' => $item->id ], $page_url );
-        $desc_text  = $item->shop_description ?: $item->description;
-    ?>
-      <div class="vshop-card">
-        <a href="<?php echo esc_url( $detail_url ); ?>" class="vshop-card-img">
-          <?php if ( $disc !== null ) echo '<span class="vshop-disc-badge">-' . (int) $eff_discount . '%</span>'; ?>
-          <?php if ( ! $in_stock ) echo '<span class="vshop-out-badge">Otsas</span>'; ?>
-          <?php if ( ! empty( $item->image_url ) ) : ?>
-            <img src="<?php echo esc_url( $item->image_url ); ?>" alt="<?php echo esc_attr( $item->name ); ?>" loading="lazy">
-          <?php else : ?>
-            <svg viewBox="0 0 32 32" fill="none"><path d="M16 4C16 4 6 14 6 20C6 25.5228 10.4772 30 16 30C21.5228 30 26 25.5228 26 20C26 14 16 4 16 4Z" fill="#00b4c8"/></svg>
-          <?php endif; ?>
+        <a href="<?php echo esc_url($all_href); ?>" class="vshop-cat-link <?php echo !$category?'active':''; ?>">
+          <span class="vshop-cat-dot" style="background:#0d1f2d"></span>
+          Kõik tooted
+          <span class="vshop-cat-count"><?php echo array_sum($cat_cnts); ?></span>
         </a>
-        <div class="vshop-card-body">
-          <?php if ( $item->category ) echo '<div class="vshop-card-cat">' . esc_html( $item->category ) . '</div>'; ?>
-          <a href="<?php echo esc_url( $detail_url ); ?>" class="vshop-card-name"><?php echo esc_html( $item->name ); ?></a>
-          <?php if ( $desc_text ) echo '<div class="vshop-card-desc">' . esc_html( wp_trim_words( $desc_text, 14, '…' ) ) . '</div>'; ?>
-          <div class="vshop-card-footer">
-            <?php if ( $disc !== null ) : ?>
-            <div class="vshop-price-orig"><?php echo number_format( $orig, 2, ',', ' ' ); ?> €</div>
-            <div class="vshop-price sale"><?php echo number_format( $disc, 2, ',', ' ' ); ?> € <span class="vshop-price-unit">/ <?php echo esc_html( $item->unit ?: 'tk' ); ?></span></div>
-            <div class="vshop-savings">Säästad <?php echo number_format( $orig - $disc, 2, ',', ' ' ) . ' €'; ?></div>
-            <?php else : ?>
-            <div class="vshop-price"><?php echo number_format( $orig, 2, ',', ' ' ); ?> € <span class="vshop-price-unit">/ <?php echo esc_html( $item->unit ?: 'tk' ); ?></span></div>
-            <?php endif; ?>
-            <?php if ( $in_stock ) : ?>
-            <div class="vshop-stock-ok">✓ Laos (<?php echo (int) $item->quantity; ?> <?php echo esc_html( $item->unit ?: 'tk' ); ?>)</div>
-            <?php else : ?>
-            <div class="vshop-stock-no">✗ Laost otsas</div>
-            <?php endif; ?>
-          </div>
-          <button class="vshop-btn" onclick="veshoAddToCart(<?php echo $item->id; ?>, '<?php echo esc_js( $item->name ); ?>')" <?php echo $in_stock ? '' : 'disabled'; ?>>
-            🛒 Lisa korvi
-          </button>
+        <?php foreach ( $managed_cats as $cat ) :
+          $is_active = $category === $cat->name;
+          $href = add_query_arg( array_filter(['s'=>$search,'cat'=>$cat->name,'sort'=>$sort==='name'?null:$sort]), $page_url );
+        ?>
+        <a href="<?php echo esc_url($href); ?>" class="vshop-cat-link <?php echo $is_active?'active':''; ?>">
+          <span class="vshop-cat-dot" style="background:<?php echo esc_attr($cat->color); ?>"></span>
+          <?php echo esc_html($cat->name); ?>
+          <span class="vshop-cat-count"><?php echo $cat_cnts[$cat->name] ?? 0; ?></span>
+        </a>
+        <?php endforeach; ?>
+      </div>
+      <?php endif; ?>
+    </aside>
+
+    <!-- ── RIGHT CONTENT ──────────────────────────────── -->
+    <div>
+      <div class="vshop-topbar">
+        <form class="vshop-search-form" method="GET" action="<?php echo esc_url($page_url); ?>">
+          <?php if ($category) echo '<input type="hidden" name="cat" value="'.esc_attr($category).'">'; ?>
+          <?php if ($sort!=='name') echo '<input type="hidden" name="sort" value="'.esc_attr($sort).'">'; ?>
+          <input type="search" name="s" value="<?php echo esc_attr($search); ?>" placeholder="Otsi toodet...">
+          <button type="submit">Otsi</button>
+        </form>
+        <select class="vshop-sort" onchange="window.location=this.value">
+          <?php
+          $sort_opts=['name'=>'Nimi A–Z','price_asc'=>'Hind ↑','price_desc'=>'Hind ↓'];
+          foreach($sort_opts as $v=>$l){
+            $href=add_query_arg(array_filter(['s'=>$search,'cat'=>$category,'sort'=>$v]),$page_url);
+            echo '<option value="'.esc_url($href).'"'.selected($sort,$v,false).'>'.esc_html($l).'</option>';
+          }
+          ?>
+        </select>
+        <div class="vshop-view-toggle">
+          <button class="vshop-vbtn" id="vbtn-grid" onclick="vshopSetView('grid')" title="Grid">⊞</button>
+          <button class="vshop-vbtn" id="vbtn-list" onclick="vshopSetView('list')" title="Nimekiri">☰</button>
         </div>
       </div>
-    <?php endforeach; ?>
-    </div>
-    <?php endif; ?>
+      <div class="vshop-results">
+        <?php echo $total_items; ?> toodet<?php if($search) echo ' · "'.esc_html($search).'"'; if($category) echo ' · '.esc_html($category); ?>
+        <?php if($total_pages>1) echo ' · lk '.$paged.'/'.$total_pages; ?>
+      </div>
+
+      <?php if ( empty($items) ) : ?>
+      <div style="text-align:center;padding:60px 20px;color:#6b8599">
+        <div style="font-size:48px;margin-bottom:14px">🔍</div>
+        <p style="font-size:15px"><?php echo $search||$category?'Tooteid ei leitud.':'Pood on varsti avatud.'; ?></p>
+        <?php if($search||$category): ?>
+        <a href="<?php echo esc_url($page_url); ?>" style="display:inline-block;margin-top:12px;padding:9px 20px;background:#00b4c8;color:#fff;border-radius:8px;text-decoration:none;font-weight:600;font-size:13px">← Kõik tooted</a>
+        <?php endif; ?>
+      </div>
+      <?php else : ?>
+      <div class="vshop-grid" id="vshop-grid">
+      <?php foreach($items as $item):
+        $in_stock  =$item->quantity>0;
+        $orig      =(float)$item->shop_price;
+        $disc      =$eff_discount>0?round($orig*(1-$eff_discount/100),2):null;
+        $detail_url=add_query_arg(['shop_view'=>'product','pid'=>$item->id],$page_url);
+        $desc_text =$item->shop_description?:$item->description;
+        // category color
+        $cat_color = '#00b4c8';
+        foreach($managed_cats as $mc){ if($mc->name===$item->category){$cat_color=$mc->color;break;} }
+      ?>
+        <div class="vshop-card">
+          <a href="<?php echo esc_url($detail_url); ?>" class="vshop-card-img">
+            <?php if($disc!==null) echo '<span class="vshop-disc-badge">-'.(int)$eff_discount.'%</span>'; ?>
+            <?php if(!$in_stock) echo '<span class="vshop-out-badge">Otsas</span>'; ?>
+            <?php if(!empty($item->image_url)): ?>
+              <img src="<?php echo esc_url($item->image_url); ?>" alt="<?php echo esc_attr($item->name); ?>" loading="lazy">
+            <?php else: ?>
+              <svg viewBox="0 0 32 32" fill="none"><path d="M16 4C16 4 6 14 6 20C6 25.5228 10.4772 30 16 30C21.5228 30 26 25.5228 26 20C26 14 16 4 16 4Z" fill="<?php echo esc_attr($cat_color); ?>" opacity=".5"/></svg>
+            <?php endif; ?>
+          </a>
+          <div class="vshop-card-body">
+            <?php if($item->category): ?>
+            <div class="vshop-card-cat" style="color:<?php echo esc_attr($cat_color); ?>"><?php echo esc_html($item->category); ?></div>
+            <?php endif; ?>
+            <a href="<?php echo esc_url($detail_url); ?>" class="vshop-card-name"><?php echo esc_html($item->name); ?></a>
+            <?php if($desc_text) echo '<div class="vshop-card-desc">'.esc_html(wp_trim_words($desc_text,12,'…')).'</div>'; ?>
+            <?php if($disc!==null): ?>
+            <div class="vshop-price-orig"><?php echo number_format($orig,2,',',' '); ?> €</div>
+            <div class="vshop-price sale"><?php echo number_format($disc,2,',',' '); ?> € <span class="vshop-price-unit">/ <?php echo esc_html($item->unit?:'tk'); ?></span></div>
+            <div class="vshop-savings">Säästad <?php echo number_format($orig-$disc,2,',',' '); ?> €</div>
+            <?php else: ?>
+            <div class="vshop-price"><?php echo number_format($orig,2,',',' '); ?> € <span class="vshop-price-unit">/ <?php echo esc_html($item->unit?:'tk'); ?></span></div>
+            <?php endif; ?>
+            <?php if($in_stock): ?>
+            <div class="vshop-stock-ok">✓ Laos (<?php echo (int)$item->quantity; ?> <?php echo esc_html($item->unit?:'tk'); ?>)</div>
+            <?php else: ?>
+            <div class="vshop-stock-no">✗ Laost otsas</div>
+            <?php endif; ?>
+            <button class="vshop-btn" onclick="veshoAddToCart(<?php echo $item->id; ?>,'<?php echo esc_js($item->name); ?>')" <?php echo $in_stock?'':'disabled'; ?>>🛒 Lisa korvi</button>
+          </div>
+        </div>
+      <?php endforeach; ?>
+      </div>
+
+      <?php if($total_pages>1): ?>
+      <div class="vshop-pag">
+        <?php
+        $pag_base = add_query_arg(array_filter(['s'=>$search,'cat'=>$category,'sort'=>$sort==='name'?null:$sort]),$page_url);
+        for($p=1;$p<=$total_pages;$p++){
+          if($p===$paged){
+            echo '<span class="current">'.$p.'</span>';
+          } elseif($p===1||$p===$total_pages||abs($p-$paged)<=2){
+            $href=add_query_arg('paged',$p,$pag_base);
+            echo '<a href="'.esc_url($href).'">'.$p.'</a>';
+          } elseif(abs($p-$paged)===3){
+            echo '<span class="dots">…</span>';
+          }
+        }
+        ?>
+      </div>
+      <?php endif; ?>
+
+      <?php endif; ?>
+    </div><!-- right -->
+
+    </div><!-- .vshop-layout -->
 
     </div><!-- .vshop-wrap -->
 
@@ -1012,6 +1102,20 @@ add_shortcode( 'vesho_shop_grid', function () {
       t.textContent = msg; t.style.display = 'block';
       setTimeout(function(){ t.style.display = 'none'; }, 2800);
     }
+
+    function vshopSetView(v) {
+      var grid=document.getElementById('vshop-grid');
+      var bg=document.getElementById('vbtn-grid');
+      var bl=document.getElementById('vbtn-list');
+      if(!grid) return;
+      if(v==='list'){grid.classList.add('list-view');bg.classList.remove('active');bl.classList.add('active');}
+      else{grid.classList.remove('list-view');bg.classList.add('active');bl.classList.remove('active');}
+      try{localStorage.setItem('vshopView',v);}catch(e){}
+    }
+    (function(){
+      var v; try{v=localStorage.getItem('vshopView');}catch(e){}
+      vshopSetView(v||'grid');
+    })();
 
     function veshoAddToCart(pid, name) {
       var btn = event.currentTarget;
