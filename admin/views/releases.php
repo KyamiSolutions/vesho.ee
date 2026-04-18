@@ -4,6 +4,12 @@ global $wpdb;
 $plugin_info  = Vesho_CRM_Updater::get_release_info('plugin');
 $theme_info   = Vesho_CRM_Updater::get_release_info('theme');
 $theme        = wp_get_theme('vesho');
+// Read installed plugin version from disk (not from memory constant — bypasses OPcache)
+if ( ! function_exists( 'get_plugin_data' ) ) {
+    require_once ABSPATH . 'wp-admin/includes/plugin.php';
+}
+$_plugin_file_data      = get_plugin_data( WP_PLUGIN_DIR . '/vesho-crm/vesho-crm.php', false, false );
+$installed_plugin_version = $_plugin_file_data['Version'] ?? VESHO_CRM_VERSION;
 $server_url   = Vesho_CRM_Updater::get_server_url();
 $upload       = wp_upload_dir();
 $releases_dir = $upload['basedir'] . '/vesho-releases';
@@ -24,7 +30,7 @@ $is_local = in_array($_SERVER['HTTP_HOST'] ?? '', ['localhost', '127.0.0.1'])
   <div class="crm-card-header"><span class="crm-card-title">🔌 Vesho CRM plugin</span></div>
   <div style="padding:20px">
     <table class="widefat">
-      <tr><td style="font-weight:600;width:180px">Paigaldatud versioon</td><td><span style="background:#e0f7fa;color:#006064;padding:3px 10px;border-radius:20px;font-size:13px;font-weight:700"><?php echo VESHO_CRM_VERSION; ?></span></td></tr>
+      <tr><td style="font-weight:600;width:180px">Paigaldatud versioon</td><td><span style="background:#e0f7fa;color:#006064;padding:3px 10px;border-radius:20px;font-size:13px;font-weight:700"><?php echo esc_html( $installed_plugin_version ); ?></span></td></tr>
       <tr><td style="font-weight:600">Saadaval versioon</td><td><?php echo $plugin_info ? '<span style="background:#e8f5e9;color:#1b5e20;padding:3px 10px;border-radius:20px;font-size:13px;font-weight:700">' . esc_html($plugin_info->version) . '</span>' : '<span style="color:#999">—</span>'; ?></td></tr>
     </table>
     <div style="margin-top:10px">
