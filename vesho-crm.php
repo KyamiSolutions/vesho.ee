@@ -3,7 +3,7 @@
  * Plugin Name: Vesho CRM
  * Plugin URI:  https://vesho.ee
  * Description: CRM ja klientide portaal Vesho OÜ-le. Haldab kliente, seadmeid, hooldusi, arveid ja teenuseid.
- * Version:     2.2.38
+ * Version:     2.2.39
  * Author:      Vesho OÜ
  * Author URI:  https://vesho.ee
  * Text Domain: vesho-crm
@@ -15,7 +15,7 @@
 defined( 'ABSPATH' ) || exit;
 
 // ── Constants ──────────────────────────────────────────────────────────────────
-define('VESHO_CRM_VERSION', '2.2.38');
+define('VESHO_CRM_VERSION', '2.2.39');
 define( 'VESHO_CRM_FILE',     __FILE__ );
 define( 'VESHO_CRM_PATH',     plugin_dir_path( __FILE__ ) );
 define( 'VESHO_CRM_URL',      plugin_dir_url( __FILE__ ) );
@@ -2410,4 +2410,56 @@ function vesho_ajax_shop_place_order() {
     }
 
     wp_send_json_error('Makseviis ei ole seadistatud');
+}
+
+// ── AJAX: Inventory categories ────────────────────────────────────────────────
+add_action('wp_ajax_vesho_save_inv_category',   'vesho_ajax_save_inv_category');
+add_action('wp_ajax_vesho_delete_inv_category', 'vesho_ajax_delete_inv_category');
+
+function vesho_ajax_save_inv_category() {
+    check_ajax_referer('vesho_crm_nonce', 'nonce');
+    if (!current_user_can('manage_options')) wp_send_json_error('Puudub õigus');
+    global $wpdb;
+
+    $id    = absint($_POST['cat_id'] ?? 0);
+    $name  = sanitize_text_field($_POST['name'] ?? '');
+    $color = sanitize_hex_color($_POST['color'] ?? '#00b4c8') ?: '#00b4c8';
+    $sort  = absint($_POST['sort_order'] ?? 0);
+
+    if (!$name) wp_send_json_error('Nimi on kohustuslik');
+
+    $slug = sanitize_title($name);
+
+    if ($id) {
+        $wpdb->update(
+            $wpdb->prefix . 'vesho_inventory_categories',
+            ['name' => $name, 'color' => $color, 'sort_order' => $sort, 'slug' => $slug],
+            ['id' => $id]
+        );
+    } else {
+        $wpdb->insert(
+            $wpdb->prefix . 'vesho_inventory_categories',
+            ['name' => $name, 'color' => $color, 'sort_order' => $sort, 'slug' => $slug]
+        );
+        $id = $wpdb->insert_id;
+    }
+
+    wp_send_json_success(['id' => $id, 'name' => $name, 'color' => $color, 'sort_order' => $sort]);
+}
+
+function vesho_ajax_delete_inv_category() {
+    check_ajax_referer('vesho_crm_nonce', 'nonce');
+    if (!current_user_can('manage_options')) wp_send_json_error('Puudub õigus');
+    global $wpdb;
+
+    $id = absint($_POST['cat_id'] ?? 0);
+    if (!$id) wp_send_json_error('ID puudub');
+
+    $cat = $wpdb->get_row($wpdb->prepare(
+        "SELECT name FROM {$wpdb->prefix}vesho_inventory_categories WHERE id=%d", $id
+    ));
+    if (!$cat) wp_send_json_error('Ei leitud');
+
+    $wpdb->delete($wpdb->prefix . 'vesho_inventory_categories', ['id' => $id]);
+    wp_send_json_success();
 }

@@ -1,10 +1,10 @@
 {
   "name": "Vesho CRM",
   "slug": "vesho-crm",
-  "version": "2.2.38",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.2.38/vesho-crm.zip",
+  "version": "2.2.39",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.2.39/vesho-crm.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-18",
-  "changelog": "<h4>2.2.38</h4><ul><li>Uus versioon</li></ul>"
+  "changelog": "<h4>2.2.39</h4><ul><li>Inventari kategooriate haldamine (lisa, muuda, kustuta, värvid)</li><li>Kategooria dropdown toote vormis</li><li>Automaatne migratsioon olemasolevast vabatekstist</li></ul><h4>2.2.38</h4><ul><li>Korralik e-pood: 3-veeruline grid, toote pildid, sortimine</li></ul>"
 }

@@ -576,6 +576,29 @@ class Vesho_CRM_Database {
         // Inventory product image
         self::maybe_add_column( "{$wpdb->prefix}vesho_inventory", 'image_url', "VARCHAR(500) DEFAULT ''" );
 
+        // ── inventory_categories ─────────────────────────────────────────────
+        dbDelta( "CREATE TABLE {$wpdb->prefix}vesho_inventory_categories (
+            id         INT UNSIGNED NOT NULL AUTO_INCREMENT,
+            name       VARCHAR(100) NOT NULL,
+            slug       VARCHAR(100) NOT NULL DEFAULT '',
+            color      VARCHAR(7)   DEFAULT '#00b4c8',
+            sort_order INT          DEFAULT 0,
+            created_at DATETIME     DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            UNIQUE KEY uq_inv_cat_slug (slug)
+        ) $charset;" );
+        // Seed from existing free-text categories (runs once; ignored if already present)
+        $existing_names = $wpdb->get_col(
+            "SELECT DISTINCT category FROM {$wpdb->prefix}vesho_inventory WHERE category!='' AND archived=0 ORDER BY category ASC"
+        );
+        foreach ( $existing_names as $cat_name ) {
+            $slug = sanitize_title( $cat_name );
+            $wpdb->query( $wpdb->prepare(
+                "INSERT IGNORE INTO {$wpdb->prefix}vesho_inventory_categories (name, slug) VALUES (%s, %s)",
+                $cat_name, $slug
+            ) );
+        }
+
         // Return request extra fields
         self::maybe_add_column( "{$wpdb->prefix}vesho_shop_orders", 'return_description', "TEXT DEFAULT NULL" );
         self::maybe_add_column( "{$wpdb->prefix}vesho_shop_orders", 'return_photo_url',   "VARCHAR(500) DEFAULT NULL" );

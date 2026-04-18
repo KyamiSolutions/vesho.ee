@@ -5,7 +5,9 @@ $search      = isset($_GET['s'])        ? sanitize_text_field($_GET['s'])       
 $filter_cat  = isset($_GET['category']) ? sanitize_text_field($_GET['category']) : '';
 $active_tab  = isset($_GET['tab'])      ? sanitize_text_field($_GET['tab'])      : 'all';
 
-$categories  = $wpdb->get_col("SELECT DISTINCT category FROM {$wpdb->prefix}vesho_inventory WHERE category!='' AND archived=0 ORDER BY category ASC");
+$categories  = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}vesho_inventory_categories ORDER BY sort_order ASC, name ASC");
+$cat_map     = [];
+foreach ($categories as $c) $cat_map[$c->name] = $c;
 
 $where = 'archived=0';
 if ($filter_cat) { $where .= $wpdb->prepare(' AND category=%s', $filter_cat); }
@@ -199,9 +201,15 @@ function inv_fmt($n) { return rtrim(rtrim(number_format((float)$n, 3, '.', ''), 
         <input type="text" id="isf-ean" name="ean" maxlength="20" placeholder="1234567890123">
       </div>
       <div class="inv-fg">
-        <label>Kategooria</label>
-        <input type="text" id="isf-category" name="category" list="isf-cats" placeholder="Filtrid">
-        <datalist id="isf-cats"><?php foreach ($categories as $cat) echo '<option value="'.esc_attr($cat).'">'; ?></datalist>
+        <label>Kategooria
+          <a href="<?php echo esc_url(admin_url('admin.php?page=vesho-crm-inventory&tab=categories')); ?>" target="_blank" style="font-size:10px;color:#00b4c8;font-weight:600;margin-left:6px">+ Halda</a>
+        </label>
+        <select id="isf-category" name="category">
+          <option value="">— Vali kategooria —</option>
+          <?php foreach ($categories as $cat): ?>
+          <option value="<?php echo esc_attr($cat->name); ?>" data-color="<?php echo esc_attr($cat->color); ?>"><?php echo esc_html($cat->name); ?></option>
+          <?php endforeach; ?>
+        </select>
       </div>
       <div class="inv-fg">
         <label>Ühik</label>
@@ -270,14 +278,15 @@ function inv_fmt($n) { return rtrim(rtrim(number_format((float)$n, 3, '.', ''), 
 <div class="inv-tabs">
 <?php
 $tabs = [
-  'all'       => ['🏷️', 'Laoseis',          count($items)],
-  'locations' => ['🗺', 'Laoaadressid',      count($locations)],
-  'history'   => ['📋', 'Kasutuse ajalugu',  null],
-  'count'     => ['🔍', 'Inventuur',         count($stock_counts)],
-  'used'      => ['♻️', 'Kasutatud',         count($used_items)],
-  'writeoffs' => ['🗑️', 'Mahakantud',        null],
-  'archived'  => ['📁', 'Arhiveeritud',       count($archived)],
-  'import'    => ['⬆️', 'Import',            null],
+  'all'        => ['🏷️', 'Laoseis',          count($items)],
+  'categories' => ['🗂️', 'Kategooriad',      count($categories)],
+  'locations'  => ['🗺', 'Laoaadressid',      count($locations)],
+  'history'    => ['📋', 'Kasutuse ajalugu',  null],
+  'count'      => ['🔍', 'Inventuur',         count($stock_counts)],
+  'used'       => ['♻️', 'Kasutatud',         count($used_items)],
+  'writeoffs'  => ['🗑️', 'Mahakantud',        null],
+  'archived'   => ['📁', 'Arhiveeritud',       count($archived)],
+  'import'     => ['⬆️', 'Import',            null],
 ];
 foreach ($tabs as $tid => [$icon, $tlabel, $tcount]):
   $is_active = $active_tab === $tid;
@@ -313,7 +322,7 @@ foreach ($tabs as $tid => [$icon, $tlabel, $tcount]):
       <select class="crm-form-select" name="category" style="max-width:160px;padding:7px 10px;font-size:13px" onchange="this.form.submit()">
         <option value="">Kõik kategooriad</option>
         <?php foreach ($categories as $cat): ?>
-        <option value="<?php echo esc_attr($cat); ?>" <?php selected($filter_cat, $cat); ?>><?php echo esc_html($cat); ?></option>
+        <option value="<?php echo esc_attr($cat->name); ?>" <?php selected($filter_cat, $cat->name); ?>><?php echo esc_html($cat->name); ?></option>
         <?php endforeach; ?>
       </select>
       <?php endif; ?>
@@ -412,6 +421,177 @@ foreach ($tabs as $tid => [$icon, $tlabel, $tcount]):
     </div>
   </div>
 </div>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- TAB: Kategooriad                                                         -->
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<?php elseif ($active_tab === 'categories'): ?>
+
+<style>
+.cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-top:20px}
+.cat-card{background:#fff;border:1.5px solid #e2e8f0;border-radius:14px;padding:18px 20px;display:flex;align-items:center;gap:14px;transition:.15s}
+.cat-card:hover{border-color:#00b4c8;box-shadow:0 2px 12px rgba(0,180,200,.1)}
+.cat-swatch{width:38px;height:38px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px}
+.cat-info{flex:1;min-width:0}
+.cat-name{font-weight:700;font-size:14px;color:#0d1f2d;margin:0 0 2px}
+.cat-count{font-size:12px;color:#94a3b8}
+.cat-actions{display:flex;gap:6px;flex-shrink:0}
+#cat-form-wrap{background:#fff;border:1.5px solid #00b4c8;border-radius:14px;padding:24px;margin-bottom:20px;box-shadow:0 4px 24px rgba(0,180,200,.1)}
+.cat-form-row{display:grid;grid-template-columns:1fr 1fr auto auto;gap:12px;align-items:end}
+</style>
+
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+  <div>
+    <h2 style="font-size:18px;font-weight:800;color:#0d1f2d;margin:0">🗂️ Kategooriad</h2>
+    <p style="font-size:13px;color:#6b8599;margin:4px 0 0">Halda e-poe ja lao tootekategooriaid</p>
+  </div>
+  <button class="crm-btn crm-btn-primary" onclick="openCatForm()">+ Lisa kategooria</button>
+</div>
+
+<!-- Add/Edit form -->
+<div id="cat-form-wrap" style="display:none">
+  <h3 id="cat-form-title" style="margin:0 0 16px;font-size:15px;font-weight:700;color:#0d1f2d">+ Lisa kategooria</h3>
+  <div class="cat-form-row">
+    <div class="inv-fg" style="margin:0">
+      <label>Nimi *</label>
+      <input type="text" id="cat-name" placeholder="nt. Filtrid, Ventilaatorid..." style="width:100%;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box">
+    </div>
+    <div class="inv-fg" style="margin:0">
+      <label>Värv</label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="color" id="cat-color" value="#00b4c8" style="width:42px;height:38px;border:1.5px solid #e2e8f0;border-radius:8px;padding:2px;cursor:pointer">
+        <div id="cat-color-preview" style="flex:1;height:38px;border-radius:8px;background:#00b4c8;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700">Eelvaade</div>
+      </div>
+    </div>
+    <div class="inv-fg" style="margin:0">
+      <label>Järjekord</label>
+      <input type="number" id="cat-sort" value="0" min="0" style="width:80px;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px">
+    </div>
+    <div style="display:flex;gap:8px;padding-bottom:0">
+      <button class="crm-btn crm-btn-primary" onclick="saveCat()">💾 Salvesta</button>
+      <button class="crm-btn crm-btn-outline" onclick="closeCatForm()">Tühista</button>
+    </div>
+  </div>
+  <input type="hidden" id="cat-edit-id" value="">
+  <div id="cat-save-msg" style="margin-top:10px;font-size:13px"></div>
+</div>
+
+<!-- Category list -->
+<?php
+$cat_counts = [];
+$rows = $wpdb->get_results("SELECT category, COUNT(*) as cnt FROM {$wpdb->prefix}vesho_inventory WHERE archived=0 AND category!='' GROUP BY category");
+foreach ($rows as $r) $cat_counts[$r->category] = (int)$r->cnt;
+?>
+
+<?php if (empty($categories)): ?>
+<div class="inv-empty" style="margin-top:40px">
+  <div class="inv-empty-icon">🗂️</div>
+  <div class="inv-empty-text">Kategooriaid pole veel lisatud</div>
+  <button class="crm-btn crm-btn-primary crm-btn-sm" onclick="openCatForm()">+ Lisa esimene kategooria</button>
+</div>
+<?php else: ?>
+<div class="cat-grid" id="cat-grid">
+<?php foreach ($categories as $cat):
+  $cnt = $cat_counts[$cat->name] ?? 0;
+?>
+<div class="cat-card" id="cat-card-<?php echo $cat->id; ?>">
+  <div class="cat-swatch" style="background:<?php echo esc_attr($cat->color); ?>20;color:<?php echo esc_attr($cat->color); ?>">🗂️</div>
+  <div class="cat-info">
+    <div class="cat-name"><?php echo esc_html($cat->name); ?></div>
+    <div class="cat-count"><?php echo $cnt; ?> toodet · järjek. <?php echo (int)$cat->sort_order; ?></div>
+  </div>
+  <div class="cat-actions">
+    <button class="crm-btn crm-btn-icon crm-btn-sm" title="Muuda"
+      onclick='editCat(<?php echo json_encode(['id'=>$cat->id,'name'=>$cat->name,'color'=>$cat->color,'sort_order'=>(int)$cat->sort_order]); ?>)'>✏️</button>
+    <button class="crm-btn crm-btn-icon crm-btn-sm" title="Kustuta" style="color:#ef4444"
+      onclick="deleteCat(<?php echo $cat->id; ?>,'<?php echo esc_js($cat->name); ?>')">🗑️</button>
+  </div>
+</div>
+<?php endforeach; ?>
+</div>
+<?php endif; ?>
+
+<script>
+const catNonce = '<?php echo wp_create_nonce('vesho_crm_nonce'); ?>';
+const catAjax  = '<?php echo admin_url('admin-ajax.php'); ?>';
+
+document.getElementById('cat-color')?.addEventListener('input', function() {
+  document.getElementById('cat-color-preview').style.background = this.value;
+});
+
+function openCatForm(id) {
+  if (!id) {
+    document.getElementById('cat-form-title').textContent = '+ Lisa kategooria';
+    document.getElementById('cat-name').value = '';
+    document.getElementById('cat-color').value = '#00b4c8';
+    document.getElementById('cat-color-preview').style.background = '#00b4c8';
+    document.getElementById('cat-sort').value = '0';
+    document.getElementById('cat-edit-id').value = '';
+  }
+  document.getElementById('cat-form-wrap').style.display = 'block';
+  document.getElementById('cat-name').focus();
+}
+
+function closeCatForm() {
+  document.getElementById('cat-form-wrap').style.display = 'none';
+  document.getElementById('cat-save-msg').textContent = '';
+}
+
+function editCat(cat) {
+  document.getElementById('cat-form-title').textContent = '✏️ Muuda kategooriat';
+  document.getElementById('cat-name').value = cat.name;
+  document.getElementById('cat-color').value = cat.color;
+  document.getElementById('cat-color-preview').style.background = cat.color;
+  document.getElementById('cat-sort').value = cat.sort_order;
+  document.getElementById('cat-edit-id').value = cat.id;
+  document.getElementById('cat-form-wrap').style.display = 'block';
+  document.getElementById('cat-name').focus();
+}
+
+function saveCat() {
+  const name  = document.getElementById('cat-name').value.trim();
+  const color = document.getElementById('cat-color').value;
+  const sort  = document.getElementById('cat-sort').value;
+  const id    = document.getElementById('cat-edit-id').value;
+  const msg   = document.getElementById('cat-save-msg');
+
+  if (!name) { msg.textContent = '⚠️ Nimi on kohustuslik'; return; }
+  msg.textContent = 'Salvestan...';
+
+  const fd = new FormData();
+  fd.append('action', 'vesho_save_inv_category');
+  fd.append('nonce', catNonce);
+  fd.append('cat_id', id);
+  fd.append('name', name);
+  fd.append('color', color);
+  fd.append('sort_order', sort);
+
+  fetch(catAjax, {method:'POST', body:fd})
+    .then(r => r.json())
+    .then(d => {
+      if (!d.success) { msg.textContent = '❌ ' + (d.data||'Viga'); return; }
+      msg.textContent = '✅ Salvestatud';
+      setTimeout(() => location.reload(), 600);
+    });
+}
+
+function deleteCat(id, name) {
+  if (!confirm('Kustuta kategooria "' + name + '"?\n\nTooted jäävad alles, neile ei määrata kategooriat.')) return;
+
+  const fd = new FormData();
+  fd.append('action', 'vesho_delete_inv_category');
+  fd.append('nonce', catNonce);
+  fd.append('cat_id', id);
+
+  fetch(catAjax, {method:'POST', body:fd})
+    .then(r => r.json())
+    .then(d => {
+      if (d.success) {
+        document.getElementById('cat-card-' + id)?.remove();
+      }
+    });
+}
+</script>
 
 <!-- ════════════════════════════════════════════════════════════════════════ -->
 <!-- TAB: Laoaadressid                                                       -->
