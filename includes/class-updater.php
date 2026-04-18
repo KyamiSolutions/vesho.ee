@@ -133,11 +133,11 @@ class Vesho_CRM_Updater {
         $cached    = get_transient( $cache_key );
         if ( $cached !== false ) return $cached;
 
-        $url      = self::get_server_url() . '/' . $type . '-info.json';
+        $url      = self::get_server_url() . '/' . $type . '-info.json?nocache=' . time();
         $response = wp_remote_get( $url, [
             'timeout'   => 10,
             'sslverify' => apply_filters( 'https_local_ssl_verify', false ),
-            'headers'   => [ 'Cache-Control' => 'no-cache' ],
+            'headers'   => [ 'Cache-Control' => 'no-cache', 'Pragma' => 'no-cache' ],
         ] );
 
         if ( is_wp_error( $response ) ) return null;
