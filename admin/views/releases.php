@@ -21,6 +21,7 @@ $is_local = in_array($_SERVER['HTTP_HOST'] ?? '', ['localhost', '127.0.0.1'])
          || str_contains(($_SERVER['HTTP_HOST'] ?? ''), 'localhost')
          || ( defined('WP_DEBUG') && WP_DEBUG && !str_contains(home_url(), 'https') );
 ?>
+<style>.vesho-admin-wrap .notice,.vesho-admin-wrap .updated,.vesho-admin-wrap .notice-success{display:none!important}</style>
 <div class="wrap vesho-admin-wrap">
 <h1 class="crm-page-title">🚀 Uuenduste haldus</h1>
 
@@ -118,9 +119,10 @@ function veshoStartUpdate(type, btnId, msgId) {
       btn.disabled = false;
       return;
     }
-    // Poll every 1s — reload immediately when done
+    // Poll every 1s via POST (not GET — POST bypasses LiteSpeed page cache)
     var poll = setInterval(function(){
-      fetch(ajaxurl + '?action=vesho_update_status&type=' + type + '&nonce=' + veshoNonce + '&_=' + Date.now())
+      fetch(ajaxurl, {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body:'action=vesho_update_status&type='+type+'&nonce='+veshoNonce})
         .then(r=>r.json()).then(function(s){
           var st = (s.success && s.data) ? s.data : {};
           if (st.status === 'done' || st.status === 'error') {

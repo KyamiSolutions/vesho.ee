@@ -821,7 +821,8 @@ class Vesho_CRM_Updater {
 
     public static function ajax_update_status() {
         check_ajax_referer( 'vesho_admin_nonce', 'nonce' );
-        $type   = sanitize_key( $_GET['type'] ?? 'plugin' );
+        $type   = sanitize_key( $_POST['type'] ?? $_GET['type'] ?? 'plugin' );
+        nocache_headers();
         $status = get_transient( "vesho_{$type}_update_status" );
         wp_send_json_success( $status ?: [ 'status' => 'pending', 'message' => '' ] );
     }
