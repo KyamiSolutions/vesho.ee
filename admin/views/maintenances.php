@@ -117,6 +117,7 @@ $pending_count = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}vesho_maint
     <div class="crm-card">
         <div class="crm-toolbar">
             <a href="<?php echo admin_url('admin.php?page=vesho-crm-maintenances&action=add'.($device_id?'&device_id='.$device_id:'')); ?>" class="crm-btn crm-btn-primary">+ Lisa hooldus</a>
+            <a href="<?php echo wp_nonce_url(admin_url('admin-post.php?action=vesho_export_maintenances_csv'),'vesho_export_maintenances_csv'); ?>" class="crm-btn crm-btn-outline crm-btn-sm" title="Laadi alla CSV (Excel)">⬇️ CSV</a>
             <form method="GET" style="display:flex;gap:8px;flex:1">
                 <input type="hidden" name="page" value="vesho-crm-maintenances">
                 <select class="crm-form-select" name="status" style="max-width:160px;padding:7px 10px;font-size:13px">

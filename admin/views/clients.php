@@ -26,6 +26,64 @@ if ( $action === 'add' && isset($_GET['prefill_name']) ) {
     $prefill['email'] = sanitize_email($_GET['prefill_email'] ?? '');
     $prefill['phone'] = sanitize_text_field($_GET['prefill_phone'] ?? '');
 }
+
+// ── Client history PDF print view ─────────────────────────────────────────────
+if ( $action === 'history-pdf' && $client_id ) {
+    $client = Vesho_CRM_Database::get_client($client_id);
+    if ( ! $client ) wp_die( 'Klienti ei leitud' );
+    $maintenances = $wpdb->get_results( $wpdb->prepare(
+        "SELECT m.id, m.scheduled_date, m.completed_date, m.status, m.description,
+                d.name as device_name, d.model as device_model
+         FROM {$wpdb->prefix}vesho_maintenances m
+         JOIN {$wpdb->prefix}vesho_devices d ON d.id = m.device_id
+         WHERE d.client_id = %d ORDER BY m.scheduled_date DESC", $client_id
+    ) );
+    $co_name = get_option( 'vesho_company_name', 'Vesho OÜ' );
+    $status_labels = ['scheduled'=>'Planeeritud','completed'=>'Tehtud','overdue'=>'Hilines','pending'=>'Ootel','cancelled'=>'Tühistatud'];
+    ?>
+    <style>
+    body{font-family:Arial,sans-serif;font-size:13px;color:#111;margin:0;padding:24px}
+    .hist-header{display:flex;justify-content:space-between;margin-bottom:16px;border-bottom:2px solid #1e293b;padding-bottom:12px}
+    table{width:100%;border-collapse:collapse;margin:12px 0}
+    th{background:#f0f4f8;padding:8px 10px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#64748b}
+    td{padding:8px 10px;border-bottom:1px solid #f1f5f9;font-size:13px}
+    @media print{button{display:none}}
+    </style>
+    <div class="hist-header">
+        <div>
+            <div style="font-size:22px;font-weight:700;color:#1e293b">Hooldusajalugu</div>
+            <div style="font-size:16px;margin-top:4px"><?php echo esc_html($client->name); ?></div>
+            <?php if (!empty($client->address)) echo '<div style="font-size:12px;color:#64748b">'.esc_html($client->address).'</div>'; ?>
+            <?php if (!empty($client->phone))   echo '<div style="font-size:12px;color:#64748b">'.esc_html($client->phone).'</div>'; ?>
+            <?php if (!empty($client->email))   echo '<div style="font-size:12px;color:#64748b">'.esc_html($client->email).'</div>'; ?>
+        </div>
+        <div style="text-align:right">
+            <div style="font-weight:700;font-size:15px"><?php echo esc_html($co_name); ?></div>
+            <div style="font-size:12px;color:#64748b">Genereeritud: <?php echo date('d.m.Y'); ?></div>
+        </div>
+    </div>
+    <p style="color:#64748b;font-size:13px">Hooldusi kokku: <strong><?php echo count($maintenances); ?></strong></p>
+    <table>
+        <thead><tr><th>Seade</th><th>Planeeritud</th><th>Tehtud</th><th>Staatus</th><th>Kirjeldus</th></tr></thead>
+        <tbody>
+        <?php foreach ($maintenances as $m) : ?>
+        <tr>
+            <td><?php echo esc_html($m->device_name . ($m->device_model ? ' ('.$m->device_model.')' : '')); ?></td>
+            <td><?php echo $m->scheduled_date ? date('d.m.Y', strtotime($m->scheduled_date)) : '—'; ?></td>
+            <td><?php echo $m->completed_date ? date('d.m.Y', strtotime($m->completed_date)) : '—'; ?></td>
+            <td><?php echo esc_html($status_labels[$m->status] ?? $m->status); ?></td>
+            <td><?php echo esc_html($m->description ?: '—'); ?></td>
+        </tr>
+        <?php endforeach; ?>
+        </tbody>
+    </table>
+    <div style="margin-top:20px;text-align:right">
+        <button onclick="window.print()" style="padding:8px 20px;background:#1e293b;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:14px">🖨️ Prindi / Salvesta PDF</button>
+    </div>
+    <script>window.onload=function(){window.print();};</script>
+    <?php
+    return;
+}
 ?>
 <div class="crm-wrap">
     <h1 class="crm-page-title">👥 Kliendid <span class="crm-count">(<?php echo $total; ?>)</span></h1>
@@ -200,6 +258,7 @@ if ( $action === 'add' && isset($_GET['prefill_name']) ) {
                 <td class="td-actions">
                     <a href="<?php echo admin_url('admin.php?page=vesho-crm-clients&action=edit&client_id='.$c->id); ?>" class="crm-btn crm-btn-icon crm-btn-sm" title="Muuda">✏️</a>
                     <a href="<?php echo admin_url('admin.php?page=vesho-crm-devices&client_id='.$c->id); ?>" class="crm-btn crm-btn-icon crm-btn-sm" title="Seadmed">🔧</a>
+                    <a href="<?php echo admin_url('admin.php?page=vesho-crm-clients&action=history-pdf&client_id='.$c->id); ?>" class="crm-btn crm-btn-icon crm-btn-sm" title="Hooldusajalugu PDF" target="_blank">📋</a>
                     <a href="<?php echo wp_nonce_url(admin_url('admin-post.php?action=vesho_client_send_access&client_id='.$c->id),'vesho_client_send_access'); ?>"
                        class="crm-btn crm-btn-icon crm-btn-sm" title="Saada portaali ligipääs e-postile"
                        onclick="return confirm('Saada kliendile portaali parool e-postiga?')">📧</a>

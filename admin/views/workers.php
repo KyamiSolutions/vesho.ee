@@ -32,7 +32,7 @@ function vesho_worker_is_clocked_in($worker_id) {
     <h1 class="crm-page-title">👷 Töötajad <span class="crm-count">(<?php echo $total; ?>)</span></h1>
 
     <?php if (isset($_GET['msg'])) :
-        $msgs = ['added'=>'Töötaja lisatud!','updated'=>'Töötaja uuendatud!','deleted'=>'Töötaja kustutatud!'];
+        $msgs = ['added'=>'Töötaja lisatud!','updated'=>'Töötaja uuendatud!','deleted'=>'Töötaja kustutatud!','pin_sent'=>'PIN saadetud töö e-postile!','barcode_generated'=>'QR kood genereeritud!'];
         echo '<div class="crm-alert crm-alert-success">'.esc_html($msgs[$_GET['msg']]??'Salvestatud!').'</div>';
     endif; ?>
 
@@ -100,13 +100,23 @@ function vesho_worker_is_clocked_in($worker_id) {
                         <span class="crm-form-label" style="margin:0">🌐 Kuva veebilehel</span>
                     </label>
                 </div>
-                <?php if ($edit && !empty($edit->barcode_token)) : ?>
+                <?php if ($edit) : ?>
                 <div class="crm-form-group crm-form-full">
                     <label class="crm-form-label">QR / Barcodi token</label>
-                    <div style="display:flex;align-items:center;gap:8px">
+                    <?php if (!empty($edit->barcode_token)) : ?>
+                    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
                         <code style="background:#f5f5f5;padding:6px 10px;border-radius:4px;font-size:12px;flex:1"><?php echo esc_html($edit->barcode_token); ?></code>
                         <button type="button" onclick="navigator.clipboard.writeText('<?php echo esc_js($edit->barcode_token); ?>').then(function(){this.textContent='✅';}.bind(this))" class="crm-btn crm-btn-outline crm-btn-sm">📋 Kopeeri</button>
+                        <a href="<?php echo wp_nonce_url(admin_url('admin-post.php?action=vesho_generate_worker_barcode&worker_id='.$edit->id),'vesho_generate_worker_barcode'); ?>"
+                           class="crm-btn crm-btn-outline crm-btn-sm" onclick="return confirm('Genereeri uus QR kood? Vana enam ei tööta.')">🔄 Uuenda</a>
                     </div>
+                    <?php else : ?>
+                    <div style="display:flex;align-items:center;gap:8px">
+                        <span style="font-size:13px;color:#94a3b8">Token puudub</span>
+                        <a href="<?php echo wp_nonce_url(admin_url('admin-post.php?action=vesho_generate_worker_barcode&worker_id='.$edit->id),'vesho_generate_worker_barcode'); ?>"
+                           class="crm-btn crm-btn-primary crm-btn-sm">📱 Genereeri QR kood</a>
+                    </div>
+                    <?php endif; ?>
                 </div>
                 <?php endif; ?>
             </div>

@@ -31,6 +31,117 @@ $total = count($workorders);
 
 $statuses   = ['open'=>'Ootel','assigned'=>'Määratud','in_progress'=>'Töös','completed'=>'Lõpetatud','cancelled'=>'Tühistatud'];
 $priorities = ['low'=>'Madal','normal'=>'Tavaline','high'=>'Kõrge','urgent'=>'Kiire'];
+
+// ── PDF print view ────────────────────────────────────────────────────────────
+if ( $action === 'print' && $workorder_id ) {
+    $wo = $wpdb->get_row( $wpdb->prepare(
+        "SELECT wo.*, c.name as client_name, c.address as client_address, c.phone as client_phone, c.email as client_email,
+                w.name as worker_name,
+                d.name as device_name, d.model as device_model, d.serial_number
+         FROM {$wpdb->prefix}vesho_workorders wo
+         LEFT JOIN {$wpdb->prefix}vesho_clients c ON wo.client_id=c.id
+         LEFT JOIN {$wpdb->prefix}vesho_workers w ON wo.worker_id=w.id
+         LEFT JOIN {$wpdb->prefix}vesho_devices d ON wo.device_id=d.id
+         WHERE wo.id=%d", $workorder_id
+    ) );
+    if ( ! $wo ) wp_die( 'Töökäsku ei leitud' );
+    $used_items = $wpdb->get_results( $wpdb->prepare(
+        "SELECT iu.quantity, inv.name, inv.unit, inv.unit_price,
+                (iu.quantity * inv.unit_price) as line_total
+         FROM {$wpdb->prefix}vesho_inventory_usage iu
+         JOIN {$wpdb->prefix}vesho_inventory inv ON inv.id = iu.inventory_id
+         WHERE iu.workorder_id = %d", $workorder_id
+    ) );
+    $co_name  = get_option( 'vesho_company_name', 'Vesho OÜ' );
+    $co_addr  = get_option( 'vesho_company_address', '' );
+    $co_email = get_option( 'vesho_company_email', '' );
+    $co_phone = get_option( 'vesho_company_phone', '' );
+    $status_labels   = ['open'=>'Ootel','assigned'=>'Määratud','in_progress'=>'Töös','completed'=>'Lõpetatud','cancelled'=>'Tühistatud'];
+    $priority_labels = ['low'=>'Madal','normal'=>'Tavaline','high'=>'Kõrge','urgent'=>'Kiire'];
+    ?>
+    <style>
+    body{font-family:Arial,sans-serif;font-size:13px;color:#111;margin:0;padding:24px}
+    .wo-header{display:flex;justify-content:space-between;margin-bottom:20px;border-bottom:2px solid #1e293b;padding-bottom:16px}
+    .wo-title{font-size:24px;font-weight:700;color:#1e293b}
+    .wo-meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;margin-bottom:20px}
+    .wo-meta-item{display:flex;gap:8px}
+    .wo-meta-label{color:#64748b;font-size:12px;min-width:120px;font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+    table{width:100%;border-collapse:collapse;margin:16px 0}
+    th{background:#f0f4f8;padding:8px 10px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#64748b}
+    td{padding:8px 10px;border-bottom:1px solid #f1f5f9;font-size:13px}
+    .total-row td{font-weight:700;border-top:2px solid #e2e8f0}
+    @media print{button{display:none}}
+    </style>
+    <div class="wo-header">
+        <div>
+            <div class="wo-title">Töökäsk #<?php echo $wo->id; ?></div>
+            <div style="font-size:13px;margin-top:4px;color:#64748b"><?php echo esc_html($wo->title); ?></div>
+        </div>
+        <div style="text-align:right">
+            <div style="font-weight:700;font-size:15px"><?php echo esc_html($co_name); ?></div>
+            <?php if ($co_addr)  echo '<div style="font-size:12px;color:#555">'.esc_html($co_addr).'</div>'; ?>
+            <?php if ($co_email) echo '<div style="font-size:12px;color:#555">'.esc_html($co_email).'</div>'; ?>
+            <?php if ($co_phone) echo '<div style="font-size:12px;color:#555">'.esc_html($co_phone).'</div>'; ?>
+        </div>
+    </div>
+    <div class="wo-meta-grid">
+        <?php
+        $meta = [
+            'Staatus'       => $status_labels[$wo->status ?? ''] ?? $wo->status,
+            'Prioriteet'    => $priority_labels[$wo->priority ?? ''] ?? $wo->priority,
+            'Klient'        => $wo->client_name,
+            'Telefon'       => $wo->client_phone,
+            'Aadress'       => $wo->client_address,
+            'E-post'        => $wo->client_email,
+            'Seade'         => trim(($wo->device_name ?? '') . ($wo->device_model ? ' ('.$wo->device_model.')' : '')),
+            'Seerianumber'  => $wo->serial_number,
+            'Töötaja'       => $wo->worker_name,
+            'Kuupäev'       => $wo->scheduled_date ? date('d.m.Y', strtotime($wo->scheduled_date)) : '',
+        ];
+        foreach ($meta as $label => $val) :
+            if (!$val) continue;
+        ?>
+        <div class="wo-meta-item">
+            <span class="wo-meta-label"><?php echo esc_html($label); ?></span>
+            <span><?php echo esc_html($val); ?></span>
+        </div>
+        <?php endforeach; ?>
+    </div>
+    <?php if ($wo->description || $wo->notes) : ?>
+    <div style="margin-bottom:16px">
+        <?php if ($wo->description) : ?>
+        <div style="margin-bottom:8px"><strong>Kirjeldus:</strong><br><?php echo nl2br(esc_html($wo->description)); ?></div>
+        <?php endif; ?>
+        <?php if ($wo->notes) : ?>
+        <div><strong>Märkused:</strong><br><?php echo nl2br(esc_html($wo->notes)); ?></div>
+        <?php endif; ?>
+    </div>
+    <?php endif; ?>
+    <?php if (!empty($used_items)) : ?>
+    <div style="font-size:15px;font-weight:700;margin-bottom:8px">Kasutatud materjalid</div>
+    <table>
+        <thead><tr><th>Nimetus</th><th>Kogus</th><th>Ühiku hind</th><th>Summa</th></tr></thead>
+        <tbody>
+        <?php $mat_total = 0; foreach ($used_items as $item) :
+            $mat_total += (float)$item->line_total; ?>
+        <tr>
+            <td><?php echo esc_html($item->name); ?></td>
+            <td><?php echo esc_html($item->quantity . ' ' . $item->unit); ?></td>
+            <td><?php echo number_format($item->unit_price, 2, ',', '.'); ?> €</td>
+            <td><?php echo number_format($item->line_total, 2, ',', '.'); ?> €</td>
+        </tr>
+        <?php endforeach; ?>
+        </tbody>
+        <tfoot><tr class="total-row"><td colspan="3">Materjalid kokku</td><td><?php echo number_format($mat_total, 2, ',', '.'); ?> €</td></tr></tfoot>
+    </table>
+    <?php endif; ?>
+    <div style="margin-top:24px;text-align:right">
+        <button onclick="window.print()" style="padding:8px 20px;background:#1e293b;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:14px">🖨️ Prindi / Salvesta PDF</button>
+    </div>
+    <script>window.onload=function(){window.print();};</script>
+    <?php
+    return;
+}
 ?>
 <div class="crm-wrap">
     <h1 class="crm-page-title">🔨 Töökäsud <span class="crm-count">(<?php echo $total; ?>)</span></h1>
@@ -129,6 +240,10 @@ $priorities = ['low'=>'Madal','normal'=>'Tavaline','high'=>'Kõrge','urgent'=>'K
             </div>
             <div class="crm-form-actions">
                 <a href="<?php echo admin_url('admin.php?page=vesho-crm-workorders'); ?>" class="crm-btn crm-btn-outline">Tühista</a>
+                <?php if ($edit) : ?>
+                <a href="<?php echo admin_url('admin.php?page=vesho-crm-workorders&action=print&workorder_id='.$edit->id); ?>"
+                   class="crm-btn crm-btn-outline" target="_blank">📄 PDF / Prindi</a>
+                <?php endif; ?>
                 <button type="submit" class="crm-btn crm-btn-primary">💾 Salvesta</button>
             </div>
         </form>
@@ -206,6 +321,8 @@ $priorities = ['low'=>'Madal','normal'=>'Tavaline','high'=>'Kõrge','urgent'=>'K
                 <td><?php echo $wo->price!==null ? vesho_crm_format_money($wo->price) : '–'; ?></td>
                 <td class="td-actions">
                     <a href="<?php echo admin_url('admin.php?page=vesho-crm-workorders&action=edit&workorder_id='.$wo->id); ?>" class="crm-btn crm-btn-icon crm-btn-sm" title="Muuda">✏️</a>
+                    <a href="<?php echo admin_url('admin.php?page=vesho-crm-workorders&action=print&workorder_id='.$wo->id); ?>"
+                       class="crm-btn crm-btn-icon crm-btn-sm" title="PDF / Prindi" target="_blank">📄</a>
                     <a href="<?php echo wp_nonce_url(admin_url('admin-post.php?action=vesho_delete_workorder&workorder_id='.$wo->id),'vesho_delete_workorder'); ?>"
                        class="crm-btn crm-btn-icon crm-btn-sm" onclick="return confirm('Kustuta töökäsk?')">🗑️</a>
                 </td>

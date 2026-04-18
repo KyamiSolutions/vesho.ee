@@ -359,6 +359,7 @@ if ( $action === 'print' && $invoice_id ) {
     <div class="crm-card">
         <div class="crm-toolbar">
             <a href="<?php echo admin_url('admin.php?page=vesho-crm-invoices&action=add'); ?>" class="crm-btn crm-btn-primary">+ Lisa arve</a>
+            <a href="<?php echo wp_nonce_url(admin_url('admin-post.php?action=vesho_export_invoices_csv'),'vesho_export_invoices_csv'); ?>" class="crm-btn crm-btn-outline crm-btn-sm" title="Laadi alla CSV (Excel)">⬇️ CSV</a>
             <form method="GET" style="display:flex;gap:8px;flex:1">
                 <input type="hidden" name="page" value="vesho-crm-invoices">
                 <select class="crm-form-select" name="status" style="max-width:160px;padding:7px 10px;font-size:13px">
@@ -479,6 +480,7 @@ if ( $action === 'print' && $invoice_id ) {
       </div>
     </div>
     <script>
+    var veshoNonce = '<?php echo wp_create_nonce("vesho_admin_nonce"); ?>';
     var cnInvId = 0;
     function openCreditNoteModal(invId, invNum, amount) {
       cnInvId = invId;

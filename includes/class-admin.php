@@ -59,6 +59,10 @@ class Vesho_CRM_Admin {
         add_action( 'wp_ajax_vesho_add_maintenance_ajax',   array( __CLASS__, 'ajax_add_maintenance' ) );
         add_action( 'wp_ajax_vesho_get_client_devices',     array( __CLASS__, 'ajax_get_client_devices' ) );
         add_action( 'wp_ajax_vesho_postpone_maintenance',   array( __CLASS__, 'ajax_postpone_maintenance' ) );
+        add_action( 'wp_ajax_vesho_create_credit_note',     array( __CLASS__, 'ajax_create_credit_note' ) );
+        add_action( 'admin_post_vesho_generate_worker_barcode', array( __CLASS__, 'handle_generate_worker_barcode' ) );
+        add_action( 'admin_post_vesho_export_invoices_csv',     array( __CLASS__, 'handle_export_invoices_csv' ) );
+        add_action( 'admin_post_vesho_export_maintenances_csv', array( __CLASS__, 'handle_export_maintenances_csv' ) );
     }
 
     // ── Menu registration ──────────────────────────────────────────────────────
@@ -1064,7 +1068,14 @@ private static function load_view( $name ) {
             exit;
         }
         $new_pin = (string) rand(100000, 999999);
-        $wpdb->update( $wpdb->prefix.'vesho_workers', ['password'=>wp_hash_password($new_pin),'pin'=>$new_pin], ['id'=>$id] );
+        $update_data = ['password'=>wp_hash_password($new_pin),'pin'=>$new_pin];
+        // Generate barcode token if missing (like Node.js send-pin behavior)
+        $barcode_token = $worker->barcode_token;
+        if ( empty( $barcode_token ) ) {
+            $barcode_token = bin2hex( random_bytes( 8 ) );
+            $update_data['barcode_token'] = $barcode_token;
+        }
+        $wpdb->update( $wpdb->prefix.'vesho_workers', $update_data, ['id'=>$id] );
         if ( $worker->user_id ) {
             wp_set_password( $new_pin, (int) $worker->user_id );
         }
@@ -1076,6 +1087,7 @@ private static function load_view( $name ) {
         $body .= "Portaal: {$portal_url}\n";
         $body .= "Kasutajanimi: {$worker->name}\n";
         $body .= "PIN: {$new_pin}\n\n";
+        $body .= "QR kood tööaja registreerimiseks: {$barcode_token}\n\n";
         $body .= "Lugupidamisega,\n{$co}";
         wp_mail( $worker->work_email, $subject, $body );
 
@@ -1542,5 +1554,147 @@ private static function load_view( $name ) {
             array( 'id' => $id )
         );
         wp_send_json_success();
+    }
+
+    // ── AJAX: create credit note ──────────────────────────────────────────────
+    public static function ajax_create_credit_note() {
+        check_ajax_referer( 'vesho_admin_nonce', 'nonce' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error( 'Unauthorized' );
+        global $wpdb;
+        $invoice_id = absint( $_POST['invoice_id'] ?? 0 );
+        $amount     = (float) ( $_POST['amount'] ?? 0 );
+        $reason     = sanitize_text_field( $_POST['reason'] ?? '' );
+
+        $inv = $invoice_id ? $wpdb->get_row( $wpdb->prepare(
+            "SELECT * FROM {$wpdb->prefix}vesho_invoices WHERE id=%d", $invoice_id
+        ) ) : null;
+        if ( ! $inv ) wp_send_json_error( 'Arvet ei leitud' );
+
+        // Generate credit note number: INV-2026-001 → KARV-2026-001, or prepend KARV-
+        $cn_number = preg_match( '/^ARV-/i', $inv->invoice_number )
+            ? preg_replace( '/^ARV-/i', 'KARV-', $inv->invoice_number )
+            : 'KARV-' . $inv->invoice_number;
+
+        // Make unique if already exists
+        $existing = $wpdb->get_var( $wpdb->prepare(
+            "SELECT COUNT(*) FROM {$wpdb->prefix}vesho_credit_notes WHERE credit_note_number=%s", $cn_number
+        ) );
+        if ( $existing ) {
+            $cn_number .= '-' . date( 'His' );
+        }
+
+        $today = current_time( 'Y-m-d' );
+        $wpdb->insert( $wpdb->prefix . 'vesho_credit_notes', array(
+            'credit_note_number' => $cn_number,
+            'invoice_id'         => $invoice_id,
+            'client_id'          => $inv->client_id,
+            'amount'             => $amount > 0 ? $amount : abs( (float) $inv->amount ),
+            'reason'             => $reason,
+            'status'             => 'issued',
+            'issued_date'        => $today,
+            'created_at'         => current_time( 'mysql' ),
+        ) );
+
+        wp_send_json_success( array( 'number' => $cn_number ) );
+    }
+
+    // ── Generate worker barcode token ─────────────────────────────────────────
+    public static function handle_generate_worker_barcode() {
+        check_admin_referer( 'vesho_generate_worker_barcode' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorized' );
+        global $wpdb;
+        $id = absint( $_GET['worker_id'] ?? 0 );
+        if ( ! $id ) wp_die( 'Puudub töötaja ID' );
+        $token = bin2hex( random_bytes( 8 ) );
+        $wpdb->update( $wpdb->prefix . 'vesho_workers', array( 'barcode_token' => $token ), array( 'id' => $id ) );
+        wp_redirect( add_query_arg( array(
+            'page'      => 'vesho-crm-workers',
+            'action'    => 'edit',
+            'worker_id' => $id,
+            'msg'       => 'barcode_generated',
+        ), admin_url( 'admin.php' ) ) );
+        exit;
+    }
+
+    // ── Export invoices as CSV ────────────────────────────────────────────────
+    public static function handle_export_invoices_csv() {
+        check_admin_referer( 'vesho_export_invoices_csv' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorized' );
+        global $wpdb;
+
+        $rows = $wpdb->get_results(
+            "SELECT i.invoice_number, c.name as client_name, i.invoice_date, i.due_date,
+                    i.amount, i.status, i.description
+             FROM {$wpdb->prefix}vesho_invoices i
+             LEFT JOIN {$wpdb->prefix}vesho_clients c ON i.client_id=c.id
+             ORDER BY i.invoice_date DESC",
+            ARRAY_A
+        );
+
+        $status_labels = array( 'draft'=>'Mustand','sent'=>'Saadetud','paid'=>'Makstud','unpaid'=>'Maksmata','overdue'=>'Tähtaeg ületatud' );
+        $filename = 'arved-' . date( 'Y-m-d' ) . '.csv';
+
+        header( 'Content-Type: text/csv; charset=UTF-8' );
+        header( 'Content-Disposition: attachment; filename="' . $filename . '"' );
+        header( 'Pragma: no-cache' );
+        echo "\xEF\xBB\xBF"; // UTF-8 BOM for Excel
+        $out = fopen( 'php://output', 'w' );
+        fputcsv( $out, array( 'Arve nr', 'Klient', 'Arve kuupäev', 'Tähtaeg', 'Summa (€)', 'Staatus', 'Kirjeldus' ), ';' );
+        foreach ( $rows as $r ) {
+            fputcsv( $out, array(
+                $r['invoice_number'],
+                $r['client_name'],
+                $r['invoice_date'] ? date( 'd.m.Y', strtotime( $r['invoice_date'] ) ) : '',
+                $r['due_date']     ? date( 'd.m.Y', strtotime( $r['due_date'] ) )     : '',
+                number_format( (float) $r['amount'], 2, ',', '' ),
+                $status_labels[ $r['status'] ] ?? $r['status'],
+                $r['description'] ?? '',
+            ), ';' );
+        }
+        fclose( $out );
+        exit;
+    }
+
+    // ── Export maintenances as CSV ────────────────────────────────────────────
+    public static function handle_export_maintenances_csv() {
+        check_admin_referer( 'vesho_export_maintenances_csv' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorized' );
+        global $wpdb;
+
+        $rows = $wpdb->get_results(
+            "SELECT c.name as client_name, c.address as client_address,
+                    d.name as device_name, d.model as device_model, d.serial_number,
+                    m.scheduled_date, m.completed_date, m.status, m.description
+             FROM {$wpdb->prefix}vesho_maintenances m
+             JOIN {$wpdb->prefix}vesho_devices d ON d.id = m.device_id
+             JOIN {$wpdb->prefix}vesho_clients c ON c.id = d.client_id
+             ORDER BY m.scheduled_date DESC",
+            ARRAY_A
+        );
+
+        $status_labels = array( 'scheduled'=>'Planeeritud','completed'=>'Tehtud','overdue'=>'Hilines','pending'=>'Ootel','cancelled'=>'Tühistatud' );
+        $filename = 'hooldused-' . date( 'Y-m-d' ) . '.csv';
+
+        header( 'Content-Type: text/csv; charset=UTF-8' );
+        header( 'Content-Disposition: attachment; filename="' . $filename . '"' );
+        header( 'Pragma: no-cache' );
+        echo "\xEF\xBB\xBF";
+        $out = fopen( 'php://output', 'w' );
+        fputcsv( $out, array( 'Klient', 'Aadress', 'Seade', 'Mudel', 'Seerianumber', 'Planeeritud kuupäev', 'Tehtud kuupäev', 'Staatus', 'Kirjeldus' ), ';' );
+        foreach ( $rows as $r ) {
+            fputcsv( $out, array(
+                $r['client_name'],
+                $r['client_address'] ?? '',
+                $r['device_name'],
+                $r['device_model'] ?? '',
+                $r['serial_number'] ?? '',
+                $r['scheduled_date'] ? date( 'd.m.Y', strtotime( $r['scheduled_date'] ) ) : '',
+                $r['completed_date'] ? date( 'd.m.Y', strtotime( $r['completed_date'] ) ) : '',
+                $status_labels[ $r['status'] ] ?? $r['status'],
+                $r['description'] ?? '',
+            ), ';' );
+        }
+        fclose( $out );
+        exit;
     }
 }
