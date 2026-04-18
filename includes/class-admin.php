@@ -59,7 +59,9 @@ class Vesho_CRM_Admin {
         add_action( 'wp_ajax_vesho_add_maintenance_ajax',   array( __CLASS__, 'ajax_add_maintenance' ) );
         add_action( 'wp_ajax_vesho_get_client_devices',     array( __CLASS__, 'ajax_get_client_devices' ) );
         add_action( 'wp_ajax_vesho_postpone_maintenance',   array( __CLASS__, 'ajax_postpone_maintenance' ) );
-        add_action( 'wp_ajax_vesho_create_credit_note',     array( __CLASS__, 'ajax_create_credit_note' ) );
+        add_action( 'wp_ajax_vesho_create_credit_note',      array( __CLASS__, 'ajax_create_credit_note' ) );
+        add_action( 'wp_ajax_vesho_order_issue_refund',      array( __CLASS__, 'ajax_order_issue_refund' ) );
+        add_action( 'wp_ajax_vesho_order_manual_refund',     array( __CLASS__, 'ajax_order_manual_refund' ) );
         add_action( 'admin_post_vesho_generate_worker_barcode', array( __CLASS__, 'handle_generate_worker_barcode' ) );
         add_action( 'admin_post_vesho_export_invoices_csv',     array( __CLASS__, 'handle_export_invoices_csv' ) );
         add_action( 'admin_post_vesho_export_maintenances_csv', array( __CLASS__, 'handle_export_maintenances_csv' ) );
@@ -1414,6 +1416,28 @@ private static function load_view( $name ) {
             }
         }
 
+        // ── Partial picking: calculate refund_pending_amount ──────────────────
+        if ( $status === 'ready' ) {
+            $items = $wpdb->get_results( $wpdb->prepare(
+                "SELECT quantity, COALESCE(picked_qty, quantity) as pq, unit_price
+                 FROM {$wpdb->prefix}vesho_shop_order_items WHERE order_id=%d",
+                $order_id
+            ) );
+            $diff = 0.0;
+            foreach ( $items as $it ) {
+                if ( (float)$it->pq < (float)$it->quantity ) {
+                    $diff += ( (float)$it->quantity - (float)$it->pq ) * (float)$it->unit_price;
+                }
+            }
+            if ( $diff > 0.005 ) {
+                $upd['refund_pending_amount'] = round( $diff, 2 );
+            }
+        }
+        // Clear pending refund when order is completed or refunded
+        if ( in_array( $status, ['fulfilled', 'returned', 'cancelled'] ) ) {
+            $upd['refund_pending_amount'] = 0.00;
+        }
+
         $wpdb->update( $wpdb->prefix . 'vesho_shop_orders', $upd, array( 'id' => $order_id ) );
 
         // Return to view page if came from there
@@ -1728,5 +1752,143 @@ private static function load_view( $name ) {
         }
         fclose( $out );
         exit;
+    }
+
+    // ── Partial refund helpers ─────────────────────────────────────────────────
+
+    /**
+     * Issue the pending partial refund for an order (called via AJAX).
+     * Handles Stripe and Maksekeskus automatically; Montonio requires manual action.
+     */
+    public static function ajax_order_issue_refund() {
+        check_ajax_referer( 'vesho_portal_nonce', 'nonce' );
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_send_json_error( ['message' => 'Pole lubatud'] );
+        }
+        global $wpdb;
+        $order_id = absint( $_POST['order_id'] ?? 0 );
+        if ( ! $order_id ) wp_send_json_error( ['message' => 'Vale tellimus'] );
+
+        $order = $wpdb->get_row( $wpdb->prepare(
+            "SELECT * FROM {$wpdb->prefix}vesho_shop_orders WHERE id=%d", $order_id
+        ) );
+        if ( ! $order ) wp_send_json_error( ['message' => 'Tellimust ei leitud'] );
+
+        $amount = round( (float)( $order->refund_pending_amount ?? 0 ), 2 );
+        if ( $amount <= 0 ) wp_send_json_error( ['message' => 'Tagasimakset pole ootel'] );
+
+        $result = self::do_payment_refund( $order, $amount );
+
+        if ( $result['done'] ) {
+            $wpdb->update( $wpdb->prefix . 'vesho_shop_orders', [
+                'refund_pending_amount' => 0.00,
+                'refund_amount'         => (float)$order->refund_amount + $amount,
+            ], ['id' => $order_id] );
+            wp_send_json_success( ['message' => $result['message']] );
+        } else {
+            wp_send_json_error( ['message' => $result['message']] );
+        }
+    }
+
+    /**
+     * Manual partial refund — admin specifies amount (called via AJAX).
+     */
+    public static function ajax_order_manual_refund() {
+        check_ajax_referer( 'vesho_portal_nonce', 'nonce' );
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_send_json_error( ['message' => 'Pole lubatud'] );
+        }
+        global $wpdb;
+        $order_id = absint( $_POST['order_id'] ?? 0 );
+        $amount   = round( (float)( $_POST['amount'] ?? 0 ), 2 );
+        if ( ! $order_id || $amount <= 0 ) wp_send_json_error( ['message' => 'Vale sisend'] );
+
+        $order = $wpdb->get_row( $wpdb->prepare(
+            "SELECT * FROM {$wpdb->prefix}vesho_shop_orders WHERE id=%d", $order_id
+        ) );
+        if ( ! $order ) wp_send_json_error( ['message' => 'Tellimust ei leitud'] );
+
+        $result = self::do_payment_refund( $order, $amount );
+
+        if ( $result['done'] ) {
+            $wpdb->update( $wpdb->prefix . 'vesho_shop_orders', [
+                'refund_amount' => (float)$order->refund_amount + $amount,
+            ], ['id' => $order_id] );
+            // Also clear pending if amount matches
+            if ( abs( $amount - (float)$order->refund_pending_amount ) < 0.01 ) {
+                $wpdb->update( $wpdb->prefix . 'vesho_shop_orders', ['refund_pending_amount' => 0.00], ['id' => $order_id] );
+            }
+            wp_send_json_success( ['message' => $result['message']] );
+        } else {
+            wp_send_json_error( ['message' => $result['message']] );
+        }
+    }
+
+    /**
+     * Dispatch a payment refund based on the order's payment method.
+     * Returns ['done' => bool, 'message' => string].
+     */
+    private static function do_payment_refund( $order, float $amount ): array {
+        $method = $order->payment_method ?? '';
+
+        // ── Stripe ─────────────────────────────────────────────────────────────
+        if ( $method === 'stripe' ) {
+            $secret     = get_option( 'vesho_stripe_secret_key', '' );
+            $payment_id = $order->stripe_payment_id ?? '';
+            if ( ! $secret || ! $payment_id ) {
+                return ['done' => false, 'message' => 'Stripe seadistus puudub'];
+            }
+            $resp = wp_remote_post( 'https://api.stripe.com/v1/refunds', [
+                'headers' => ['Authorization' => 'Basic ' . base64_encode( $secret . ':' )],
+                'body'    => [
+                    'payment_intent' => $payment_id,
+                    'amount'         => (int)round( $amount * 100 ),
+                ],
+            ] );
+            if ( is_wp_error( $resp ) ) {
+                return ['done' => false, 'message' => 'Stripe ühenduse viga: ' . $resp->get_error_message()];
+            }
+            $data = json_decode( wp_remote_retrieve_body( $resp ), true );
+            if ( ! empty( $data['id'] ) ) {
+                return ['done' => true, 'message' => "Stripe tagastus {$amount}€ tehtud ✓"];
+            }
+            $err = $data['error']['message'] ?? 'Teadmata viga';
+            return ['done' => false, 'message' => "Stripe viga: $err"];
+        }
+
+        // ── Maksekeskus ────────────────────────────────────────────────────────
+        if ( $method === 'mc' || $method === 'maksekeskus' ) {
+            $shop_id    = get_option( 'vesho_mc_shop_id', '' );
+            $secret     = get_option( 'vesho_mc_secret_key', '' );
+            $sandbox    = get_option( 'vesho_mc_sandbox', '1' ) === '1';
+            $tx_id      = $order->mc_transaction_id ?? '';
+            if ( ! $shop_id || ! $secret || ! $tx_id ) {
+                return ['done' => false, 'message' => 'Maksekeskus seadistus puudub'];
+            }
+            $base = $sandbox ? 'https://api.test.maksekeskus.ee/v1' : 'https://api.maksekeskus.ee/v1';
+            $resp = wp_remote_post( "$base/transactions/$tx_id/refunds", [
+                'headers' => [
+                    'Authorization' => 'Basic ' . base64_encode( "$shop_id:$secret" ),
+                    'Content-Type'  => 'application/json',
+                ],
+                'body'    => wp_json_encode( ['amount' => $amount] ),
+            ] );
+            if ( is_wp_error( $resp ) ) {
+                return ['done' => false, 'message' => 'Maksekeskus ühenduse viga'];
+            }
+            $data = json_decode( wp_remote_retrieve_body( $resp ), true );
+            if ( ! empty( $data['id'] ) || ! empty( $data['status'] ) ) {
+                return ['done' => true, 'message' => "Maksekeskus tagastus {$amount}€ tehtud ✓"];
+            }
+            $err = $data['message'] ?? 'Teadmata viga';
+            return ['done' => false, 'message' => "Maksekeskus viga: $err"];
+        }
+
+        // ── Montonio — manual ──────────────────────────────────────────────────
+        if ( $method === 'montonio' ) {
+            return ['done' => false, 'message' => 'Montonio tagastused tee käsitsi Montonio halduspaneelil (merchants.montonio.com)'];
+        }
+
+        return ['done' => false, 'message' => "Makse meetodit '$method' ei toetata automaatseks tagastuseks"];
     }
 }

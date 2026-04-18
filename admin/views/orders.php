@@ -234,6 +234,36 @@ $display_name = $edit->client_name ?: $edit->guest_name ?: '—';
     <?php endif; ?>
 </div>
 
+<?php
+// ── Osaline komplekteerimine — tagasimakse bänner ────────────────────────────
+$refund_pending = (float)( $edit->refund_pending_amount ?? 0 );
+if ( $refund_pending > 0 ):
+?>
+<div id="partial-refund-banner" style="background:#fff7ed;border:2px solid #f97316;border-radius:10px;padding:14px 18px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+    <div>
+        <div style="font-weight:700;color:#c2410c;font-size:14px">⚠ Osaline komplekteerimine — tagasimakse ootel: <?php echo number_format($refund_pending,2,',','.'); ?> €</div>
+        <div style="font-size:12px;color:#7c3b1e;margin-top:3px">Mõned tooted komplekteeriti osaliselt. Vajuta et väljastada tagasimakse kliendile.</div>
+    </div>
+    <button id="btn-issue-refund" onclick="issuePartialRefund(<?php echo $edit->id; ?>,<?php echo $refund_pending; ?>)"
+            style="background:#ea580c;color:#fff;border:none;padding:9px 18px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap">
+        💸 Väljasta tagasimakse <?php echo number_format($refund_pending,2,',','.'); ?> €
+    </button>
+</div>
+<?php endif; ?>
+
+<?php
+// ── Käsitsi tagasimakse nupp makstud tellimustele ────────────────────────────
+$can_refund = !empty($edit->paid_at) && !empty($edit->payment_method) && in_array($edit->payment_method, ['stripe','mc','maksekeskus','montonio']);
+if ( $can_refund && in_array($edit->status, ['ready','shipped','fulfilled','returned']) ):
+?>
+<div style="margin-bottom:16px;text-align:right">
+    <button onclick="openManualRefund(<?php echo $edit->id; ?>)"
+            style="background:#f3f4f6;color:#374151;border:1px solid #d1d5db;padding:7px 14px;border-radius:8px;font-size:13px;cursor:pointer">
+        💸 Tagasimakse kliendile
+    </button>
+</div>
+<?php endif; ?>
+
 <!-- Tooted -->
 <div class="crm-card" style="margin-bottom:16px">
     <div class="crm-card-header"><span class="crm-card-title">📦 Tooted</span></div>
@@ -577,5 +607,76 @@ document.querySelectorAll('.not-received-btn').forEach(function(btn){
         });
     });
 });
+
+// ── Partial refund helpers ────────────────────────────────────────────────────
+var veshoRefundNonce = '<?php echo wp_create_nonce("vesho_portal_nonce"); ?>';
+
+function issuePartialRefund(orderId, amount) {
+    if (!confirm('Väljasta tagasimakse ' + amount.toFixed(2).replace('.',',') + ' €?')) return;
+    var btn = document.getElementById('btn-issue-refund');
+    if (btn) { btn.disabled = true; btn.textContent = 'Töötlen...'; }
+    var fd = new FormData();
+    fd.append('action',   'vesho_order_issue_refund');
+    fd.append('nonce',    veshoRefundNonce);
+    fd.append('order_id', orderId);
+    fetch(ajaxurl, {method:'POST', body:fd})
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+            if (d.success) {
+                var banner = document.getElementById('partial-refund-banner');
+                if (banner) banner.remove();
+                alert('✅ ' + (d.data && d.data.message ? d.data.message : 'Tagasimakse tehtud'));
+            } else {
+                var msg = (d.data && d.data.message) ? d.data.message : 'Viga';
+                alert('❌ ' + msg);
+                if (btn) { btn.disabled = false; btn.textContent = '💸 Väljasta tagasimakse'; }
+            }
+        })
+        .catch(function(){ alert('Ühenduse viga'); if(btn){btn.disabled=false;} });
+}
+
+function openManualRefund(orderId) {
+    var overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99999;display:flex;align-items:center;justify-content:center';
+    overlay.innerHTML = '<div style="background:#fff;border-radius:12px;padding:28px;min-width:320px;max-width:440px;box-shadow:0 8px 32px rgba(0,0,0,.15)">'
+        + '<h3 style="margin:0 0 16px;color:#0d1f2d;font-size:16px">💸 Tagasimakse kliendile</h3>'
+        + '<p style="font-size:13px;color:#6b8599;margin:0 0 14px">Sisesta tagastatav summa (€). Stripe ja Maksekeskus töödeldakse automaatselt. Montonio puhul tee tagastus käsitsi Montonio halduspaneelil.</p>'
+        + '<input id="mr-amount" type="number" min="0.01" step="0.01" placeholder="Summa (€)" style="width:100%;padding:9px 12px;border:1px solid #dce3e9;border-radius:8px;font-size:15px;box-sizing:border-box;margin-bottom:14px">'
+        + '<div id="mr-msg" style="font-size:13px;color:#dc2626;margin-bottom:10px;display:none"></div>'
+        + '<div style="display:flex;gap:10px;justify-content:flex-end">'
+        + '<button id="mr-cancel" style="padding:8px 18px;border:1px solid #dce3e9;border-radius:8px;background:#fff;cursor:pointer;font-size:14px">Tühista</button>'
+        + '<button id="mr-confirm" style="padding:8px 18px;background:#ea580c;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:700">Väljasta tagasimakse</button>'
+        + '</div></div>';
+    document.body.appendChild(overlay);
+    document.getElementById('mr-cancel').addEventListener('click', function(){ document.body.removeChild(overlay); });
+    overlay.addEventListener('click', function(e){ if(e.target===overlay) document.body.removeChild(overlay); });
+    document.getElementById('mr-confirm').addEventListener('click', function(){
+        var amount = parseFloat(document.getElementById('mr-amount').value);
+        if (!amount || amount <= 0) { var m=document.getElementById('mr-msg'); m.style.display='block'; m.textContent='Sisesta kehtiv summa'; return; }
+        var btn = document.getElementById('mr-confirm');
+        btn.disabled = true; btn.textContent = 'Töötlen...';
+        var fd = new FormData();
+        fd.append('action',   'vesho_order_manual_refund');
+        fd.append('nonce',    veshoRefundNonce);
+        fd.append('order_id', orderId);
+        fd.append('amount',   amount);
+        fetch(ajaxurl, {method:'POST', body:fd})
+            .then(function(r){ return r.json(); })
+            .then(function(d){
+                document.body.removeChild(overlay);
+                if (d.success) {
+                    alert('✅ ' + (d.data && d.data.message ? d.data.message : 'Tagasimakse tehtud'));
+                    // Remove pending banner if it matches
+                    var banner = document.getElementById('partial-refund-banner');
+                    if (banner) banner.remove();
+                } else {
+                    var msg = (d.data && d.data.message) ? d.data.message : 'Viga';
+                    alert('❌ ' + msg);
+                }
+            })
+            .catch(function(){ document.body.removeChild(overlay); alert('Ühenduse viga'); });
+    });
+}
+
 })();
 </script>
