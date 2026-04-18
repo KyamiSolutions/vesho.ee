@@ -749,18 +749,28 @@ class Vesho_CRM_Updater {
             ? dirname( VESHO_CRM_FILE )
             : WP_PLUGIN_DIR . '/' . self::PLUGIN_SLUG;
 
-        // Delete old plugin dir
-        if ( $wp_filesystem && $wp_filesystem->is_dir( $plugin_dest ) ) {
-            $wp_filesystem->delete( $plugin_dest, true );
-        } elseif ( is_dir( $plugin_dest ) ) {
-            self::recursive_rmdir( $plugin_dest );
+        // Rename old dir to backup — only delete after successful copy
+        $plugin_backup = $plugin_dest . '_backup_' . time();
+        if ( is_dir( $plugin_dest ) ) {
+            rename( $plugin_dest, $plugin_backup );
         }
 
+        wp_mkdir_p( $plugin_dest );
         $copy_result = copy_dir( $plugin_src, $plugin_dest );
         $wp_filesystem->delete( $tmp_dir, true );
 
         if ( is_wp_error( $copy_result ) ) {
+            // Restore backup
+            if ( is_dir( $plugin_backup ) ) {
+                self::recursive_rmdir( $plugin_dest );
+                rename( $plugin_backup, $plugin_dest );
+            }
             wp_send_json_error( 'Kopeerimine ebaõnnestus: ' . $copy_result->get_error_message() );
+        }
+
+        // Copy succeeded — remove backup
+        if ( is_dir( $plugin_backup ) ) {
+            self::recursive_rmdir( $plugin_backup );
         }
 
         delete_site_transient( 'update_plugins' );
