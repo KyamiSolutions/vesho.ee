@@ -54,7 +54,7 @@ if ( isset($_POST['vesho_seed']) && check_admin_referer('vesho_demo_seed') ) {
             if (!$exists) {
                 $wpdb->insert("{$p}vesho_workers", [
                     'name'=>$name,'phone'=>$phone,'email'=>$email,
-                    'pin'=>wp_hash_password($pin),'active'=>$active,'can_inventory'=>$can_inv,
+                    'pin'=>$pin,'active'=>$active,'can_inventory'=>$can_inv,
                 ]);
             }
         }
@@ -77,7 +77,7 @@ if ( isset($_POST['vesho_seed']) && check_admin_referer('vesho_demo_seed') ) {
                 if (!$exists) {
                     $wpdb->insert("{$p}vesho_devices", [
                         'client_id'=>$cid,'name'=>$name,'model'=>$model,
-                        'serial_number'=>$serial,'service_interval'=>$interval,
+                        'serial_number'=>$serial,'maintenance_interval'=>$interval,
                         'install_date'=>date('Y-m-d', strtotime('-'.rand(6,24).' months')),
                     ]);
                 }
@@ -146,24 +146,23 @@ if ( isset($_POST['vesho_seed']) && check_admin_referer('vesho_demo_seed') ) {
             $inv_num = $prefix . '-' . date('Y') . '-' . str_pad(900+$i, 4, '0', STR_PAD_LEFT);
             $exists  = $wpdb->get_var($wpdb->prepare("SELECT id FROM {$p}vesho_invoices WHERE invoice_number=%s", $inv_num));
             if (!$exists) {
+                $lines = [
+                    ['Kliimaseadme hooldus', 1, 65.00, 22],
+                    ['Filtrite vahetus',     2,  8.50, 22],
+                ];
+                $amount = array_sum(array_map(fn($l)=>$l[1]*$l[2]*(1+$l[3]/100), $lines));
                 $wpdb->insert("{$p}vesho_invoices", [
                     'client_id'=>$c->id,'invoice_number'=>$inv_num,'invoice_date'=>$idate,
-                    'due_date'=>$due,'status'=>$status,'invoice_type'=>'invoice',
-                    'total'=>rand(6000,25000)/100,
+                    'due_date'=>$due,'status'=>$status,'amount'=>round($amount,2),
                 ]);
                 $inv_id = $wpdb->insert_id;
-                $lines  = [
-                    ['Kliimaseadme hooldus', 1, 'tk', 65.00, 22],
-                    ['Filtrite vahetus',     2, 'tk',  8.50, 22],
-                ];
-                foreach ($lines as [$desc,$qty,$unit,$up,$vat]) {
+                foreach ($lines as [$desc,$qty,$up,$vat]) {
                     $wpdb->insert("{$p}vesho_invoice_items", [
                         'invoice_id'=>$inv_id,'description'=>$desc,'quantity'=>$qty,
-                        'unit'=>$unit,'unit_price'=>$up,'vat_rate'=>$vat,
+                        'unit_price'=>$up,'vat_rate'=>$vat,
+                        'total'=>round($qty*$up*(1+$vat/100),2),
                     ]);
                 }
-                $total = array_sum(array_map(fn($l)=>$l[1]*$l[3]*(1+$l[4]/100), $lines));
-                $wpdb->update("{$p}vesho_invoices", ['total'=>round($total,2)], ['id'=>$inv_id]);
             }
         }
         $msg .= '✅ Arved lisatud. ';
@@ -180,8 +179,8 @@ if ( isset($_POST['vesho_seed']) && check_admin_referer('vesho_demo_seed') ) {
             $c = $clients_db[$i % count($clients_db)] ?? null;
             if ($c) {
                 $wpdb->insert("{$p}vesho_support_tickets", [
-                    'client_id'=>$c->id,'client_name'=>$c->name,'client_email'=>$c->email,
-                    'subject'=>$subj,'message'=>$msg2,'status'=>$status,'priority'=>$prio,
+                    'client_id'=>$c->id,'subject'=>$subj,
+                    'message'=>$msg2,'status'=>$status,'priority'=>$prio,
                 ]);
             }
         }
