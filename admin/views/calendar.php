@@ -145,7 +145,7 @@ $ajax_nonce = wp_create_nonce('vesho_admin_nonce');
                     $is_today = ($date_str === $today);
                     $events   = $is_valid ? ($by_date[$date_str] ?? []) : [];
                 ?>
-                <td style="vertical-align:top;border:1px solid #e5e7eb;padding:6px;min-height:90px;width:14.28%;<?php echo $is_today ? 'background:#eff6ff;' : ''; ?>">
+                <td data-date="<?php echo esc_attr($date_str); ?>" onclick="<?php echo $is_valid ? "selectDate('".esc_js($date_str)."')" : ''; ?>" style="vertical-align:top;border:1px solid #e5e7eb;padding:6px;min-height:90px;width:14.28%;<?php echo $is_today ? 'background:#eff6ff;' : ''; ?><?php echo $is_valid ? 'cursor:pointer;' : ''; ?>" class="cal-cell">
                     <?php if ($is_valid) : ?>
                     <div style="font-size:12px;font-weight:<?php echo $is_today ? '700' : '500'; ?>;color:<?php echo $is_today ? '#1d4ed8' : '#374151'; ?>;margin-bottom:4px">
                         <?php echo $cur_day; ?>
@@ -185,7 +185,21 @@ $ajax_nonce = wp_create_nonce('vesho_admin_nonce');
         </span>
         <?php endforeach; ?>
     </div>
+
+    <!-- Selected date list -->
+    <div id="cal-date-list" style="display:none;margin-top:20px">
+        <div class="crm-card">
+            <div class="crm-card-header">
+                <span class="crm-card-title" id="cal-date-title">Hooldused</span>
+            </div>
+            <div id="cal-date-list-inner"></div>
+        </div>
+    </div>
 </div>
+<style>
+.cal-cell:hover { background:#f0f9ff !important; }
+.cal-cell.cal-selected { background:#dbeafe !important; outline:2px solid #3b82f6; }
+</style>
 
 <!-- Event detail modal -->
 <div id="vesho-event-modal" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.4);align-items:center;justify-content:center">
@@ -259,9 +273,10 @@ $ajax_nonce = wp_create_nonce('vesho_admin_nonce');
 </div>
 
 <script>
-var veshoAjaxUrl  = '<?php echo esc_js(admin_url('admin-ajax.php')); ?>';
-var veshoNonce    = '<?php echo esc_js($ajax_nonce); ?>';
+var veshoAjaxUrl      = '<?php echo esc_js(admin_url('admin-ajax.php')); ?>';
+var veshoNonce        = '<?php echo esc_js($ajax_nonce); ?>';
 var veshoRemindersUrl = '<?php echo esc_js(admin_url('admin.php?page=vesho-crm-reminders')); ?>';
+var veshoMaintsUrl    = '<?php echo esc_js(admin_url('admin.php?page=vesho-crm-maintenances&action=edit&maintenance_id=')); ?>';
 
 // All client data for datalist matching
 var veshoClients = <?php
@@ -290,7 +305,80 @@ var veshoEvents = <?php
 ?>;
 
 var statusLabels = {pending:'Ootel', scheduled:'Planeeritud', completed:'Tehtud', cancelled:'Tühistatud'};
+var statusColors  = {pending:'#fef3c7', scheduled:'#dbeafe', completed:'#dcfce7', cancelled:'#fee2e2'};
 var currentEventId = null;
+
+/* ---- Date selection & list ---- */
+var selectedDate = null;
+var calPage = 1;
+var calPageSize = 10;
+var eventsByDate = {};
+Object.values(veshoEvents).forEach(function(ev) {
+    if (!ev.date) return;
+    if (!eventsByDate[ev.date]) eventsByDate[ev.date] = [];
+    eventsByDate[ev.date].push(ev);
+});
+
+function selectDate(dateStr) {
+    document.querySelectorAll('.cal-cell.cal-selected').forEach(function(el) { el.classList.remove('cal-selected'); });
+    var cell = document.querySelector('[data-date="' + dateStr + '"]');
+    if (cell) cell.classList.add('cal-selected');
+    if (selectedDate === dateStr) {
+        selectedDate = null;
+        document.getElementById('cal-date-list').style.display = 'none';
+        return;
+    }
+    selectedDate = dateStr;
+    calPage = 1;
+    renderDateList();
+}
+
+function renderDateList() {
+    var events = (selectedDate && eventsByDate[selectedDate]) ? eventsByDate[selectedDate] : [];
+    var parts = selectedDate ? selectedDate.split('-') : [];
+    var dateLabel = parts.length === 3 ? parts[2] + '.' + parts[1] + '.' + parts[0] : '';
+    document.getElementById('cal-date-title').textContent = dateLabel + ' — ' + events.length + ' hooldust';
+
+    var total = events.length;
+    var totalPages = Math.max(1, Math.ceil(total / calPageSize));
+    var start = (calPage - 1) * calPageSize;
+    var pageEvents = events.slice(start, start + calPageSize);
+
+    var html = '';
+    if (total === 0) {
+        html = '<div style="padding:20px;color:#6b7280;text-align:center">Valitud kuupäeval hooldusi pole.</div>';
+    } else {
+        html += '<div style="overflow-x:auto"><table class="crm-table"><thead><tr><th>Klient</th><th>Seade</th><th>Staatus</th><th>Töötaja</th><th>Kirjeldus</th><th></th></tr></thead><tbody>';
+        pageEvents.forEach(function(ev) {
+            var bg = statusColors[ev.status] || '#f3f4f6';
+            var desc = ev.description ? ev.description.substring(0, 50) + (ev.description.length > 50 ? '…' : '') : '–';
+            html += '<tr>' +
+                '<td><strong>' + (ev.client || '–') + '</strong></td>' +
+                '<td>' + (ev.device || '–') + '</td>' +
+                '<td><span style="background:' + bg + ';padding:2px 8px;border-radius:12px;font-size:12px">' + (statusLabels[ev.status] || ev.status) + '</span></td>' +
+                '<td>' + (ev.worker || '–') + '</td>' +
+                '<td style="color:#6b7280;font-size:13px">' + desc + '</td>' +
+                '<td><a href="' + veshoMaintsUrl + ev.id + '" class="crm-btn crm-btn-sm crm-btn-outline">✏️ Ava</a></td>' +
+                '</tr>';
+        });
+        html += '</tbody></table></div>';
+        if (totalPages > 1) {
+            html += '<div style="display:flex;gap:8px;padding:12px 16px;align-items:center;justify-content:center">';
+            html += '<button onclick="calGoPage(' + Math.max(1, calPage-1) + ')" class="crm-btn crm-btn-sm crm-btn-outline"' + (calPage===1?' disabled':'') + '>← Eelmine</button>';
+            html += '<span style="font-size:13px;color:#6b7280">' + calPage + ' / ' + totalPages + '</span>';
+            html += '<button onclick="calGoPage(' + Math.min(totalPages, calPage+1) + ')" class="crm-btn crm-btn-sm crm-btn-outline"' + (calPage===totalPages?' disabled':'') + '>Järgmine →</button>';
+            html += '</div>';
+        }
+    }
+    document.getElementById('cal-date-list-inner').innerHTML = html;
+    document.getElementById('cal-date-list').style.display = 'block';
+    document.getElementById('cal-date-list').scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+function calGoPage(page) {
+    calPage = page;
+    renderDateList();
+}
 
 /* ---- Event modal ---- */
 function openEventModal(id) {
