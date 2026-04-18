@@ -44,90 +44,248 @@ $stats = $wpdb->get_row("SELECT
 
 $vat_rate = (float) Vesho_CRM_Database::get_setting('vat_rate', '22');
 
-// Print/PDF view
+// Print/PDF view — professional A4 invoice
 if ( $action === 'print' && $invoice_id ) {
-    $inv  = $wpdb->get_row($wpdb->prepare("SELECT i.*, c.name as client_name, c.email as client_email, c.address as client_address, c.company as client_company FROM {$wpdb->prefix}vesho_invoices i LEFT JOIN {$wpdb->prefix}vesho_clients c ON i.client_id=c.id WHERE i.id=%d", $invoice_id));
-    $items = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$wpdb->prefix}vesho_invoice_items WHERE invoice_id=%d ORDER BY id ASC", $invoice_id));
-    $co_name = get_option('vesho_company_name','Vesho OÜ');
-    $co_reg  = get_option('vesho_company_reg','');
-    $co_vat  = get_option('vesho_company_vat','');
-    $co_addr = get_option('vesho_company_address','');
-    $co_bank = get_option('vesho_company_bank','');
-    $co_iban = get_option('vesho_company_iban','');
-    $co_email= get_option('vesho_company_email','');
-    ?>
+    $inv  = $wpdb->get_row($wpdb->prepare(
+        "SELECT i.*, c.name as client_name, c.email as client_email, c.address as client_address,
+                c.company as client_company, c.reg_code as client_reg, c.vat_number as client_vat
+         FROM {$wpdb->prefix}vesho_invoices i
+         LEFT JOIN {$wpdb->prefix}vesho_clients c ON i.client_id=c.id
+         WHERE i.id=%d", $invoice_id));
+    if (!$inv) wp_die('Arve ei leitud');
+    $items = $wpdb->get_results($wpdb->prepare(
+        "SELECT * FROM {$wpdb->prefix}vesho_invoice_items WHERE invoice_id=%d ORDER BY id ASC",
+        $invoice_id));
+    $co_name  = get_option('vesho_company_name','Vesho OÜ');
+    $co_reg   = get_option('vesho_company_reg','');
+    $co_vat   = get_option('vesho_company_vat','');
+    $co_addr  = get_option('vesho_company_address','');
+    $co_bank  = get_option('vesho_company_bank','');
+    $co_iban  = get_option('vesho_company_iban','');
+    $co_email = get_option('vesho_company_email','');
+    $co_phone = get_option('vesho_company_phone','');
+    $co_logo  = get_option('vesho_company_logo','');
+    $status_labels = ['draft'=>'Mustand','sent'=>'Saadetud','paid'=>'Makstud','unpaid'=>'Maksmata','overdue'=>'Tähtaeg ületatud'];
+    $status_colors = ['paid'=>'#16a34a','draft'=>'#6b7280','sent'=>'#2563eb','unpaid'=>'#dc2626','overdue'=>'#dc2626'];
+    $inv_status = $inv->status ?? 'draft';
+    // Remove WP theme for clean print page
+    remove_all_actions('wp_head');
+    remove_all_actions('wp_footer');
+    ?><!DOCTYPE html>
+<html lang="et">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Arve <?php echo esc_html($inv->invoice_number); ?></title>
     <style>
-    body{font-family:Arial,sans-serif;font-size:13px;color:#111;margin:0;padding:24px}
-    .inv-header{display:flex;justify-content:space-between;margin-bottom:24px}
-    .inv-title{font-size:28px;font-weight:700;color:#0d1f2d}
-    table{width:100%;border-collapse:collapse;margin:16px 0}
-    th{background:#f0f4f8;padding:8px 10px;text-align:left;font-size:12px;text-transform:uppercase}
-    td{padding:8px 10px;border-bottom:1px solid #eee}
-    .inv-totals{width:300px;margin-left:auto}
-    .inv-totals td{border:none;padding:4px 8px}
-    .inv-total-row td{font-weight:700;font-size:16px;border-top:2px solid #333}
-    @media print{button{display:none}}
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    @page { size: A4; margin: 15mm; }
+    body { font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #1a1a2e; background: #fff; }
+    .page { max-width: 794px; margin: 0 auto; padding: 32px; background: #fff; }
+
+    /* Header */
+    .inv-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 36px; padding-bottom: 24px; border-bottom: 3px solid #00b4c8; }
+    .inv-logo img { max-height: 60px; max-width: 180px; }
+    .inv-logo-name { font-size: 22px; font-weight: 800; color: #00b4c8; letter-spacing: -0.5px; }
+    .inv-company-info { text-align: right; font-size: 11px; color: #555; line-height: 1.6; }
+    .inv-company-info strong { font-size: 14px; color: #1a1a2e; display: block; margin-bottom: 4px; }
+
+    /* Invoice title block */
+    .inv-title-block { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 32px; }
+    .inv-title { font-size: 32px; font-weight: 800; color: #1a1a2e; letter-spacing: -1px; }
+    .inv-number { font-size: 18px; font-weight: 700; color: #00b4c8; margin-top: 4px; }
+    .inv-meta { font-size: 11px; color: #666; margin-top: 8px; line-height: 2; }
+    .inv-meta strong { color: #1a1a2e; min-width: 90px; display: inline-block; }
+    .inv-status { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700;
+                  letter-spacing: 0.5px; text-transform: uppercase; color: #fff;
+                  background: <?php echo $status_colors[$inv_status] ?? '#6b7280'; ?>; }
+
+    /* Parties */
+    .inv-parties { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px; }
+    .inv-party { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; }
+    .inv-party-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #9ca3af; margin-bottom: 8px; }
+    .inv-party-name { font-size: 14px; font-weight: 700; color: #1a1a2e; margin-bottom: 4px; }
+    .inv-party-detail { font-size: 11px; color: #555; line-height: 1.8; }
+
+    /* Items table */
+    .inv-table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+    .inv-table thead tr { background: #0d1f2d; color: #fff; }
+    .inv-table thead th { padding: 10px 12px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; text-align: left; }
+    .inv-table thead th:nth-child(n+3) { text-align: right; }
+    .inv-table tbody tr:nth-child(even) { background: #f8fafc; }
+    .inv-table tbody tr:hover { background: #f0f9ff; }
+    .inv-table tbody td { padding: 9px 12px; font-size: 11.5px; border-bottom: 1px solid #e9ecef; }
+    .inv-table tbody td:nth-child(n+3) { text-align: right; }
+    .inv-table tfoot td { padding: 8px 12px; font-size: 12px; }
+    .inv-table tfoot .total-row td { font-size: 15px; font-weight: 800; background: #f0f9ff; border-top: 2px solid #00b4c8; color: #0d1f2d; }
+
+    /* Payment info */
+    .inv-payment { background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 16px; margin-top: 8px; }
+    .inv-payment-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #0369a1; margin-bottom: 8px; }
+    .inv-payment-row { display: flex; gap: 24px; font-size: 11px; line-height: 2; }
+    .inv-payment-row span { color: #555; }
+    .inv-payment-row strong { color: #1a1a2e; }
+
+    /* Notes */
+    .inv-notes { margin-top: 20px; padding: 12px 16px; background: #fffbeb; border-left: 3px solid #f59e0b; font-size: 11px; color: #555; border-radius: 0 6px 6px 0; }
+
+    /* Footer */
+    .inv-footer { margin-top: 40px; text-align: center; font-size: 10px; color: #9ca3af; border-top: 1px solid #e9ecef; padding-top: 12px; }
+
+    /* Print button */
+    .print-btn { position: fixed; bottom: 24px; right: 24px; padding: 12px 24px; background: #00b4c8; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,180,200,.4); transition: background .15s; z-index: 1000; }
+    .print-btn:hover { background: #0097a9; }
+    @media print { .print-btn { display: none !important; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
     </style>
+</head>
+<body>
+<div class="page">
+
+    <!-- Header -->
     <div class="inv-header">
+        <div class="inv-logo">
+            <?php if ($co_logo) : ?>
+                <img src="<?php echo esc_url($co_logo); ?>" alt="<?php echo esc_attr($co_name); ?>">
+            <?php else : ?>
+                <div class="inv-logo-name"><?php echo esc_html($co_name); ?></div>
+            <?php endif; ?>
+        </div>
+        <div class="inv-company-info">
+            <strong><?php echo esc_html($co_name); ?></strong>
+            <?php if ($co_reg) echo 'Reg: ' . esc_html($co_reg) . '<br>'; ?>
+            <?php if ($co_vat) echo 'KMKR: ' . esc_html($co_vat) . '<br>'; ?>
+            <?php if ($co_addr) echo esc_html($co_addr) . '<br>'; ?>
+            <?php if ($co_email) echo esc_html($co_email) . '<br>'; ?>
+            <?php if ($co_phone) echo esc_html($co_phone); ?>
+        </div>
+    </div>
+
+    <!-- Title block -->
+    <div class="inv-title-block">
         <div>
             <div class="inv-title">ARVE</div>
-            <div style="font-size:20px;font-weight:600;color:#2271b1"><?php echo esc_html($inv->invoice_number); ?></div>
-            <div style="margin-top:8px;color:#555">Kuupäev: <?php echo vesho_crm_format_date($inv->invoice_date); ?></div>
-            <?php if ($inv->due_date) : ?><div style="color:#555">Tähtaeg: <?php echo vesho_crm_format_date($inv->due_date); ?></div><?php endif; ?>
+            <div class="inv-number"><?php echo esc_html($inv->invoice_number); ?></div>
+            <div class="inv-meta">
+                <span><strong>Kuupäev:</strong> <?php echo vesho_crm_format_date($inv->invoice_date); ?></span><br>
+                <?php if ($inv->due_date) : ?>
+                <span><strong>Maksetähtaeg:</strong> <?php echo vesho_crm_format_date($inv->due_date); ?></span>
+                <?php endif; ?>
+            </div>
         </div>
         <div style="text-align:right">
-            <div style="font-weight:700;font-size:16px"><?php echo esc_html($co_name); ?></div>
-            <?php if ($co_reg) echo '<div>Reg: '.esc_html($co_reg).'</div>'; ?>
-            <?php if ($co_vat) echo '<div>KMKR: '.esc_html($co_vat).'</div>'; ?>
-            <?php if ($co_addr) echo '<div>'.esc_html($co_addr).'</div>'; ?>
-            <?php if ($co_email) echo '<div>'.esc_html($co_email).'</div>'; ?>
+            <span class="inv-status"><?php echo esc_html($status_labels[$inv_status] ?? $inv_status); ?></span>
         </div>
     </div>
-    <div style="margin-bottom:20px">
-        <strong>Klient:</strong><br>
-        <?php echo esc_html($inv->client_company ?: $inv->client_name); ?><br>
-        <?php echo esc_html($inv->client_name); ?><br>
-        <?php echo esc_html($inv->client_address ?: ''); ?><br>
-        <?php echo esc_html($inv->client_email ?: ''); ?>
+
+    <!-- Parties -->
+    <div class="inv-parties">
+        <div class="inv-party">
+            <div class="inv-party-label">Müüja</div>
+            <div class="inv-party-name"><?php echo esc_html($co_name); ?></div>
+            <div class="inv-party-detail">
+                <?php if ($co_reg) echo 'Reg: ' . esc_html($co_reg) . '<br>'; ?>
+                <?php if ($co_vat) echo 'KMKR: ' . esc_html($co_vat) . '<br>'; ?>
+                <?php if ($co_addr) echo esc_html($co_addr) . '<br>'; ?>
+                <?php if ($co_email) echo esc_html($co_email); ?>
+            </div>
+        </div>
+        <div class="inv-party">
+            <div class="inv-party-label">Ostja</div>
+            <div class="inv-party-name"><?php echo esc_html($inv->client_company ?: $inv->client_name); ?></div>
+            <div class="inv-party-detail">
+                <?php if ($inv->client_company && $inv->client_name !== $inv->client_company) echo esc_html($inv->client_name) . '<br>'; ?>
+                <?php if ($inv->client_reg ?? '') echo 'Reg: ' . esc_html($inv->client_reg) . '<br>'; ?>
+                <?php if ($inv->client_vat ?? '') echo 'KMKR: ' . esc_html($inv->client_vat) . '<br>'; ?>
+                <?php if ($inv->client_address) echo esc_html($inv->client_address) . '<br>'; ?>
+                <?php if ($inv->client_email) echo esc_html($inv->client_email); ?>
+            </div>
+        </div>
     </div>
-    <table>
-        <thead><tr><th>#</th><th>Kirjeldus</th><th>Kogus</th><th>Ühikuhind</th><th>KM %</th><th>Kokku</th></tr></thead>
+
+    <!-- Items table -->
+    <?php $subtotal = 0; $vat_sum = 0; ?>
+    <table class="inv-table">
+        <thead>
+            <tr>
+                <th style="width:30px">#</th>
+                <th>Kirjeldus</th>
+                <th style="width:70px">Kogus</th>
+                <th style="width:90px">Ühikuhind</th>
+                <th style="width:55px">KM %</th>
+                <th style="width:90px">KM</th>
+                <th style="width:100px">Kokku</th>
+            </tr>
+        </thead>
         <tbody>
-        <?php $subtotal=0; $vat_sum=0; foreach ($items as $i=>$item) :
-            $net = $item->quantity * $item->unit_price;
+        <?php foreach ($items as $i => $item) :
+            $net   = $item->quantity * $item->unit_price;
             $vat_a = $net * $item->vat_rate / 100;
-            $subtotal += $net; $vat_sum += $vat_a;
+            $subtotal += $net;
+            $vat_sum  += $vat_a;
         ?>
         <tr>
-            <td><?php echo $i+1; ?></td>
+            <td><?php echo $i + 1; ?></td>
             <td><?php echo esc_html($item->description); ?></td>
-            <td><?php echo number_format($item->quantity,2,',','.'); ?></td>
-            <td><?php echo number_format($item->unit_price,2,',','.'); ?> €</td>
-            <td><?php echo number_format($item->vat_rate,0); ?>%</td>
-            <td><?php echo number_format($item->total,2,',','.'); ?> €</td>
+            <td><?php echo number_format((float)$item->quantity, 2, ',', '.'); ?></td>
+            <td><?php echo number_format((float)$item->unit_price, 2, ',', '.'); ?> €</td>
+            <td><?php echo number_format((float)$item->vat_rate, 0); ?>%</td>
+            <td><?php echo number_format($vat_a, 2, ',', '.'); ?> €</td>
+            <td><strong><?php echo number_format((float)$item->total, 2, ',', '.'); ?> €</strong></td>
         </tr>
         <?php endforeach; ?>
         </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="5"></td>
+                <td style="color:#555;font-size:11px;text-align:right">Summa (km-ta):</td>
+                <td style="text-align:right"><?php echo number_format($subtotal, 2, ',', '.'); ?> €</td>
+            </tr>
+            <tr>
+                <td colspan="5"></td>
+                <td style="color:#555;font-size:11px;text-align:right">Käibemaks:</td>
+                <td style="text-align:right"><?php echo number_format($vat_sum, 2, ',', '.'); ?> €</td>
+            </tr>
+            <tr class="total-row">
+                <td colspan="5"></td>
+                <td style="text-align:right">KOKKU TASUDA:</td>
+                <td style="text-align:right"><?php echo number_format((float)$inv->amount, 2, ',', '.'); ?> €</td>
+            </tr>
+        </tfoot>
     </table>
-    <table class="inv-totals">
-        <tr><td>Summa ilma KM-ta:</td><td style="text-align:right"><?php echo number_format($subtotal,2,',','.'); ?> €</td></tr>
-        <tr><td>KM:</td><td style="text-align:right"><?php echo number_format($vat_sum,2,',','.'); ?> €</td></tr>
-        <tr class="inv-total-row"><td>KOKKU:</td><td style="text-align:right"><?php echo number_format($inv->amount,2,',','.'); ?> €</td></tr>
-    </table>
+
     <?php if ($co_bank || $co_iban) : ?>
-    <div style="margin-top:24px;padding:12px;background:#f0f4f8;border-radius:6px;font-size:12px">
-        <strong>Pangaandmed:</strong> <?php echo esc_html($co_bank); ?> | IBAN: <?php echo esc_html($co_iban); ?>
+    <div class="inv-payment">
+        <div class="inv-payment-title">💳 Makse info</div>
+        <div class="inv-payment-row">
+            <?php if ($co_bank) : ?><span>Pank: <strong><?php echo esc_html($co_bank); ?></strong></span><?php endif; ?>
+            <?php if ($co_iban) : ?><span>IBAN: <strong><?php echo esc_html($co_iban); ?></strong></span><?php endif; ?>
+            <?php if ($inv->due_date) : ?><span>Tähtaeg: <strong><?php echo vesho_crm_format_date($inv->due_date); ?></strong></span><?php endif; ?>
+            <span>Viitenumber: <strong><?php echo esc_html($inv->invoice_number); ?></strong></span>
+        </div>
     </div>
     <?php endif; ?>
-    <?php if ($inv->description) : ?>
-    <div style="margin-top:16px;color:#555;font-size:12px"><?php echo esc_html($inv->description); ?></div>
-    <?php endif; ?>
-    <div style="margin-top:20px;text-align:right">
-        <button onclick="window.print()" style="padding:8px 20px;background:#2271b1;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:14px">🖨️ Prindi / Salvesta PDF</button>
+
+    <?php if (!empty($inv->description)) : ?>
+    <div class="inv-notes">
+        <strong>Märkused:</strong> <?php echo esc_html($inv->description); ?>
     </div>
-    <script>window.onload=function(){window.print();}</script>
+    <?php endif; ?>
+
+    <div class="inv-footer">
+        <?php echo esc_html($co_name); ?>
+        <?php if ($co_reg) echo ' · Reg: ' . esc_html($co_reg); ?>
+        <?php if ($co_vat) echo ' · KMKR: ' . esc_html($co_vat); ?>
+        <?php if ($co_email) echo ' · ' . esc_html($co_email); ?>
+    </div>
+
+</div>
+
+<button class="print-btn" onclick="window.print()">📄 Laadi PDF</button>
+<script>window.onload = function() { window.print(); };</script>
+</body>
+</html>
     <?php
-    return;
+    return; // end print view
 }
 ?>
 <div class="crm-wrap">
@@ -269,7 +427,7 @@ if ( $action === 'print' && $invoice_id ) {
                 <a href="<?php echo admin_url('admin.php?page=vesho-crm-invoices'); ?>" class="crm-btn crm-btn-outline">Tühista</a>
                 <?php if ($edit) : ?>
                 <a href="<?php echo admin_url('admin.php?page=vesho-crm-invoices&action=print&invoice_id='.$edit->id); ?>"
-                   class="crm-btn crm-btn-outline" target="_blank">📄 PDF / Prindi</a>
+                   class="crm-btn crm-btn-outline" target="_blank">📄 Laadi PDF</a>
                 <?php endif; ?>
                 <button type="submit" class="crm-btn crm-btn-primary">💾 Salvesta</button>
             </div>
