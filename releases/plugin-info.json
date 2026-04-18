@@ -6,5 +6,5 @@
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-18",
-  "changelog": "<h4>2.2.24</h4><ul><li>Admin tellimused: kaamera skänner (📷 Skänni nupp, töötab mobiiliga)</li><li>ZXing skänner laetakse nüüd kõigil admin lehtedel kus vaja (ladu, vastuvõtt, tellimused)</li></ul><h4>2.2.23</h4><ul><li>Kohustuslik paroolivahetus uutele adminidele</li><li>Parandus: 2FA sisselogimisel lõpmatu tsükkel</li></ul><h4>2.2.22</h4><ul><li>Töötaja QR kaardiga sisselogimine</li><li>Klientide portaal: lepingutingimused</li></ul>"
+  "changelog": "<h4>2.2.24</h4><ul><li>Uus versioon</li></ul>"
 }
