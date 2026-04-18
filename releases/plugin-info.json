@@ -6,5 +6,5 @@
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-18",
-  "changelog": "<h4>2.2.38</h4><ul><li>Korralik e-pood: 3-veeruline grid, toote pildid, sortimine, kategooriatabelid</li><li>Toote pilt admin inventaris</li><li>Uuenduse taustaprotsess vältimaks Gateway Timeout-i</li></ul><h4>2.2.37</h4><ul><li>E-poes tootekaardil klõps avab tootelehe</li><li>Tootelehel täiskirjeldus, kampaania allahindlus, koguse valik</li></ul><h4>2.2.36</h4><ul><li>Teenusepäring lukustab kampaania allahindluse</li></ul>"
+  "changelog": "<h4>2.2.38</h4><ul><li>Uus versioon</li></ul>"
 }
