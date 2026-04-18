@@ -40,6 +40,9 @@ class Vesho_CRM_Admin {
         add_action( 'admin_post_vesho_save_workhours',   array( __CLASS__, 'handle_save_workhours' ) );
         add_action( 'admin_post_vesho_delete_workhours', array( __CLASS__, 'handle_delete_workhours' ) );
         add_action( 'admin_post_vesho_save_receipt',         array( __CLASS__, 'handle_save_receipt' ) );
+        add_action( 'wp_ajax_vesho_receipt_send',            array( __CLASS__, 'ajax_receipt_send' ) );
+        add_action( 'wp_ajax_vesho_receipt_approve',         array( __CLASS__, 'ajax_receipt_approve' ) );
+        add_action( 'wp_ajax_vesho_receipt_reject',          array( __CLASS__, 'ajax_receipt_reject' ) );
         add_action( 'admin_post_vesho_save_campaign',        array( __CLASS__, 'handle_save_campaign' ) );
         add_action( 'admin_post_vesho_pause_campaign',       array( __CLASS__, 'handle_pause_campaign' ) );
         add_action( 'admin_post_vesho_resume_campaign',      array( __CLASS__, 'handle_resume_campaign' ) );
@@ -1184,38 +1187,126 @@ private static function load_view( $name ) {
         check_admin_referer( 'vesho_save_receipt' );
         if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorized' );
         global $wpdb;
+        $batch_ref = sanitize_text_field( $_POST['batch_ref'] ?? $_POST['reference_number'] ?? '' );
         $receipt = array(
-            'receipt_date'     => sanitize_text_field($_POST['receipt_date']??date('Y-m-d')),
-            'reference_number' => sanitize_text_field($_POST['reference_number']??''),
-            'supplier'         => sanitize_text_field($_POST['supplier']??''),
-            'notes'            => sanitize_textarea_field($_POST['notes']??''),
+            'receipt_date'     => sanitize_text_field( $_POST['receipt_date'] ?? date('Y-m-d') ),
+            'reference_number' => $batch_ref,
+            'batch_ref'        => $batch_ref,
+            'supplier'         => sanitize_text_field( $_POST['supplier'] ?? '' ),
+            'notes'            => sanitize_textarea_field( $_POST['notes'] ?? '' ),
+            'status'           => 'draft',
             'created_at'       => current_time('mysql'),
         );
-        $wpdb->insert($wpdb->prefix.'vesho_stock_receipts', $receipt);
+        $wpdb->insert( $wpdb->prefix . 'vesho_stock_receipts', $receipt );
         $receipt_id = $wpdb->insert_id;
-        if ( $receipt_id && ! empty($_POST['lines']) && is_array($_POST['lines']) ) {
+        if ( $receipt_id && ! empty( $_POST['lines'] ) && is_array( $_POST['lines'] ) ) {
             foreach ( $_POST['lines'] as $line ) {
-                $inv_id  = absint($line['inventory_id']??0);
-                $qty     = (float)($line['quantity']??0);
-                $price   = (float)($line['unit_price']??0);
-                $batch   = sanitize_text_field($line['batch_number']??'');
-                if (!$inv_id || $qty <= 0) continue;
-                $wpdb->insert($wpdb->prefix.'vesho_stock_receipt_items', array(
-                    'receipt_id'   => $receipt_id,
-                    'inventory_id' => $inv_id,
-                    'quantity'     => $qty,
-                    'unit_price'   => $price,
-                    'batch_number' => $batch,
-                ));
-                // Update stock quantity
-                $wpdb->query($wpdb->prepare(
-                    "UPDATE {$wpdb->prefix}vesho_inventory SET quantity = quantity + %f WHERE id = %d",
-                    $qty, $inv_id
-                ));
+                $inv_id   = absint( $line['inventory_id'] ?? 0 );
+                $qty      = (float)( $line['quantity'] ?? 0 );
+                $price    = (float)( $line['unit_price'] ?? 0 );
+                $sell     = (float)( $line['selling_price'] ?? 0 );
+                $pname    = sanitize_text_field( $line['product_name'] ?? '' );
+                $psku     = sanitize_text_field( $line['product_sku'] ?? '' );
+                $pean     = sanitize_text_field( $line['product_ean'] ?? '' );
+                $punit    = sanitize_text_field( $line['product_unit'] ?? 'tk' );
+                if ( ( ! $inv_id && ! $pname ) || $qty <= 0 ) continue;
+                // Resolve inventory_id from EAN/SKU if not provided
+                if ( ! $inv_id && $pean ) {
+                    $inv_id = (int)$wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$wpdb->prefix}vesho_inventory WHERE ean=%s LIMIT 1", $pean ) );
+                }
+                if ( ! $inv_id && $psku ) {
+                    $inv_id = (int)$wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$wpdb->prefix}vesho_inventory WHERE sku=%s LIMIT 1", $psku ) );
+                }
+                $wpdb->insert( $wpdb->prefix . 'vesho_stock_receipt_items', array(
+                    'receipt_id'    => $receipt_id,
+                    'inventory_id'  => $inv_id ?: null,
+                    'quantity'      => $qty,
+                    'purchase_price'=> $price,
+                    'unit_price'    => $price,
+                    'selling_price' => $sell ?: null,
+                    'product_name'  => $pname,
+                    'product_sku'   => $psku,
+                    'product_unit'  => $punit,
+                    'ean'           => $pean,
+                ) );
             }
         }
         wp_redirect( add_query_arg( array('page'=>'vesho-crm-receipts','msg'=>'added'), admin_url('admin.php') ) );
         exit;
+    }
+
+    // ── AJAX: send receipt to worker ──────────────────────────────────────────
+    public static function ajax_receipt_send() {
+        check_ajax_referer( 'vesho_admin_nonce', 'nonce' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error();
+        global $wpdb;
+        $receipt_id = absint( $_POST['receipt_id'] ?? 0 );
+        $worker_id  = absint( $_POST['worker_id'] ?? 0 );
+        if ( ! $receipt_id || ! $worker_id ) wp_send_json_error( 'Puuduvad andmed' );
+        $worker = $wpdb->get_row( $wpdb->prepare( "SELECT name FROM {$wpdb->prefix}vesho_workers WHERE id=%d", $worker_id ) );
+        if ( ! $worker ) wp_send_json_error( 'Töötajat ei leitud' );
+        $wpdb->update( $wpdb->prefix . 'vesho_stock_receipts', array(
+            'status'      => 'pending',
+            'worker_id'   => $worker_id,
+            'worker_name' => $worker->name,
+        ), array( 'id' => $receipt_id ) );
+        wp_send_json_success( array( 'message' => 'Saadetud töötajale ' . $worker->name ) );
+    }
+
+    // ── AJAX: approve receipt (update inventory) ──────────────────────────────
+    public static function ajax_receipt_approve() {
+        check_ajax_referer( 'vesho_admin_nonce', 'nonce' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error();
+        global $wpdb;
+        $receipt_id = absint( $_POST['receipt_id'] ?? 0 );
+        if ( ! $receipt_id ) wp_send_json_error( 'Puudub receipt_id' );
+        $items = $wpdb->get_results( $wpdb->prepare(
+            "SELECT * FROM {$wpdb->prefix}vesho_stock_receipt_items WHERE receipt_id=%d", $receipt_id
+        ) );
+        foreach ( $items as $item ) {
+            $qty    = (float)( $item->actual_qty ?? $item->quantity );
+            $inv_id = (int) $item->inventory_id;
+            // Create new inventory item if needed
+            if ( ! $inv_id ) {
+                $pname = $item->product_name ?: 'Nimeta toode';
+                // Try to match by EAN or SKU
+                if ( $item->ean ) $inv_id = (int)$wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$wpdb->prefix}vesho_inventory WHERE ean=%s LIMIT 1", $item->ean ) );
+                if ( ! $inv_id && $item->product_sku ) $inv_id = (int)$wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$wpdb->prefix}vesho_inventory WHERE sku=%s LIMIT 1", $item->product_sku ) );
+                if ( ! $inv_id ) {
+                    $wpdb->insert( $wpdb->prefix . 'vesho_inventory', array(
+                        'name'           => $pname,
+                        'sku'            => $item->product_sku ?: null,
+                        'ean'            => $item->ean ?: null,
+                        'unit'           => $item->product_unit ?: 'tk',
+                        'quantity'       => 0,
+                        'purchase_price' => $item->unit_price ?: 0,
+                        'shop_price'     => $item->selling_price ?: 0,
+                        'archived'       => 0,
+                    ) );
+                    $inv_id = (int)$wpdb->insert_id;
+                }
+                $wpdb->update( $wpdb->prefix . 'vesho_stock_receipt_items', array( 'inventory_id' => $inv_id ), array( 'id' => $item->id ) );
+            }
+            if ( $inv_id && $qty > 0 ) {
+                $wpdb->query( $wpdb->prepare(
+                    "UPDATE {$wpdb->prefix}vesho_inventory SET quantity = quantity + %f WHERE id=%d",
+                    $qty, $inv_id
+                ) );
+            }
+        }
+        $wpdb->update( $wpdb->prefix . 'vesho_stock_receipts', array( 'status' => 'approved', 'received_at' => current_time('mysql') ), array( 'id' => $receipt_id ) );
+        wp_send_json_success( array( 'message' => 'Kinnitatud! Laoseis uuendatud.' ) );
+    }
+
+    // ── AJAX: reject/delete receipt ───────────────────────────────────────────
+    public static function ajax_receipt_reject() {
+        check_ajax_referer( 'vesho_admin_nonce', 'nonce' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error();
+        global $wpdb;
+        $receipt_id = absint( $_POST['receipt_id'] ?? 0 );
+        if ( ! $receipt_id ) wp_send_json_error();
+        $wpdb->update( $wpdb->prefix . 'vesho_stock_receipts', array( 'status' => 'rejected' ), array( 'id' => $receipt_id ) );
+        wp_send_json_success();
     }
 
     // ── Email notification helper ─────────────────────────────────────────────

@@ -577,6 +577,18 @@ class Vesho_CRM_Database {
         self::maybe_add_column( "{$wpdb->prefix}vesho_maintenances", 'campaign_discount', "DECIMAL(5,2) DEFAULT 0" );
         self::maybe_add_column( "{$wpdb->prefix}vesho_maintenances", 'campaign_name',     "VARCHAR(100) DEFAULT ''" );
 
+        // Stock receipts — status workflow + batch support
+        self::maybe_add_column( "{$wpdb->prefix}vesho_stock_receipts", 'reference_number', "VARCHAR(100) DEFAULT ''" );
+        self::maybe_add_column( "{$wpdb->prefix}vesho_stock_receipts", 'receipt_date',     "DATE DEFAULT NULL" );
+        self::maybe_add_column( "{$wpdb->prefix}vesho_stock_receipts", 'batch_ref',        "VARCHAR(100) DEFAULT ''" );
+        self::maybe_add_column( "{$wpdb->prefix}vesho_stock_receipts", 'worker_name',      "VARCHAR(100) DEFAULT ''" );
+        // Stock receipt items — selling price + product info for new items
+        self::maybe_add_column( "{$wpdb->prefix}vesho_stock_receipt_items", 'unit_price',     "DECIMAL(10,2) DEFAULT 0.00" );
+        self::maybe_add_column( "{$wpdb->prefix}vesho_stock_receipt_items", 'selling_price',  "DECIMAL(10,2) DEFAULT NULL" );
+        self::maybe_add_column( "{$wpdb->prefix}vesho_stock_receipt_items", 'product_name',   "VARCHAR(255) DEFAULT ''" );
+        self::maybe_add_column( "{$wpdb->prefix}vesho_stock_receipt_items", 'product_sku',    "VARCHAR(100) DEFAULT ''" );
+        self::maybe_add_column( "{$wpdb->prefix}vesho_stock_receipt_items", 'product_unit',   "VARCHAR(20) DEFAULT 'tk'" );
+
         // Inventory product image
         self::maybe_add_column( "{$wpdb->prefix}vesho_inventory", 'image_url', "VARCHAR(500) DEFAULT ''" );
 

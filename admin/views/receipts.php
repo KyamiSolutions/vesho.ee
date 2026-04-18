@@ -1,234 +1,353 @@
 <?php defined( 'ABSPATH' ) || exit;
 global $wpdb;
 
-$action     = isset($_GET['action'])     ? sanitize_text_field($_GET['action'])  : '';
-$receipt_id = isset($_GET['receipt_id']) ? absint($_GET['receipt_id'])            : 0;
-$search     = isset($_GET['s'])          ? sanitize_text_field($_GET['s'])        : '';
+$tab    = sanitize_key( $_GET['tab'] ?? 'draft' );
+$search = sanitize_text_field( $_GET['s'] ?? '' );
+$nonce  = wp_create_nonce('vesho_admin_nonce');
 
-$inventory_items = $wpdb->get_results("SELECT id, name, sku, ean, unit, purchase_price FROM {$wpdb->prefix}vesho_inventory WHERE archived=0 ORDER BY name ASC");
+$all_workers = $wpdb->get_results("SELECT id, name FROM {$wpdb->prefix}vesho_workers WHERE active=1 ORDER BY name ASC");
+$inventory_items = $wpdb->get_results("SELECT id, name, sku, ean, unit, purchase_price, shop_price FROM {$wpdb->prefix}vesho_inventory WHERE archived=0 ORDER BY name ASC");
 
-$edit = null;
-$edit_items = [];
-if ( $action === 'view' && $receipt_id ) {
-    $edit = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}vesho_stock_receipts WHERE id=%d", $receipt_id));
-    if ($edit) {
-        $edit_items = $wpdb->get_results($wpdb->prepare(
-            "SELECT sri.*, inv.name as item_name, inv.unit FROM {$wpdb->prefix}vesho_stock_receipt_items sri
-             LEFT JOIN {$wpdb->prefix}vesho_inventory inv ON sri.inventory_id=inv.id
-             WHERE sri.receipt_id=%d", $receipt_id
-        ));
-    }
+// Status tab query
+$status_filter = in_array( $tab, ['draft','pending','received','approved','rejected'] ) ? $tab : null;
+$where = $status_filter ? $wpdb->prepare('WHERE sr.status=%s', $status_filter) : 'WHERE 1=1';
+if ($search) {
+    $like = '%' . $wpdb->esc_like($search) . '%';
+    $where .= $wpdb->prepare(' AND (sr.batch_ref LIKE %s OR sr.supplier LIKE %s OR sr.worker_name LIKE %s)', $like, $like, $like);
 }
 
-$where = '1=1';
-if ($search) { $where .= $wpdb->prepare(' AND (r.reference_number LIKE %s OR r.supplier LIKE %s)', '%'.$wpdb->esc_like($search).'%', '%'.$wpdb->esc_like($search).'%'); }
-
 $receipts = $wpdb->get_results(
-    "SELECT r.*, COUNT(ri.id) as line_count, SUM(ri.quantity*ri.unit_price) as total_value
-     FROM {$wpdb->prefix}vesho_stock_receipts r
-     LEFT JOIN {$wpdb->prefix}vesho_stock_receipt_items ri ON r.id=ri.receipt_id
-     WHERE $where GROUP BY r.id ORDER BY r.receipt_date DESC LIMIT 200"
+    "SELECT sr.*, COUNT(sri.id) as item_count, SUM(sri.quantity * COALESCE(sri.unit_price,sri.purchase_price,0)) as total_value
+     FROM {$wpdb->prefix}vesho_stock_receipts sr
+     LEFT JOIN {$wpdb->prefix}vesho_stock_receipt_items sri ON sri.receipt_id=sr.id
+     $where GROUP BY sr.id ORDER BY sr.created_at DESC LIMIT 200"
 );
-$total = count($receipts);
+
+// Badge counts for tabs
+$counts = [];
+foreach (['draft','pending','received','approved'] as $s) {
+    $counts[$s] = (int)$wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$wpdb->prefix}vesho_stock_receipts WHERE status=%s", $s));
+}
+
+$tabs = [
+    'draft'    => 'Mustandid',
+    'pending'  => 'Töötajal',
+    'received' => 'Vastuvõetud',
+    'approved' => 'Kinnitatud',
+    'all'      => 'Kõik',
+];
+
+$st_label = ['draft'=>'Mustrand','pending'=>'Töötajal','received'=>'Vastuvõetud','approved'=>'Kinnitatud','rejected'=>'Tagasi lükatud'];
+$st_color = ['draft'=>'#64748b','pending'=>'#d97706','received'=>'#2563eb','approved'=>'#16a34a','rejected'=>'#dc2626'];
+$st_bg    = ['draft'=>'#f1f5f9','pending'=>'#fef3c7','received'=>'#dbeafe','approved'=>'#dcfce7','rejected'=>'#fee2e2'];
 ?>
 <div class="crm-wrap">
-    <h1 class="crm-page-title">📥 Vastuvõtt <span class="crm-count">(<?php echo $total; ?>)</span></h1>
+<h1 class="crm-page-title">📥 Kauba vastuvõtt</h1>
+<p style="color:#6b7280;font-size:13px;margin-top:-12px;margin-bottom:16px">Sisesta arve, salvesta mustrand — saada töötajale vastuvõtuks</p>
 
-    <?php if (isset($_GET['msg'])) :
-        $msgs = ['added'=>'Vastuvõtt salvestatud! Laoseis uuendatud.','deleted'=>'Vastuvõtt kustutatud!'];
-        echo '<div class="crm-alert crm-alert-success">'.esc_html($msgs[$_GET['msg']]??'Salvestatud!').'</div>';
-    endif; ?>
+<?php if (isset($_GET['msg'])) :
+    $msgs = ['added'=>'Mustrand salvestatud!','deleted'=>'Kustutatud!'];
+    echo '<div class="crm-alert crm-alert-success">'.esc_html($msgs[$_GET['msg']]??'Salvestatud!').'</div>';
+endif; ?>
 
-    <?php if ($action === 'add') : ?>
-    <div class="crm-card">
-        <div class="crm-card-header">
-            <span class="crm-card-title">Uus kauba vastuvõtt</span>
-            <a href="<?php echo admin_url('admin.php?page=vesho-crm-receipts'); ?>" class="crm-btn crm-btn-outline crm-btn-sm">← Tagasi</a>
-        </div>
-        <div style="padding:20px">
-        <form method="POST" action="<?php echo admin_url('admin-post.php'); ?>">
-            <?php wp_nonce_field('vesho_save_receipt'); ?>
-            <input type="hidden" name="action" value="vesho_save_receipt">
-            <div class="crm-form-grid" style="margin-bottom:20px">
-                <div class="crm-form-group">
-                    <label class="crm-form-label">Vastuvõtu kuupäev *</label>
-                    <input class="crm-form-input" type="date" name="receipt_date" value="<?php echo date('Y-m-d'); ?>" required>
-                </div>
-                <div class="crm-form-group">
-                    <label class="crm-form-label">Viitenumber / Arve nr</label>
-                    <input class="crm-form-input" type="text" name="reference_number">
-                </div>
-                <div class="crm-form-group">
-                    <label class="crm-form-label">Tarnija</label>
-                    <input class="crm-form-input" type="text" name="supplier">
-                </div>
-                <div class="crm-form-group crm-form-full">
-                    <label class="crm-form-label">Märkused</label>
-                    <textarea class="crm-form-textarea" name="notes" rows="2"></textarea>
-                </div>
-            </div>
-
-            <h3 style="font-size:14px;font-weight:700;margin:0 0 12px;color:#0d1f2d">Vastuvõetud kaubad
-                <button type="button" onclick="scanReceiptEan()" style="margin-left:10px;padding:4px 12px;font-size:12px;background:#e0f7fa;border:1px solid #00b4c8;color:#007a8a;border-radius:6px;cursor:pointer;font-weight:600">📷 Skänni EAN</button>
-            </h3>
-            <div id="receipt-lines">
-                <div class="receipt-line" style="display:grid;grid-template-columns:1fr 100px 120px 120px 40px;gap:8px;margin-bottom:8px;align-items:end">
-                    <div>
-                        <label class="crm-form-label">Toode</label>
-                        <select class="crm-form-select" name="lines[0][inventory_id]" required>
-                            <option value="">— Vali toode —</option>
-                            <?php foreach ($inventory_items as $item) : ?>
-                                <option value="<?php echo $item->id; ?>" data-price="<?php echo esc_attr($item->purchase_price); ?>"><?php echo esc_html($item->name); ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="crm-form-label">Kogus</label>
-                        <input class="crm-form-input" type="number" step="0.01" min="0.01" name="lines[0][quantity]" required>
-                    </div>
-                    <div>
-                        <label class="crm-form-label">Ühikuhind (€)</label>
-                        <input class="crm-form-input" type="number" step="0.01" name="lines[0][unit_price]">
-                    </div>
-                    <div>
-                        <label class="crm-form-label">Partii nr</label>
-                        <input class="crm-form-input" type="text" name="lines[0][batch_number]">
-                    </div>
-                    <div style="padding-top:22px"><button type="button" onclick="this.closest('.receipt-line').remove()" style="background:none;border:none;cursor:pointer;font-size:18px;color:#ef4444">✕</button></div>
-                </div>
-            </div>
-            <button type="button" id="add-line" class="crm-btn crm-btn-outline crm-btn-sm" style="margin-top:8px">+ Lisa rida</button>
-
-            <div class="crm-form-actions">
-                <a href="<?php echo admin_url('admin.php?page=vesho-crm-receipts'); ?>" class="crm-btn crm-btn-outline">Tühista</a>
-                <button type="submit" class="crm-btn crm-btn-primary">💾 Salvesta & uuenda laoseis</button>
-            </div>
-        </form>
-        </div>
-    </div>
-    <script>
-    (function(){
-        var idx = 1;
-        var inv = <?php echo json_encode(array_map(fn($i)=>['id'=>$i->id,'name'=>$i->name,'price'=>$i->purchase_price,'ean'=>$i->ean??'','sku'=>$i->sku??''], $inventory_items)); ?>;
-        var ajaxUrl = '<?php echo admin_url('admin-ajax.php'); ?>';
-        var nonce   = '<?php echo wp_create_nonce('vesho_crm_nonce'); ?>';
-
-        function buildLineHtml(i, preselect){
-            preselect = preselect || 0;
-            var opts = inv.map(function(item){
-                return '<option value="'+item.id+'" data-price="'+item.price+'"'+(item.id==preselect?' selected':'')+'>'+item.name+'</option>';
-            }).join('');
-            var price = preselect ? (inv.find(function(x){ return x.id==preselect; })||{}).price || '' : '';
-            return '<div class="receipt-line" style="display:grid;grid-template-columns:1fr 100px 120px 120px 40px;gap:8px;margin-bottom:8px;align-items:end">'
-                +'<div><label class="crm-form-label">Toode</label><select class="crm-form-select" name="lines['+i+'][inventory_id]" required><option value="">— Vali toode —</option>'+opts+'</select></div>'
-                +'<div><label class="crm-form-label">Kogus</label><input class="crm-form-input" type="number" step="0.01" min="0.01" name="lines['+i+'][quantity]" value="1" required></div>'
-                +'<div><label class="crm-form-label">Ühikuhind (€)</label><input class="crm-form-input" type="number" step="0.01" name="lines['+i+'][unit_price]" value="'+(price||'')+'"></div>'
-                +'<div><label class="crm-form-label">Partii nr</label><input class="crm-form-input" type="text" name="lines['+i+'][batch_number]"></div>'
-                +'<div style="padding-top:22px"><button type="button" onclick="this.closest(\'.receipt-line\').remove()" style="background:none;border:none;cursor:pointer;font-size:18px;color:#ef4444">✕</button></div>'
-                +'</div>';
-        }
-
-        function addLine(preselect){ document.getElementById('receipt-lines').insertAdjacentHTML('beforeend', buildLineHtml(idx++, preselect)); }
-
-        document.getElementById('add-line').addEventListener('click', function(){
-            addLine(0);
-        });
-
-        // EAN scan → find item in inventory list → add line pre-selected
-        window.scanReceiptEan = function(){
-            window.VeshoScanner.open({
-                title: 'Skänni vastuvõetud kaup',
-                autoConfirm: true,
-                onScan: function(code){
-                    // Match by EAN or SKU locally first
-                    var match = inv.find(function(i){ return i.ean===code || i.sku===code; });
-                    if (match) {
-                        addLine(match.id);
-                        return;
-                    }
-                    // AJAX lookup
-                    var fd = new FormData();
-                    fd.append('action', 'vesho_ean_lookup');
-                    fd.append('nonce', nonce);
-                    fd.append('ean', code);
-                    fetch(ajaxUrl, {method:'POST', body:fd})
-                        .then(function(r){ return r.json(); })
-                        .then(function(d){
-                            if (d.success) {
-                                // Push to local inv list if not present
-                                if (!inv.find(function(i){ return i.id==d.data.id; })) {
-                                    inv.push({id:d.data.id, name:d.data.name, price:d.data.purchase_price, ean:d.data.ean||'', sku:d.data.sku||''});
-                                }
-                                addLine(d.data.id);
-                            } else {
-                                alert('EAN toodet ei leitud: ' + code + '\nLisa toode kõigepealt laosse.');
-                            }
-                        })
-                        .catch(function(){ alert('Ühenduse viga'); });
-                }
-            });
-        };
-    })();
-    </script>
-    <?php elseif ($action === 'view' && $edit) : ?>
-    <div class="crm-card">
-        <div class="crm-card-header">
-            <span class="crm-card-title">Vastuvõtt #<?php echo $edit->id; ?> — <?php echo vesho_crm_format_date($edit->receipt_date); ?></span>
-            <a href="<?php echo admin_url('admin.php?page=vesho-crm-receipts'); ?>" class="crm-btn crm-btn-outline crm-btn-sm">← Tagasi</a>
-        </div>
-        <div style="padding:20px">
-            <?php if ($edit->supplier) echo '<p><strong>Tarnija:</strong> '.esc_html($edit->supplier).'</p>'; ?>
-            <?php if ($edit->reference_number) echo '<p><strong>Viitenumber:</strong> '.esc_html($edit->reference_number).'</p>'; ?>
-            <?php if ($edit->notes) echo '<p><strong>Märkused:</strong> '.esc_html($edit->notes).'</p>'; ?>
-            <table class="crm-table" style="margin-top:16px">
-                <thead><tr><th>Toode</th><th>Kogus</th><th>Ühikuhind</th><th>Kokku</th></tr></thead>
-                <tbody>
-                <?php foreach ($edit_items as $li) : ?>
-                <tr>
-                    <td><?php echo esc_html($li->item_name); ?></td>
-                    <td><?php echo number_format($li->quantity,2); ?> <?php echo esc_html($li->unit); ?></td>
-                    <td><?php echo vesho_crm_format_money($li->unit_price); ?></td>
-                    <td><strong><?php echo vesho_crm_format_money($li->quantity * $li->unit_price); ?></strong></td>
-                </tr>
-                <?php endforeach; ?>
-                </tbody>
-            </table>
-        </div>
-    </div>
-    <?php else : ?>
-    <div class="crm-card">
-        <div class="crm-toolbar">
-            <a href="<?php echo admin_url('admin.php?page=vesho-crm-receipts&action=add'); ?>" class="crm-btn crm-btn-primary">+ Uus vastuvõtt</a>
-            <form method="GET" style="display:flex;gap:8px;flex:1">
-                <input type="hidden" name="page" value="vesho-crm-receipts">
-                <input class="crm-search" type="search" name="s" placeholder="Otsi viitenumbrit, tarnijat..." value="<?php echo esc_attr($search); ?>">
-                <button type="submit" class="crm-btn crm-btn-outline crm-btn-sm">Otsi</button>
-            </form>
-        </div>
-        <?php if (empty($receipts)) : ?>
-            <div class="crm-empty">Vastuvõtte ei leitud.</div>
-        <?php else : ?>
-        <table class="crm-table">
-            <thead><tr>
-                <th>ID</th><th>Kuupäev</th><th>Tarnija</th><th>Viitenumber</th><th>Ridu</th><th>Väärtus</th><th class="td-actions">Toimingud</th>
-            </tr></thead>
-            <tbody>
-            <?php foreach ($receipts as $r) : ?>
-            <tr>
-                <td style="color:#6b8599">#<?php echo $r->id; ?></td>
-                <td><?php echo vesho_crm_format_date($r->receipt_date); ?></td>
-                <td><?php echo esc_html($r->supplier?:'–'); ?></td>
-                <td style="font-family:monospace"><?php echo esc_html($r->reference_number?:'–'); ?></td>
-                <td><?php echo intval($r->line_count); ?> toodet</td>
-                <td><?php echo $r->total_value ? vesho_crm_format_money($r->total_value) : '–'; ?></td>
-                <td class="td-actions">
-                    <a href="<?php echo admin_url('admin.php?page=vesho-crm-receipts&action=view&receipt_id='.$r->id); ?>" class="crm-btn crm-btn-icon crm-btn-sm" title="Vaata">👁️</a>
-                </td>
-            </tr>
-            <?php endforeach; ?>
-            </tbody>
-        </table>
-        <?php endif; ?>
-    </div>
-    <?php endif; ?>
+<!-- Toolbar -->
+<div class="crm-toolbar" style="margin-bottom:16px">
+    <button class="crm-btn crm-btn-primary" onclick="openCreateModal()">+ Uus tarnimine</button>
+    <form method="GET" style="display:flex;gap:6px;flex:1">
+        <input type="hidden" name="page" value="vesho-crm-receipts">
+        <input type="hidden" name="tab" value="<?php echo esc_attr($tab); ?>">
+        <input class="crm-search" type="search" name="s" placeholder="Otsi arve nr, tarnija, töötaja..." value="<?php echo esc_attr($search); ?>">
+        <button type="submit" class="crm-btn crm-btn-outline crm-btn-sm">Otsi</button>
+    </form>
 </div>
+
+<!-- Status tabs -->
+<div style="display:flex;gap:0;border-bottom:2px solid #e5e7eb;margin-bottom:20px;overflow-x:auto">
+<?php foreach ($tabs as $key => $label) :
+    $active = ($tab === $key || ($key === 'all' && !in_array($tab, array_keys($tabs))));
+    $cnt = $counts[$key] ?? null;
+?>
+    <a href="<?php echo esc_url(add_query_arg(['page'=>'vesho-crm-receipts','tab'=>$key,'s'=>$search], admin_url('admin.php'))); ?>"
+       style="padding:9px 18px;font-size:13px;font-weight:<?php echo $active?'700':'400'; ?>;color:<?php echo $active?'#00b4c8':'#6b7280'; ?>;text-decoration:none;border-bottom:2px solid <?php echo $active?'#00b4c8':'transparent'; ?>;white-space:nowrap;margin-bottom:-2px">
+        <?php echo $label; ?>
+        <?php if ($cnt > 0) echo '<span style="background:#e0f7fa;color:#006064;border-radius:999px;font-size:11px;padding:1px 7px;margin-left:5px;font-weight:700">'.$cnt.'</span>'; ?>
+    </a>
+<?php endforeach; ?>
+</div>
+
+<!-- Receipt list -->
+<?php if (empty($receipts)) : ?>
+    <div class="crm-empty"><?php echo $tab === 'draft' ? 'Mustandeid pole — klõpsa "+ Uus tarnimine"' : 'Kirjeid pole'; ?></div>
+<?php else : ?>
+<div style="display:flex;flex-direction:column;gap:8px">
+<?php foreach ($receipts as $r) :
+    $st = $r->status ?? 'draft';
+    $bg = $st_bg[$st] ?? '#f1f5f9';
+    $clr = $st_color[$st] ?? '#64748b';
+?>
+<div class="crm-card" style="padding:14px 18px">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <div style="flex:1;min-width:0;cursor:pointer" onclick="toggleReceiptItems(<?php echo $r->id; ?>)">
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                <?php if ($r->batch_ref) : ?>
+                    <span style="font-family:monospace;font-weight:700;font-size:14px"><?php echo esc_html($r->batch_ref); ?></span>
+                <?php endif; ?>
+                <?php if ($r->supplier) : ?>
+                    <span style="font-size:13px;color:#6b7280"><?php echo esc_html($r->supplier); ?></span>
+                <?php endif; ?>
+                <?php if (!$r->batch_ref && !$r->supplier) : ?>
+                    <span style="font-size:14px;font-weight:600">Vastuvõtt #<?php echo $r->id; ?></span>
+                <?php endif; ?>
+                <span style="background:<?php echo $bg; ?>;color:<?php echo $clr; ?>;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:600"><?php echo $st_label[$st] ?? $st; ?></span>
+            </div>
+            <div style="font-size:12px;color:#94a3b8;margin-top:3px">
+                <?php echo (int)$r->item_count; ?> kaupa
+                · <?php echo date('d.m.Y', strtotime($r->created_at)); ?>
+                <?php if ($r->worker_name) echo ' · <strong>' . esc_html($r->worker_name) . '</strong>'; ?>
+                <?php if ($r->total_value) echo ' · ' . number_format($r->total_value, 2) . ' €'; ?>
+            </div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">
+            <?php if ($st === 'draft') : ?>
+                <button class="crm-btn crm-btn-primary crm-btn-sm" onclick="openSendModal(<?php echo $r->id; ?>)">📤 Saada töötajale</button>
+            <?php elseif ($st === 'pending') : ?>
+                <button class="crm-btn crm-btn-sm" style="background:#fef3c7;color:#d97706;border:1px solid #fcd34d" onclick="openSendModal(<?php echo $r->id; ?>)">🔄 Töötajat</button>
+            <?php elseif ($st === 'received') : ?>
+                <button class="crm-btn crm-btn-sm" style="background:#dcfce7;color:#16a34a;border:1px solid #86efac" onclick="approveReceipt(<?php echo $r->id; ?>, this)">✓ Kinnita</button>
+            <?php endif; ?>
+            <?php if (in_array($st, ['draft','pending','received'])) : ?>
+                <button class="crm-btn crm-btn-sm" style="background:#fee2e2;color:#dc2626;border:1px solid #fca5a5" onclick="rejectReceipt(<?php echo $r->id; ?>, this)">✗</button>
+            <?php endif; ?>
+            <button class="crm-btn crm-btn-outline crm-btn-sm" onclick="toggleReceiptItems(<?php echo $r->id; ?>)">&#8250;</button>
+        </div>
+    </div>
+    <!-- Items (collapsed) -->
+    <div id="recv-items-<?php echo $r->id; ?>" style="display:none;margin-top:14px;border-top:1px solid #f1f5f9;padding-top:12px">
+        <div style="color:#94a3b8;font-size:13px;text-align:center;padding:8px">Laen...</div>
+    </div>
+</div>
+<?php endforeach; ?>
+</div>
+<?php endif; ?>
+</div>
+
+<!-- Create modal -->
+<div id="modal-create" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.5);align-items:center;justify-content:center;overflow-y:auto;padding:20px">
+<div style="background:#fff;border-radius:14px;padding:24px;width:100%;max-width:680px;max-height:90vh;overflow-y:auto;margin:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <strong style="font-size:16px">Uus tarnimine</strong>
+        <button onclick="closeModal('modal-create')" style="background:none;border:none;font-size:20px;cursor:pointer;color:#94a3b8">✕</button>
+    </div>
+    <form method="POST" action="<?php echo admin_url('admin-post.php'); ?>" id="form-create-receipt">
+        <?php wp_nonce_field('vesho_save_receipt'); ?>
+        <input type="hidden" name="action" value="vesho_save_receipt">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+            <div>
+                <label class="crm-form-label">Arve nr</label>
+                <input class="crm-form-input" type="text" name="batch_ref" placeholder="nt INV-2024-001">
+            </div>
+            <div>
+                <label class="crm-form-label">Tarnija</label>
+                <input class="crm-form-input" type="text" name="supplier" placeholder="Firma nimi">
+            </div>
+        </div>
+        <div style="margin-bottom:16px">
+            <label class="crm-form-label">Märkmed töötajale</label>
+            <textarea class="crm-form-textarea" name="notes" rows="2"></textarea>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <strong style="font-size:13px">Kaubad</strong>
+            <div style="display:flex;gap:6px">
+                <button type="button" onclick="scanReceiptEan()" style="padding:4px 12px;font-size:12px;background:#e0f7fa;border:1px solid #00b4c8;color:#007a8a;border-radius:6px;cursor:pointer">📷 EAN</button>
+                <button type="button" id="btn-add-line" style="padding:4px 12px;font-size:12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer">+ Lisa kaup</button>
+            </div>
+        </div>
+        <div id="receipt-lines" style="display:flex;flex-direction:column;gap:8px"></div>
+    </form>
+    <div style="display:flex;gap:8px;margin-top:20px">
+        <button type="button" onclick="closeModal('modal-create')" class="crm-btn crm-btn-outline" style="flex:1">Tühista</button>
+        <button type="submit" form="form-create-receipt" class="crm-btn crm-btn-primary" style="flex:2">💾 Salvesta mustrand</button>
+    </div>
+</div>
+</div>
+
+<!-- Send to worker modal -->
+<div id="modal-send" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.5);align-items:center;justify-content:center">
+<div style="background:#fff;border-radius:14px;padding:24px;width:100%;max-width:360px;margin:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <strong style="font-size:16px">Saada töötajale</strong>
+        <button onclick="closeModal('modal-send')" style="background:none;border:none;font-size:20px;cursor:pointer;color:#94a3b8">✕</button>
+    </div>
+    <input type="hidden" id="send-receipt-id">
+    <div style="margin-bottom:16px">
+        <label class="crm-form-label">Töötaja *</label>
+        <select id="send-worker-id" class="crm-form-select">
+            <option value="">— Vali töötaja —</option>
+            <?php foreach ($all_workers as $w) : ?>
+                <option value="<?php echo (int)$w->id; ?>"><?php echo esc_html($w->name); ?></option>
+            <?php endforeach; ?>
+        </select>
+    </div>
+    <div id="send-msg" style="display:none;margin-bottom:10px;font-size:13px;color:#16a34a"></div>
+    <div style="display:flex;gap:8px">
+        <button onclick="closeModal('modal-send')" class="crm-btn crm-btn-outline" style="flex:1">Tühista</button>
+        <button onclick="doSend()" class="crm-btn crm-btn-primary" style="flex:2">📤 Saada</button>
+    </div>
+</div>
+</div>
+
+<script>
+var veshoNonce = '<?php echo esc_js($nonce); ?>';
+var ajaxUrl    = '<?php echo esc_js(admin_url('admin-ajax.php')); ?>';
+var invData    = <?php echo json_encode(array_map(fn($i)=>['id'=>(int)$i->id,'name'=>$i->name,'sku'=>$i->sku??'','ean'=>$i->ean??'','unit'=>$i->unit??'tk','price'=>(float)$i->purchase_price,'sell'=>(float)$i->shop_price], $inventory_items)); ?>;
+var loadedItems = {};
+var lineIdx = 0;
+
+function closeModal(id) { document.getElementById(id).style.display='none'; }
+function openModal(id)  { document.getElementById(id).style.display='flex'; }
+
+/* ---- Create modal ---- */
+function openCreateModal() {
+    lineIdx = 0;
+    document.getElementById('receipt-lines').innerHTML = '';
+    addLine();
+    openModal('modal-create');
+}
+
+function buildLineHtml(i) {
+    var opts = invData.map(function(inv) {
+        return '<option value="'+inv.id+'" data-ean="'+inv.ean+'" data-sku="'+inv.sku+'" data-unit="'+inv.unit+'" data-price="'+inv.price+'" data-sell="'+inv.sell+'">'+inv.name+'</option>';
+    }).join('');
+    return '<div class="receipt-line" id="line-'+i+'" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px">'
+        +'<div style="display:grid;grid-template-columns:1fr auto;gap:8px;margin-bottom:8px">'
+        +'<select class="crm-form-select line-inv" name="lines['+i+'][inventory_id]" onchange="onInvChange(this,'+i+')" style="font-size:13px"><option value="">— Uus toode (sisesta alla) —</option>'+opts+'</select>'
+        +'<button type="button" onclick="removeLine('+i+')" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:18px;padding:0 4px">✕</button>'
+        +'</div>'
+        +'<div style="display:grid;grid-template-columns:1fr 1fr 80px;gap:8px;margin-bottom:8px">'
+        +'<input class="crm-form-input" type="text" name="lines['+i+'][product_name]" id="pname-'+i+'" placeholder="Toote nimi" style="font-size:13px">'
+        +'<div style="display:flex;gap:4px"><input class="crm-form-input" type="text" name="lines['+i+'][product_ean]" id="pean-'+i+'" placeholder="EAN" style="font-size:12px;font-family:monospace;flex:1"><input class="crm-form-input" type="text" name="lines['+i+'][product_sku]" id="psku-'+i+'" placeholder="SKU" style="font-size:12px;font-family:monospace;flex:1"></div>'
+        +'<select class="crm-form-select" name="lines['+i+'][product_unit]" id="punit-'+i+'" style="font-size:12px"><option>tk</option><option>kg</option><option>l</option><option>m</option><option>pk</option><option>kast</option></select>'
+        +'</div>'
+        +'<div style="display:grid;grid-template-columns:90px 1fr 1fr;gap:8px">'
+        +'<input class="crm-form-input" type="number" step="0.01" min="0.01" name="lines['+i+'][quantity]" placeholder="Kogus *" required style="font-size:13px;text-align:right">'
+        +'<input class="crm-form-input" type="number" step="0.01" min="0" name="lines['+i+'][unit_price]" id="uprice-'+i+'" placeholder="Sisseostuhind €" style="font-size:13px;text-align:right">'
+        +'<input class="crm-form-input" type="number" step="0.01" min="0" name="lines['+i+'][selling_price]" id="sprice-'+i+'" placeholder="Müügihind €" style="font-size:13px;text-align:right">'
+        +'</div>'
+        +'</div>';
+}
+
+function addLine(eanPreselect) {
+    var container = document.getElementById('receipt-lines');
+    container.insertAdjacentHTML('beforeend', buildLineHtml(lineIdx));
+    if (eanPreselect) {
+        var match = invData.find(function(i){ return i.ean===eanPreselect || i.sku===eanPreselect; });
+        if (match) {
+            var sel = container.querySelector('#line-'+lineIdx+' .line-inv');
+            sel.value = match.id; onInvChange(sel, lineIdx);
+        } else {
+            document.getElementById('pean-'+lineIdx).value = eanPreselect;
+        }
+    }
+    lineIdx++;
+}
+
+function removeLine(i) {
+    var el = document.getElementById('line-'+i);
+    if (el && document.querySelectorAll('.receipt-line').length > 1) el.remove();
+}
+
+function onInvChange(sel, i) {
+    var opt = sel.options[sel.selectedIndex];
+    if (!opt || !opt.value) return;
+    document.getElementById('pname-'+i).value = opt.textContent.trim();
+    document.getElementById('pean-'+i).value  = opt.dataset.ean || '';
+    document.getElementById('psku-'+i).value  = opt.dataset.sku || '';
+    document.getElementById('punit-'+i).value = opt.dataset.unit || 'tk';
+    document.getElementById('uprice-'+i).value = opt.dataset.price || '';
+    document.getElementById('sprice-'+i).value = opt.dataset.sell || '';
+}
+
+document.getElementById('btn-add-line').addEventListener('click', function(){ addLine(); });
+
+window.scanReceiptEan = function(){
+    if (!window.VeshoScanner) return;
+    window.VeshoScanner.open({ title:'Skänni kaup', autoConfirm:true, onScan:function(code){ addLine(code); } });
+};
+
+/* ---- Send to worker ---- */
+function openSendModal(receiptId) {
+    document.getElementById('send-receipt-id').value = receiptId;
+    document.getElementById('send-worker-id').value = '';
+    document.getElementById('send-msg').style.display = 'none';
+    openModal('modal-send');
+}
+
+function doSend() {
+    var rid = document.getElementById('send-receipt-id').value;
+    var wid = document.getElementById('send-worker-id').value;
+    if (!wid) { alert('Vali töötaja!'); return; }
+    fetch(ajaxUrl, {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body:'action=vesho_receipt_send&nonce='+veshoNonce+'&receipt_id='+rid+'&worker_id='+wid})
+    .then(r=>r.json()).then(function(d){
+        if (d.success) {
+            closeModal('modal-send');
+            location.reload();
+        } else {
+            alert('Viga: '+(d.data||''));
+        }
+    });
+}
+
+/* ---- Approve / Reject ---- */
+function approveReceipt(id, btn) {
+    btn.disabled = true; btn.textContent = '⏳';
+    fetch(ajaxUrl, {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body:'action=vesho_receipt_approve&nonce='+veshoNonce+'&receipt_id='+id})
+    .then(r=>r.json()).then(function(d){
+        if (d.success) location.reload();
+        else { btn.disabled=false; btn.textContent='✓ Kinnita'; alert('Viga: '+(d.data||'')); }
+    });
+}
+
+function rejectReceipt(id, btn) {
+    btn.disabled = true;
+    fetch(ajaxUrl, {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body:'action=vesho_receipt_reject&nonce='+veshoNonce+'&receipt_id='+id})
+    .then(r=>r.json()).then(function(d){
+        if (d.success) location.reload();
+        else { btn.disabled=false; alert('Viga: '+(d.data||'')); }
+    });
+}
+
+/* ---- Toggle items ---- */
+function toggleReceiptItems(id) {
+    var el = document.getElementById('recv-items-'+id);
+    if (!el) return;
+    if (el.style.display === 'none' || el.style.display === '') {
+        el.style.display = 'block';
+        if (loadedItems[id]) return;
+        loadedItems[id] = true;
+        fetch(ajaxUrl, {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
+            body:'action=vesho_worker_get_receipt_items&nonce='+veshoNonce+'&receipt_id='+id})
+        .then(r=>r.json()).then(function(d){
+            if (!d.success || !d.data) { el.innerHTML='<div style="color:#ef4444;padding:8px">Viga</div>'; return; }
+            var items = d.data.items || d.data;
+            var html = '<table class="crm-table"><thead><tr><th>Toode</th><th>SKU/EAN</th><th>Oodatav</th><th>Tegelik</th><th>Asukoht</th></tr></thead><tbody>';
+            items.forEach(function(item){
+                html += '<tr>'
+                    +'<td><strong>'+(item.name||item.item_name||'–')+'</strong></td>'
+                    +'<td style="font-family:monospace;font-size:12px">'+(item.sku||'–')+'</td>'
+                    +'<td>'+(item.expected_qty||item.quantity||'–')+' '+(item.unit||'tk')+'</td>'
+                    +'<td style="color:'+(item.actual_qty!=null?'#16a34a':'#94a3b8')+';font-weight:600">'+(item.actual_qty!=null?item.actual_qty+' '+(item.unit||'tk'):'–')+'</td>'
+                    +'<td style="font-family:monospace;font-size:12px">'+(item.location||'–')+'</td>'
+                    +'</tr>';
+            });
+            html += '</tbody></table>';
+            el.innerHTML = html;
+        }).catch(function(){ el.innerHTML = '<div style="color:#ef4444;padding:8px">Ühenduse viga</div>'; });
+    } else {
+        el.style.display = 'none';
+    }
+}
+</script>
