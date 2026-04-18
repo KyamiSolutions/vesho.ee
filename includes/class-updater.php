@@ -625,13 +625,17 @@ class Vesho_CRM_Updater {
     // ── Get current info.json contents (for admin UI) ─────────────────────────
 
     public static function get_release_info( $type ) {
-        // On live server: fetch from GitHub. On local: try local file first.
+        // On live server: always fetch from GitHub (transient-cached, 6h).
+        // Local file is only used on localhost for the release-creation workflow.
+        if ( ! self::is_local() ) {
+            return self::fetch_remote_info( $type );
+        }
+        // Localhost: try local file first so the admin UI reflects what was just built.
         $upload = wp_upload_dir();
         $file   = $upload['basedir'] . '/vesho-releases/' . $type . '-info.json';
         if ( file_exists( $file ) ) {
             return json_decode( file_get_contents( $file ) );
         }
-        // Fall back to remote GitHub info
         return self::fetch_remote_info( $type );
     }
 
