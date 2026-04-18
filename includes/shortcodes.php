@@ -233,6 +233,23 @@ add_shortcode( 'vesho_shop_grid', function () {
     $ajax_url  = admin_url( 'admin-ajax.php' );
     $cart_nonce = wp_create_nonce( 'vesho_cart_nonce' );
 
+    // Shared: sidebar data available in all views
+    $search   = isset( $_GET['vs'] ) ? sanitize_text_field( $_GET['vs'] ) : '';
+    $category = isset( $_GET['cat'] ) ? sanitize_text_field( $_GET['cat'] ) : '';
+    $sort     = isset( $_GET['sort'] ) ? sanitize_key( $_GET['sort'] ) : 'name';
+    $managed_cats = $wpdb->get_results(
+        "SELECT ic.name, ic.color FROM {$wpdb->prefix}vesho_inventory_categories ic
+         ORDER BY ic.sort_order ASC, ic.name ASC"
+    );
+    if ( empty( $managed_cats ) ) {
+        $raw_cats     = $wpdb->get_col( "SELECT DISTINCT category FROM {$wpdb->prefix}vesho_inventory WHERE archived=0 AND shop_price>0 AND shop_enabled=1 AND category!='' ORDER BY category ASC" );
+        $managed_cats = array_map( fn($n) => (object)['name'=>$n,'color'=>'#00b4c8'], $raw_cats );
+    }
+    $cat_cnts = [];
+    foreach ( $wpdb->get_results( "SELECT category, COUNT(*) c FROM {$wpdb->prefix}vesho_inventory WHERE archived=0 AND shop_price>0 AND shop_enabled=1 AND category!='' GROUP BY category" ) as $r ) {
+        $cat_cnts[ $r->category ] = (int) $r->c;
+    }
+
     ob_start();
 
     // ══════════════════════════════════════════════════════════════════════
@@ -626,7 +643,22 @@ add_shortcode( 'vesho_shop_grid', function () {
         $unit_lbl   = esc_html( $item->unit ?: 'tk' );
         ?>
         <style>
-        <style>
+        /* Sidebar (reuse grid vars) */
+        .vshop-layout{display:grid;grid-template-columns:220px 1fr;gap:28px;align-items:start}
+        @media(max-width:820px){.vshop-layout{grid-template-columns:1fr}}
+        .vshop-sidebar{position:sticky;top:24px}
+        @media(max-width:820px){.vshop-sidebar{position:static}}
+        .vshop-sidebar-box{background:#fff;border-radius:12px;padding:20px;box-shadow:0 2px 12px rgba(13,31,45,.06);margin-bottom:14px}
+        .vshop-sidebar-title{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#94a3b8;margin:0 0 12px}
+        .vshop-cat-link{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;text-decoration:none;color:#4b6174;font-size:13px;font-weight:500;transition:.12s}
+        .vshop-cat-link:hover{background:#f0f4f8;color:#0d1f2d}
+        .vshop-cat-link.active{background:#f0f9ff;color:#0097aa;font-weight:700}
+        .vshop-cat-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+        .vshop-cat-count{margin-left:auto;font-size:11px;color:#94a3b8;font-weight:400}
+        .vshop-search-form{display:flex;border:1.5px solid #e2e8f0;border-radius:9px;overflow:hidden;background:#fff;margin-bottom:14px}
+        .vshop-search-form input{flex:1;border:none;padding:10px 14px;font-size:13px;outline:none;color:#0d1f2d;background:transparent;min-width:0}
+        .vshop-search-form button{padding:0 14px;background:#00b4c8;color:#fff;border:none;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
+        /* Product detail */
         .vpd-wrap{font-family:inherit}
         /* Breadcrumb */
         .vpd-bread{display:flex;align-items:center;gap:8px;font-size:13px;margin-bottom:24px;flex-wrap:wrap}
@@ -702,6 +734,37 @@ add_shortcode( 'vesho_shop_grid', function () {
         $cart_count_pd = array_sum( $_SESSION['vesho_cart'] ?? [] );
         ?>
 
+        <div class="vshop-layout">
+
+        <!-- ── LEFT SIDEBAR ── -->
+        <aside class="vshop-sidebar">
+          <form class="vshop-search-form" method="GET" action="<?php echo esc_url($page_url); ?>">
+            <input type="search" name="vs" value="<?php echo esc_attr($search); ?>" placeholder="Otsi toodet...">
+            <button type="submit">Otsi</button>
+          </form>
+          <?php if ( ! empty( $managed_cats ) ) : ?>
+          <div class="vshop-sidebar-box">
+            <div class="vshop-sidebar-title">Kategooriad</div>
+            <a href="<?php echo esc_url($page_url); ?>" class="vshop-cat-link">
+              <span class="vshop-cat-dot" style="background:#0d1f2d"></span>
+              Kõik tooted
+              <span class="vshop-cat-count"><?php echo array_sum($cat_cnts); ?></span>
+            </a>
+            <?php foreach ( $managed_cats as $cat ) :
+              $is_active_pd = $item->category === $cat->name;
+              $href_pd = add_query_arg( 'cat', $cat->name, $page_url );
+            ?>
+            <a href="<?php echo esc_url($href_pd); ?>" class="vshop-cat-link <?php echo $is_active_pd?'active':''; ?>">
+              <span class="vshop-cat-dot" style="background:<?php echo esc_attr($cat->color); ?>"></span>
+              <?php echo esc_html($cat->name); ?>
+              <span class="vshop-cat-count"><?php echo $cat_cnts[$cat->name] ?? 0; ?></span>
+            </a>
+            <?php endforeach; ?>
+          </div>
+          <?php endif; ?>
+        </aside>
+
+        <!-- ── RIGHT: PRODUCT DETAIL ── -->
         <div class="vpd-wrap">
 
           <!-- Breadcrumb -->
@@ -814,7 +877,8 @@ add_shortcode( 'vesho_shop_grid', function () {
           </div>
           <?php endif; ?>
 
-        </div>
+        </div><!-- /vpd-wrap -->
+        </div><!-- /vshop-layout -->
 
         <div class="vpd-fab" id="vesho-cart-fab" <?php echo $cart_count_pd>0?'':'style="display:none"'; ?>>
           <a href="<?php echo esc_url(add_query_arg('shop_view','cart',$page_url)); ?>">
@@ -868,9 +932,6 @@ add_shortcode( 'vesho_shop_grid', function () {
     // ══════════════════════════════════════════════════════════════════════
     // VIEW: GRID (default)
     // ══════════════════════════════════════════════════════════════════════
-    $search   = isset( $_GET['s'] )    ? sanitize_text_field( $_GET['s'] )    : '';
-    $category = isset( $_GET['cat'] )  ? sanitize_text_field( $_GET['cat'] )  : '';
-    $sort     = isset( $_GET['sort'] ) ? sanitize_key( $_GET['sort'] )        : 'name';
     $paged    = max( 1, absint( $_GET['paged'] ?? 1 ) );
     $per_page = 12;
     $sort_sql = match( $sort ) {
@@ -892,15 +953,6 @@ add_shortcode( 'vesho_shop_grid', function () {
         "SELECT id, name, sku, category, unit, shop_price, shop_description, description, quantity, image_url
          FROM {$wpdb->prefix}vesho_inventory WHERE $where ORDER BY $sort_sql LIMIT $per_page OFFSET $offset"
     );
-    // Fetch categories from managed table (with colors), fall back to distinct values
-    $managed_cats = $wpdb->get_results(
-        "SELECT ic.name, ic.color FROM {$wpdb->prefix}vesho_inventory_categories ic
-         ORDER BY ic.sort_order ASC, ic.name ASC"
-    );
-    if ( empty( $managed_cats ) ) {
-        $raw_cats    = $wpdb->get_col( "SELECT DISTINCT category FROM {$wpdb->prefix}vesho_inventory WHERE archived=0 AND shop_price>0 AND shop_enabled=1 AND category!='' ORDER BY category ASC" );
-        $managed_cats = array_map( fn($n) => (object)['name'=>$n,'color'=>'#00b4c8'], $raw_cats );
-    }
     $cart_count = array_sum( $_SESSION['vesho_cart'] ?? [] );
 
     // ── Active campaign ────────────────────────────────────────────────────
@@ -1023,12 +1075,7 @@ add_shortcode( 'vesho_shop_grid', function () {
       <div class="vshop-sidebar-box">
         <div class="vshop-sidebar-title">Kategooriad</div>
         <?php
-        // count per category
-        $cat_cnts = [];
-        foreach ( $wpdb->get_results("SELECT category, COUNT(*) c FROM {$wpdb->prefix}vesho_inventory WHERE archived=0 AND shop_price>0 AND shop_enabled=1 AND category!='' GROUP BY category") as $r ) {
-            $cat_cnts[$r->category] = (int)$r->c;
-        }
-        $all_href = add_query_arg( array_filter( ['s'=>$search,'sort'=>$sort==='name'?null:$sort] ), $page_url );
+        $all_href = add_query_arg( array_filter( ['vs'=>$search,'sort'=>$sort==='name'?null:$sort] ), $page_url );
         ?>
         <a href="<?php echo esc_url($all_href); ?>" class="vshop-cat-link <?php echo !$category?'active':''; ?>">
           <span class="vshop-cat-dot" style="background:#0d1f2d"></span>
@@ -1037,7 +1084,7 @@ add_shortcode( 'vesho_shop_grid', function () {
         </a>
         <?php foreach ( $managed_cats as $cat ) :
           $is_active = $category === $cat->name;
-          $href = add_query_arg( array_filter(['s'=>$search,'cat'=>$cat->name,'sort'=>$sort==='name'?null:$sort]), $page_url );
+          $href = add_query_arg( array_filter(['vs'=>$search,'cat'=>$cat->name,'sort'=>$sort==='name'?null:$sort]), $page_url );
         ?>
         <a href="<?php echo esc_url($href); ?>" class="vshop-cat-link <?php echo $is_active?'active':''; ?>">
           <span class="vshop-cat-dot" style="background:<?php echo esc_attr($cat->color); ?>"></span>
@@ -1055,14 +1102,14 @@ add_shortcode( 'vesho_shop_grid', function () {
         <form class="vshop-search-form" method="GET" action="<?php echo esc_url($page_url); ?>">
           <?php if ($category) echo '<input type="hidden" name="cat" value="'.esc_attr($category).'">'; ?>
           <?php if ($sort!=='name') echo '<input type="hidden" name="sort" value="'.esc_attr($sort).'">'; ?>
-          <input type="search" name="s" value="<?php echo esc_attr($search); ?>" placeholder="Otsi toodet...">
+          <input type="search" name="vs" value="<?php echo esc_attr($search); ?>" placeholder="Otsi toodet...">
           <button type="submit">Otsi</button>
         </form>
         <select class="vshop-sort" onchange="window.location=this.value">
           <?php
           $sort_opts=['name'=>'Nimi A–Z','price_asc'=>'Hind ↑','price_desc'=>'Hind ↓'];
           foreach($sort_opts as $v=>$l){
-            $href=add_query_arg(array_filter(['s'=>$search,'cat'=>$category,'sort'=>$v]),$page_url);
+            $href=add_query_arg(array_filter(['vs'=>$search,'cat'=>$category,'sort'=>$v]),$page_url);
             echo '<option value="'.esc_url($href).'"'.selected($sort,$v,false).'>'.esc_html($l).'</option>';
           }
           ?>
@@ -1134,7 +1181,7 @@ add_shortcode( 'vesho_shop_grid', function () {
       <?php if($total_pages>1): ?>
       <div class="vshop-pag">
         <?php
-        $pag_base = add_query_arg(array_filter(['s'=>$search,'cat'=>$category,'sort'=>$sort==='name'?null:$sort]),$page_url);
+        $pag_base = add_query_arg(array_filter(['vs'=>$search,'cat'=>$category,'sort'=>$sort==='name'?null:$sort]),$page_url);
         for($p=1;$p<=$total_pages;$p++){
           if($p===$paged){
             echo '<span class="current">'.$p.'</span>';

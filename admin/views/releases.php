@@ -108,23 +108,24 @@ function veshoStartUpdate(type, btnId, msgId) {
     msg.textContent = '⏳ Allalaadin ' + label + '.'.repeat(dots + 1);
   }, 500);
 
+  // Start countdown immediately — fires even if poll misses
+  var reloadTimer = setTimeout(function(){
+    clearInterval(anim);
+    msg.textContent = '✅ Valmis! Laen uuesti...';
+    veshoReload();
+  }, 55000);
+
   fetch(ajaxurl, {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
     body:'action=vesho_install_'+type+'&nonce='+veshoNonce})
   .then(r=>r.json()).then(function(d){
     if (!d.success) {
-      clearInterval(anim);
+      clearTimeout(reloadTimer); clearInterval(anim);
       msg.style.color = '#c62828';
       msg.textContent = '❌ ' + (d.data || 'Viga');
       btn.disabled = false;
       return;
     }
-    // Spawn OK — reload after 55s regardless (cache-busting)
-    var reloadTimer = setTimeout(function(){
-      clearInterval(anim);
-      msg.textContent = '✅ Valmis! Laen uuesti...';
-      veshoReload();
-    }, 55000);
-    // Poll every 3s — reload early if 'done' detected
+    // Poll every 1s — reload immediately when 'done' detected
     var poll = setInterval(function(){
       fetch(ajaxurl + '?action=vesho_update_status&type=' + type + '&nonce=' + veshoNonce)
         .then(r=>r.json()).then(function(s){
@@ -133,7 +134,7 @@ function veshoStartUpdate(type, btnId, msgId) {
             clearInterval(poll); clearTimeout(reloadTimer); clearInterval(anim);
             if (st.status === 'done') {
               msg.textContent = '✅ ' + (st.message || 'Uuendatud!');
-              setTimeout(veshoReload, 800);
+              veshoReload();
             } else {
               msg.style.color = '#c62828';
               msg.textContent = '❌ ' + (st.message || 'Viga');
@@ -141,9 +142,9 @@ function veshoStartUpdate(type, btnId, msgId) {
             }
           }
         }).catch(function(){});
-    }, 3000);
+    }, 1000);
   }).catch(function(){
-    clearInterval(anim);
+    clearTimeout(reloadTimer); clearInterval(anim);
     msg.style.color = '#c62828';
     msg.textContent = '❌ Ühenduse viga';
     btn.disabled = false;
