@@ -101,6 +101,8 @@ class Vesho_CRM_Admin {
         // ── LADU ──
         add_submenu_page( 'vesho-crm', 'Ladu', 'Ladu', 'manage_options', 'vesho-crm-inventory', array( __CLASS__, 'page_inventory' ) );
         add_submenu_page( 'vesho-crm', 'Vastuvõtt', 'Vastuvõtt', 'manage_options', 'vesho-crm-receipts', array( __CLASS__, 'page_receipts' ) );
+        add_submenu_page( 'vesho-crm', 'Inventuur', 'Inventuur', 'manage_options', 'vesho-crm-stockcount', array( __CLASS__, 'page_stockcount' ) );
+        add_submenu_page( 'vesho-crm', 'Laadressid', 'Laadressid', 'manage_options', 'vesho-crm-warehouseloc', array( __CLASS__, 'page_warehouseloc' ) );
         add_submenu_page( 'vesho-crm', 'Hinnakiri', 'Hinnakiri', 'manage_options', 'vesho-crm-pricelist', array( __CLASS__, 'page_pricelist' ) );
 
         // ── MUU ──
@@ -140,9 +142,11 @@ class Vesho_CRM_Admin {
     public static function page_campaigns()   { self::load_view('campaigns'); }
     public static function page_activity_log() { self::load_view('activity-log'); }
     public static function page_settings()    { self::load_view('settings'); }
-    public static function page_reminders()   { self::load_view('reminders'); }
-    public static function page_calendar()    { self::load_view('calendar'); }
-    public static function page_route()       { self::load_view('route'); }
+    public static function page_reminders()    { self::load_view('reminders'); }
+    public static function page_calendar()     { self::load_view('calendar'); }
+    public static function page_route()        { self::load_view('route'); }
+    public static function page_stockcount()   { self::load_view('stockcount'); }
+    public static function page_warehouseloc() { self::load_view('warehouseloc'); }
 
 
 

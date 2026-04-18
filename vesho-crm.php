@@ -1439,6 +1439,63 @@ function vesho_ajax_toggle_shop() {
    5. vesho_gen_locations
    Generates warehouse location codes (e.g. A-01-03) and inserts them.
    ═══════════════════════════════════════════════════════════════════════════ */
+add_action( 'wp_ajax_vesho_get_locations', 'vesho_ajax_get_locations' );
+function vesho_ajax_get_locations() {
+    global $wpdb;
+    vesho_inv_check_nonce();
+    $rows = $wpdb->get_results(
+        "SELECT wl.*, i.id as item_id, i.name as item_name, i.sku, i.ean, i.quantity, i.unit
+         FROM {$wpdb->prefix}vesho_warehouse_locations wl
+         LEFT JOIN {$wpdb->prefix}vesho_inventory i ON i.location = wl.code
+         ORDER BY wl.code ASC"
+    );
+    wp_send_json_success( $rows );
+}
+
+add_action( 'wp_ajax_vesho_add_location', 'vesho_ajax_add_location' );
+function vesho_ajax_add_location() {
+    global $wpdb;
+    vesho_inv_check_nonce();
+    $code = strtoupper( sanitize_text_field( $_POST['code'] ?? '' ) );
+    $desc = sanitize_text_field( $_POST['description'] ?? '' );
+    if ( ! $code ) wp_send_json_error( [ 'message' => 'Kood puudub' ] );
+    $exists = $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$wpdb->prefix}vesho_warehouse_locations WHERE code=%s", $code ) );
+    if ( $exists ) wp_send_json_error( [ 'message' => 'Kood on juba olemas' ] );
+    $wpdb->insert( $wpdb->prefix . 'vesho_warehouse_locations', [ 'code' => $code, 'description' => $desc, 'created_at' => current_time('mysql') ] );
+    wp_send_json_success( [ 'id' => $wpdb->insert_id ] );
+}
+
+add_action( 'wp_ajax_vesho_assign_location', 'vesho_ajax_assign_location' );
+function vesho_ajax_assign_location() {
+    global $wpdb;
+    vesho_inv_check_nonce();
+    $code    = strtoupper( sanitize_text_field( $_POST['code'] ?? '' ) );
+    $inv_id  = absint( $_POST['inventory_id'] ?? 0 );
+    if ( ! $code || ! $inv_id ) wp_send_json_error( [ 'message' => 'Vigased parameetrid' ] );
+    // Check location exists
+    $loc = $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$wpdb->prefix}vesho_warehouse_locations WHERE code=%s", $code ) );
+    if ( ! $loc ) wp_send_json_error( [ 'message' => 'Aadress ei leitud' ] );
+    // Check not occupied by another item
+    $occupied = $wpdb->get_row( $wpdb->prepare( "SELECT id, name FROM {$wpdb->prefix}vesho_inventory WHERE location=%s AND id!=%d", $code, $inv_id ) );
+    if ( $occupied ) wp_send_json_error( [ 'message' => 'Hõivatud: ' . $occupied->name ] );
+    $wpdb->update( $wpdb->prefix . 'vesho_inventory', [ 'location' => $code ], [ 'id' => $inv_id ] );
+    wp_send_json_success();
+}
+
+add_action( 'wp_ajax_vesho_get_stock_counts', 'vesho_ajax_get_stock_counts' );
+function vesho_ajax_get_stock_counts() {
+    global $wpdb;
+    vesho_inv_check_nonce();
+    $rows = $wpdb->get_results(
+        "SELECT sc.*, COUNT(sci.id) as item_count,
+            SUM(CASE WHEN sci.counted_qty IS NOT NULL THEN 1 ELSE 0 END) as counted_count
+         FROM {$wpdb->prefix}vesho_stock_counts sc
+         LEFT JOIN {$wpdb->prefix}vesho_stock_count_items sci ON sci.stock_count_id = sc.id
+         GROUP BY sc.id ORDER BY sc.created_at DESC"
+    );
+    wp_send_json_success( $rows );
+}
+
 add_action( 'wp_ajax_vesho_gen_locations', 'vesho_ajax_gen_locations' );
 function vesho_ajax_gen_locations() {
     global $wpdb;
