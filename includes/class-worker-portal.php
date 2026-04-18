@@ -10,6 +10,7 @@ class Vesho_CRM_Worker_Portal {
             'vesho_worker_start_order',
             'vesho_worker_complete_order',
             'vesho_worker_complete_maintenance',
+            'vesho_upload_maintenance_photo',
             'vesho_worker_log_hours',
             'vesho_worker_clock_in',
             'vesho_worker_clock_out',
@@ -37,6 +38,8 @@ class Vesho_CRM_Worker_Portal {
         foreach ($auth as $a) {
             add_action('wp_ajax_' . $a, [__CLASS__, 'ajax_' . str_replace('vesho_worker_', '', $a)]);
         }
+        // Direct registration for actions that don't follow vesho_worker_ prefix
+        add_action('wp_ajax_vesho_upload_maintenance_photo', [__CLASS__, 'ajax_upload_maintenance_photo']);
 
         add_action('wp_enqueue_scripts', [__CLASS__, 'enqueue_assets']);
     }
@@ -1763,6 +1766,34 @@ $all_picked = !empty($my_items) && count(array_filter($my_items, fn($i) => $i->p
     <div class="vwp-order-body"><p class="vwp-desc"><?php echo esc_html($m->description); ?></p></div>
     <?php endif; ?>
     <div style="padding:0 16px 14px">
+      <!-- Notes textarea -->
+      <textarea id="vwp-maint-notes-<?php echo $m->id; ?>"
+                placeholder="Töötaja märkused (valikuline)..."
+                style="width:100%;padding:10px 12px;border:1.5px solid rgba(255,255,255,.15);border-radius:8px;background:rgba(255,255,255,.08);color:#fff;font-size:13px;font-family:inherit;resize:vertical;min-height:70px;box-sizing:border-box;margin-bottom:10px"></textarea>
+      <!-- Photo upload -->
+      <?php
+      $maint_photos = $wpdb->get_results($wpdb->prepare(
+          "SELECT * FROM {$wpdb->prefix}vesho_workorder_photos WHERE maintenance_id=%d ORDER BY created_at ASC",
+          $m->id
+      ));
+      $maint_photo_count = count($maint_photos);
+      ?>
+      <?php if ($maint_photos): ?>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+        <?php foreach ($maint_photos as $mp): ?>
+        <a href="<?php echo esc_url($mp->filename); ?>" target="_blank" style="display:block;width:56px;height:56px;border-radius:6px;overflow:hidden;border:1.5px solid rgba(255,255,255,.2)">
+          <img src="<?php echo esc_url($mp->filename); ?>" style="width:100%;height:100%;object-fit:cover" alt="">
+        </a>
+        <?php endforeach; ?>
+      </div>
+      <?php endif; ?>
+      <?php if ($maint_photo_count < 5): ?>
+      <label style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border:1.5px solid rgba(255,255,255,.25);border-radius:6px;cursor:pointer;font-size:12px;color:rgba(255,255,255,.7);margin-bottom:10px">
+        <input type="file" accept="image/*" capture="environment" style="display:none"
+               onchange="vwpUploadMaintPhoto(this,<?php echo $m->id; ?>)">
+        📷 Lisa foto (<?php echo $maint_photo_count; ?>/5)
+      </label>
+      <?php endif; ?>
       <button class="vwp-btn-primary vwp-maint-complete-btn"
               data-id="<?php echo $m->id; ?>"
               data-nonce="<?php echo $nonce; ?>">&#10003; Hooldus lõpetatud</button>
@@ -1774,13 +1805,28 @@ $all_picked = !empty($my_items) && count(array_filter($my_items, fn($i) => $i->p
 <script>
 (function(){
   var AJAX='<?php echo $ajax; ?>';
+  window.vwpUploadMaintPhoto=function(input,mid){
+    if(!input.files[0]) return;
+    var fd=new FormData(); fd.append('action','vesho_upload_maintenance_photo');
+    fd.append('nonce','<?php echo wp_create_nonce('vesho_portal_nonce'); ?>');
+    fd.append('maintenance_id',mid); fd.append('photo',input.files[0]);
+    fetch(AJAX,{method:'POST',body:fd}).then(function(r){return r.json();}).then(function(d){
+      if(d.success){location.reload();}else{alert(d.data&&d.data.message||'Viga foto üleslaadimisel');}
+    });
+  };
   document.querySelectorAll('.vwp-maint-complete-btn').forEach(function(btn){
     btn.addEventListener('click',function(){
       if(!confirm('Märgi hooldus lõpetatuks?')) return;
-      var fd=new FormData(); fd.append('action','vesho_worker_complete_maintenance'); fd.append('nonce',btn.dataset.nonce); fd.append('maintenance_id',btn.dataset.id);
+      var mid=btn.dataset.id;
+      var notes=document.getElementById('vwp-maint-notes-'+mid);
+      var fd=new FormData();
+      fd.append('action','vesho_worker_complete_maintenance');
+      fd.append('nonce',btn.dataset.nonce);
+      fd.append('maintenance_id',mid);
+      if(notes) fd.append('worker_notes',notes.value);
       btn.disabled=true;
       fetch(AJAX,{method:'POST',body:fd}).then(function(r){return r.json();}).then(function(d){
-        if(d.success){ btn.closest('.vwp-order-card').style.opacity='.4'; btn.textContent='Lõpetatud'; }
+        if(d.success){ btn.closest('.vwp-order-card').style.opacity='.4'; btn.textContent='✓ Lõpetatud'; }
         else { alert((d.data&&d.data.message)||'Viga'); btn.disabled=false; }
       });
     });
@@ -2144,15 +2190,49 @@ $all_picked = !empty($my_items) && count(array_filter($my_items, fn($i) => $i->p
         $worker = self::get_current_worker();
         if (!$worker) wp_send_json_error(['message' => 'Pole sisse logitud']);
         global $wpdb;
-        $wid   = (int) $worker->id;
-        $mid   = absint($_POST['maintenance_id'] ?? 0);
+        $wid         = (int) $worker->id;
+        $mid         = absint($_POST['maintenance_id'] ?? 0);
+        $worker_notes = sanitize_textarea_field($_POST['worker_notes'] ?? '');
+        $update = ['status' => 'completed', 'completed_date' => current_time('mysql')];
+        if ($worker_notes !== '') $update['worker_notes'] = $worker_notes;
         $result = $wpdb->update(
             $wpdb->prefix . 'vesho_maintenances',
-            ['status' => 'completed', 'completed_date' => current_time('mysql')],
+            $update,
             ['id' => $mid, 'worker_id' => $wid]
         );
         if ($result === false) wp_send_json_error(['message' => 'Uuendamine ebaõnnestus']);
         wp_send_json_success(['message' => 'Hooldus lõpetatud!']);
+    }
+
+    // ── AJAX: Upload maintenance photo ────────────────────────────────────────
+
+    public static function ajax_upload_maintenance_photo() {
+        check_ajax_referer('vesho_portal_nonce', 'nonce');
+        $worker = self::get_current_worker();
+        if (!$worker) wp_send_json_error(['message' => 'Pole sisse logitud']);
+        global $wpdb;
+        $mid = absint($_POST['maintenance_id'] ?? 0);
+        if (!$mid) wp_send_json_error(['message' => 'Puuduv hooldus ID']);
+        $count = (int)$wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM {$wpdb->prefix}vesho_workorder_photos WHERE maintenance_id=%d", $mid
+        ));
+        if ($count >= 5) wp_send_json_error(['message' => 'Maksimaalselt 5 fotot']);
+        if (empty($_FILES['photo']['tmp_name'])) wp_send_json_error(['message' => 'Fail puudub']);
+        require_once ABSPATH . 'wp-admin/includes/file.php';
+        require_once ABSPATH . 'wp-admin/includes/image.php';
+        require_once ABSPATH . 'wp-admin/includes/media.php';
+        $_FILES['photo']['name'] = 'maint-' . $mid . '-' . time() . '-' . basename($_FILES['photo']['name']);
+        $attachment_id = media_handle_upload('photo', 0);
+        if (is_wp_error($attachment_id)) wp_send_json_error(['message' => $attachment_id->get_error_message()]);
+        $url = wp_get_attachment_url($attachment_id);
+        $wpdb->insert($wpdb->prefix . 'vesho_workorder_photos', [
+            'workorder_id'   => 0,
+            'maintenance_id' => $mid,
+            'worker_id'      => (int)$worker->id,
+            'filename'       => $url,
+            'created_at'     => current_time('mysql'),
+        ]);
+        wp_send_json_success(['message' => 'Foto lisatud', 'url' => $url]);
     }
 
     // ── AJAX: Log hours ───────────────────────────────────────────────────────

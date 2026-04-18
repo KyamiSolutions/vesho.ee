@@ -746,8 +746,39 @@ private static function load_view( $name ) {
             'notes'          => sanitize_textarea_field($_POST['notes']??''),
             'work_type'      => sanitize_text_field($_POST['work_type']??''),
         );
-        if ( $id ) { $wpdb->update($wpdb->prefix.'vesho_workorders',$data,array('id'=>$id)); $msg='updated'; }
-        else { $data['created_at']=current_time('mysql'); $wpdb->insert($wpdb->prefix.'vesho_workorders',$data); $msg='added'; }
+        $prev_worker_id = 0;
+        if ( $id ) {
+            $prev = $wpdb->get_row($wpdb->prepare("SELECT worker_id FROM {$wpdb->prefix}vesho_workorders WHERE id=%d", $id));
+            $prev_worker_id = (int)($prev->worker_id ?? 0);
+            $wpdb->update($wpdb->prefix.'vesho_workorders',$data,array('id'=>$id));
+            $msg='updated';
+            $new_id = $id;
+        } else {
+            $data['created_at']=current_time('mysql');
+            $wpdb->insert($wpdb->prefix.'vesho_workorders',$data);
+            $msg='added';
+            $new_id = $wpdb->insert_id;
+        }
+        // Send email to worker if assigned (new or changed)
+        $new_worker_id = (int)($data['worker_id'] ?? 0);
+        if ( $new_worker_id && $new_worker_id !== $prev_worker_id ) {
+            $worker = $wpdb->get_row($wpdb->prepare(
+                "SELECT * FROM {$wpdb->prefix}vesho_workers WHERE id=%d", $new_worker_id
+            ));
+            $email_to = !empty($worker->work_email) ? $worker->work_email : (!empty($worker->email) ? $worker->email : '');
+            if ( $email_to ) {
+                $co      = get_option('vesho_company_name', 'Vesho OÜ');
+                $wo      = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}vesho_workorders WHERE id=%d", $new_id));
+                $subject = $co . ' — Uus töökäsk: ' . ($wo->title ?: 'Töökäsk #' . $new_id);
+                $body    = "Tere, {$worker->name}!\n\n";
+                $body   .= "Sulle on määratud uus töökäsk.\n\n";
+                $body   .= "Töökäsk: " . ($wo->title ?: '#' . $new_id) . "\n";
+                if (!empty($wo->description)) $body .= "Kirjeldus: {$wo->description}\n";
+                if (!empty($wo->scheduled_date)) $body .= "Planeeritud kuupäev: " . date('d.m.Y', strtotime($wo->scheduled_date)) . "\n";
+                $body   .= "\nLogi portaali sisse et töökäsuga alustada.\n\nLugupidamisega,\n{$co}";
+                wp_mail($email_to, $subject, $body);
+            }
+        }
         wp_redirect( add_query_arg( array('page'=>'vesho-crm-workorders','msg'=>$msg), admin_url('admin.php') ) );
         exit;
     }
