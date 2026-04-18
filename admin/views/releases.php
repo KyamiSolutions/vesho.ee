@@ -108,30 +108,23 @@ function veshoStartUpdate(type, btnId, msgId) {
     msg.textContent = '⏳ Allalaadin ' + label + '.'.repeat(dots + 1);
   }, 500);
 
-  // Start countdown immediately — fires even if poll misses
-  var reloadTimer = setTimeout(function(){
-    clearInterval(anim);
-    msg.textContent = '✅ Valmis! Laen uuesti...';
-    veshoReload();
-  }, 55000);
-
   fetch(ajaxurl, {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
     body:'action=vesho_install_'+type+'&nonce='+veshoNonce})
   .then(r=>r.json()).then(function(d){
     if (!d.success) {
-      clearTimeout(reloadTimer); clearInterval(anim);
+      clearInterval(anim);
       msg.style.color = '#c62828';
       msg.textContent = '❌ ' + (d.data || 'Viga');
       btn.disabled = false;
       return;
     }
-    // Poll every 1s — reload immediately when 'done' detected
+    // Poll every 1s — reload immediately when done
     var poll = setInterval(function(){
       fetch(ajaxurl + '?action=vesho_update_status&type=' + type + '&nonce=' + veshoNonce)
         .then(r=>r.json()).then(function(s){
           var st = (s.success && s.data) ? s.data : {};
           if (st.status === 'done' || st.status === 'error') {
-            clearInterval(poll); clearTimeout(reloadTimer); clearInterval(anim);
+            clearInterval(poll); clearInterval(anim);
             if (st.status === 'done') {
               msg.textContent = '✅ ' + (st.message || 'Uuendatud!');
               veshoReload();
@@ -144,7 +137,7 @@ function veshoStartUpdate(type, btnId, msgId) {
         }).catch(function(){});
     }, 1000);
   }).catch(function(){
-    clearTimeout(reloadTimer); clearInterval(anim);
+    clearInterval(anim);
     msg.style.color = '#c62828';
     msg.textContent = '❌ Ühenduse viga';
     btn.disabled = false;
