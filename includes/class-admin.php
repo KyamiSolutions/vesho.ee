@@ -163,6 +163,10 @@ class Vesho_CRM_Admin {
         add_submenu_page( 'vesho-crm', 'Seaded', 'Seaded', 'manage_options', 'vesho-crm-settings', array( __CLASS__, 'page_settings' ) );
         add_submenu_page( 'vesho-crm', 'Administraatorid', '👥 Administraatorid', 'manage_options', 'vesho-crm-admins',
             function() { include VESHO_CRM_PATH . 'admin/views/admins.php'; } );
+        if ( ( defined('WP_DEBUG') && WP_DEBUG ) || in_array( $_SERVER['SERVER_NAME'] ?? '', ['localhost','127.0.0.1','::1'] ) || str_contains( $_SERVER['HTTP_HOST'] ?? '', 'localhost' ) ) {
+            add_submenu_page( 'vesho-crm', 'Demo Seeder', '🧪 Demo Seeder', 'manage_options', 'vesho-crm-demo-seeder',
+                function() { include VESHO_CRM_PATH . 'admin/views/demo-seeder.php'; } );
+        }
         add_submenu_page(
             'vesho-crm',
             'Uuendused',
