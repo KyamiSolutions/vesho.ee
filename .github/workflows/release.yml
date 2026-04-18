@@ -36,13 +36,18 @@ jobs:
 
           mkdir -p dist releases
 
-          zip -r dist/vesho-crm.zip . \
-            --exclude "*.git*" \
-            --exclude "*/.github/*" \
-            --exclude "*/node_modules/*" \
-            --exclude "*/dist/*" \
-            --exclude "*/releases/*" \
-            --exclude "*/theme/*"
+          # Plugin ZIP: must have vesho-crm/ folder inside so WP updater finds it
+          mkdir -p /tmp/vesho-crm-build/vesho-crm
+          rsync -a \
+            --exclude=".git" \
+            --exclude=".github" \
+            --exclude="node_modules" \
+            --exclude="dist" \
+            --exclude="releases" \
+            --exclude="theme" \
+            . /tmp/vesho-crm-build/vesho-crm/
+          cd /tmp/vesho-crm-build && zip -r $GITHUB_WORKSPACE/dist/vesho-crm.zip vesho-crm/
+          cd $GITHUB_WORKSPACE
 
           # Teema ZIP peab sisaldama kausta "vesho/" mitte "theme/"
           cp -r theme /tmp/vesho
