@@ -522,190 +522,178 @@ function veshoResendVerify(){
     // ── Login / Register form ─────────────────────────────────────────────────
 
     private static function render_login_form() {
-        $ajax  = esc_url(admin_url('admin-ajax.php'));
-        $nonce = wp_create_nonce('vesho_portal_nonce');
-        $title = esc_html(get_theme_mod('vesho_client_portal_title', get_option('vesho_portal_title', 'Klientide Portaal')));
-        $reg   = get_option('vesho_portal_registration','1') === '1';
+        $ajax    = esc_url(admin_url('admin-ajax.php'));
+        $nonce   = wp_create_nonce('vesho_portal_nonce');
+        $reg     = get_option('vesho_portal_registration','1') === '1';
         $logo_id = get_theme_mod('custom_logo');
+        $site    = esc_html(get_theme_mod('vesho_company_display_name', get_option('blogname', 'VESHO')));
         ?>
-<div class="vauth-wrap">
-  <div>
-    <div class="vauth-logo">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Barlow:wght@400;500;600&display=swap');
+.vcl-wrap{min-height:100vh;background:#f0f4f8;display:flex;align-items:center;justify-content:center;padding:32px 20px;font-family:'Barlow',sans-serif}
+.vcl-inner{width:100%;max-width:460px}
+.vcl-logo{text-align:center;margin-bottom:24px}
+.vcl-logo a{display:inline-flex;align-items:center;gap:10px;text-decoration:none}
+.vcl-logo img{max-height:48px;max-width:180px;object-fit:contain}
+.vcl-logo-text{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:1.8rem;color:#0d1f2d;letter-spacing:1px;text-transform:uppercase}
+.vcl-logo-text span{color:#00b4c8}
+.vcl-card{background:#fff;border-radius:16px;box-shadow:0 4px 24px rgba(13,31,45,.1);overflow:hidden}
+.vcl-card-head{background:linear-gradient(135deg,#0d1f2d,#1a3a4a);padding:28px 36px 24px;text-align:center}
+.vcl-card-head h2{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:1.4rem;color:#fff;text-transform:uppercase;letter-spacing:1px;margin:0}
+.vcl-card-head p{color:rgba(255,255,255,.55);font-size:13px;margin:6px 0 0}
+.vcl-card-body{padding:32px 36px}
+.vcl-tabs{display:flex;gap:0;border-bottom:2px solid #edf2f7;margin-bottom:24px}
+.vcl-tab{flex:1;background:none;border:none;border-bottom:3px solid transparent;padding:9px 6px;font-family:'Barlow',sans-serif;font-size:13px;font-weight:700;color:#94a3b8;cursor:pointer;margin-bottom:-2px;transition:.15s;text-transform:uppercase;letter-spacing:.5px}
+.vcl-tab.active{color:#00b4c8;border-bottom-color:#00b4c8}
+.vcl-panel{display:none}.vcl-panel.active{display:block}
+.vcl-group{margin-bottom:16px}
+.vcl-group label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#64748b;margin-bottom:6px}
+.vcl-group input{width:100%;padding:11px 14px;border:1.5px solid #e2e8f0;border-radius:8px;font-family:'Barlow',sans-serif;font-size:14px;color:#0d1f2d;background:#f8fafc;box-sizing:border-box;transition:.2s;outline:none}
+.vcl-group input:focus{border-color:#00b4c8;background:#fff;box-shadow:0 0 0 3px rgba(0,180,200,.1)}
+.vcl-btn{width:100%;padding:13px;background:#00b4c8;color:#fff;border:none;border-radius:8px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1rem;text-transform:uppercase;letter-spacing:1px;cursor:pointer;transition:.2s;margin-top:4px}
+.vcl-btn:hover{background:#0891a8}
+.vcl-btn:disabled{background:#a0c8d0;cursor:not-allowed}
+.vcl-msg{padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:14px;display:none}
+.vcl-msg.success{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0}
+.vcl-msg.error{background:#fef2f2;color:#b91c1c;border:1px solid #fecaca}
+.vcl-links{text-align:center;margin-top:16px;font-size:13px;color:#94a3b8;display:flex;flex-direction:column;gap:6px}
+.vcl-links a,.vcl-back-link{color:#00b4c8;font-weight:600;text-decoration:none;cursor:pointer;background:none;border:none;font-size:13px;font-family:'Barlow',sans-serif;padding:0}
+.vcl-links a:hover,.vcl-back-link:hover{text-decoration:underline}
+.vcl-type-wrap{display:flex;gap:8px;margin-bottom:16px}
+.vcl-type-btn{flex:1;border:1.5px solid #e2e8f0;border-radius:8px;padding:10px 6px;cursor:pointer;text-align:center;font-size:13px;font-weight:600;color:#5a7080;transition:.15s;background:#f8fafc;user-select:none;font-family:'Barlow',sans-serif}
+.vcl-type-btn.selected{border-color:#00b4c8;color:#00b4c8;background:#f0fbfc}
+.vcl-hint{font-size:13px;color:#6b8599;margin-bottom:16px;line-height:1.5}
+</style>
+<div class="vcl-wrap">
+  <div class="vcl-inner">
+    <div class="vcl-logo">
       <a href="<?php echo esc_url(home_url('/')); ?>">
         <?php if ($logo_id): ?>
-          <img src="<?php echo esc_url(wp_get_attachment_image_url($logo_id, 'full')); ?>"
-               alt="<?php echo esc_attr(get_option('blogname')); ?>"
-               style="max-height:48px;max-width:180px;object-fit:contain">
+          <img src="<?php echo esc_url(wp_get_attachment_image_url($logo_id, 'full')); ?>" alt="<?php echo esc_attr($site); ?>">
         <?php else: ?>
-          <svg viewBox="0 0 32 32" fill="none" width="36" height="36"><path d="M16 4C16 4 6 13 6 20a10 10 0 0020 0C26 13 16 4 16 4Z" fill="var(--vesho-primary,#00b4c8)"/><path d="M16 12C16 12 10 18 10 22a6 6 0 0012 0C22 18 16 12 16 12Z" fill="white" opacity=".5"/></svg>
-          <?php echo esc_html(get_theme_mod('vesho_company_display_name', get_option('blogname', 'VESHO'))); ?><span>.</span>
+          <svg viewBox="0 0 32 32" fill="none" width="30" height="30"><path d="M16 4C16 4 6 13 6 20a10 10 0 0020 0C26 13 16 4 16 4Z" fill="#00b4c8"/><path d="M16 12C16 12 10 18 10 22a6 6 0 0012 0C22 18 16 12 16 12Z" fill="white" opacity=".5"/></svg>
+          <span class="vcl-logo-text"><?php echo $site; ?><span>.</span></span>
         <?php endif; ?>
       </a>
     </div>
-    <div class="vauth-card">
-      <h2><?php echo $title; ?></h2>
-      <?php if ($reg): ?>
-      <div class="vauth-tabs">
-        <button class="vauth-tab active" data-tab="login">Logi sisse</button>
-        <button class="vauth-tab" data-tab="register">Registreeru</button>
+    <div class="vcl-card">
+      <div class="vcl-card-head">
+        <h2>Klientide Portaal</h2>
+        <p>Halda seadmeid, arveid ja broneeringuid</p>
       </div>
-      <?php endif; ?>
-
-      <div class="vauth-panel active" id="vauth-panel-login">
-        <div class="vauth-msg" id="vauth-login-msg"></div>
-        <form id="vauth-login-form">
-          <input type="hidden" name="nonce" value="<?php echo $nonce; ?>">
-          <div class="vauth-group"><label>E-post</label><input type="email" name="email" required placeholder="nimi@ettevote.ee" autocomplete="email"></div>
-          <div class="vauth-group"><label>Parool</label><input type="password" name="password" required placeholder="••••••••" autocomplete="current-password"></div>
-          <button type="submit" class="vauth-btn">Logi sisse</button>
-        </form>
-        <div class="vauth-switch"><a href="#" class="vauth-switch-tab" data-tab="forgot">Unustasid parooli?</a></div>
+      <div class="vcl-card-body">
         <?php if ($reg): ?>
-        <div class="vauth-switch">Pole kontot? <a href="#" class="vauth-switch-tab" data-tab="register">Registreeru</a></div>
+        <div class="vcl-tabs">
+          <button class="vcl-tab active" data-panel="login">Logi sisse</button>
+          <button class="vcl-tab" data-panel="register">Registreeru</button>
+        </div>
+        <?php endif; ?>
+
+        <!-- Login -->
+        <div class="vcl-panel active" id="vcl-panel-login">
+          <div class="vcl-msg" id="vcl-login-msg"></div>
+          <form id="vcl-login-form" autocomplete="on">
+            <input type="hidden" name="nonce" value="<?php echo $nonce; ?>">
+            <div class="vcl-group"><label>E-post</label><input type="email" name="email" required placeholder="nimi@ettevote.ee" autocomplete="email"></div>
+            <div class="vcl-group"><label>Parool</label><input type="password" name="password" required placeholder="••••••••" autocomplete="current-password"></div>
+            <button type="submit" class="vcl-btn">Logi sisse</button>
+          </form>
+          <div class="vcl-links">
+            <a href="#" data-panel="forgot">Unustasid parooli?</a>
+            <?php if ($reg): ?><span>Pole kontot? <a href="#" data-panel="register">Registreeru</a></span><?php endif; ?>
+          </div>
+        </div>
+
+        <!-- Forgot -->
+        <div class="vcl-panel" id="vcl-panel-forgot">
+          <div class="vcl-msg" id="vcl-forgot-msg"></div>
+          <p class="vcl-hint">Sisesta oma e-post ja saadame sulle parooli lähtestamise lingi.</p>
+          <form id="vcl-forgot-form">
+            <input type="hidden" name="nonce" value="<?php echo $nonce; ?>">
+            <div class="vcl-group"><label>E-post</label><input type="email" name="email" required placeholder="nimi@ettevote.ee" autocomplete="email"></div>
+            <button type="submit" class="vcl-btn">Saada link</button>
+          </form>
+          <div class="vcl-links"><button class="vcl-back-link" data-panel="login">← Tagasi sisselogimisele</button></div>
+        </div>
+
+        <?php if ($reg): ?>
+        <!-- Register -->
+        <div class="vcl-panel" id="vcl-panel-register">
+          <div class="vcl-msg" id="vcl-reg-msg"></div>
+          <form id="vcl-reg-form" autocomplete="on">
+            <input type="hidden" name="nonce" value="<?php echo $nonce; ?>">
+            <div class="vcl-type-wrap">
+              <label class="vcl-type-btn selected" id="vcl-type-eraisik"><input type="radio" name="account_type" value="eraisik" checked style="display:none"> 👤 Eraisik</label>
+              <label class="vcl-type-btn" id="vcl-type-firma"><input type="radio" name="account_type" value="firma" style="display:none"> 🏢 Ettevõte</label>
+            </div>
+            <div id="vcl-firma-fields" style="display:none">
+              <div class="vcl-group"><label>Ettevõtte nimi *</label><input type="text" name="reg_company" placeholder="OÜ Näidis"></div>
+              <div class="vcl-group"><label>Registrikood</label><input type="text" name="reg_number" placeholder="12345678"></div>
+              <div class="vcl-group"><label>KMKR number</label><input type="text" name="vat_number" placeholder="EE123456789"></div>
+            </div>
+            <div class="vcl-group"><label>Täisnimi *</label><input type="text" name="name" required placeholder="Nimi Perekonnanimi" autocomplete="name"></div>
+            <div class="vcl-group"><label>E-post *</label><input type="email" name="email" required placeholder="nimi@ettevote.ee" autocomplete="email"></div>
+            <div class="vcl-group"><label>Telefon</label><input type="tel" name="phone" placeholder="+372 5XXX XXXX"></div>
+            <div class="vcl-group"><label>Parool * <small style="font-weight:400;text-transform:none">(min 8 märki)</small></label><input type="password" name="password" required minlength="8" placeholder="••••••••" autocomplete="new-password"></div>
+            <button type="submit" class="vcl-btn">Loo konto</button>
+          </form>
+          <div class="vcl-links"><span>On juba konto? <a href="#" data-panel="login">Logi sisse</a></span></div>
+        </div>
         <?php endif; ?>
       </div>
-
-      <div class="vauth-panel" id="vauth-panel-forgot">
-        <div class="vauth-msg" id="vauth-forgot-msg"></div>
-        <p style="font-size:13px;color:#5a7080;margin-bottom:18px">Sisesta oma e-posti aadress ja saadame sulle parooli lähtestamise lingi.</p>
-        <form id="vauth-forgot-form">
-          <input type="hidden" name="nonce" value="<?php echo $nonce; ?>">
-          <div class="vauth-group"><label>E-post</label><input type="email" name="email" required placeholder="nimi@ettevote.ee" autocomplete="email"></div>
-          <button type="submit" class="vauth-btn">Saada link</button>
-        </form>
-        <div class="vauth-switch"><a href="#" class="vauth-switch-tab" data-tab="login">← Tagasi sisselogimisele</a></div>
-      </div>
-
-      <?php if ($reg): ?>
-      <div class="vauth-panel" id="vauth-panel-register">
-        <div class="vauth-msg" id="vauth-reg-msg"></div>
-        <form id="vauth-reg-form">
-          <input type="hidden" name="nonce" value="<?php echo $nonce; ?>">
-          <div style="margin-bottom:12px">
-            <label style="font-weight:600;display:block;margin-bottom:6px">Konto tüüp</label>
-            <div style="display:flex;gap:8px">
-              <label style="flex:1;border:2px solid #ddd;border-radius:8px;padding:10px;cursor:pointer;text-align:center" id="reg-type-eraisik-label">
-                <input type="radio" name="account_type" value="eraisik" checked style="display:none" id="reg-type-eraisik">
-                👤 Eraisik
-              </label>
-              <label style="flex:1;border:2px solid #ddd;border-radius:8px;padding:10px;cursor:pointer;text-align:center" id="reg-type-firma-label">
-                <input type="radio" name="account_type" value="firma" style="display:none" id="reg-type-firma">
-                🏢 Ettevõte
-              </label>
-            </div>
-          </div>
-          <!-- Firma fields (shown only when firma selected) -->
-          <div id="reg-firma-fields" style="display:none">
-            <div style="margin-bottom:12px">
-              <label>Ettevõtte nimi *</label>
-              <input type="text" name="reg_company" style="width:100%;padding:8px 12px;border:1.5px solid #ddd;border-radius:8px;margin-top:4px;box-sizing:border-box">
-            </div>
-            <div style="margin-bottom:12px">
-              <label>Registrikood</label>
-              <input type="text" name="reg_number" style="width:100%;padding:8px 12px;border:1.5px solid #ddd;border-radius:8px;margin-top:4px;box-sizing:border-box">
-            </div>
-            <div style="margin-bottom:12px">
-              <label>KMKR nr</label>
-              <input type="text" name="vat_number" style="width:100%;padding:8px 12px;border:1.5px solid #ddd;border-radius:8px;margin-top:4px;box-sizing:border-box">
-            </div>
-          </div>
-          <div class="vauth-group"><label>Nimi *</label><input type="text" name="name" required placeholder="Nimi Perekonnanimi" autocomplete="name"></div>
-          <div class="vauth-group"><label>E-post *</label><input type="email" name="email" required placeholder="nimi@ettevote.ee" autocomplete="email"></div>
-          <div class="vauth-group"><label>Telefon</label><input type="tel" name="phone" placeholder="+372 5XXX XXXX"></div>
-          <div class="vauth-group"><label>Parool * <small style="font-weight:400;text-transform:none">(min 8 märki)</small></label><input type="password" name="password" required minlength="8" placeholder="••••••••" autocomplete="new-password"></div>
-          <button type="submit" class="vauth-btn">Loo konto</button>
-        </form>
-        <div class="vauth-switch">On juba konto? <a href="#" class="vauth-switch-tab" data-tab="login">Logi sisse</a></div>
-      </div>
-      <?php endif; ?>
     </div>
   </div>
 </div>
 <script>
 (function(){
   var AJAX='<?php echo $ajax; ?>';
-  document.querySelectorAll('.vauth-tab,.vauth-switch-tab').forEach(function(t){
-    t.addEventListener('click',function(e){
-      e.preventDefault();
-      var tab=t.dataset.tab;
-      document.querySelectorAll('.vauth-tab').forEach(function(x){x.classList.toggle('active',x.dataset.tab===tab);});
-      document.querySelectorAll('.vauth-panel').forEach(function(p){p.classList.remove('active');});
-      var panel=document.getElementById('vauth-panel-'+tab);
-      if(panel) panel.classList.add('active');
+  document.addEventListener('click',function(e){
+    var el=e.target.closest('[data-panel]');
+    if(!el) return;
+    e.preventDefault();
+    var p=el.dataset.panel;
+    document.querySelectorAll('.vcl-tab').forEach(function(t){t.classList.toggle('active',t.dataset.panel===p);});
+    document.querySelectorAll('.vcl-panel').forEach(function(x){x.classList.remove('active');});
+    var t=document.getElementById('vcl-panel-'+p);
+    if(t) t.classList.add('active');
+  });
+  document.querySelectorAll('.vcl-type-btn').forEach(function(l){
+    l.addEventListener('click',function(){
+      document.querySelectorAll('.vcl-type-btn').forEach(function(x){x.classList.remove('selected');});
+      l.classList.add('selected');
+      var f=document.getElementById('vcl-firma-fields');
+      if(f) f.style.display=l.querySelector('input').value==='firma'?'block':'none';
     });
   });
-  function handleForm(formId,action,msgId,btnText){
-    var form=document.getElementById(formId);
+  function hf(fid,action,mid,lbl){
+    var form=document.getElementById(fid);
     if(!form) return;
     form.addEventListener('submit',function(e){
       e.preventDefault();
-      var msg=document.getElementById(msgId);
-      var btn=form.querySelector('button[type=submit]');
+      var msg=document.getElementById(mid),btn=form.querySelector('button[type=submit]');
       var fd=new FormData(form); fd.append('action',action);
-      btn.disabled=true; btn.textContent='...';
-      msg.style.display='none';
+      btn.disabled=true; btn.textContent='...'; msg.style.display='none';
       fetch(AJAX,{method:'POST',body:fd}).then(function(r){return r.json();}).then(function(d){
-        if(d.success) {
-          // If server sends redirect URL — go there (login success)
-          if(d.data && d.data.redirect) {
-            msg.style.display='block'; msg.className='vauth-msg success';
-            msg.textContent=(d.data.message)||'Õnnestus!';
-            setTimeout(function(){window.location.href=d.data.redirect;},700);
-          } else if(d.data && d.data.verify) {
-            // Registration success — show confirmation screen in place of form
-            var card = form.closest('.vauth-card') || form.closest('.vauth-wrap') || form.parentElement;
-            if(card) {
-              card.innerHTML = '<div style="text-align:center;padding:40px 24px">' +
-                '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 100" width="64" height="80" style="margin:0 auto 20px;display:block">' +
-                '<rect x="28" y="4" width="24" height="14" rx="4" fill="#00b4c8"/>' +
-                '<rect x="16" y="8" width="48" height="8" rx="4" fill="#00d4e8"/>' +
-                '<rect x="34" y="18" width="12" height="22" rx="3" fill="#00b4c8"/>' +
-                '<path d="M34 38 Q34 52 22 54 L22 60 Q22 64 26 64 L54 64 Q58 64 58 60 L58 54 Q46 52 46 38 Z" fill="#00b4c8"/>' +
-                '<rect x="30" y="62" width="20" height="6" rx="3" fill="#008fa0"/>' +
-                '<ellipse cx="40" cy="76" rx="4" ry="5" fill="#00b4c8" opacity="0.9">' +
-                '<animate attributeName="cy" values="72;88" dur="1.4s" repeatCount="indefinite"/>' +
-                '<animate attributeName="opacity" values="0.9;0" dur="1.4s" repeatCount="indefinite"/>' +
-                '</ellipse></svg>' +
-                '<h3 style="font-size:20px;font-weight:800;color:#0d1f2d;margin-bottom:10px">Konto loodud! ✅</h3>' +
-                '<p style="font-size:15px;color:#5a7080;margin-bottom:8px">Saatsime Sulle kinnitusmeili.</p>' +
-                '<p style="font-size:15px;color:#5a7080;margin-bottom:20px">Palun klõpsa kirjas oleval lingil et aktiveerida konto.</p>' +
-                '<p style="font-size:12px;color:#8a9bb0">Ei leidnud meili? Kontrolli rämpsposti kausta.</p>' +
-                '</div>';
-            } else {
-              // Fallback if card not found
-              msg.style.display='block'; msg.className='vauth-msg success';
-              msg.textContent=(d.data.message)||'Konto loodud! Kontrolli postkasti.';
-            }
+        if(d.success){
+          if(d.data&&d.data.redirect){
+            msg.style.display='block';msg.className='vcl-msg success';msg.textContent=d.data.message||'Õnnestus!';
+            setTimeout(function(){window.location.href=d.data.redirect;},600);
+          } else if(d.data&&d.data.verify){
+            var card=form.closest('.vcl-card-body');
+            if(card) card.innerHTML='<div style="text-align:center;padding:32px 0"><div style="font-size:52px;margin-bottom:16px">💧</div><h3 style="font-family:Barlow Condensed,sans-serif;font-size:1.4rem;font-weight:800;text-transform:uppercase;color:#0d1f2d;margin:0 0 12px">Konto loodud!</h3><p style="font-size:14px;color:#5a7080;margin:0 0 8px">Saatsime Sulle kinnitusmeili.</p><p style="font-size:14px;color:#5a7080;margin:0 0 20px">Klõpsa kirjas oleval lingil et aktiveerida konto.</p><p style="font-size:12px;color:#a0b0bc">Ei leidnud? Kontrolli rämpsposti.</p></div>';
           } else {
-            // Other success (e.g. forgot password)
-            msg.style.display='block'; msg.className='vauth-msg success';
-            msg.textContent=(d.data&&d.data.message)||'Õnnestus!';
+            msg.style.display='block';msg.className='vcl-msg success';msg.textContent=(d.data&&d.data.message)||'Õnnestus!';
           }
         } else {
-          msg.style.display='block'; msg.className='vauth-msg error';
-          msg.textContent=(d.data&&d.data.message)||'Viga!';
-          btn.disabled=false; btn.textContent=btnText;
+          msg.style.display='block';msg.className='vcl-msg error';msg.textContent=(d.data&&d.data.message)||'Viga!';
+          btn.disabled=false;btn.textContent=lbl;
         }
-      }).catch(function(){msg.style.display='block';msg.className='vauth-msg error';msg.textContent='Ühenduse viga';btn.disabled=false;btn.textContent=btnText;});
+      }).catch(function(){msg.style.display='block';msg.className='vcl-msg error';msg.textContent='Ühenduse viga';btn.disabled=false;btn.textContent=lbl;});
     });
   }
-  handleForm('vauth-login-form','vesho_client_login','vauth-login-msg','Logi sisse');
-  handleForm('vauth-reg-form','vesho_client_register','vauth-reg-msg','Loo konto');
-  handleForm('vauth-forgot-form','vesho_forgot_password','vauth-forgot-msg','Saada link');
-  // Firma / eraisik toggle
-  document.querySelectorAll('input[name="account_type"]').forEach(function(r){
-    r.addEventListener('change', function(){
-      var isFirma = this.value === 'firma';
-      document.getElementById('reg-firma-fields').style.display = isFirma ? 'block' : 'none';
-      document.getElementById('reg-type-eraisik-label').style.borderColor = !isFirma ? '#00b4c8' : '#ddd';
-      document.getElementById('reg-type-firma-label').style.borderColor = isFirma ? '#00b4c8' : '#ddd';
-    });
-  });
-  // Set initial state
-  (function(){
-    var eraisikLabel = document.getElementById('reg-type-eraisik-label');
-    if (eraisikLabel) eraisikLabel.style.borderColor = '#00b4c8';
-  })();
+  hf('vcl-login-form','vesho_client_login','vcl-login-msg','Logi sisse');
+  hf('vcl-reg-form','vesho_client_register','vcl-reg-msg','Loo konto');
+  hf('vcl-forgot-form','vesho_forgot_password','vcl-forgot-msg','Saada link');
 })();
 </script>
         <?php
