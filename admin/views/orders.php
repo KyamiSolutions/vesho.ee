@@ -390,7 +390,7 @@ $display_name = $edit->client_name ?: $edit->guest_name ?: '—';
                        <?php echo $o->status !== 'new' ? 'disabled style="opacity:.3"' : ''; ?>></td>
             <td><strong style="color:#1a2a38"><a href="<?php echo admin_url('admin.php?page=vesho-crm-orders&action=view&order_id='.$o->id); ?>" style="color:inherit;text-decoration:none">#<?php echo esc_html($o->order_number); ?></a></strong></td>
             <td>
-                <div style="font-weight:500"><?php echo esc_html($display_name); ?></div>
+                <div style="font-weight:500"><?php echo $o->client_id ? '<a href="'.admin_url('admin.php?page=vesho-crm-clients&action=view&client_id='.$o->client_id).'">'.esc_html($display_name).'</a>' : esc_html($display_name); ?></div>
                 <?php if ($o->guest_email): ?><div style="font-size:11px;color:#6b8599"><?php echo esc_html($o->guest_email); ?></div><?php endif; ?>
             </td>
             <td style="color:#6b8599"><?php echo $item_count; ?> tk</td>

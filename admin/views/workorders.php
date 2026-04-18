@@ -306,7 +306,7 @@ if ( $action === 'print' && $workorder_id ) {
             <tr>
                 <td style="color:#6b8599">#<?php echo $wo->id; ?></td>
                 <td><strong><?php echo esc_html($wo->title); ?></strong></td>
-                <td><?php echo esc_html($wo->client_name?:'–'); ?></td>
+                <td><?php echo $wo->client_id ? '<a href="'.admin_url('admin.php?page=vesho-crm-clients&action=view&client_id='.$wo->client_id).'">'.esc_html($wo->client_name).'</a>' : '–'; ?></td>
                 <td><?php echo esc_html($wo->worker_name?:'–'); ?></td>
                 <td><?php echo vesho_crm_format_date($wo->scheduled_date); ?></td>
                 <td><?php
