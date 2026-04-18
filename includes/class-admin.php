@@ -122,44 +122,47 @@ class Vesho_CRM_Admin {
             . '<path d="M16 4C16 4 6 14 6 20C6 25.5 10.5 30 16 30C21.5 30 26 25.5 26 20C26 14 16 4 16 4Z" fill="#00b4c8"/></svg>'
         );
 
-        add_menu_page( 'Vesho CRM', 'Vesho CRM', 'manage_options', 'vesho-crm',
+        $cap = current_user_can('manage_options') ? 'manage_options' : 'vesho_crm_admin';
+        add_menu_page( 'Vesho CRM', 'Vesho CRM', $cap, 'vesho-crm',
             array( __CLASS__, 'page_dashboard' ), $icon, 25 );
 
         // Dashboard (overrides duplicate parent label)
-        add_submenu_page( 'vesho-crm', 'Töölaud', 'Töölaud', 'manage_options', 'vesho-crm', array( __CLASS__, 'page_dashboard' ) );
-        add_submenu_page( 'vesho-crm', 'Meeldetuletused', 'Meeldetuletused', 'manage_options', 'vesho-crm-reminders', array( __CLASS__, 'page_reminders' ) );
+        add_submenu_page( 'vesho-crm', 'Töölaud', 'Töölaud', $cap, 'vesho-crm', array( __CLASS__, 'page_dashboard' ) );
+        add_submenu_page( 'vesho-crm', 'Meeldetuletused', 'Meeldetuletused', $cap, 'vesho-crm-reminders', array( __CLASS__, 'page_reminders' ) );
 
         // ── KLIENDID ──
-        add_submenu_page( 'vesho-crm', 'Kliendid', 'Kliendid', 'manage_options', 'vesho-crm-clients', array( __CLASS__, 'page_clients' ) );
-        add_submenu_page( 'vesho-crm', 'Seadmed', 'Seadmed', 'manage_options', 'vesho-crm-devices', array( __CLASS__, 'page_devices' ) );
-        add_submenu_page( 'vesho-crm', 'Päringud', 'Päringud', 'manage_options', 'vesho-crm-requests', array( __CLASS__, 'page_requests' ) );
-        add_submenu_page( 'vesho-crm', 'Tugipiletid', 'Tugipiletid', 'manage_options', 'vesho-crm-tickets', array( __CLASS__, 'page_tickets' ) );
+        add_submenu_page( 'vesho-crm', 'Kliendid', 'Kliendid', $cap, 'vesho-crm-clients', array( __CLASS__, 'page_clients' ) );
+        add_submenu_page( 'vesho-crm', 'Seadmed', 'Seadmed', $cap, 'vesho-crm-devices', array( __CLASS__, 'page_devices' ) );
+        add_submenu_page( 'vesho-crm', 'Päringud', 'Päringud', $cap, 'vesho-crm-requests', array( __CLASS__, 'page_requests' ) );
+        add_submenu_page( 'vesho-crm', 'Tugipiletid', 'Tugipiletid', $cap, 'vesho-crm-tickets', array( __CLASS__, 'page_tickets' ) );
 
         // ── HOOLDUSED ──
-        add_submenu_page( 'vesho-crm', 'Kalender', 'Kalender', 'manage_options', 'vesho-crm-calendar', array( __CLASS__, 'page_calendar' ) );
-        add_submenu_page( 'vesho-crm', 'Marsruut', 'Marsruut', 'manage_options', 'vesho-crm-route', array( __CLASS__, 'page_route' ) );
-        add_submenu_page( 'vesho-crm', 'Hooldused', 'Hooldused', 'manage_options', 'vesho-crm-maintenances', array( __CLASS__, 'page_maintenances' ) );
+        add_submenu_page( 'vesho-crm', 'Kalender', 'Kalender', $cap, 'vesho-crm-calendar', array( __CLASS__, 'page_calendar' ) );
+        add_submenu_page( 'vesho-crm', 'Marsruut', 'Marsruut', $cap, 'vesho-crm-route', array( __CLASS__, 'page_route' ) );
+        add_submenu_page( 'vesho-crm', 'Hooldused', 'Hooldused', $cap, 'vesho-crm-maintenances', array( __CLASS__, 'page_maintenances' ) );
 
         // ── TÖÖ ──
-        add_submenu_page( 'vesho-crm', 'Töötajad', 'Töötajad', 'manage_options', 'vesho-crm-workers', array( __CLASS__, 'page_workers' ) );
-        add_submenu_page( 'vesho-crm', 'Töötunnid', 'Töötunnid', 'manage_options', 'vesho-crm-workhours', array( __CLASS__, 'page_workhours' ) );
-        add_submenu_page( 'vesho-crm', 'Töökäsud', 'Töökäsud', 'manage_options', 'vesho-crm-workorders', array( __CLASS__, 'page_workorders' ) );
+        add_submenu_page( 'vesho-crm', 'Töötajad', 'Töötajad', $cap, 'vesho-crm-workers', array( __CLASS__, 'page_workers' ) );
+        add_submenu_page( 'vesho-crm', 'Töötunnid', 'Töötunnid', $cap, 'vesho-crm-workhours', array( __CLASS__, 'page_workhours' ) );
+        add_submenu_page( 'vesho-crm', 'Töökäsud', 'Töökäsud', $cap, 'vesho-crm-workorders', array( __CLASS__, 'page_workorders' ) );
 
         // ── ARVELDUS ──
-        add_submenu_page( 'vesho-crm', 'Arved', 'Arved', 'manage_options', 'vesho-crm-invoices', array( __CLASS__, 'page_invoices' ) );
-        add_submenu_page( 'vesho-crm', 'Müügiraport', 'Müügiraport', 'manage_options', 'vesho-crm-sales', array( __CLASS__, 'page_sales' ) );
-        add_submenu_page( 'vesho-crm', 'Tellimused', 'Tellimused', 'manage_options', 'vesho-crm-orders', array( __CLASS__, 'page_orders' ) );
-        add_submenu_page( 'vesho-crm', 'Kampaaniad', 'Kampaaniad', 'manage_options', 'vesho-crm-campaigns', array( __CLASS__, 'page_campaigns' ) );
+        add_submenu_page( 'vesho-crm', 'Arved', 'Arved', $cap, 'vesho-crm-invoices', array( __CLASS__, 'page_invoices' ) );
+        add_submenu_page( 'vesho-crm', 'Müügiraport', 'Müügiraport', $cap, 'vesho-crm-sales', array( __CLASS__, 'page_sales' ) );
+        add_submenu_page( 'vesho-crm', 'Tellimused', 'Tellimused', $cap, 'vesho-crm-orders', array( __CLASS__, 'page_orders' ) );
+        add_submenu_page( 'vesho-crm', 'Kampaaniad', 'Kampaaniad', $cap, 'vesho-crm-campaigns', array( __CLASS__, 'page_campaigns' ) );
 
         // ── LADU ──
-        add_submenu_page( 'vesho-crm', 'Ladu', 'Ladu', 'manage_options', 'vesho-crm-inventory', array( __CLASS__, 'page_inventory' ) );
-        add_submenu_page( 'vesho-crm', 'Vastuvõtt', 'Vastuvõtt', 'manage_options', 'vesho-crm-receipts', array( __CLASS__, 'page_receipts' ) );
-        add_submenu_page( 'vesho-crm', 'Hinnakiri', 'Hinnakiri', 'manage_options', 'vesho-crm-pricelist', array( __CLASS__, 'page_pricelist' ) );
+        add_submenu_page( 'vesho-crm', 'Ladu', 'Ladu', $cap, 'vesho-crm-inventory', array( __CLASS__, 'page_inventory' ) );
+        add_submenu_page( 'vesho-crm', 'Vastuvõtt', 'Vastuvõtt', $cap, 'vesho-crm-receipts', array( __CLASS__, 'page_receipts' ) );
+        add_submenu_page( 'vesho-crm', 'Hinnakiri', 'Hinnakiri', $cap, 'vesho-crm-pricelist', array( __CLASS__, 'page_pricelist' ) );
 
         // ── MUU ──
-        add_submenu_page( 'vesho-crm', 'Teenused', 'Teenused', 'manage_options', 'vesho-crm-services', array( __CLASS__, 'page_services' ) );
-        add_submenu_page( 'vesho-crm', 'Tegevuslogi', 'Tegevuslogi', 'manage_options', 'vesho-crm-activity', array( __CLASS__, 'page_activity_log' ) );
+        add_submenu_page( 'vesho-crm', 'Teenused', 'Teenused', $cap, 'vesho-crm-services', array( __CLASS__, 'page_services' ) );
+        add_submenu_page( 'vesho-crm', 'Tegevuslogi', 'Tegevuslogi', $cap, 'vesho-crm-activity', array( __CLASS__, 'page_activity_log' ) );
         add_submenu_page( 'vesho-crm', 'Seaded', 'Seaded', 'manage_options', 'vesho-crm-settings', array( __CLASS__, 'page_settings' ) );
+        add_submenu_page( 'vesho-crm', 'Administraatorid', '👥 Administraatorid', 'manage_options', 'vesho-crm-admins',
+            function() { include VESHO_CRM_PATH . 'admin/views/admins.php'; } );
         add_submenu_page(
             'vesho-crm',
             'Uuendused',
@@ -1066,6 +1069,8 @@ private static function load_view( $name ) {
             'company_logo','primary_color',
             // cookie banner
             'cookie_banner_title','cookie_accept_text','cookie_reject_text',
+            // geofence
+            'office_lat','office_lng','geofence_radius',
         );
         foreach ( $text_fields as $f ) {
             if ( isset($_POST[$f]) ) update_option( 'vesho_'.$f, sanitize_text_field($_POST[$f]) );
@@ -1095,7 +1100,7 @@ private static function load_view( $name ) {
             'portal_show_services','portal_show_invoices','portal_show_support','show_contract_terms',
             'notify_new_request','notify_new_ticket','notify_invoice_paid','notify_new_client',
             'notify_maintenance_reminder','notify_low_stock','notify_worker_shift',
-            'low_stock_alert','worker_reminder','cookie_banner','maintenance_mode','coming_soon_mode',
+            'low_stock_alert','worker_reminder','cookie_banner','maintenance_mode','coming_soon_mode','geofence_warn_only',
             'stripe_enabled','mc_enabled','mc_sandbox','montonio_enabled','montonio_sandbox',
             'shop_ship_pickup_enabled','shop_ship_courier_enabled','shop_ship_parcelshop_enabled',
             'cookie_banner_enabled',

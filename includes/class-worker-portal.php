@@ -1534,6 +1534,8 @@ $all_picked = !empty($my_items) && count(array_filter($my_items, fn($i) => $i->p
   <div id="shop-row-<?php echo $item->id; ?>"
        class="pick-item-row<?php echo $item->picked ? ' picked' : ''; ?>"
        data-ean="<?php echo esc_attr($item->ean ?? ''); ?>"
+       data-orig-qty="<?php echo (float)$item->quantity; ?>"
+       data-unit-price="<?php echo (float)$item->unit_price; ?>"
        style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f1f5f9;<?php echo $item->picked?'opacity:.4':''; ?>">
     <input type="checkbox" id="shop-cb-<?php echo $item->id; ?>"
            class="pick-item-btn"
@@ -1544,7 +1546,19 @@ $all_picked = !empty($my_items) && count(array_filter($my_items, fn($i) => $i->p
       <div style="font-size:13px;font-weight:600;<?php echo $item->picked?'text-decoration:line-through':''; ?>"><?php echo esc_html($item->name); ?></div>
       <?php if ($item->sku): ?><div style="font-size:11px;color:#94a3b8;font-family:monospace"><?php echo esc_html($item->sku); ?></div><?php endif; ?>
     </div>
-    <div style="font-size:13px;font-weight:600;color:#1e293b;white-space:nowrap"><?php echo number_format($item->quantity,1); ?> tk</div>
+    <!-- Quantity adjuster -->
+    <div style="display:flex;align-items:center;gap:4px">
+      <button type="button" onclick="adjQty(<?php echo $item->id; ?>,-1)"
+              style="width:26px;height:26px;border:1px solid #dce3e9;border-radius:6px;background:#f8fafc;font-size:16px;cursor:pointer;line-height:1;padding:0">−</button>
+      <input type="number" id="qty-<?php echo $item->id; ?>"
+             value="<?php echo (float)$item->quantity; ?>"
+             min="0" max="<?php echo (float)$item->quantity; ?>"
+             step="1"
+             onchange="onQtyChange(<?php echo $item->id; ?>)"
+             style="width:48px;text-align:center;border:1px solid #dce3e9;border-radius:6px;padding:4px;font-size:13px;font-weight:600">
+      <button type="button" onclick="adjQty(<?php echo $item->id; ?>,1)"
+              style="width:26px;height:26px;border:1px solid #dce3e9;border-radius:6px;background:#f8fafc;font-size:16px;cursor:pointer;line-height:1;padding:0">+</button>
+    </div>
     <div style="font-size:12px;color:#64748b;white-space:nowrap"><?php echo number_format($item->unit_price,2,',','.'); ?> €</div>
   </div>
   <?php endforeach; ?>
@@ -1612,18 +1626,64 @@ $all_picked = !empty($my_items) && count(array_filter($my_items, fn($i) => $i->p
     });
   };
 
-  // ── Pick gate: enable complete button only when all items picked ─────────
+  // ── Quantity adjuster (partial fulfillment) ───────────────────────────────
+  window.adjQty = function(itemId, delta){
+    var inp = document.getElementById('qty-'+itemId);
+    if (!inp) return;
+    var row = document.getElementById('shop-row-'+itemId);
+    var orig = parseFloat(row ? row.dataset.origQty : inp.max) || 1;
+    var cur  = parseFloat(inp.value) || 0;
+    var next = Math.min(orig, Math.max(0, cur + delta));
+    inp.value = next;
+    onQtyChange(itemId);
+  };
+
+  window.onQtyChange = function(itemId){
+    var inp  = document.getElementById('qty-'+itemId);
+    var row  = document.getElementById('shop-row-'+itemId);
+    if (!inp || !row) return;
+    var orig = parseFloat(row.dataset.origQty) || parseFloat(inp.max) || 1;
+    var cur  = parseFloat(inp.value);
+    var isModified = cur < orig;
+    inp.style.background    = isModified ? '#fef9c3' : '';
+    inp.style.borderColor   = isModified ? '#f59e0b' : '';
+    row.dataset.pickedQty   = cur;
+    // Auto-check if qty > 0, uncheck if 0
+    var cb = document.getElementById('shop-cb-'+itemId);
+    if (cb) {
+      var shouldPick = cur > 0;
+      if (cb.checked !== shouldPick) {
+        cb.checked = shouldPick;
+        cb.dispatchEvent(new Event('change'));
+        return; // togglePick will call updateProgress/checkPickGate
+      }
+    }
+    updateProgress();
+    checkPickGate();
+  };
+
+  // ── Pick gate: enable complete button only when all items processed ───────
   function checkPickGate(){
     var rows   = document.querySelectorAll('.pick-item-row');
-    var picked = document.querySelectorAll('.pick-item-row.picked');
+    var done   = 0;
+    rows.forEach(function(r){
+      var qtyInp = r.querySelector('input[type="number"]');
+      var cb     = r.querySelector('.pick-item-btn');
+      // Item is "done" if worker set qty (even 0) or checked
+      if (qtyInp && qtyInp.dataset && qtyInp.dataset.touched) { done++; }
+      else if (cb && cb.checked) { done++; }
+      else if (qtyInp && parseFloat(qtyInp.value) < parseFloat(r.dataset.origQty||qtyInp.max||1)) { done++; }
+      else if (cb && cb.checked) { done++; }
+    });
+    // Gate: all rows must be either picked or have qty adjusted
+    var allDone = document.querySelectorAll('.pick-item-row.picked').length === rows.length;
     var btn    = document.getElementById('vwp-pack-btn');
     var gateMsg= document.getElementById('pick-gate-msg');
     if(btn){
-      if(rows.length > 0 && picked.length < rows.length){
+      if(rows.length > 0 && !allDone){
         btn.disabled = true;
         if(gateMsg) gateMsg.style.display='block';
       } else {
-        // All picked — gate message hidden; label-print gate still controls final enable
         if(gateMsg) gateMsg.style.display='none';
       }
     }
@@ -1691,6 +1751,12 @@ $all_picked = !empty($my_items) && count(array_filter($my_items, fn($i) => $i->p
   if(packBtn) packBtn.addEventListener('click',()=>{
     if(!confirm('Märgi tellimus pakituks ja lõpetatuks?')) return;
     var fd=new FormData(); fd.append('action','vesho_worker_pack_order'); fd.append('nonce',NONCE); fd.append('order_id',packBtn.dataset.id);
+    // Send picked quantities for partial fulfillment
+    document.querySelectorAll('.pick-item-row').forEach(function(row){
+      var id  = row.id.replace('shop-row-','');
+      var inp = document.getElementById('qty-'+id);
+      if (inp) fd.append('picked_qtys['+id+']', inp.value);
+    });
     packBtn.disabled=true;
     fetch(AJAX,{method:'POST',body:fd}).then(r=>r.json()).then(d=>{
       if(d.success) location.reload(); else{showMsg(false,d.data?.message||'Viga');packBtn.disabled=false;}
@@ -2576,23 +2642,59 @@ $all_picked = !empty($my_items) && count(array_filter($my_items, fn($i) => $i->p
         $worker = self::get_current_worker();
         if (!$worker) wp_send_json_error(['message'=>'Pole sisse logitud']);
         global $wpdb;
-        $order_id = absint($_POST['order_id']??0);
-        $wpdb->update("{$wpdb->prefix}vesho_shop_orders",
-            ['status'=>'shipped','updated_at'=>current_time('mysql')],
-            ['id'=>$order_id,'worker_id'=>$worker->id]);
-        // Deduct picked items from inventory
+        $order_id   = absint($_POST['order_id']??0);
+        $picked_qtys = isset($_POST['picked_qtys']) ? (array)$_POST['picked_qtys'] : [];
+
         $items = $wpdb->get_results($wpdb->prepare(
-            "SELECT * FROM {$wpdb->prefix}vesho_shop_order_items WHERE order_id=%d AND picked=1", $order_id
+            "SELECT * FROM {$wpdb->prefix}vesho_shop_order_items WHERE order_id=%d", $order_id
         ));
+
+        $refund_pending = 0.0;
+
         foreach ($items as $it) {
-            if ($it->inventory_id) {
+            $orig_qty = (float)$it->quantity;
+            // Use posted picked_qty if provided, else fall back to picked flag
+            if (isset($picked_qtys[$it->id])) {
+                $picked_qty = max(0.0, min($orig_qty, (float)$picked_qtys[$it->id]));
+            } else {
+                $picked_qty = $it->picked ? $orig_qty : 0.0;
+            }
+
+            // Save picked_qty and update picked flag
+            $wpdb->update(
+                "{$wpdb->prefix}vesho_shop_order_items",
+                ['picked_qty' => $picked_qty, 'picked' => $picked_qty > 0 ? 1 : 0],
+                ['id' => $it->id]
+            );
+
+            // Deduct picked quantity from inventory (not original)
+            if ($it->inventory_id && $picked_qty > 0) {
                 $wpdb->query($wpdb->prepare(
                     "UPDATE {$wpdb->prefix}vesho_inventory SET quantity=GREATEST(0,quantity-%f) WHERE id=%d",
-                    $it->quantity, $it->inventory_id
+                    $picked_qty, $it->inventory_id
                 ));
             }
+
+            // Calculate partial refund
+            $diff = $orig_qty - $picked_qty;
+            if ($diff > 0) {
+                $refund_pending += $diff * (float)$it->unit_price;
+            }
         }
-        wp_send_json_success(['message'=>'Tellimus pakitud ja lõpetatud!']);
+
+        $order_update = ['status' => 'shipped', 'updated_at' => current_time('mysql')];
+        if ($refund_pending > 0.001) {
+            $order_update['refund_pending_amount'] = round($refund_pending, 2);
+        }
+
+        $wpdb->update("{$wpdb->prefix}vesho_shop_orders", $order_update,
+            ['id' => $order_id, 'worker_id' => $worker->id]);
+
+        $msg = $refund_pending > 0.001
+            ? sprintf('Tellimus pakitud! Osaline tagasimakse %.2f € ootel.', $refund_pending)
+            : 'Tellimus pakitud ja lõpetatud!';
+
+        wp_send_json_success(['message' => $msg, 'refund_pending' => $refund_pending]);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

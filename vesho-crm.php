@@ -3,7 +3,7 @@
  * Plugin Name: Vesho CRM
  * Plugin URI:  https://vesho.ee
  * Description: CRM ja klientide portaal Vesho OÜ-le. Haldab kliente, seadmeid, hooldusi, arveid ja teenuseid.
- * Version:     2.2.27
+ * Version:     2.2.28
  * Author:      Vesho OÜ
  * Author URI:  https://vesho.ee
  * Text Domain: vesho-crm
@@ -15,7 +15,7 @@
 defined( 'ABSPATH' ) || exit;
 
 // ── Constants ──────────────────────────────────────────────────────────────────
-define('VESHO_CRM_VERSION', '2.2.27');
+define('VESHO_CRM_VERSION', '2.2.28');
 define( 'VESHO_CRM_FILE',     __FILE__ );
 define( 'VESHO_CRM_PATH',     plugin_dir_path( __FILE__ ) );
 define( 'VESHO_CRM_URL',      plugin_dir_url( __FILE__ ) );
@@ -32,6 +32,7 @@ function vesho_crm_load_includes() {
         'includes/class-api.php',
         'includes/class-guest-request.php',
         'includes/shortcodes.php',
+        'includes/class-pdf.php',
     );
     foreach ( $files as $file ) {
         $path = VESHO_CRM_PATH . $file;
@@ -228,8 +229,9 @@ function vesho_crm_init() {
     vesho_crm_create_pages();
 
     // Ensure custom roles exist (safe to run always — add_role() is a no-op if role exists)
-    if ( ! get_role('vesho_client') ) add_role( 'vesho_client', 'CRM Klient', array( 'read' => true ) );
-    if ( ! get_role('vesho_worker') ) add_role( 'vesho_worker', 'CRM Töötaja', array( 'read' => true ) );
+    if ( ! get_role('vesho_client') )    add_role( 'vesho_client',    'CRM Klient',   ['read' => true] );
+    if ( ! get_role('vesho_worker') )    add_role( 'vesho_worker',    'CRM Töötaja',  ['read' => true] );
+    if ( ! get_role('vesho_crm_admin') ) add_role( 'vesho_crm_admin', 'CRM Admin',    ['read' => true, 'vesho_crm_admin' => true] );
 
     // Init classes
     if ( class_exists( 'Vesho_CRM_Admin' ) ) {
@@ -251,6 +253,54 @@ function vesho_crm_init() {
         Vesho_CRM_Updater::init();
     }
 }
+
+// ── PDF download endpoint ─────────────────────────────────────────────────────
+add_action( 'init', function() {
+    if ( isset( $_GET['vesho_pdf'] ) && $_GET['vesho_pdf'] === 'invoice' ) {
+        if ( ! is_user_logged_in() || ! current_user_can( 'manage_options' ) ) {
+            wp_die( 'Puuduvad õigused.' );
+        }
+        $id = absint( $_GET['id'] ?? 0 );
+        if ( $id && function_exists( 'vesho_build_invoice_pdf' ) ) {
+            vesho_build_invoice_pdf( $id );
+        }
+        exit;
+    }
+} );
+
+// ── Admin permission helper ───────────────────────────────────────────────────
+/**
+ * Check if current WP user can access a specific CRM module.
+ * Super-admins (manage_options) always pass. vesho_crm_admin users
+ * are checked against their stored permissions array.
+ */
+function vesho_can( $module ) {
+    if ( current_user_can('manage_options') ) return true;
+    if ( ! current_user_can('vesho_crm_admin') ) return false;
+    $perms = get_user_meta( get_current_user_id(), 'vesho_crm_perms', true );
+    return is_array($perms) && in_array( $module, $perms, true );
+}
+
+// Grant vesho_crm_admin users access to WP admin area
+add_filter( 'user_has_cap', function( $allcaps, $caps, $args ) {
+    if ( isset($allcaps['vesho_crm_admin']) && $allcaps['vesho_crm_admin'] ) {
+        $allcaps['read']          = true;
+        $allcaps['edit_posts']    = false;
+        // Allow them to see WP admin bar but not full dashboard
+    }
+    return $allcaps;
+}, 10, 3 );
+
+// Redirect vesho_crm_admin users to CRM on WP login
+add_action( 'admin_init', function() {
+    if ( current_user_can('manage_options') ) return;
+    if ( ! current_user_can('vesho_crm_admin') ) return;
+    $screen = get_current_screen();
+    if ( $screen && strpos($screen->id, 'vesho') === false ) {
+        wp_redirect( admin_url('admin.php?page=vesho-crm') );
+        exit;
+    }
+} );
 
 // ── Save update server URL (AJAX) ─────────────────────────────────────────────
 add_action( 'wp_ajax_vesho_save_update_server', function() {
@@ -1026,6 +1076,33 @@ function vesho_ajax_worker_clock_action() {
     $wid         = (int) $worker->id;
     $action_type = sanitize_text_field( $_POST['action_type'] ?? '' );
 
+    $lat = isset($_POST['lat']) && $_POST['lat'] !== '' ? (float)$_POST['lat'] : null;
+    $lng = isset($_POST['lng']) && $_POST['lng'] !== '' ? (float)$_POST['lng'] : null;
+
+    // Geofence validation (only if office coords configured)
+    $office_lat    = (float) get_option('vesho_office_lat', 0);
+    $office_lng    = (float) get_option('vesho_office_lng', 0);
+    $geofence_m    = (int)   get_option('vesho_geofence_radius', 0);
+    $geofence_warn = (bool)  get_option('vesho_geofence_warn_only', '1');
+
+    $geo_warning = '';
+    if ( $geofence_m > 0 && $office_lat && $office_lng && $lat !== null && $lng !== null ) {
+        // Haversine distance (metres)
+        $earth_r = 6371000;
+        $dLat    = deg2rad( $lat - $office_lat );
+        $dLng    = deg2rad( $lng - $office_lng );
+        $a       = sin($dLat/2)**2 + cos(deg2rad($office_lat)) * cos(deg2rad($lat)) * sin($dLng/2)**2;
+        $dist_m  = 2 * $earth_r * asin(sqrt($a));
+
+        if ( $dist_m > $geofence_m ) {
+            $dist_km = round($dist_m / 1000, 2);
+            if ( ! $geofence_warn ) {
+                wp_send_json_error(['message' => sprintf('Oled töökohast liiga kaugel (%.0f m). Kellalöök lubatud ainult %.0f m raadiuses.', $dist_m, $geofence_m)]);
+            }
+            $geo_warning = sprintf(' (hoiatus: %.0f m töökoha raadiusest väljas)', $dist_m);
+        }
+    }
+
     if ( $action_type === 'in' ) {
         $existing = $wpdb->get_var( $wpdb->prepare(
             "SELECT id FROM {$wpdb->prefix}vesho_work_hours
@@ -1037,13 +1114,15 @@ function vesho_ajax_worker_clock_action() {
         }
         $now = current_time( 'mysql' );
         $wpdb->insert( $wpdb->prefix . 'vesho_work_hours', [
-            'worker_id'  => $wid,
-            'date'       => current_time( 'Y-m-d' ),
-            'start_time' => $now,
-            'hours'      => 0,
-            'created_at' => $now,
+            'worker_id'     => $wid,
+            'date'          => current_time( 'Y-m-d' ),
+            'start_time'    => $now,
+            'hours'         => 0,
+            'clock_in_lat'  => $lat,
+            'clock_in_lng'  => $lng,
+            'created_at'    => $now,
         ] );
-        wp_send_json_success( ['message' => 'Tööpäev alustatud', 'time' => current_time( 'H:i' )] );
+        wp_send_json_success( ['message' => 'Tööpäev alustatud' . $geo_warning, 'time' => current_time('H:i'), 'geo_warning' => $geo_warning !== ''] );
 
     } elseif ( $action_type === 'out' ) {
         $row = $wpdb->get_row( $wpdb->prepare(
@@ -1059,10 +1138,10 @@ function vesho_ajax_worker_clock_action() {
         $hours = round( ( strtotime( $end ) - strtotime( $row->start_time ) ) / 3600, 2 );
         $wpdb->update(
             $wpdb->prefix . 'vesho_work_hours',
-            ['end_time' => $end, 'hours' => max( 0.01, $hours )],
+            ['end_time' => $end, 'hours' => max(0.01, $hours), 'clock_out_lat' => $lat, 'clock_out_lng' => $lng],
             ['id' => $row->id]
         );
-        wp_send_json_success( ['message' => 'Tööpäev lõpetatud', 'hours' => $hours] );
+        wp_send_json_success( ['message' => 'Tööpäev lõpetatud' . $geo_warning, 'hours' => $hours, 'geo_warning' => $geo_warning !== ''] );
     }
 
     wp_send_json_error( ['message' => 'Tundmatu toiming'] );

@@ -426,8 +426,10 @@ if ( $action === 'print' && $invoice_id ) {
             <div class="crm-form-actions">
                 <a href="<?php echo admin_url('admin.php?page=vesho-crm-invoices'); ?>" class="crm-btn crm-btn-outline">Tühista</a>
                 <?php if ($edit) : ?>
+                <a href="<?php echo esc_url( add_query_arg(['vesho_pdf'=>'invoice','id'=>$edit->id], home_url('/')) ); ?>"
+                   class="crm-btn crm-btn-primary" target="_blank">⬇ Laadi PDF</a>
                 <a href="<?php echo admin_url('admin.php?page=vesho-crm-invoices&action=print&invoice_id='.$edit->id); ?>"
-                   class="crm-btn crm-btn-outline" target="_blank">📄 Laadi PDF</a>
+                   class="crm-btn crm-btn-outline" target="_blank">🖨 Prindi</a>
                 <?php endif; ?>
                 <button type="submit" class="crm-btn crm-btn-primary">💾 Salvesta</button>
             </div>
