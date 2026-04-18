@@ -375,8 +375,18 @@ if ( $can_refund && in_array($edit->status, ['ready','shipped','fulfilled','retu
 <?php /* ─── LIST VIEW ───────────────────────────────────────────────────── */ ?>
 <?php else: ?>
 <div class="crm-card">
-    <div class="crm-toolbar">
+    <div class="crm-toolbar" style="flex-wrap:wrap;gap:8px">
         <a href="<?php echo admin_url('admin.php?page=vesho-crm-orders&action=add'); ?>" class="crm-btn crm-btn-primary">+ Uus tellimus</a>
+
+        <!-- Barcode / package scan -->
+        <div style="display:flex;align-items:center;gap:6px;background:#f8fafc;border:1px solid #dce3e9;border-radius:8px;padding:5px 10px">
+            <span style="font-size:14px">📦</span>
+            <input type="text" id="order-barcode-scan"
+                   placeholder="Skänni pakikaart / jälgimisnumber..."
+                   autocomplete="off"
+                   style="border:none;background:transparent;outline:none;font-size:13px;min-width:220px;color:#1a2a38"
+                   title="Skänni pakikaart (EAN / jälgimisnumber) — leiab tellimuse automaatselt">
+        </div>
 
         <!-- Bulk send to workers -->
         <form method="POST" action="<?php echo admin_url('admin-post.php'); ?>" id="bulk-form" style="display:inline">
@@ -676,6 +686,31 @@ function openManualRefund(orderId) {
             })
             .catch(function(){ document.body.removeChild(overlay); alert('Ühenduse viga'); });
     });
+}
+
+// ── Package barcode / tracking number scanner ────────────────────────────────
+var barcodeInput = document.getElementById('order-barcode-scan');
+if (barcodeInput) {
+    // Handle barcode scanner input (fires 'change' on scanner Enter, or submit on Enter key)
+    barcodeInput.addEventListener('change', function() {
+        var val = this.value.trim();
+        if (val.length > 2) {
+            window.location.href = '<?php echo admin_url('admin.php?page=vesho-crm-orders&'); ?>' + 's=' + encodeURIComponent(val);
+        }
+    });
+    barcodeInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            var val = this.value.trim();
+            if (val.length > 0) {
+                window.location.href = '<?php echo admin_url('admin.php?page=vesho-crm-orders&'); ?>' + 's=' + encodeURIComponent(val);
+            }
+        }
+    });
+    // Auto-focus if no other input is focused on page load
+    setTimeout(function(){
+        if (document.activeElement === document.body) barcodeInput.focus();
+    }, 200);
 }
 
 })();

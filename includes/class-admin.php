@@ -75,6 +75,9 @@ class Vesho_CRM_Admin {
         add_action( 'wp_login',                           array( __CLASS__, 'after_wp_login' ), 10, 2 );
         add_action( 'login_form_vesho_2fa',               array( __CLASS__, 'render_2fa_login_page' ) );
         add_action( 'admin_bar_menu',                     array( __CLASS__, 'add_my_account_admin_bar_link' ), 999 );
+        // Feature: Force password change
+        add_action( 'admin_init',                         array( __CLASS__, 'check_force_password_change' ) );
+        add_action( 'admin_post_vesho_change_password',   array( __CLASS__, 'handle_change_password' ) );
     }
 
     // ── Menu registration ──────────────────────────────────────────────────────
@@ -150,18 +153,55 @@ class Vesho_CRM_Admin {
     }
 
     public static function page_my_account() {
-        $user = wp_get_current_user();
+        $user         = wp_get_current_user();
         $totp_enabled = get_user_meta( $user->ID, 'vesho_totp_enabled', true );
-        $secret       = get_user_meta( $user->ID, 'vesho_totp_secret',  true );
-        $msg = sanitize_text_field( $_GET['msg'] ?? '' );
+        $msg          = sanitize_text_field( $_GET['msg'] ?? '' );
+        $force_pw     = isset( $_GET['force_pw'] );
+        $must_change  = (bool) get_user_meta( $user->ID, 'vesho_force_password_change', true );
         ?>
         <div class="wrap">
-            <h1>🔐 Minu konto — 2FA seaded</h1>
-            <?php if ( $msg === 'enabled' ) echo '<div class="notice notice-success"><p>2FA aktiveeritud!</p></div>'; ?>
-            <?php if ( $msg === 'disabled' ) echo '<div class="notice notice-success"><p>2FA keelatud.</p></div>'; ?>
-            <?php if ( $msg === 'bad_code' ) echo '<div class="notice notice-error"><p>Vale kood. Proovi uuesti.</p></div>'; ?>
+            <h1>🔐 Minu konto</h1>
+
+            <?php
+            // Messages
+            if ( $msg === 'enabled' )     echo '<div class="notice notice-success is-dismissible"><p>2FA aktiveeritud!</p></div>';
+            if ( $msg === 'disabled' )    echo '<div class="notice notice-success is-dismissible"><p>2FA keelatud.</p></div>';
+            if ( $msg === 'bad_code' )    echo '<div class="notice notice-error is-dismissible"><p>Vale kood. Proovi uuesti.</p></div>';
+            if ( $msg === 'pw_changed' )  echo '<div class="notice notice-success is-dismissible"><p>✅ Parool muudetud!</p></div>';
+            if ( $msg === 'short_pw' )    echo '<div class="notice notice-error is-dismissible"><p>Parool peab olema vähemalt 8 tähemärki.</p></div>';
+            if ( $msg === 'pw_mismatch' ) echo '<div class="notice notice-error is-dismissible"><p>Paroolid ei ühti.</p></div>';
+            ?>
 
             <div style="max-width:520px;margin-top:20px">
+
+            <?php if ( $must_change || $force_pw ) : ?>
+            <!-- ── Forced password change ──────────────────────────────────── -->
+            <div style="background:#fef3c7;border:2px solid #f59e0b;border-radius:10px;padding:20px 24px;margin-bottom:24px">
+                <h3 style="margin:0 0 8px;color:#92400e">🔑 Paroolimuse vahetus nõutav</h3>
+                <p style="margin:0 0 16px;font-size:13px;color:#78350f">
+                    Administraator on loonud sinu konto ajutise parooliga. Palun vali uus parool enne jätkamist.
+                </p>
+                <form method="POST" action="<?php echo admin_url('admin-post.php'); ?>">
+                    <?php wp_nonce_field('vesho_change_password'); ?>
+                    <input type="hidden" name="action" value="vesho_change_password">
+                    <div style="margin-bottom:12px">
+                        <label style="display:block;font-size:12px;font-weight:600;margin-bottom:5px;color:#92400e">Uus parool *</label>
+                        <input type="password" name="new_password" required minlength="8"
+                               style="width:100%;padding:9px 12px;border:1px solid #fcd34d;border-radius:6px;font-size:14px;box-sizing:border-box"
+                               placeholder="Minimaalselt 8 tähemärki">
+                    </div>
+                    <div style="margin-bottom:16px">
+                        <label style="display:block;font-size:12px;font-weight:600;margin-bottom:5px;color:#92400e">Kinnita uus parool *</label>
+                        <input type="password" name="confirm_password" required
+                               style="width:100%;padding:9px 12px;border:1px solid #fcd34d;border-radius:6px;font-size:14px;box-sizing:border-box"
+                               placeholder="Korda parooli">
+                    </div>
+                    <button type="submit" class="button button-primary">🔑 Muuda parool</button>
+                </form>
+            </div>
+            <?php endif; ?>
+
+            <!-- ── 2FA section ──────────────────────────────────────────────── -->
             <?php if ( $totp_enabled ) : ?>
                 <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:20px;margin-bottom:20px">
                     <strong style="color:#166534">✅ 2FA on aktiivne</strong>
@@ -173,7 +213,6 @@ class Vesho_CRM_Admin {
                     <button type="submit" class="button button-secondary" onclick="return confirm('Keela 2FA?')">🔓 Keela 2FA</button>
                 </form>
             <?php else :
-                // Generate a fresh secret for setup
                 $setup_secret = get_user_meta( $user->ID, 'vesho_totp_pending_secret', true );
                 if ( empty($setup_secret) ) {
                     $setup_secret = self::totp_generate_secret();
@@ -2022,6 +2061,8 @@ private static function load_view( $name ) {
             $u = new WP_User( $new_user_id );
             $u->set_role( 'administrator' );
             if ( $display_name ) wp_update_user( ['ID' => $new_user_id, 'display_name' => $display_name] );
+            // Force password change on first login
+            update_user_meta( $new_user_id, 'vesho_force_password_change', 1 );
             $msg = 'admin_added';
         }
 
@@ -2167,10 +2208,9 @@ private static function load_view( $name ) {
                 $secret = get_user_meta( $user_id, 'vesho_totp_secret', true );
                 if ( self::totp_verify($secret, $code) ) {
                     delete_transient( 'vesho_2fa_' . $token );
-                    // Log user in
+                    // Log user in (no wp_login action — avoids re-triggering 2FA hook)
                     wp_set_current_user( $user_id );
                     wp_set_auth_cookie( $user_id, false );
-                    do_action( 'wp_login', get_user_by('id', $user_id)->user_login, get_user_by('id', $user_id) );
                     wp_safe_redirect( admin_url() );
                     exit;
                 } else {
@@ -2179,7 +2219,7 @@ private static function load_view( $name ) {
             }
         }
 
-        // Render the 2FA form
+        // Render the 2FA form (WP's login_header outputs HTML head + body open)
         login_header( '2FA kinnitus', '', null );
         ?>
         <form method="POST" action="<?php echo esc_url( add_query_arg(['action' => 'vesho_2fa', 'token' => $token], wp_login_url()) ); ?>">
@@ -2197,6 +2237,61 @@ private static function load_view( $name ) {
         </form>
         <?php
         login_footer();
+        exit;
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // Feature: Force password change on first login
+    // ══════════════════════════════════════════════════════════════════════════
+
+    /**
+     * On every admin page load: if the current user must change their password,
+     * redirect them to the Minu konto page until they do.
+     */
+    public static function check_force_password_change() {
+        if ( ! is_user_logged_in() ) return;
+        if ( ! current_user_can( 'manage_options' ) ) return;
+        $user_id = get_current_user_id();
+        if ( ! get_user_meta( $user_id, 'vesho_force_password_change', true ) ) return;
+
+        // Allow the password-change POST to go through
+        if ( isset($_POST['action']) && $_POST['action'] === 'vesho_change_password' ) return;
+
+        // Allow already being on the account page with force_pw flag
+        $page = sanitize_text_field( $_GET['page'] ?? '' );
+        if ( $page === 'vesho-my-account' && isset($_GET['force_pw']) ) return;
+
+        wp_safe_redirect( admin_url( 'admin.php?page=vesho-my-account&force_pw=1' ) );
+        exit;
+    }
+
+    /**
+     * Handle forced password change form submission.
+     */
+    public static function handle_change_password() {
+        check_admin_referer( 'vesho_change_password' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorized' );
+
+        $user_id  = get_current_user_id();
+        $new_pass = $_POST['new_password']     ?? '';
+        $confirm  = $_POST['confirm_password'] ?? '';
+
+        if ( strlen( $new_pass ) < 8 ) {
+            wp_safe_redirect( admin_url( 'admin.php?page=vesho-my-account&force_pw=1&msg=short_pw' ) );
+            exit;
+        }
+        if ( $new_pass !== $confirm ) {
+            wp_safe_redirect( admin_url( 'admin.php?page=vesho-my-account&force_pw=1&msg=pw_mismatch' ) );
+            exit;
+        }
+
+        wp_set_password( $new_pass, $user_id );
+        delete_user_meta( $user_id, 'vesho_force_password_change' );
+
+        // Re-authenticate (wp_set_password logs the user out)
+        wp_set_auth_cookie( $user_id, false );
+
+        wp_safe_redirect( admin_url( 'admin.php?page=vesho-my-account&msg=pw_changed' ) );
         exit;
     }
 }
