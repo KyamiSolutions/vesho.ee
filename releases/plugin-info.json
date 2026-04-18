@@ -6,5 +6,5 @@
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-18",
-  "changelog": "<h4>2.2.36</h4><ul><li>Teenusepäring lukustab hetkel kehtiva kampaania allahindluse</li><li>Taust-download (bg worker) gateway timeout lahendus</li></ul><h4>2.2.35</h4><ul><li>Kampaania bänner + allahindlus e-poes ja teenustes</li><li>Fix: eemalda nupp ostukorvis</li></ul>"
+  "changelog": "<h4>2.2.36</h4><ul><li>Uus versioon</li></ul>"
 }
