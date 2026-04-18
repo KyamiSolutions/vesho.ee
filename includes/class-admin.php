@@ -261,14 +261,27 @@ class Vesho_CRM_Admin {
                     update_user_meta( $user->ID, 'vesho_totp_pending_secret', $setup_secret );
                 }
                 $qr_label = rawurlencode( 'Vesho:' . $user->user_email );
-                $qr_url   = 'otpauth://totp/' . $qr_label . '?secret=' . $setup_secret . '&issuer=Vesho';
-                $qr_img   = 'https://chart.googleapis.com/chart?chs=200x200&chld=M|0&cht=qr&chl=' . rawurlencode($qr_url);
+                $qr_url = 'otpauth://totp/' . $qr_label . '?secret=' . $setup_secret . '&issuer=Vesho';
             ?>
                 <div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:20px;margin-bottom:20px">
                     <h3 style="margin-top:0">Seadista Google Authenticator</h3>
                     <p>1. Laadi alla <strong>Google Authenticator</strong> või <strong>Authy</strong> rakendus.</p>
                     <p>2. Skaneeri QR-kood:</p>
-                    <img src="<?php echo esc_url($qr_img); ?>" alt="QR Code" style="display:block;margin:12px 0;border:1px solid #e2e8f0">
+                    <div id="vesho-2fa-qr" style="margin:12px 0;width:200px;height:200px;border:1px solid #e2e8f0"></div>
+                    <script>
+                    (function(){
+                        var url = <?php echo wp_json_encode($qr_url); ?>;
+                        var el  = document.getElementById('vesho-2fa-qr');
+                        if(typeof QRCode !== 'undefined'){
+                            new QRCode(el,{text:url,width:200,height:200,correctLevel:QRCode.CorrectLevel.M});
+                        } else {
+                            var s=document.createElement('script');
+                            s.src='https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+                            s.onload=function(){ new QRCode(el,{text:url,width:200,height:200,correctLevel:QRCode.CorrectLevel.M}); };
+                            document.head.appendChild(s);
+                        }
+                    })();
+                    </script>
                     <p style="font-size:12px;color:#6b8599">Või sisesta käsitsi: <code style="user-select:all;padding:4px 8px;background:#f1f5f9;border-radius:4px"><?php echo esc_html($setup_secret); ?></code></p>
                     <p>3. Sisesta rakenduse 6-kohaline kood kinnituseks:</p>
                     <form method="POST" action="<?php echo admin_url('admin-post.php'); ?>">
