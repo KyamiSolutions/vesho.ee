@@ -141,8 +141,7 @@
 <?php
 // ── Küpsiste bänner — ainult avalikul lehel, mitte portaalides ───────────────
 $_ck_enabled = get_option('vesho_cookie_banner_enabled','1') === '1';
-$_ck_ga      = get_option('vesho_ga_id','');
-$_ck_show    = $_ck_enabled && $_ck_ga && !is_user_logged_in();
+$_ck_show    = $_ck_enabled && !is_user_logged_in();
 if ($_ck_show):
     $_ck_title  = esc_html(get_option('vesho_cookie_banner_title','Kasutame küpsiseid'));
     $_ck_text   = esc_html(get_option('vesho_cookie_banner_text','Kasutame küpsiseid, et parandada kasutajakogemust ja analüüsida liiklust.'));
