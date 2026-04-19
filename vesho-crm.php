@@ -3,7 +3,7 @@
  * Plugin Name: Vesho CRM
  * Plugin URI:  https://vesho.ee
  * Description: CRM ja klientide portaal Vesho OÜ-le. Haldab kliente, seadmeid, hooldusi, arveid ja teenuseid.
- * Version:     2.2.81
+ * Version:     2.2.82
  * Author:      Vesho OÜ
  * Author URI:  https://vesho.ee
  * Text Domain: vesho-crm
@@ -15,7 +15,7 @@
 defined( 'ABSPATH' ) || exit;
 
 // ── Constants ──────────────────────────────────────────────────────────────────
-define('VESHO_CRM_VERSION', '2.2.81');
+define('VESHO_CRM_VERSION', '2.2.82');
 define( 'VESHO_CRM_FILE',     __FILE__ );
 define( 'VESHO_CRM_PATH',     plugin_dir_path( __FILE__ ) );
 define( 'VESHO_CRM_URL',      plugin_dir_url( __FILE__ ) );
@@ -314,17 +314,20 @@ add_action( 'wp_ajax_vesho_save_update_server', function() {
 add_action( 'wp_ajax_vesho_get_public_notices',        'vesho_ajax_public_notices' );
 add_action( 'wp_ajax_nopriv_vesho_get_public_notices', 'vesho_ajax_public_notices' );
 function vesho_ajax_public_notices() {
+    nocache_headers();
     global $wpdb;
     $today = current_time('Y-m-d');
+    $cols = $wpdb->get_col("DESCRIBE `{$wpdb->prefix}vesho_portal_notices`") ?: [];
+    $type_sel = in_array('type', $cols) ? "COALESCE(type,'info')" : "'info'";
     $notices = $wpdb->get_results( $wpdb->prepare(
-        "SELECT id, title, message, COALESCE(type,'info') as type FROM {$wpdb->prefix}vesho_portal_notices
+        "SELECT id, title, message, {$type_sel} as type FROM {$wpdb->prefix}vesho_portal_notices
          WHERE active=1 AND target IN ('client','both')
          AND (starts_at IS NULL OR starts_at <= %s)
          AND (ends_at IS NULL OR ends_at >= %s)
          ORDER BY created_at DESC LIMIT 5",
         $today, $today
     ) );
-    wp_send_json_success( $notices );
+    wp_send_json_success( $notices ?: [] );
 }
 
 // ── Inject JS loader on frontend (cache-safe) ─────────────────────────────────
@@ -337,7 +340,7 @@ function vesho_public_notices_js() {
 (function(){
   var dm = (function(){try{return JSON.parse(sessionStorage.getItem('vpub_dm')||'[]');}catch(e){return [];}})();
   function dismiss(id){dm.push(id);sessionStorage.setItem('vpub_dm',JSON.stringify(dm));var el=document.getElementById('vpubn-'+id);if(el)el.remove();}
-  fetch('<?php echo esc_js($ajax); ?>?action=vesho_get_public_notices')
+  fetch('<?php echo esc_js($ajax); ?>?action=vesho_get_public_notices&_='+Date.now())
     .then(function(r){return r.json();})
     .then(function(res){
       if(!res.success||!res.data||!res.data.length) return;
