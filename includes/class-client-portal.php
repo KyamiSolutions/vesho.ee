@@ -4131,17 +4131,18 @@ if(CFG.initialView==='success'&&CFG.returnOrder){
         ob_start();
         ?>
 <style>
-#vshop{all:revert;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#1a2a38;line-height:1.5}
+#vshop{all:revert;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#1a2a38;line-height:1.5;margin-top:-1px}
 #vshop *{box-sizing:border-box;font-family:inherit}
 
 /* Hero */
-#vshop .vs-hero{background:linear-gradient(135deg,#0b1c2b 0%,#0d3347 100%);padding:80px 32px 72px;text-align:center;margin-bottom:0}
+#vshop .vs-hero{background:linear-gradient(135deg,#0b1c2b 0%,#0d3347 100%);padding:88px 32px 80px;text-align:center;margin-bottom:0}
 #vshop .vs-hero-eye{display:block;color:#00b4c8;font-size:11px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;margin-bottom:20px}
-#vshop .vs-hero-ttl{display:block;color:#fff;font-size:52px;font-weight:900;line-height:1;margin-bottom:16px}
-#vshop .vs-hero-sub{display:block;color:#7a9eb0;font-size:16px}
+#vshop .vs-hero-ttl{display:block;color:#fff;font-size:56px;font-weight:900;line-height:1;margin-bottom:18px}
+#vshop .vs-hero-sub{display:block;color:#7a9eb0;font-size:17px}
 
 /* Shop body */
-#vshop .vs-body{background:#f4f6f9;padding:32px 24px;min-height:400px}
+#vshop .vs-body{background:#f0f2f5;padding:40px 0;min-height:400px}
+#vshop .vs-wrap{max-width:1200px;margin:0 auto;padding:0 28px}
 
 /* Campaign banner */
 #vshop .vs-camp{display:flex;align-items:center;gap:16px;background:#fff;border-left:4px solid #00b4c8;border-radius:12px;padding:16px 20px;margin-bottom:24px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
@@ -4264,6 +4265,7 @@ if(CFG.initialView==='success'&&CFG.returnOrder){
 <?php endif; ?>
 
 <div class="vs-body">
+<div class="vs-wrap">
 
 <?php if($campaign && in_array($campaign->target,['epood','both'],true)): ?>
 <div class="vs-camp">
@@ -4321,6 +4323,7 @@ if(CFG.initialView==='success'&&CFG.returnOrder){
   </div>
 </div>
 
+</div><!-- .vs-wrap -->
 </div><!-- .vs-body -->
 
 <button class="vs-fab" id="vs-fab" onclick="vsShop.openCart()">🛒<span class="vs-fab-badge" id="vs-fab-badge">0</span></button>
