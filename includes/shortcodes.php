@@ -226,14 +226,14 @@ add_shortcode( 'vesho_shop', function( $atts ) {
     $mc_enabled       = (bool)( get_option('vesho_mc_shop_id','') && get_option('vesho_mc_secret_key','') );
     $montonio_enabled = (bool)( get_option('vesho_montonio_access_key','') && get_option('vesho_montonio_secret_key','') );
 
-    // Delivery options
+    // Delivery options — option keys match Seaded → E-pood admin panel
     $del_opts = [];
-    if ( get_option('vesho_shop_delivery_pickup','1')!=='0' )
-        $del_opts[] = ['id'=>'pickup', 'label'=>'Kaupluses pealekorjamine', 'icon'=>'🏪', 'price'=>(float)get_option('vesho_shop_delivery_pickup_price','0')];
-    if ( get_option('vesho_shop_delivery_courier','1')!=='0' )
-        $del_opts[] = ['id'=>'courier','label'=>'Kuller',                    'icon'=>'🚚','price'=>(float)get_option('vesho_shop_delivery_courier_price','6.99')];
-    if ( get_option('vesho_shop_delivery_parcel','1')!=='0' )
-        $del_opts[] = ['id'=>'omniva', 'label'=>'Pakiautomaat (Omniva/DPD)', 'icon'=>'📦','price'=>(float)get_option('vesho_shop_delivery_parcel_price','3.99')];
+    if ( get_option('vesho_shop_ship_pickup_enabled','1')!=='0' )
+        $del_opts[] = ['id'=>'pickup', 'label'=>'Kaupluses pealekorjamine', 'icon'=>'🏪', 'price'=>(float)get_option('vesho_shop_ship_pickup_price','0')];
+    if ( get_option('vesho_shop_ship_courier_enabled','1')!=='0' )
+        $del_opts[] = ['id'=>'courier','label'=>'Kuller',                    'icon'=>'🚚','price'=>(float)get_option('vesho_shop_ship_courier_price','0')];
+    if ( get_option('vesho_shop_ship_parcelshop_enabled','1')!=='0' )
+        $del_opts[] = ['id'=>'omniva', 'label'=>'Pakiautomaat (Omniva/DPD)', 'icon'=>'📦','price'=>(float)get_option('vesho_shop_ship_parcelshop_price','0')];
     if ( empty($del_opts) )
         $del_opts[] = ['id'=>'pickup','label'=>'Pealekorjamine','icon'=>'🏪','price'=>0.0];
 

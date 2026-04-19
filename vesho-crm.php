@@ -2344,8 +2344,14 @@ function vesho_ajax_shop_place_order() {
     $discount_amount = $discount_pct > 0 ? round($subtotal * $discount_pct / 100, 2) : 0;
     $subtotal_after  = round($subtotal - $discount_amount, 2);
 
-    $shipping_costs = ['omniva' => 3.99, 'dpd' => 3.99, 'courier' => 6.99, 'pickup' => 0.00];
-    $shipping_cost  = $free_shipping ? 0.00 : ($shipping_costs[$shipping_method] ?? 3.99);
+    // Shipping costs from settings (Seaded → E-pood)
+    $shipping_costs = [
+        'pickup'  => (float)get_option('vesho_shop_ship_pickup_price',      '0'),
+        'courier' => (float)get_option('vesho_shop_ship_courier_price',     '0'),
+        'omniva'  => (float)get_option('vesho_shop_ship_parcelshop_price',  '0'),
+        'dpd'     => (float)get_option('vesho_shop_ship_parcelshop_price',  '0'),
+    ];
+    $shipping_cost = $free_shipping ? 0.00 : ($shipping_costs[$shipping_method] ?? 0.00);
     $total          = $subtotal_after + $shipping_cost;
 
     // Find existing client by email
