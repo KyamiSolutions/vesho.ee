@@ -1,10 +1,10 @@
 {
   "name": "Vesho CRM",
   "slug": "vesho-crm",
-  "version": "2.3.8",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.3.8/vesho-crm.zip",
+  "version": "2.3.9",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.3.9/vesho-crm.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-19",
-  "changelog": "<h4>2.3.8</h4><ul><li>Pood: tootekaart klikitav (onclick), Lisa korvi stopPropagation, seotud toodete SVG → Pilt puudub</li></ul><h4>2.3.7</h4><ul><li>Pood: 'Pilt puudub' tekst SVG ikooni asemel</li></ul>"
+  "changelog": "<h4>2.3.9</h4><ul><li>Pood: shopnav eemaldatud (teema nav on piisav), shortcode override fix, teema versioon sünkroon</li></ul><h4>2.3.8</h4><ul><li>Pood: tootekaart klikitav, seotud toodete SVG → Pilt puudub</li></ul>"
 }

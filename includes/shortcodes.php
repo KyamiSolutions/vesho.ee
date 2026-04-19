@@ -260,14 +260,6 @@ add_shortcode( 'vesho_shop_grid', function ( $atts ) {
     .vsho-root{font-family:'Barlow',sans-serif;color:#1a2a38;line-height:1.6;background:#f4f7f9}
     .vsho-root *{box-sizing:border-box}
     /* ── Shop header nav (3006 style) ── */
-    .vsho-shopnav{background:#0d1f2d;padding:18px 0;border-bottom:2px solid #00b4c8}
-    .vsho-shopnav-inner{max-width:1280px;margin:0 auto;padding:0 24px;display:flex;align-items:center;justify-content:space-between}
-    .vsho-shopnav-logo{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:1.4rem;color:#fff;text-transform:uppercase;letter-spacing:2px;text-decoration:none}
-    .vsho-shopnav-logo span{color:#00b4c8}
-    .vsho-shopnav-links{display:flex;align-items:center;gap:24px}
-    .vsho-shopnav-links a{color:rgba(255,255,255,.8);font-weight:500;font-size:.95rem;text-decoration:none;transition:color .2s;position:relative}
-    .vsho-shopnav-links a:hover{color:#00b4c8}
-    .vsho-shopnav-badge{background:#00b4c8;color:#fff;font-size:.7rem;font-weight:700;padding:2px 6px;border-radius:20px;margin-left:4px;vertical-align:middle}
     /* ── Hero (optional) ── */
     .vsho-hero{background:linear-gradient(135deg,#0b1c2b 0%,#0d3347 100%);padding:64px 32px 56px;text-align:center}
     .vsho-hero-eyebrow{color:#00b4c8;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;margin-bottom:14px}
@@ -415,17 +407,6 @@ add_shortcode( 'vesho_shop_grid', function ( $atts ) {
     .vsho-result p{color:#5a7080}
     </style>
     <div class="vsho-root">
-    <nav class="vsho-shopnav">
-      <div class="vsho-shopnav-inner">
-        <a href="<?php echo esc_url($page_url); ?>" class="vsho-shopnav-logo">VESHO <span>OÜ</span></a>
-        <div class="vsho-shopnav-links">
-          <a href="<?php echo esc_url($page_url); ?>">🏪 Pood</a>
-          <a href="<?php echo esc_url(add_query_arg('shop_view','cart',$page_url)); ?>">
-            🛒 Ostukorv<?php if($nav_cart_count>0) echo ' <span class="vsho-shopnav-badge">'.$nav_cart_count.'</span>'; ?>
-          </a>
-        </div>
-      </div>
-    </nav>
     <?php if($show_hero): ?>
     <div class="vsho-hero">
       <div class="vsho-hero-eyebrow">VESHO OÜ</div>
