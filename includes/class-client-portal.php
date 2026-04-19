@@ -4132,107 +4132,107 @@ if(CFG.initialView==='success'&&CFG.returnOrder){
         ?>
 <style>
 #vshop{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#1a2a38;line-height:1.5}
-#vshop *{box-sizing:border-box}
+#vshop *{box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
 /* ── Campaign banner ── */
-.vs-camp{background:linear-gradient(135deg,#e0f7fa,#b2ebf2);border:1px solid rgba(0,180,200,.25);border-radius:14px;padding:14px 20px;display:flex;align-items:center;gap:14px;margin-bottom:20px}
-.vs-camp-badge{background:#00b4c8;color:#fff;font-size:12px;font-weight:800;padding:4px 10px;border-radius:8px;white-space:nowrap;flex-shrink:0}
-.vs-camp-name{font-weight:700;font-size:14px;color:#0d3d4f}
-.vs-camp-date{font-size:12px;color:#5a8090;margin-top:1px}
+#vshop .vs-camp{background:linear-gradient(135deg,#e0f7fa,#b2ebf2);border:1px solid rgba(0,180,200,.25);border-radius:14px;padding:14px 20px;display:flex;align-items:center;gap:14px;margin-bottom:20px}
+#vshop .vs-camp-badge{background:#00b4c8;color:#fff;font-size:12px;font-weight:800;padding:4px 10px;border-radius:8px;white-space:nowrap;flex-shrink:0}
+#vshop .vs-camp-name{font-weight:700;font-size:14px;color:#0d3d4f}
+#vshop .vs-camp-date{font-size:12px;color:#5a8090;margin-top:1px}
 /* ── Layout ── */
-.vs-layout{display:flex;gap:20px;align-items:flex-start}
+#vshop .vs-layout{display:flex;gap:20px;align-items:flex-start}
 /* ── Sidebar ── */
-.vs-sidebar{flex:0 0 200px;background:#fff;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden;position:sticky;top:80px}
-.vs-sidebar-header{padding:14px 16px 10px;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#94a3b8;border-bottom:1px solid #f1f5f9}
-.vs-cat-item{display:flex;align-items:center;gap:10px;padding:10px 16px;cursor:pointer;transition:background .13s;border-bottom:1px solid #f8fafc;font-size:13px;color:#475569;font-weight:500;background:none;border-left:none;border-right:none;border-top:none;width:100%;text-align:left}
-.vs-cat-item:hover{background:#f8fafc;color:#1a2a38}
-.vs-cat-item.active{background:#e0f7fa;color:#007a8c;font-weight:700}
-.vs-cat-item.active .vs-cat-dot{box-shadow:0 0 0 3px rgba(0,180,200,.2)}
-.vs-cat-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
-.vs-cat-count{margin-left:auto;font-size:11px;color:#94a3b8;font-weight:600}
+#vshop .vs-sidebar{flex:0 0 200px;background:#fff;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden;position:sticky;top:80px}
+#vshop .vs-sidebar-header{padding:14px 16px 10px;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#94a3b8;border-bottom:1px solid #f1f5f9}
+#vshop .vs-cat-item{display:flex;align-items:center;gap:10px;padding:10px 16px;cursor:pointer;transition:background .13s;border-bottom:1px solid #f8fafc;font-size:13px;color:#475569;font-weight:500;background:none;border-left:none;border-right:none;border-top:none;width:100%;text-align:left}
+#vshop .vs-cat-item:hover{background:#f8fafc;color:#1a2a38}
+#vshop .vs-cat-item.active{background:#e0f7fa;color:#007a8c;font-weight:700}
+#vshop .vs-cat-item.active .vs-cat-dot{box-shadow:0 0 0 3px rgba(0,180,200,.2)}
+#vshop .vs-cat-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+#vshop .vs-cat-count{margin-left:auto;font-size:11px;color:#94a3b8;font-weight:600}
 /* ── Main ── */
-.vs-main{flex:1;min-width:0}
-.vs-toolbar{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
-.vs-search-wrap{position:relative;flex:1;min-width:180px}
-.vs-search-wrap input{width:100%;padding:9px 12px 9px 36px;border:1px solid #e2e8f0;border-radius:10px;font-size:13px;color:#1a2a38;outline:none;background:#f8fafc;transition:border .15s}
-.vs-search-wrap input:focus{border-color:#00b4c8;background:#fff}
-.vs-search-wrap .vs-search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:14px;pointer-events:none}
-.vs-search-btn{background:#00b4c8;color:#fff;border:none;border-radius:10px;padding:9px 16px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
-.vs-search-btn:hover{background:#009ab2}
-.vs-sort-sel{border:1px solid #e2e8f0;border-radius:10px;padding:9px 12px;font-size:13px;color:#475569;background:#f8fafc;cursor:pointer;outline:none}
-.vs-view-btns{display:flex;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden}
-.vs-view-btn{background:#f8fafc;border:none;padding:9px 11px;cursor:pointer;color:#94a3b8;font-size:15px;transition:all .13s;line-height:1}
-.vs-view-btn.active,.vs-view-btn:hover{background:#00b4c8;color:#fff}
-.vs-count{font-size:13px;color:#94a3b8;margin-bottom:12px}
-.vs-count strong{color:#1a2a38}
+#vshop .vs-main{flex:1;min-width:0}
+#vshop .vs-toolbar{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+#vshop .vs-search-wrap{position:relative;flex:1;min-width:180px}
+#vshop .vs-search-wrap input{width:100%;padding:9px 12px 9px 36px;border:1px solid #e2e8f0;border-radius:10px;font-size:13px;color:#1a2a38;outline:none;background:#f8fafc;transition:border .15s}
+#vshop .vs-search-wrap input:focus{border-color:#00b4c8;background:#fff}
+#vshop .vs-search-wrap .vs-search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:14px;pointer-events:none}
+#vshop .vs-search-btn{background:#00b4c8;color:#fff;border:none;border-radius:10px;padding:9px 16px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
+#vshop .vs-search-btn:hover{background:#009ab2}
+#vshop .vs-sort-sel{border:1px solid #e2e8f0;border-radius:10px;padding:9px 12px;font-size:13px;color:#475569;background:#f8fafc;cursor:pointer;outline:none}
+#vshop .vs-view-btns{display:flex;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden}
+#vshop .vs-view-btn{background:#f8fafc;border:none;padding:9px 11px;cursor:pointer;color:#94a3b8;font-size:15px;transition:all .13s;line-height:1}
+#vshop .vs-view-btn.active,#vshop .vs-view-btn:hover{background:#00b4c8;color:#fff}
+#vshop .vs-count{font-size:13px;color:#94a3b8;margin-bottom:12px}
+#vshop .vs-count strong{color:#1a2a38}
 /* ── Product grid ── */
-.vs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
-.vs-list{display:flex;flex-direction:column;gap:10px}
+#vshop .vs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
+#vshop .vs-list{display:flex;flex-direction:column;gap:10px}
 /* ── Product card (grid) ── */
-.vs-card{background:#fff;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden;display:flex;flex-direction:column;transition:all .2s;cursor:default}
-.vs-card:hover{transform:translateY(-3px);box-shadow:0 10px 28px rgba(0,0,0,.09);border-color:#c7d6e0}
-.vs-card-img{height:130px;display:flex;align-items:center;justify-content:center;font-size:56px;background:linear-gradient(135deg,#f0f7ff,#e0f7fa)}
-.vs-card-body{padding:12px 14px;flex:1;display:flex;flex-direction:column;gap:5px}
-.vs-card-cat{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#00b4c8}
-.vs-card-name{font-weight:700;font-size:13px;color:#1a2a38;line-height:1.3}
-.vs-card-desc{font-size:11px;color:#6b7280;flex:1;line-height:1.4}
-.vs-card-price{font-size:18px;font-weight:800;color:#0d3d4f;margin-top:4px}
-.vs-card-footer{padding:0 14px 14px;display:flex;align-items:center;gap:8px}
-.vs-card-stock{font-size:11px;font-weight:600}
+#vshop .vs-card{background:#fff;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden;display:flex;flex-direction:column;transition:all .2s;cursor:default}
+#vshop .vs-card:hover{transform:translateY(-3px);box-shadow:0 10px 28px rgba(0,0,0,.09);border-color:#c7d6e0}
+#vshop .vs-card-img{height:130px;display:flex;align-items:center;justify-content:center;font-size:56px;background:linear-gradient(135deg,#f0f7ff,#e0f7fa)}
+#vshop .vs-card-body{padding:12px 14px;flex:1;display:flex;flex-direction:column;gap:5px}
+#vshop .vs-card-cat{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#00b4c8}
+#vshop .vs-card-name{font-weight:700;font-size:13px;color:#1a2a38;line-height:1.3}
+#vshop .vs-card-desc{font-size:11px;color:#6b7280;flex:1;line-height:1.4}
+#vshop .vs-card-price{font-size:18px;font-weight:800;color:#0d3d4f;margin-top:4px}
+#vshop .vs-card-footer{padding:0 14px 14px;display:flex;align-items:center;gap:8px}
+#vshop .vs-card-stock{font-size:11px;font-weight:600}
 /* ── Product card (list) ── */
-.vs-list-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;display:flex;align-items:center;gap:14px;padding:12px 16px;transition:all .15s}
-.vs-list-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.07);border-color:#c7d6e0}
-.vs-list-icon{width:54px;height:54px;border-radius:10px;background:linear-gradient(135deg,#f0f7ff,#e0f7fa);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0}
-.vs-list-info{flex:1;min-width:0}
-.vs-list-name{font-weight:700;font-size:14px;color:#1a2a38}
-.vs-list-desc{font-size:12px;color:#6b7280;margin-top:1px}
-.vs-list-price{font-size:17px;font-weight:800;color:#0d3d4f;flex-shrink:0}
+#vshop .vs-list-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;display:flex;align-items:center;gap:14px;padding:12px 16px;transition:all .15s}
+#vshop .vs-list-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.07);border-color:#c7d6e0}
+#vshop .vs-list-icon{width:54px;height:54px;border-radius:10px;background:linear-gradient(135deg,#f0f7ff,#e0f7fa);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0}
+#vshop .vs-list-info{flex:1;min-width:0}
+#vshop .vs-list-name{font-weight:700;font-size:14px;color:#1a2a38}
+#vshop .vs-list-desc{font-size:12px;color:#6b7280;margin-top:1px}
+#vshop .vs-list-price{font-size:17px;font-weight:800;color:#0d3d4f;flex-shrink:0}
 /* ── Buttons ── */
-.vs-add-btn{background:#00b4c8;color:#fff;border:none;border-radius:9px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;transition:background .15s}
-.vs-add-btn:hover{background:#009ab2}
-.vs-add-btn:disabled{background:#cbd5e1;cursor:not-allowed}
-.vs-qty{display:flex;align-items:center;gap:6px}
-.vs-qty button{width:28px;height:28px;border:1px solid #e2e8f0;border-radius:7px;background:#f8fafc;cursor:pointer;font-size:15px;font-weight:700;color:#475569;transition:all .13s;display:flex;align-items:center;justify-content:center;padding:0}
-.vs-qty button:hover{background:#00b4c8;color:#fff;border-color:#00b4c8}
-.vs-qty span{font-size:14px;font-weight:700;color:#1a2a38;min-width:22px;text-align:center}
+#vshop .vs-add-btn{background:#00b4c8;color:#fff;border:none;border-radius:9px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;transition:background .15s}
+#vshop .vs-add-btn:hover{background:#009ab2}
+#vshop .vs-add-btn:disabled{background:#cbd5e1;cursor:not-allowed}
+#vshop .vs-qty{display:flex;align-items:center;gap:6px}
+#vshop .vs-qty button{width:28px;height:28px;border:1px solid #e2e8f0;border-radius:7px;background:#f8fafc;cursor:pointer;font-size:15px;font-weight:700;color:#475569;transition:all .13s;display:flex;align-items:center;justify-content:center;padding:0}
+#vshop .vs-qty button:hover{background:#00b4c8;color:#fff;border-color:#00b4c8}
+#vshop .vs-qty span{font-size:14px;font-weight:700;color:#1a2a38;min-width:22px;text-align:center}
 /* ── Empty state ── */
-.vs-empty{text-align:center;padding:60px 20px;color:#94a3b8}
-.vs-empty-icon{font-size:48px;margin-bottom:12px}
-.vs-empty-text{font-size:15px;font-weight:600}
+#vshop .vs-empty{text-align:center;padding:60px 20px;color:#94a3b8}
+#vshop .vs-empty-icon{font-size:48px;margin-bottom:12px}
+#vshop .vs-empty-text{font-size:15px;font-weight:600}
 /* ── FAB cart ── */
-.vs-fab{position:fixed;bottom:28px;right:28px;width:58px;height:58px;border-radius:50%;background:#00b4c8;color:#fff;border:none;cursor:pointer;font-size:22px;box-shadow:0 4px 20px rgba(0,180,200,.4);z-index:9990;display:none;align-items:center;justify-content:center;transition:transform .15s}
-.vs-fab:hover{transform:scale(1.08)}
-.vs-fab-badge{position:absolute;top:-4px;right:-4px;background:#ef4444;color:#fff;border-radius:50%;width:20px;height:20px;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;border:2px solid #fff}
+#vshop .vs-fab{position:fixed;bottom:28px;right:28px;width:58px;height:58px;border-radius:50%;background:#00b4c8;color:#fff;border:none;cursor:pointer;font-size:22px;box-shadow:0 4px 20px rgba(0,180,200,.4);z-index:9990;display:none;align-items:center;justify-content:center;transition:transform .15s}
+#vshop .vs-fab:hover{transform:scale(1.08)}
+#vshop .vs-fab-badge{position:absolute;top:-4px;right:-4px;background:#ef4444;color:#fff;border-radius:50%;width:20px;height:20px;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;border:2px solid #fff}
 /* ── Overlays ── */
-.vs-sidebar-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9991;opacity:0;pointer-events:none;transition:opacity .25s}
-.vs-drawer{position:fixed;top:0;right:0;bottom:0;width:min(400px,100vw);background:#fff;z-index:9992;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);box-shadow:-4px 0 40px rgba(0,0,0,.15)}
-.vs-overlay{position:fixed;inset:0;background:#f8fafc;z-index:9993;overflow-y:auto;display:flex;align-items:flex-start;justify-content:center;padding:32px 16px}
-.vs-ov-inner{width:100%;max-width:480px}
+#vshop .vs-sidebar-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9991;opacity:0;pointer-events:none;transition:opacity .25s}
+#vshop .vs-drawer{position:fixed;top:0;right:0;bottom:0;width:min(400px,100vw);background:#fff;z-index:9992;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);box-shadow:-4px 0 40px rgba(0,0,0,.15)}
+#vshop .vs-overlay{position:fixed;inset:0;background:#f8fafc;z-index:9993;overflow-y:auto;display:flex;align-items:flex-start;justify-content:center;padding:32px 16px}
+#vshop .vs-ov-inner{width:100%;max-width:480px}
 /* ── Form elements ── */
-.vs-inp{width:100%;padding:10px 14px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;color:#1a2a38;outline:none;background:#f8fafc;transition:border .15s;display:block}
-.vs-inp:focus{border-color:#00b4c8;background:#fff}
-.vs-btn-teal{background:#00b4c8;color:#fff;border:none;border-radius:12px;padding:13px 20px;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:background .15s}
-.vs-btn-teal:hover:not(:disabled){background:#009ab2}
-.vs-btn-teal:disabled{opacity:.6;cursor:not-allowed}
-.vs-btn-gray{background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;border-radius:12px;padding:13px 18px;font-size:14px;font-weight:600;cursor:pointer;transition:all .15s}
-.vs-btn-gray:hover{background:#e2e8f0}
-.vs-err{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:10px;padding:10px 14px;color:#dc2626;font-size:13px;margin-bottom:14px}
-.vs-step-bar{display:flex;align-items:center;justify-content:center;gap:0;margin-bottom:28px}
+#vshop .vs-inp{width:100%;padding:10px 14px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;color:#1a2a38;outline:none;background:#f8fafc;transition:border .15s;display:block}
+#vshop .vs-inp:focus{border-color:#00b4c8;background:#fff}
+#vshop .vs-btn-teal{background:#00b4c8;color:#fff;border:none;border-radius:12px;padding:13px 20px;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:background .15s}
+#vshop .vs-btn-teal:hover:not(:disabled){background:#009ab2}
+#vshop .vs-btn-teal:disabled{opacity:.6;cursor:not-allowed}
+#vshop .vs-btn-gray{background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;border-radius:12px;padding:13px 18px;font-size:14px;font-weight:600;cursor:pointer;transition:all .15s}
+#vshop .vs-btn-gray:hover{background:#e2e8f0}
+#vshop .vs-err{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:10px;padding:10px 14px;color:#dc2626;font-size:13px;margin-bottom:14px}
+#vshop .vs-step-bar{display:flex;align-items:center;justify-content:center;gap:0;margin-bottom:28px}
 /* ── Delivery buttons ── */
-.vs-deliv-btn{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:12px;border:2px solid #e2e8f0;background:#f8fafc;cursor:pointer;text-align:left;transition:all .15s;width:100%}
-.vs-deliv-btn.sel{border-color:#00b4c8;background:rgba(0,180,200,.06)}
+#vshop .vs-deliv-btn{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:12px;border:2px solid #e2e8f0;background:#f8fafc;cursor:pointer;text-align:left;transition:all .15s;width:100%}
+#vshop .vs-deliv-btn.sel{border-color:#00b4c8;background:rgba(0,180,200,.06)}
 /* ── Hero ── */
-.vs-hero{background:linear-gradient(160deg,#0b1c2b 0%,#0d2a3a 100%);padding:72px 24px 64px;text-align:center;margin:0 0 32px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
-.vs-hero-eyebrow{color:#00b4c8!important;font-size:11px!important;font-weight:800!important;letter-spacing:.18em!important;text-transform:uppercase!important;margin:0 0 16px!important;display:block!important;font-family:inherit!important}
-.vs-hero-title{color:#fff!important;font-size:46px!important;font-weight:800!important;margin:0 0 14px!important;line-height:1.1!important;display:block!important;font-family:inherit!important}
-.vs-hero-desc{color:#7a9eb0!important;font-size:15px!important;margin:0!important;line-height:1.6!important;display:block!important;font-family:inherit!important}
+#vshop .vs-hero{background:linear-gradient(160deg,#0b1c2b,#0d2a3a);padding:72px 24px 64px;text-align:center;margin:0 0 32px}
+#vshop .vs-hero-eyebrow{color:#00b4c8;font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;margin:0 0 16px}
+#vshop .vs-hero-title{color:#fff;font-size:46px;font-weight:800;margin:0 0 14px;line-height:1.1}
+#vshop .vs-hero-desc{color:#7a9eb0;font-size:16px;margin:0}
 /* ── Mobile ── */
 @media(max-width:700px){
-  .vs-sidebar{display:none}
-  .vs-layout{display:block}
-  .vs-grid{grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:12px}
-  .vs-overlay{padding:16px 8px}
-  .vs-hero{padding:48px 16px 40px}
-  .vs-hero-title{font-size:32px}
+  #vshop .vs-sidebar{display:none}
+  #vshop .vs-layout{display:block}
+  #vshop .vs-grid{grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:12px}
+  #vshop .vs-overlay{padding:16px 8px}
+  #vshop .vs-hero{padding:48px 16px 40px}
+  #vshop .vs-hero-title{font-size:32px}
 }
 </style>
 
