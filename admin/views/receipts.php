@@ -533,7 +533,50 @@ function bulkApprove(){
     });
 }
 
-/* ---- Toggle items ---- */
+/* ---- Toggle items (3006 stiil) ---- */
+function renderReceiptItems(id, items) {
+    var el = document.getElementById('recv-items-'+id);
+    if (!el) return;
+    var st = receiptStatuses[id] || 'draft';
+    var canEdit = st === 'draft' || st === 'pending';
+    var html = '';
+    if (items.length === 0) {
+        html += '<div style="padding:20px;text-align:center;color:#94a3b8;font-size:13px">Tooteid pole lisatud</div>';
+    } else {
+        html += '<table class="crm-table"><thead><tr>'
+            + '<th>Toode</th><th style="text-align:right">Oodatav</th><th style="text-align:right">Tegelik</th><th>Asukoht</th><th>Staatus</th><th></th>'
+            + '</tr></thead><tbody>';
+        items.forEach(function(item) {
+            var received = item.actual_qty != null;
+            var stBg  = received ? '#dcfce7' : '#fef3c7';
+            var stClr = received ? '#16a34a' : '#d97706';
+            var stTxt = received ? '✓ Vastuvõetud' : 'Ootel';
+            var ean = item.ean || '';
+            html += '<tr>'
+                + '<td><div style="font-weight:600">'+(item.name||'–')+'</div>'
+                + (item.inventory_id ? '' : '<div style="font-size:11px;color:#2563eb">Uus toode</div>')
+                + ((item.sku||ean) ? '<div style="font-size:11px;color:#94a3b8;font-family:monospace">'+(item.sku||'')+''+(item.sku&&ean?' · ':'')+''+(ean?'EAN:'+ean:'')+'</div>' : '')
+                + '</td>'
+                + '<td style="text-align:right;color:#64748b">'+(item.expected_qty||item.quantity||'–')+' '+(item.unit||'tk')+'</td>'
+                + '<td style="text-align:right;font-weight:600;color:'+(received?'#16a34a':'#94a3b8')+'">'+(received?item.actual_qty+' '+(item.unit||'tk'):'–')+'</td>'
+                + '<td style="font-family:monospace;font-size:12px">'+(item.location||'–')+'</td>'
+                + '<td><span style="background:'+stBg+';color:'+stClr+';padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600">'+stTxt+'</span></td>'
+                + '<td style="white-space:nowrap">'
+                + (ean ? '<button onclick="adminPrintEan(\''+ean+'\',\''+((item.name||'').replace(/'/g,''))+'\','+(item.selling_price||0)+')" title="Prindi EAN" style="background:rgba(0,180,200,.1);color:#00b4c8;border:1px solid rgba(0,180,200,.25);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:12px;margin-right:4px">🖨️</button>' : '')
+                + (canEdit ? '<button onclick="deleteReceiptItem('+item.id+','+id+')" title="Kustuta" style="background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:12px">✕</button>' : '')
+                + '</td>'
+                + '</tr>';
+        });
+        html += '</tbody></table>';
+    }
+    if (canEdit) {
+        html += '<div style="padding:10px 0 4px;display:flex;gap:8px">'
+            + '<button onclick="openAdminAddItem('+id+')" style="padding:6px 14px;font-size:12px;background:#e0f7fa;border:1px solid #00b4c8;color:#007a8a;border-radius:6px;cursor:pointer">+ Lisa kaup</button>'
+            + '</div>';
+    }
+    el.innerHTML = html;
+}
+
 function toggleReceiptItems(id) {
     var el = document.getElementById('recv-items-'+id);
     if (!el) return;
@@ -545,35 +588,37 @@ function toggleReceiptItems(id) {
             body:'action=vesho_admin_get_receipt_items&nonce='+veshoNonce+'&receipt_id='+id})
         .then(r=>r.json()).then(function(d){
             if (!d.success || !d.data) { el.innerHTML='<div style="color:#ef4444;padding:8px">Viga</div>'; return; }
-            var items = d.data.items || d.data;
-            var status = receiptStatuses[id] || 'draft';
-            var canEdit = status === 'draft' || status === 'pending';
-            var html = '';
-            if (items.length === 0) {
-                html += '<div style="padding:20px;text-align:center;color:#94a3b8;font-size:13px">Tooteid pole lisatud</div>';
-            } else {
-                html += '<table class="crm-table"><thead><tr><th>Toode</th><th>SKU/EAN</th><th>Oodatav</th><th>Tegelik</th><th>Asukoht</th></tr></thead><tbody>';
-                items.forEach(function(item){
-                    html += '<tr>'
-                        +'<td><strong>'+(item.name||item.item_name||'–')+'</strong></td>'
-                        +'<td style="font-family:monospace;font-size:12px">'+(item.sku||'–')+'</td>'
-                        +'<td>'+(item.expected_qty||item.quantity||'–')+' '+(item.unit||'tk')+'</td>'
-                        +'<td style="color:'+(item.actual_qty!=null?'#16a34a':'#94a3b8')+';font-weight:600">'+(item.actual_qty!=null?item.actual_qty+' '+(item.unit||'tk'):'–')+'</td>'
-                        +'<td style="font-family:monospace;font-size:12px">'+(item.location||'–')+'</td>'
-                        +'</tr>';
-                });
-                html += '</tbody></table>';
-            }
-            if (canEdit) {
-                html += '<div style="padding:10px 0 4px;display:flex;gap:8px">'
-                    +'<button onclick="openAdminAddItem('+id+')" style="padding:6px 14px;font-size:12px;background:#e0f7fa;border:1px solid #00b4c8;color:#007a8a;border-radius:6px;cursor:pointer">+ Lisa kaup</button>'
-                    +'</div>';
-            }
-            el.innerHTML = html;
+            renderReceiptItems(id, d.data.items || d.data);
         }).catch(function(){ el.innerHTML = '<div style="color:#ef4444;padding:8px">Ühenduse viga</div>'; });
     } else {
         el.style.display = 'none';
     }
+}
+
+function deleteReceiptItem(itemId, receiptId) {
+    if (!confirm('Kustuta see kaup?')) return;
+    fetch(ajaxUrl, {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body:'action=vesho_admin_delete_receipt_item&nonce='+veshoNonce+'&item_id='+itemId})
+    .then(r=>r.json()).then(function(d){
+        if (d.success) {
+            loadedItems[receiptId] = false;
+            var el = document.getElementById('recv-items-'+receiptId);
+            if (el) el.innerHTML='<div style="padding:8px;color:#94a3b8">Laen...</div>';
+            fetch(ajaxUrl, {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
+                body:'action=vesho_admin_get_receipt_items&nonce='+veshoNonce+'&receipt_id='+receiptId})
+            .then(r=>r.json()).then(function(d2){
+                loadedItems[receiptId] = true;
+                if (d2.success) renderReceiptItems(receiptId, d2.data.items||d2.data);
+            });
+        } else alert('Viga: '+(d.data?.message||''));
+    });
+}
+
+function adminPrintEan(ean, name, price) {
+    var priceLine = price ? '<div style="font-size:20px;font-weight:800;margin:4px 0">'+parseFloat(price).toFixed(2)+' €</div>' : '';
+    var w = window.open('', '_blank', 'width=320,height=260');
+    w.document.write('<!DOCTYPE html><html><head><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;background:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh}.label{width:280px;border:1.5px solid #222;border-radius:8px;padding:14px 16px;text-align:center;background:#fff}.name{font-size:13px;font-weight:700;color:#111;margin-bottom:4px;line-height:1.3}@media print{body{min-height:auto}.label{page-break-inside:avoid}}</style></head><body><div class="label"><div class="name">'+name+'</div>'+priceLine+'<svg id="b" style="max-width:100%"></svg></div><script src="https://cdn.jsdelivr.net/npm/jsbarcode@3/dist/JsBarcode.all.min.js"><\/script><script>window.onload=function(){JsBarcode("#b","'+ean+'",{format:"EAN13",width:2,height:55,displayValue:true,fontSize:13,margin:4});setTimeout(function(){window.print()},300)}<\/script></body></html>');
+    w.document.close();
 }
 
 function openAdminAddItem(rid) {
@@ -642,8 +687,7 @@ function doAdminAddItem() {
                     });
                     html += '</tbody></table>';
                 }
-                if (canEdit) html += '<div style="padding:10px 0 4px;display:flex;gap:8px"><button onclick="openAdminAddItem('+adminAddItemRid+')" style="padding:6px 14px;font-size:12px;background:#e0f7fa;border:1px solid #00b4c8;color:#007a8a;border-radius:6px;cursor:pointer">+ Lisa kaup</button></div>';
-                if (el) el.innerHTML = html;
+                if (d2.success) renderReceiptItems(adminAddItemRid, d2.data.items||d2.data);
             });
             return;
         } else {

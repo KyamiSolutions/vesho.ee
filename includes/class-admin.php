@@ -72,6 +72,7 @@ class Vesho_CRM_Admin {
         add_action( 'wp_ajax_vesho_admin_get_receipt_items',  array( __CLASS__, 'ajax_admin_get_receipt_items' ) );
         add_action( 'wp_ajax_vesho_admin_add_receipt_item',   array( __CLASS__, 'ajax_admin_add_receipt_item' ) );
         add_action( 'wp_ajax_vesho_admin_create_receipt',     array( __CLASS__, 'ajax_admin_create_receipt' ) );
+        add_action( 'wp_ajax_vesho_admin_delete_receipt_item', array( __CLASS__, 'ajax_admin_delete_receipt_item' ) );
         add_action( 'wp_ajax_vesho_search_wp_users',        array( __CLASS__, 'ajax_search_wp_users' ) );
         add_action( 'wp_ajax_vesho_add_maintenance_ajax',   array( __CLASS__, 'ajax_add_maintenance' ) );
         add_action( 'wp_ajax_vesho_get_client_devices',     array( __CLASS__, 'ajax_get_client_devices' ) );
@@ -2093,6 +2094,17 @@ private static function load_view( $name ) {
             $item->expected_qty = $item->quantity ?? 0;
         }
         wp_send_json_success( ['items' => $items] );
+    }
+
+    // ── AJAX: admin delete single receipt item ────────────────────────────────
+    public static function ajax_admin_delete_receipt_item() {
+        check_ajax_referer( 'vesho_admin_nonce', 'nonce' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error();
+        global $wpdb;
+        $item_id = absint( $_POST['item_id'] ?? 0 );
+        if ( ! $item_id ) wp_send_json_error( ['message' => 'Puuduv ID'] );
+        $wpdb->delete( $wpdb->prefix . 'vesho_stock_receipt_items', ['id' => $item_id] );
+        wp_send_json_success();
     }
 
     // ── AJAX: admin create new receipt (AJAX, like 3006) ─────────────────────
