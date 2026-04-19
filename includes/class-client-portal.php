@@ -780,6 +780,40 @@ function veshoResendVerify(){
     </header>
     <div class="vcp-content">
       <?php
+      // ── Portal notices (layout-tasemel, igas tab-is, 3006 stiil) ─────────────
+      $today_n = current_time('Y-m-d');
+      $client_notices = $wpdb->get_results($wpdb->prepare(
+          "SELECT * FROM {$wpdb->prefix}vesho_portal_notices
+           WHERE active=1 AND target IN ('client','both')
+           AND (starts_at IS NULL OR starts_at <= %s)
+           AND (ends_at IS NULL OR ends_at >= %s)
+           ORDER BY created_at DESC LIMIT 5",
+          $today_n, $today_n
+      ));
+      if ( $client_notices ) : ?>
+      <script>
+      var _vcp_dismissed = (function(){try{return JSON.parse(sessionStorage.getItem('vcp_dismissed')||'[]');}catch(e){return [];}})();
+      function vcpDismiss(id){_vcp_dismissed.push(id);sessionStorage.setItem('vcp_dismissed',JSON.stringify(_vcp_dismissed));var el=document.getElementById('vcpn-'+id);if(el)el.style.display='none';}
+      </script>
+      <?php foreach ($client_notices as $cn) :
+          $type   = $cn->type ?? 'info';
+          $bg     = $type==='warning' ? 'rgba(245,158,11,0.12)' : ($type==='success' ? 'rgba(16,185,129,0.12)' : 'rgba(99,102,241,0.12)');
+          $border = $type==='warning' ? 'rgba(245,158,11,0.3)'  : ($type==='success' ? 'rgba(16,185,129,0.3)'  : 'rgba(99,102,241,0.3)');
+          $color  = $type==='warning' ? '#f59e0b' : ($type==='success' ? '#10b981' : '#818cf8');
+          $icon   = $type==='warning' ? '⚠️' : ($type==='success' ? '✅' : 'ℹ️');
+      ?>
+      <div id="vcpn-<?php echo (int)$cn->id; ?>" style="background:<?php echo $bg; ?>;border-bottom:1px solid <?php echo $border; ?>;padding:10px 20px;display:flex;align-items:center;gap:10px;font-size:13px;margin-bottom:8px;border-radius:6px">
+        <span style="font-size:16px"><?php echo $icon; ?></span>
+        <span style="color:<?php echo $color; ?>;font-weight:600"><?php echo esc_html($cn->title); ?></span>
+        <span style="color:#9ca3af">— <?php echo esc_html($cn->message); ?></span>
+        <button onclick="vcpDismiss(<?php echo (int)$cn->id; ?>)" style="margin-left:auto;background:none;border:none;cursor:pointer;color:#9ca3af;font-size:18px;line-height:1;padding:0 4px">×</button>
+      </div>
+      <?php endforeach; ?>
+      <script>
+      (function(){_vcp_dismissed.forEach(function(id){var el=document.getElementById('vcpn-'+id);if(el)el.style.display='none';});})();
+      </script>
+      <?php endif; ?>
+      <?php
       switch ($tab) {
           case 'dashboard':   self::tab_dashboard($client, $cid, $base, $nonce); break;
           case 'devices':     self::tab_devices($cid); break;
@@ -848,26 +882,6 @@ function veshoResendVerify(){
         $invoices_url   = esc_url(add_query_arg('ptab', 'invoices', $base));
         $next_date = $next_maint ? esc_html(date_i18n('d.m.Y', strtotime($next_maint->scheduled_date))) : '—';
         ?>
-<?php
-// Portal notices for clients
-$today = current_time('Y-m-d');
-$notices = $wpdb->get_results($wpdb->prepare(
-    "SELECT * FROM {$wpdb->prefix}vesho_portal_notices
-     WHERE active=1 AND target IN ('client','both')
-     AND (starts_at IS NULL OR starts_at <= %s)
-     AND (ends_at IS NULL OR ends_at >= %s)
-     ORDER BY created_at DESC LIMIT 5",
-    $today, $today
-));
-foreach ($notices as $notice) : ?>
-<div style="background:#fef9c3;border:1px solid #fde047;border-radius:8px;padding:14px 18px;margin-bottom:16px;display:flex;gap:10px">
-  <span style="font-size:20px">📢</span>
-  <div>
-    <strong style="font-size:14px"><?php echo esc_html($notice->title); ?></strong>
-    <p style="margin:4px 0 0;font-size:13px;color:#4b5563"><?php echo esc_html($notice->message); ?></p>
-  </div>
-</div>
-<?php endforeach; ?>
 <div class="vcp-page-header">
   <h1>Tere tulemast, <?php echo esc_html(explode(' ', $client->name)[0]); ?>!</h1>
   <?php if (!empty($client->company)) echo '<p>' . esc_html($client->company) . '</p>'; ?>

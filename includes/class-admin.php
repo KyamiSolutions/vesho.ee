@@ -1699,9 +1699,12 @@ private static function load_view( $name ) {
         check_admin_referer( 'vesho_save_notice' );
         if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorized' );
         global $wpdb;
+        $type = sanitize_text_field( $_POST['notice_type'] ?? 'info' );
+        if ( ! in_array( $type, ['info','warning','success'] ) ) $type = 'info';
         $data = [
             'title'     => sanitize_text_field( $_POST['notice_title'] ?? '' ),
             'message'   => sanitize_textarea_field( $_POST['notice_message'] ?? '' ),
+            'type'      => $type,
             'target'    => sanitize_text_field( $_POST['notice_target'] ?? 'both' ),
             'starts_at' => sanitize_text_field( $_POST['notice_starts'] ?? '' ) ?: null,
             'ends_at'   => sanitize_text_field( $_POST['notice_ends'] ?? '' ) ?: null,

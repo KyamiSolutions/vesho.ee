@@ -410,6 +410,7 @@ class Vesho_CRM_Database {
             id          INT UNSIGNED NOT NULL AUTO_INCREMENT,
             title       VARCHAR(255) NOT NULL DEFAULT '',
             message     TEXT         DEFAULT '',
+            type        VARCHAR(20)  DEFAULT 'info',
             target      VARCHAR(20)  DEFAULT 'both',
             starts_at   DATE         DEFAULT NULL,
             ends_at     DATE         DEFAULT NULL,
@@ -417,6 +418,11 @@ class Vesho_CRM_Database {
             created_at  DATETIME     DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (id)
         ) $charset;" );
+        // migrate: add type column if missing
+        $notice_cols = $wpdb->get_col( "DESCRIBE `{$wpdb->prefix}vesho_portal_notices`" ) ?: [];
+        if ( ! in_array( 'type', $notice_cols ) ) {
+            $wpdb->query( "ALTER TABLE `{$wpdb->prefix}vesho_portal_notices` ADD COLUMN `type` VARCHAR(20) DEFAULT 'info' AFTER `message`" );
+        }
 
         // ── stock_counts ──────────────────────────────────────────────────────
         dbDelta( "CREATE TABLE {$wpdb->prefix}vesho_stock_counts (

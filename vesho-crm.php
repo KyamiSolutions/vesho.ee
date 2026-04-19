@@ -3,7 +3,7 @@
  * Plugin Name: Vesho CRM
  * Plugin URI:  https://vesho.ee
  * Description: CRM ja klientide portaal Vesho OÜ-le. Haldab kliente, seadmeid, hooldusi, arveid ja teenuseid.
- * Version:     2.2.77
+ * Version:     2.2.78
  * Author:      Vesho OÜ
  * Author URI:  https://vesho.ee
  * Text Domain: vesho-crm
@@ -15,7 +15,7 @@
 defined( 'ABSPATH' ) || exit;
 
 // ── Constants ──────────────────────────────────────────────────────────────────
-define('VESHO_CRM_VERSION', '2.2.77');
+define('VESHO_CRM_VERSION', '2.2.78');
 define( 'VESHO_CRM_FILE',     __FILE__ );
 define( 'VESHO_CRM_PATH',     plugin_dir_path( __FILE__ ) );
 define( 'VESHO_CRM_URL',      plugin_dir_url( __FILE__ ) );
@@ -309,6 +309,42 @@ add_action( 'wp_ajax_vesho_save_update_server', function() {
     update_option( 'vesho_update_server_url', esc_url_raw( $_POST['url'] ?? '' ) );
     wp_send_json_success();
 } );
+
+// ── Public site notices (3006 stiil: banner kogu saidil) ─────────────────────
+add_action( 'wp_body_open', 'vesho_public_notices' );
+function vesho_public_notices() {
+    if ( is_admin() ) return;
+    global $wpdb;
+    $today = current_time('Y-m-d');
+    $notices = $wpdb->get_results( $wpdb->prepare(
+        "SELECT * FROM {$wpdb->prefix}vesho_portal_notices
+         WHERE active=1 AND target IN ('client','both')
+         AND (starts_at IS NULL OR starts_at <= %s)
+         AND (ends_at IS NULL OR ends_at >= %s)
+         ORDER BY created_at DESC LIMIT 5",
+        $today, $today
+    ) );
+    if ( empty($notices) ) return;
+    echo '<script>var _vpub_dm=(function(){try{return JSON.parse(sessionStorage.getItem("vpub_dismissed")||"[]");}catch(e){return [];}})();function vpubDismiss(id){_vpub_dm.push(id);sessionStorage.setItem("vpub_dismissed",JSON.stringify(_vpub_dm));var el=document.getElementById("vpubn-"+id);if(el)el.style.display="none";}</script>';
+    foreach ( $notices as $n ) {
+        $type   = $n->type ?? 'info';
+        $bg     = $type==='warning' ? 'rgba(245,158,11,0.12)' : ($type==='success' ? 'rgba(16,185,129,0.12)' : 'rgba(99,102,241,0.12)');
+        $border = $type==='warning' ? 'rgba(245,158,11,0.3)'  : ($type==='success' ? 'rgba(16,185,129,0.3)'  : 'rgba(99,102,241,0.3)');
+        $color  = $type==='warning' ? '#f59e0b' : ($type==='success' ? '#10b981' : '#818cf8');
+        $icon   = $type==='warning' ? '⚠️' : ($type==='success' ? '✅' : 'ℹ️');
+        printf(
+            '<div id="vpubn-%1$d" style="background:%2$s;border-bottom:1px solid %3$s;padding:10px 20px;display:flex;align-items:center;gap:10px;font-size:13px">'
+            . '<span style="font-size:16px">%4$s</span>'
+            . '<span style="color:%5$s;font-weight:600">%6$s</span>'
+            . '<span style="color:#9ca3af">— %7$s</span>'
+            . '<button onclick="vpubDismiss(%1$d)" style="margin-left:auto;background:none;border:none;cursor:pointer;color:#9ca3af;font-size:18px;line-height:1;padding:0 4px">×</button>'
+            . '</div>',
+            (int)$n->id, $bg, $border, $icon, $color,
+            esc_html($n->title), esc_html($n->message)
+        );
+    }
+    echo '<script>(function(){_vpub_dm.forEach(function(id){var el=document.getElementById("vpubn-"+id);if(el)el.style.display="none";});})();</script>';
+}
 
 // ── Plugin action links ───────────────────────────────────────────────────────
 add_filter( 'plugin_action_links_' . VESHO_CRM_BASENAME, 'vesho_crm_action_links' );

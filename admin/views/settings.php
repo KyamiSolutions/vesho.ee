@@ -739,6 +739,14 @@ $services_page_subtitle = get_option('vesho_services_page_subtitle', '');
                         <input class="crm-form-input" type="text" name="notice_title" required>
                     </div>
                     <div class="crm-form-group">
+                        <label class="crm-form-label">Tüüp</label>
+                        <select class="crm-form-select" name="notice_type">
+                            <option value="info">ℹ️ Info</option>
+                            <option value="warning">⚠️ Hoiatus</option>
+                            <option value="success">✅ Positiivne</option>
+                        </select>
+                    </div>
+                    <div class="crm-form-group">
                         <label class="crm-form-label">Sihtkoht</label>
                         <select class="crm-form-select" name="notice_target">
                             <option value="both">Mõlemad portaalid</option>

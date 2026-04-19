@@ -327,6 +327,31 @@ class Vesho_CRM_Worker_Portal {
     </header>
     <div class="vwp-content">
       <?php
+      <?php
+      // ── Portal notices (layout-tasemel, igas tab-is, 3006 stiil) ─────────────
+      $today_wn = current_time('Y-m-d');
+      $worker_notices = $wpdb->get_results($wpdb->prepare(
+          "SELECT * FROM {$wpdb->prefix}vesho_portal_notices
+           WHERE active=1 AND target IN ('worker','both')
+           AND (starts_at IS NULL OR starts_at <= %s)
+           AND (ends_at IS NULL OR ends_at >= %s)
+           ORDER BY created_at DESC LIMIT 5",
+          $today_wn, $today_wn
+      ));
+      foreach ($worker_notices as $wn) :
+          $wtype  = $wn->type ?? 'info';
+          $wbg    = $wtype==='warning' ? 'rgba(245,158,11,0.12)' : ($wtype==='success' ? 'rgba(16,185,129,0.12)' : 'rgba(99,102,241,0.12)');
+          $wbord  = $wtype==='warning' ? 'rgba(245,158,11,0.3)'  : ($wtype==='success' ? 'rgba(16,185,129,0.3)'  : 'rgba(99,102,241,0.3)');
+          $wcol   = $wtype==='warning' ? '#f59e0b' : ($wtype==='success' ? '#10b981' : '#818cf8');
+          $wicon  = $wtype==='warning' ? '⚠️' : ($wtype==='success' ? '✅' : 'ℹ️');
+      ?>
+      <div style="background:<?php echo $wbg; ?>;border-bottom:1px solid <?php echo $wbord; ?>;padding:10px 20px;display:flex;align-items:center;gap:10px;font-size:13px;margin-bottom:8px;border-radius:6px">
+        <span style="font-size:16px"><?php echo $wicon; ?></span>
+        <span style="color:<?php echo $wcol; ?>;font-weight:600"><?php echo esc_html($wn->title); ?></span>
+        <span style="color:#9ca3af">— <?php echo esc_html($wn->message); ?></span>
+      </div>
+      <?php endforeach; ?>
+      <?php
       switch ($tab) {
           case 'overview':   self::tab_overview($worker, $wid, $nonce, $ajax); break;
           case 'active':     self::tab_active($wid, $nonce, $ajax); break;
@@ -403,25 +428,6 @@ class Vesho_CRM_Worker_Portal {
         $barcode_token = esc_js($worker->barcode_token ?? '');
         $has_qr = !empty($worker->barcode_token);
         ?>
-<?php
-// Portal notices
-$notices = $wpdb->get_results($wpdb->prepare(
-    "SELECT * FROM {$wpdb->prefix}vesho_portal_notices
-     WHERE active=1 AND target IN ('worker','both')
-     AND (starts_at IS NULL OR starts_at <= %s)
-     AND (ends_at IS NULL OR ends_at >= %s)
-     ORDER BY created_at DESC LIMIT 5",
-    $today, $today
-));
-foreach ($notices as $notice) : ?>
-<div style="background:#fef9c3;border:1px solid #fde047;border-radius:8px;padding:14px 18px;margin-bottom:16px;display:flex;gap:10px">
-  <span style="font-size:20px">📢</span>
-  <div>
-    <strong style="font-size:14px"><?php echo esc_html($notice->title); ?></strong>
-    <p style="margin:4px 0 0;font-size:13px;color:#4b5563"><?php echo esc_html($notice->message); ?></p>
-  </div>
-</div>
-<?php endforeach; ?>
 
 <div class="vwp-page-header">
   <h1>Tere, <?php echo esc_html(explode(' ', $worker->name)[0]); ?>!</h1>
