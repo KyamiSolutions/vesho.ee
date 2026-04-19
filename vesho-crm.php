@@ -3,7 +3,7 @@
  * Plugin Name: Vesho CRM
  * Plugin URI:  https://vesho.ee
  * Description: CRM ja klientide portaal Vesho OÜ-le. Haldab kliente, seadmeid, hooldusi, arveid ja teenuseid.
- * Version:     2.5.0
+ * Version:     2.5.1
  * Author:      Vesho OÜ
  * Author URI:  https://vesho.ee
  * Text Domain: vesho-crm
@@ -15,7 +15,7 @@
 defined( 'ABSPATH' ) || exit;
 
 // ── Constants ──────────────────────────────────────────────────────────────────
-define('VESHO_CRM_VERSION', '2.5.0');
+define('VESHO_CRM_VERSION', '2.5.1');
 define( 'VESHO_CRM_FILE',     __FILE__ );
 define( 'VESHO_CRM_PATH',     plugin_dir_path( __FILE__ ) );
 define( 'VESHO_CRM_URL',      plugin_dir_url( __FILE__ ) );
@@ -222,6 +222,14 @@ function vesho_crm_init() {
     if ( get_option( 'vesho_crm_version' ) !== VESHO_CRM_VERSION ) {
         Vesho_CRM_Database::install();
         vesho_crm_create_pages();
+        // ── Migrate old shop order statuses to 3006-compatible names ──────────
+        global $wpdb;
+        $t = $wpdb->prefix . 'vesho_shop_orders';
+        $wpdb->query("UPDATE {$t} SET status='pending'    WHERE status IN ('new')");
+        $wpdb->query("UPDATE {$t} SET status='processing' WHERE status IN ('picking')");
+        $wpdb->query("UPDATE {$t} SET status='confirmed'  WHERE status IN ('ready')");
+        $wpdb->query("UPDATE {$t} SET status='completed'  WHERE status IN ('fulfilled')");
+        // ─────────────────────────────────────────────────────────────────────
         update_option( 'vesho_crm_version', VESHO_CRM_VERSION );
     }
 

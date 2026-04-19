@@ -1,10 +1,10 @@
 {
   "name": "Vesho CRM",
   "slug": "vesho-crm",
-  "version": "2.5.0",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.5.0/vesho-crm.zip",
+  "version": "2.5.1",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.5.1/vesho-crm.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-19",
-  "changelog": "<h4>2.5.0</h4><ul><li>Tellimuste staatused sünkroonitud 3006-ga: pending_payment→pending→processing→confirmed→shipped→completed</li><li>Maksekinnituse webhook seab nüüd tellimuse pending staatusesse (töötaja järjekorda)</li><li>Töötaja portaal: pakitud tellimus läheb confirmed staatusesse (mitte shipped)</li><li>Admin tellimuste vaade: uuendatud staatuste nimed ja toimingusnupud</li><li>Parandus: Töötaja portaalis näidatakse nüüd korrektselt tellimusi (oli 'Pole tellimusi' viga)</li></ul><h4>2.4.1</h4><ul><li>Pood: laost otsas toodete teavitussüsteem — klient saab e-posti teel teate kui toode taas saadaval</li><li>DB: vesho_stock_notifications tabel</li><li>Admin: laovaru uuendamisel saadetakse automaatselt teavitused tellijatele</li></ul><h4>2.4.0</h4><ul><li>Maksed: Stripe/MC/Montonio webhookid kinnitavad poe tellimusi automaatselt</li><li>Seadmed: automaatne järgmise hoolduse ajastamine</li><li>Admin: tegevuslogi AJAX-paginatsioon</li></ul>"
+  "changelog": "<h4>2.5.1</h4><ul><li>DB migratsioon: vanad shop tellimuste staatused (new/picking/ready/fulfilled) konverteeritakse uuteks (pending/processing/confirmed/completed)</li></ul><h4>2.5.0</h4><ul><li>Tellimuste staatused sünkroonitud 3006-ga: pending_payment→pending→processing→confirmed→shipped→completed</li><li>Parandus: Töötaja portaalis näidatakse nüüd korrektselt tellimusi (oli 'Pole tellimusi' viga)</li></ul><h4>2.4.1</h4><ul><li>Pood: laost otsas toodete teavitussüsteem</li></ul>"
 }
