@@ -82,6 +82,7 @@ class Vesho_CRM_Admin {
         add_action( 'wp_ajax_vesho_create_credit_note',      array( __CLASS__, 'ajax_create_credit_note' ) );
         add_action( 'wp_ajax_vesho_order_issue_refund',      array( __CLASS__, 'ajax_order_issue_refund' ) );
         add_action( 'wp_ajax_vesho_order_manual_refund',     array( __CLASS__, 'ajax_order_manual_refund' ) );
+        add_action( 'wp_ajax_vesho_order_not_received',      array( __CLASS__, 'ajax_order_not_received' ) );
         add_action( 'admin_post_vesho_generate_worker_barcode', array( __CLASS__, 'handle_generate_worker_barcode' ) );
         add_action( 'admin_post_vesho_approve_return',           array( __CLASS__, 'handle_approve_return' ) );
         add_action( 'admin_post_vesho_reject_return',            array( __CLASS__, 'handle_reject_return' ) );
@@ -3016,5 +3017,57 @@ private static function load_view( $name ) {
 
         wp_safe_redirect( admin_url( 'admin.php?page=vesho-my-account&msg=pw_changed' ) );
         exit;
+    }
+
+    /**
+     * "Ei võetud vastu" — mark shipped order as returned + restore stock + optional refund.
+     */
+    public static function ajax_order_not_received() {
+        check_ajax_referer( 'vesho_admin_nonce', 'nonce' );
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_send_json_error( ['message' => 'Pole lubatud'] );
+        }
+        global $wpdb;
+        $order_id  = absint( $_POST['order_id']  ?? 0 );
+        $do_refund = ( $_POST['do_refund'] ?? '0' ) === '1';
+        if ( ! $order_id ) wp_send_json_error( ['message' => 'Vale tellimuse ID'] );
+
+        $order = $wpdb->get_row( $wpdb->prepare(
+            "SELECT * FROM {$wpdb->prefix}vesho_shop_orders WHERE id=%d", $order_id
+        ) );
+        if ( ! $order ) wp_send_json_error( ['message' => 'Tellimust ei leitud'] );
+        if ( $order->status !== 'shipped' ) wp_send_json_error( ['message' => 'Tellimus pole "Saadetud" staatuses'] );
+
+        // Restore inventory — original quantity (same as 3006)
+        $items = $wpdb->get_results( $wpdb->prepare(
+            "SELECT * FROM {$wpdb->prefix}vesho_shop_order_items WHERE order_id=%d AND inventory_id IS NOT NULL",
+            $order_id
+        ) );
+        foreach ( $items as $it ) {
+            $qty = (float)$it->quantity;
+            if ( $qty > 0 ) {
+                $wpdb->query( $wpdb->prepare(
+                    "UPDATE {$wpdb->prefix}vesho_inventory SET quantity = quantity + %f WHERE id = %d",
+                    $qty, $it->inventory_id
+                ) );
+            }
+        }
+
+        // Mark as returned + add note (same as 3006)
+        $existing_notes = $order->notes ?? '';
+        $wpdb->update( $wpdb->prefix . 'vesho_shop_orders', [
+            'status'                => 'returned',
+            'refund_pending_amount' => 0.00,
+            'notes'                 => trim( $existing_notes . ' [Pakk tagastati — klient ei võtnud vastu]' ),
+            'updated_at'            => current_time( 'mysql' ),
+        ], ['id' => $order_id] );
+
+        $refund_msg = '';
+        if ( $do_refund && ! empty( $order->total ) ) {
+            $result = self::do_payment_refund( $order, (float)$order->total );
+            $refund_msg = ' ' . $result['message'];
+        }
+
+        wp_send_json_success( ['message' => 'Tellimus märgitud tagastatuvaks.' . $refund_msg] );
     }
 }

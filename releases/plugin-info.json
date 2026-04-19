@@ -1,10 +1,10 @@
 {
   "name": "Vesho CRM",
   "slug": "vesho-crm",
-  "version": "2.5.3",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.5.3/vesho-crm.zip",
+  "version": "2.5.4",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.5.4/vesho-crm.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-19",
-  "changelog": "<h4>2.5.3</h4><ul><li>Fix: töötaja portaal näitab nüüd 'processing' tellimusi (admin peab esmalt saatma töötajatele)</li><li>Fix: admin saab üksiku tellimuse saata töötajatele (▶ nupp nii listis kui detailvaates)</li><li>Claim: seab ainult worker_id, staatus jääb 'processing' (nagu 3006)</li></ul><h4>2.5.2</h4><ul><li>Fix: admin 'Saada töötajale' nupp eemaldatud — eemaldas tellimuse mõlemast vaatest</li></ul><h4>2.5.1</h4><ul><li>DB migratsioon: vanad staatused (new/picking/ready/fulfilled) → uued (pending/processing/confirmed/completed)</li></ul><h4>2.5.0</h4><ul><li>Tellimuste staatused sünkroonitud 3006-ga</li><li>Parandus: töötaja portaalis 'Pole tellimusi' viga</li></ul>"
+  "changelog": "<h4>2.5.4</h4><ul><li>Fix: 'Ei võetud vastu' AJAX handler implementeeritud (puudus täiesti)</li><li>Fix: Dialog 2 nupuga — 'Ei tee tagasimakset' + 'Tee tagasimakse' (nagu 3006)</li><li>Fix: confirmed staatus label 'Valmis saatmiseks' → 'Valmis' (nagu guide)</li><li>Inventory restore põhineb nüüd algsel quantity-l (nagu 3006)</li></ul><h4>2.5.3</h4><ul><li>Fix: töötaja portaal näitab 'processing' tellimusi; admin ▶ nupp</li></ul>"
 }

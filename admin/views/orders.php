@@ -13,7 +13,7 @@ $statuses = [
     'pending_payment'  => ['Makse ootel',      '#f59e0b', '#fef9c3'],
     'pending'          => ['Uus tellimus',      '#6b7280', '#f3f4f6'],
     'processing'       => ['Komplekteerimisel','#8b5cf6', '#ede9fe'],
-    'confirmed'        => ['Valmis saatmiseks','#3b82f6', '#dbeafe'],
+    'confirmed'        => ['Valmis',           '#3b82f6', '#dbeafe'],
     'shipped'          => ['Saadetud',         '#0ea5e9', '#e0f2fe'],
     'completed'        => ['Täidetud',         '#10b981', '#dcfce7'],
     'cancelled'        => ['Tühistatud',       '#6b7280', '#f3f4f6'],
@@ -651,34 +651,34 @@ document.querySelectorAll('.not-received-btn').forEach(function(btn){
         var orderId = btn.dataset.orderId;
         var nonce   = btn.dataset.nonce;
 
-        // Build custom confirm dialog
+        // Build confirm dialog with two options (guide-exact: refund or no refund)
         var overlay = document.createElement('div');
         overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center';
 
         var box = document.createElement('div');
-        box.style.cssText = 'background:#fff;border-radius:10px;padding:28px 24px;max-width:400px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.18)';
-        box.innerHTML = '<p style="margin:0 0 20px;font-size:14px;line-height:1.6;color:#1a2a38">Kinnita, et pakk ei v&otilde;etud vastu? See m&auml;rgib tellimuse tagastatuvaks ja algatab tagasimakse.</p>'
-            + '<div style="display:flex;gap:10px;justify-content:flex-end">'
-            + '<button id="nr-cancel" class="crm-btn crm-btn-outline crm-btn-sm">T&uuml;hista</button>'
-            + '<button id="nr-confirm" class="crm-btn crm-btn-sm" style="background:#f59e0b;color:#fff;border:none;cursor:pointer">Ei v&otilde;etud vastu</button>'
-            + '</div>';
+        box.style.cssText = 'background:#fff;border-radius:10px;padding:28px 24px;max-width:420px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.18)';
+        box.innerHTML = '<p style="margin:0 0 6px;font-size:15px;font-weight:700;color:#1a2a38">Pakk ei v&otilde;etud vastu</p>'
+            + '<p style="margin:0 0 20px;font-size:13px;line-height:1.6;color:#64748b">Tellimus m&auml;rgitakse tagastatuvaks ja laokogused taastatakse. Vali kas teha tagasimakse.</p>'
+            + '<div style="display:grid;gap:8px;margin-bottom:16px">'
+            + '<button id="nr-no-refund" class="crm-btn crm-btn-outline" style="justify-content:flex-start;text-align:left;padding:12px 16px">'
+            +   '<strong>Ei tee tagasimakset</strong><br><small style="color:#94a3b8;font-weight:400">Tellimus m&auml;rgitakse tagastatuvaks, laokogused taastatakse. Makse j&auml;&auml;b.</small>'
+            + '</button>'
+            + '<button id="nr-with-refund" class="crm-btn" style="background:#10b981;color:#fff;border:none;justify-content:flex-start;text-align:left;padding:12px 16px">'
+            +   '<strong>Tee tagasimakse</strong><br><small style="opacity:.85;font-weight:400">Tellimus m&auml;rgitakse tagastatuvaks + tagasimakse k&auml;ivitatakse (Stripe/Maksekeskus automaatne; Montonio k&auml;sitsi).</small>'
+            + '</button>'
+            + '</div>'
+            + '<div style="text-align:right"><button id="nr-cancel" class="crm-btn crm-btn-outline crm-btn-sm">T&uuml;hista</button></div>';
 
         overlay.appendChild(box);
         document.body.appendChild(overlay);
 
-        document.getElementById('nr-cancel').addEventListener('click', function(){ document.body.removeChild(overlay); });
-        overlay.addEventListener('click', function(e){ if(e.target===overlay){ document.body.removeChild(overlay); } });
-
-        document.getElementById('nr-confirm').addEventListener('click', function(){
-            var confirmBtn = this;
-            confirmBtn.disabled = true;
-            confirmBtn.textContent = '...';
-
+        function doNotReceived(doRefund) {
+            ['nr-no-refund','nr-with-refund'].forEach(function(id){ var el=document.getElementById(id); if(el) el.disabled=true; });
             var fd = new FormData();
-            fd.append('action',   'vesho_order_not_received');
-            fd.append('nonce',    nonce);
-            fd.append('order_id', orderId);
-
+            fd.append('action',    'vesho_order_not_received');
+            fd.append('nonce',     nonce);
+            fd.append('order_id',  orderId);
+            fd.append('do_refund', doRefund ? '1' : '0');
             fetch(ajaxurl, {method:'POST', body:fd})
                 .then(function(r){ return r.json(); })
                 .then(function(d){
@@ -687,18 +687,22 @@ document.querySelectorAll('.not-received-btn').forEach(function(btn){
                         btn.closest('tr').style.opacity = '.5';
                         btn.textContent = 'Tagastatud';
                         btn.disabled = true;
-                        // Refresh status badge in the same row
                         var badgeCell = btn.closest('td');
                         if(badgeCell){
                             var badge = badgeCell.querySelector('span');
                             if(badge){ badge.textContent='Tagastatud'; badge.style.background='#ffedd5'; badge.style.color='#f97316'; }
                         }
                     } else {
-                        alert('Viga: ' + (d.data || 'Tundmatu viga'));
+                        alert('Viga: ' + (d.data?.message || d.data || 'Tundmatu viga'));
                     }
                 })
                 .catch(function(){ document.body.removeChild(overlay); alert('Ühenduse viga'); });
-        });
+        }
+
+        document.getElementById('nr-cancel').addEventListener('click', function(){ document.body.removeChild(overlay); });
+        overlay.addEventListener('click', function(e){ if(e.target===overlay){ document.body.removeChild(overlay); } });
+        document.getElementById('nr-no-refund').addEventListener('click', function(){ doNotReceived(false); });
+        document.getElementById('nr-with-refund').addEventListener('click', function(){ doNotReceived(true); });
     });
 });
 
