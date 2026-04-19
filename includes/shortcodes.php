@@ -430,6 +430,22 @@ add_shortcode( 'vesho_shop', function( $atts ) {
 </style>
 <div id="vshop">
 
+<?php
+// ── Global announcement — visible to ALL visitors incl. guests ────────────────
+$_g_ann  = get_option('vesho_global_announcement', '');
+$_g_type = get_option('vesho_global_announcement_type', 'info');
+if ($_g_ann):
+    $_g_bg  = $_g_type==='warning' ? '#fff7ed' : ($_g_type==='success' ? '#f0fdf4' : '#eef2ff');
+    $_g_brd = $_g_type==='warning' ? '#fcd34d' : ($_g_type==='success' ? '#86efac' : '#c7d2fe');
+    $_g_col = $_g_type==='warning' ? '#92400e' : ($_g_type==='success' ? '#166534' : '#3730a3');
+    $_g_icon = $_g_type==='warning' ? '⚠️' : ($_g_type==='success' ? '✅' : '📣');
+?>
+<div style="background:<?php echo $_g_bg; ?>;border-bottom:2px solid <?php echo $_g_brd; ?>;padding:10px 20px;display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600;color:<?php echo $_g_col; ?>">
+  <span><?php echo $_g_icon; ?></span>
+  <span><?php echo esc_html($_g_ann); ?></span>
+</div>
+<?php endif; ?>
+
 <!-- Cart bar -->
 <div class="vs-cartbar">
   <div class="vs-cartbar-inner">

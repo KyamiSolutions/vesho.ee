@@ -698,6 +698,54 @@ $services_page_subtitle = get_option('vesho_services_page_subtitle', '');
     </form>
 
 
+    <?php /* ── Global announcement — quick one-click banner for all portals ── */ ?>
+    <?php
+    global $wpdb;
+    $global_ann = get_option('vesho_global_announcement', '');
+    $global_ann_type = get_option('vesho_global_announcement_type', 'info');
+    ?>
+    <div class="crm-card" style="margin-top:20px;border:2px solid <?php echo $global_ann ? '#f59e0b' : '#e2e8f0'; ?>">
+        <div class="crm-card-header" style="background:<?php echo $global_ann ? '#fff7ed' : ''; ?>">
+            <span class="crm-card-title">📣 Globaalne teadaanne <?php if ($global_ann): ?><span style="font-size:12px;color:#ea580c;font-weight:600">● AKTIIVNE</span><?php endif; ?></span>
+        </div>
+        <div style="padding:16px 20px">
+            <p style="font-size:13px;color:#64748b;margin:0 0 12px">Kohe nähtav banner KÕIGIS portaalides (klient + töötaja). Tühjenda väli et eemaldada.</p>
+            <?php if ($global_ann): ?>
+            <div style="background:<?php echo $global_ann_type==='warning'?'#fff7ed':($global_ann_type==='success'?'#f0fdf4':'#eef2ff'); ?>;border:1px solid <?php echo $global_ann_type==='warning'?'#fcd34d':($global_ann_type==='success'?'#86efac':'#c7d2fe'); ?>;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13px">
+                <strong><?php echo esc_html($global_ann); ?></strong>
+            </div>
+            <?php endif; ?>
+            <form method="POST" action="<?php echo admin_url('admin-post.php'); ?>" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+                <?php wp_nonce_field('vesho_save_global_announcement'); ?>
+                <input type="hidden" name="action" value="vesho_save_global_announcement">
+                <div style="flex:1;min-width:240px">
+                    <label style="font-size:12px;color:#64748b;display:block;margin-bottom:4px">Teadaanne (tühi = eemalda)</label>
+                    <input type="text" name="announcement_text" value="<?php echo esc_attr($global_ann); ?>"
+                           placeholder="nt. Laupäeval kl 10–14 tehnohooldus..."
+                           style="width:100%;padding:8px 12px;border:1.5px solid #dce3e9;border-radius:8px;font-size:14px;box-sizing:border-box">
+                </div>
+                <div>
+                    <label style="font-size:12px;color:#64748b;display:block;margin-bottom:4px">Tüüp</label>
+                    <select name="announcement_type" style="padding:8px 12px;border:1.5px solid #dce3e9;border-radius:8px;font-size:13px">
+                        <option value="info"    <?php selected($global_ann_type,'info'); ?>>ℹ️ Info</option>
+                        <option value="warning" <?php selected($global_ann_type,'warning'); ?>>⚠️ Hoiatus</option>
+                        <option value="success" <?php selected($global_ann_type,'success'); ?>>✅ Positiivne</option>
+                    </select>
+                </div>
+                <button type="submit" class="crm-btn crm-btn-primary" style="white-space:nowrap">
+                    <?php echo $global_ann ? '💾 Uuenda' : '📣 Avalda'; ?>
+                </button>
+                <?php if ($global_ann): ?>
+                <button type="submit" name="announcement_text" value=""
+                        class="crm-btn crm-btn-outline" style="color:#dc2626;border-color:#dc2626;white-space:nowrap"
+                        onclick="return confirm('Eemalda globaalne teadaanne?')">
+                    ✕ Eemalda
+                </button>
+                <?php endif; ?>
+            </form>
+        </div>
+    </div>
+
     <?php /* ── Notices — own form, OUTSIDE main settings form to avoid nested-form HTML bug ── */ ?>
     <div class="crm-card" style="margin-top:20px">
         <div class="crm-card-header">
@@ -705,7 +753,6 @@ $services_page_subtitle = get_option('vesho_services_page_subtitle', '');
         </div>
         <div style="padding:20px">
         <?php
-        global $wpdb;
         $notices = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}vesho_portal_notices ORDER BY starts_at DESC LIMIT 50");
         ?>
         <?php if (!empty($notices)) : ?>

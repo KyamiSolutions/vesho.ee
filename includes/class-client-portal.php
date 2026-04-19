@@ -784,6 +784,21 @@ function veshoResendVerify(){
     </header>
     <div class="vcp-content">
       <?php
+      // ── Global announcement (admin seab kohe, kõigile) ───────────────────────
+      $g_ann = get_option('vesho_global_announcement', '');
+      $g_type = get_option('vesho_global_announcement_type', 'info');
+      if ($g_ann):
+          $g_bg  = $g_type==='warning' ? '#fff7ed' : ($g_type==='success' ? '#f0fdf4' : '#eef2ff');
+          $g_brd = $g_type==='warning' ? '#fcd34d' : ($g_type==='success' ? '#86efac' : '#c7d2fe');
+          $g_col = $g_type==='warning' ? '#92400e' : ($g_type==='success' ? '#166534' : '#3730a3');
+          $g_icon = $g_type==='warning' ? '⚠️' : ($g_type==='success' ? '✅' : '📣');
+      ?>
+      <div style="background:<?php echo $g_bg; ?>;border-bottom:2px solid <?php echo $g_brd; ?>;padding:10px 20px;display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600;color:<?php echo $g_col; ?>">
+        <span><?php echo $g_icon; ?></span>
+        <span><?php echo esc_html($g_ann); ?></span>
+      </div>
+      <?php endif; ?>
+      <?php
       // ── Portal notices (layout-tasemel, igas tab-is, 3006 stiil) ─────────────
       $today_n = current_time('Y-m-d');
       $client_notices = $wpdb->get_results($wpdb->prepare(

@@ -332,6 +332,21 @@ class Vesho_CRM_Worker_Portal {
     </header>
     <div class="vwp-content">
       <?php
+      // ── Global announcement ───────────────────────────────────────────────────
+      $g_ann_w = get_option('vesho_global_announcement', '');
+      $g_type_w = get_option('vesho_global_announcement_type', 'info');
+      if ($g_ann_w):
+          $g_bg_w  = $g_type_w==='warning' ? '#fff7ed' : ($g_type_w==='success' ? '#f0fdf4' : '#eef2ff');
+          $g_brd_w = $g_type_w==='warning' ? '#fcd34d' : ($g_type_w==='success' ? '#86efac' : '#c7d2fe');
+          $g_col_w = $g_type_w==='warning' ? '#92400e' : ($g_type_w==='success' ? '#166534' : '#3730a3');
+          $g_icon_w = $g_type_w==='warning' ? '⚠️' : ($g_type_w==='success' ? '✅' : '📣');
+      ?>
+      <div style="background:<?php echo $g_bg_w; ?>;border-bottom:2px solid <?php echo $g_brd_w; ?>;padding:10px 20px;display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600;color:<?php echo $g_col_w; ?>">
+        <span><?php echo $g_icon_w; ?></span>
+        <span><?php echo esc_html($g_ann_w); ?></span>
+      </div>
+      <?php endif; ?>
+      <?php
       // ── Portal notices (layout-tasemel, igas tab-is, 3006 stiil) ─────────────
       $today_wn = current_time('Y-m-d');
       $worker_notices = $wpdb->get_results($wpdb->prepare(

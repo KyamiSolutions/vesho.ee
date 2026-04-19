@@ -1,10 +1,10 @@
 {
   "name": "Vesho",
   "slug": "vesho",
-  "version": "2.5.6",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.5.6/vesho-theme.zip",
+  "version": "2.5.7",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.5.7/vesho-theme.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-19",
-  "changelog": "<h4>2.5.6</h4><ul><li>Versioon sünkroon pluginaga</li></ul><h4>2.5.5</h4><ul><li>Versioon sünkroon pluginaga</li></ul>"
+  "changelog": "<h4>2.5.7</h4><ul><li>Lisa: globaalne teadaanne kõigil lehtedel (header.php)</li></ul><h4>2.5.6</h4><ul><li>Versioon sünkroon pluginaga</li></ul>"
 }

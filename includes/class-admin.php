@@ -56,8 +56,9 @@ class Vesho_CRM_Admin {
         add_action( 'admin_post_vesho_client_send_access',   array( __CLASS__, 'handle_client_send_access' ) );
         add_action( 'admin_post_vesho_send_worker_pin',      array( __CLASS__, 'handle_send_worker_pin' ) );
         add_action( 'admin_post_vesho_send_invoice_email',   array( __CLASS__, 'handle_send_invoice_email' ) );
-        add_action( 'admin_post_vesho_save_notice',          array( __CLASS__, 'handle_save_notice' ) );
-        add_action( 'admin_post_vesho_delete_notice',        array( __CLASS__, 'handle_delete_notice' ) );
+        add_action( 'admin_post_vesho_save_notice',              array( __CLASS__, 'handle_save_notice' ) );
+        add_action( 'admin_post_vesho_delete_notice',            array( __CLASS__, 'handle_delete_notice' ) );
+        add_action( 'admin_post_vesho_save_global_announcement', array( __CLASS__, 'handle_save_global_announcement' ) );
         add_action( 'admin_post_vesho_save_shop_order',      array( __CLASS__, 'handle_save_shop_order' ) );
         add_action( 'admin_post_vesho_delete_shop_order',    array( __CLASS__, 'handle_delete_shop_order' ) );
         add_action( 'admin_post_vesho_shop_order_status',    array( __CLASS__, 'handle_shop_order_status' ) );
@@ -1725,6 +1726,19 @@ private static function load_view( $name ) {
         $id = absint( $_GET['notice_id'] ?? 0 );
         if ( $id ) $wpdb->delete( $wpdb->prefix.'vesho_portal_notices', ['id'=>$id] );
         wp_redirect( add_query_arg( ['page'=>'vesho-crm-settings','msg'=>'saved'], admin_url('admin.php') ) );
+        exit;
+    }
+
+    // ── Global announcement ───────────────────────────────────────────────────
+    public static function handle_save_global_announcement() {
+        check_admin_referer( 'vesho_save_global_announcement' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorized' );
+        $text = sanitize_text_field( $_POST['announcement_text'] ?? '' );
+        $type = sanitize_text_field( $_POST['announcement_type'] ?? 'info' );
+        if ( ! in_array( $type, ['info','warning','success'] ) ) $type = 'info';
+        update_option( 'vesho_global_announcement',      $text );
+        update_option( 'vesho_global_announcement_type', $type );
+        wp_redirect( add_query_arg( ['page'=>'vesho-crm-settings','msg'=>'saved','_tab'=>'notices'], admin_url('admin.php') ) );
         exit;
     }
 

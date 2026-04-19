@@ -1,10 +1,10 @@
 {
   "name": "Vesho CRM",
   "slug": "vesho-crm",
-  "version": "2.5.6",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.5.6/vesho-crm.zip",
+  "version": "2.5.7",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.5.7/vesho-crm.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-19",
-  "changelog": "<h4>2.5.6</h4><ul><li>Lisa: cancel tellimus teeb automaatse tagasimakse (nagu 3006)</li><li>Lisa: bulk saatmine töötajatele vähendab laoseisu</li><li>Lisa: packed_at veerg — komplekteerimise kellaaeg</li><li>Lisa: komplekteerija nimi + packed_at detail vaates</li><li>Lisa: EAN skanner admin komplekteerimisel</li><li>Lisa: items_summary loetelu vaates (GROUP_CONCAT, ei N+1)</li><li>Lisa: 30s auto-refresh admin loetelu vaates</li><li>Fix: 'Märgi Valmis saatmiseks' → 'Märgi Valmis'</li></ul><h4>2.5.5</h4><ul><li>Fix: release_order ei lähtesta staatust</li><li>Fix: EAN skannimine seab koguse automaatselt</li><li>Lisa: statistikakaardid, tagastus badge, krediitarve email</li></ul>"
+  "changelog": "<h4>2.5.7</h4><ul><li>Lisa: globaalne teadaanne — nähtav KÕIGIL lehtedel kõigile külastajatele</li><li>Lisa: kiirteate haldus seadetes (avalda/uuenda/eemalda ühe klikiga)</li><li>Lisa: teadaanne nähtav ka poodi külastajatele (sh külalised)</li></ul><h4>2.5.6</h4><ul><li>Cancel → automaatne refund, bulk inventory, packed_at, EAN admin, auto-refresh</li></ul>"
 }
