@@ -302,6 +302,10 @@ add_shortcode( 'vesho_shop', function( $atts ) {
 #vshop .vs-card:hover .vs-card-img-wrap img{transform:scale(1.04)}
 #vshop .vs-no-img{display:flex;align-items:center;justify-content:center;height:100%;color:#94a3b8;font-family:'Barlow',sans-serif;font-size:.8rem;font-weight:500;letter-spacing:.5px}
 #vshop .vs-sale-badge{position:absolute;top:10px;left:10px;background:#e11d48;color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;padding:3px 8px;border-radius:4px}
+#vshop .vs-stock-badge{position:absolute;top:10px;left:10px;background:#64748b;color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;padding:3px 8px;border-radius:4px}
+#vshop .vs-add-btn--oos{background:#94a3b8!important;cursor:not-allowed!important;opacity:.8}
+#vshop .vs-stock-ok{font-size:13px;font-weight:600;color:#16a34a;margin:4px 0}
+#vshop .vs-stock-out{font-size:13px;font-weight:600;color:#dc2626;margin:4px 0}
 #vshop .vs-card-body{padding:14px 16px;flex:1;display:flex;flex-direction:column;gap:5px}
 #vshop .vs-card-cat{font-size:11px;font-weight:600;color:#00b4c8;text-transform:uppercase;letter-spacing:.05em}
 #vshop .vs-card-name{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:#0d1f2d;line-height:1.25}
@@ -441,7 +445,7 @@ if ( $view === 'grid' ) :
     $init_cat = sanitize_text_field( $_GET['cat'] ?? '' );
     $init_q   = sanitize_text_field( $_GET['q']   ?? '' );
     $products = $wpdb->get_results(
-        "SELECT i.id,i.name,i.category,i.shop_price,i.shop_description,i.image_url,i.unit,
+        "SELECT i.id,i.name,i.category,i.shop_price,i.shop_description,i.image_url,i.unit,i.quantity,
                 COALESCE(c.color,'#00b4c8') as cat_color
          FROM {$wpdb->prefix}vesho_inventory i
          LEFT JOIN {$wpdb->prefix}vesho_inventory_categories c ON c.name=i.category
@@ -510,9 +514,10 @@ if ( $view === 'grid' ) :
     <?php else : ?>
     <div class="vs-grid" id="vsGrid">
       <?php foreach ( $products as $p ) :
-        $p_url    = esc_url( add_query_arg(['shop_view'=>'product','pid'=>$p->id], $page_url) );
-        $p_disc   = round( (float)$p->shop_price * (1 - $eff_disc/100), 2 );
-        $has_disc = $eff_disc > 0;
+        $p_url      = esc_url( add_query_arg(['shop_view'=>'product','pid'=>$p->id], $page_url) );
+        $p_disc     = round( (float)$p->shop_price * (1 - $eff_disc/100), 2 );
+        $has_disc   = $eff_disc > 0;
+        $p_in_stock = ( (int)($p->quantity ?? 0) ) > 0;
       ?>
       <div class="vs-card"
            data-cat="<?php echo esc_attr($p->category); ?>"
@@ -524,7 +529,9 @@ if ( $view === 'grid' ) :
           <?php else : ?>
           <div class="vs-no-img">Pilt puudub</div>
           <?php endif; ?>
-          <?php if ( $has_disc ) : ?>
+          <?php if ( !$p_in_stock ) : ?>
+          <span class="vs-stock-badge">Laos otsas</span>
+          <?php elseif ( $has_disc ) : ?>
           <span class="vs-sale-badge">-<?php echo (int)$eff_disc; ?>%</span>
           <?php endif; ?>
         </a>
@@ -547,7 +554,11 @@ if ( $view === 'grid' ) :
             <span class="vs-card-unit">/ <?php echo esc_html($p->unit); ?></span>
             <?php endif; ?>
           </div>
+          <?php if ( $p_in_stock ) : ?>
           <button class="vs-add-btn" data-pid="<?php echo (int)$p->id; ?>">Lisa korvi</button>
+          <?php else : ?>
+          <button class="vs-add-btn vs-add-btn--oos" disabled>Laos otsas</button>
+          <?php endif; ?>
         </div>
       </div>
       <?php endforeach; ?>
@@ -605,8 +616,9 @@ elseif ( $view === 'product' ) :
   </div>
 </div>
 <?php else :
-    $p_disc   = round( (float)$prod->shop_price * (1 - $eff_disc/100), 2 );
-    $has_disc = $eff_disc > 0;
+    $p_disc      = round( (float)$prod->shop_price * (1 - $eff_disc/100), 2 );
+    $has_disc    = $eff_disc > 0;
+    $prod_in_stock = ( (int)($prod->quantity ?? 0) ) > 0;
 ?>
 <div class="vs-layout">
 
@@ -668,16 +680,26 @@ elseif ( $view === 'product' ) :
           <?php if ( $has_disc ) : ?>
           <div class="vs-disc-note">✓ Kampaaniahind (–<?php echo (int)$eff_disc; ?>%)</div>
           <?php endif; ?>
+          <!-- Stock status -->
+          <?php if ( $prod_in_stock ) : ?>
+          <div class="vs-stock-ok">✓ Laos olemas</div>
+          <?php else : ?>
+          <div class="vs-stock-out">✗ Laos otsas</div>
+          <?php endif; ?>
           <?php if ( !empty($prod->shop_description) ) : ?>
           <p class="vs-detail-desc"><?php echo nl2br(esc_html($prod->shop_description)); ?></p>
           <?php endif; ?>
           <div class="vs-qty-row">
+            <?php if ( $prod_in_stock ) : ?>
             <div class="vs-qty">
               <button class="vs-qty-btn" onclick="vsQtyAdj(-1)">−</button>
               <input type="number" id="vsProdQty" value="1" min="1" max="99">
               <button class="vs-qty-btn" onclick="vsQtyAdj(1)">+</button>
             </div>
             <button class="vs-add-big-btn" id="vsDetailAddBtn" data-pid="<?php echo (int)$prod->id; ?>">Lisa korvi</button>
+            <?php else : ?>
+            <button class="vs-add-big-btn vs-add-btn--oos" disabled>Laos otsas</button>
+            <?php endif; ?>
           </div>
           <a href="<?php echo esc_url($cart_url); ?>" class="vs-btn-outline">🛒 Vaata ostukorvi</a>
         </div>
