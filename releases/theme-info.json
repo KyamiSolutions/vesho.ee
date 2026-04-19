@@ -1,10 +1,10 @@
 {
   "name": "Vesho",
   "slug": "vesho",
-  "version": "2.2.93",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.2.93/vesho-theme.zip",
+  "version": "2.2.94",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.2.94/vesho-theme.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-19",
-  "changelog": "<h4>2.2.93</h4><ul><li>Shop: täielik disaini ümberkirjutus – sidebar kategooriate paneel colored dot-idega, sort A-Z/Z-A/hind, grid/list toggle, tootekaardid kategooria värviga, proper campaign bänner kuupäevaga</li></ul><h4>2.2.92</h4><ul><li>Shop frontend: [vesho_shop] shortcode – toodete grid, ostukorv, checkout, Stripe/MC/Montonio</li></ul><h4>2.2.91</h4><ul><li>Client portal: MC pangavaliku modal – 8 Eesti panka koos värvide ja \"Jätka ilma pangavalikuta\" nupuga</li></ul><h4>2.2.90</h4><ul><li>Worker portal: EAN kaamera skänner inventuur ja tellimused tabis</li></ul>"
+  "changelog": "<h4>2.2.94</h4><ul><li>Shop: CSS taastatud – sidebar disain ilma muudatusteta</li></ul><h4>2.2.93</h4><ul><li>Shop: täielik disaini ümberkirjutus – sidebar kategooriate paneel colored dot-idega, sort A-Z/Z-A/hind, grid/list toggle, tootekaardid kategooria värviga, proper campaign bänner kuupäevaga</li></ul><h4>2.2.92</h4><ul><li>Shop frontend: [vesho_shop] shortcode – toodete grid, ostukorv, checkout, Stripe/MC/Montonio</li></ul><h4>2.2.91</h4><ul><li>Client portal: MC pangavaliku modal – 8 Eesti panka koos värvide ja \"Jätka ilma pangavalikuta\" nupuga</li></ul><h4>2.2.90</h4><ul><li>Worker portal: EAN kaamera skänner inventuur ja tellimused tabis</li></ul>"
 }
