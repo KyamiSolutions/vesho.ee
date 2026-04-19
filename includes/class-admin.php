@@ -27,10 +27,16 @@ class Vesho_CRM_Admin {
         add_action( 'admin_post_vesho_restore_inventory', array( __CLASS__, 'handle_restore_inventory' ) );
         add_action( 'admin_post_vesho_writeoff_inventory',array( __CLASS__, 'handle_writeoff_inventory' ) );
         add_action( 'admin_post_vesho_import_inventory',  array( __CLASS__, 'handle_import_inventory' ) );
-        add_action( 'admin_post_vesho_save_workorder',   array( __CLASS__, 'handle_save_workorder' ) );
-        add_action( 'admin_post_vesho_delete_workorder', array( __CLASS__, 'handle_delete_workorder' ) );
-        add_action( 'admin_post_vesho_save_pricelist',   array( __CLASS__, 'handle_save_pricelist' ) );
-        add_action( 'admin_post_vesho_delete_pricelist', array( __CLASS__, 'handle_delete_pricelist' ) );
+        add_action( 'admin_post_vesho_save_workorder',          array( __CLASS__, 'handle_save_workorder' ) );
+        add_action( 'admin_post_vesho_delete_workorder',        array( __CLASS__, 'handle_delete_workorder' ) );
+        add_action( 'admin_post_vesho_upload_workorder_photo',  array( __CLASS__, 'handle_upload_workorder_photo' ) );
+        add_action( 'admin_post_vesho_delete_workorder_photo',  array( __CLASS__, 'handle_delete_workorder_photo' ) );
+        add_action( 'admin_post_vesho_save_pricelist',          array( __CLASS__, 'handle_save_pricelist' ) );
+        add_action( 'admin_post_vesho_delete_pricelist',        array( __CLASS__, 'handle_delete_pricelist' ) );
+        add_action( 'admin_post_vesho_save_supplier',           array( __CLASS__, 'handle_save_supplier' ) );
+        add_action( 'admin_post_vesho_delete_supplier',         array( __CLASS__, 'handle_delete_supplier' ) );
+        add_action( 'admin_post_vesho_save_purchase_order',     array( __CLASS__, 'handle_save_purchase_order' ) );
+        add_action( 'admin_post_vesho_delete_purchase_order',   array( __CLASS__, 'handle_delete_purchase_order' ) );
         add_action( 'admin_post_vesho_save_settings',        array( __CLASS__, 'handle_save_settings' ) );
         add_action( 'admin_post_vesho_update_request',        array( __CLASS__, 'handle_update_request' ) );
         add_action( 'admin_post_vesho_update_request_notes',  array( __CLASS__, 'handle_update_request_notes' ) );
@@ -183,6 +189,8 @@ class Vesho_CRM_Admin {
         add_submenu_page( 'vesho-crm', 'Ladu', 'Ladu', $cap, 'vesho-crm-inventory', array( __CLASS__, 'page_inventory' ) );
         add_submenu_page( 'vesho-crm', 'Vastuvõtt', 'Vastuvõtt', $cap, 'vesho-crm-receipts', array( __CLASS__, 'page_receipts' ) );
         add_submenu_page( 'vesho-crm', 'Laoaadressid', 'Laoaadressid', $cap, 'vesho-crm-locations', array( __CLASS__, 'page_locations' ) );
+        add_submenu_page( 'vesho-crm', 'Tarnijad', 'Tarnijad', $cap, 'vesho-crm-suppliers', array( __CLASS__, 'page_suppliers' ) );
+        add_submenu_page( 'vesho-crm', 'Ostutellimused', 'Ostutellimused', $cap, 'vesho-crm-purchase-orders', array( __CLASS__, 'page_purchase_orders' ) );
         add_submenu_page( 'vesho-crm', 'Hinnakiri', 'Hinnakiri', $cap, 'vesho-crm-pricelist', array( __CLASS__, 'page_pricelist' ) );
 
         // ── MUU ──
@@ -345,7 +353,9 @@ class Vesho_CRM_Admin {
     public static function page_sales()       { self::load_view('sales'); }
     public static function page_inventory()   { self::load_view('inventory'); }
     public static function page_receipts()    { self::load_view('receipts'); }
-    public static function page_locations()   { self::load_view('locations'); }
+    public static function page_locations()       { self::load_view('locations'); }
+    public static function page_suppliers()       { self::load_view('suppliers'); }
+    public static function page_purchase_orders() { self::load_view('purchase-orders'); }
     public static function page_pricelist()   { self::load_view('pricelist'); }
     public static function page_services()    { self::load_view('services'); }
     public static function page_campaigns()   { self::load_view('campaigns'); }
@@ -1068,6 +1078,57 @@ private static function load_view( $name ) {
         exit;
     }
 
+    public static function handle_upload_workorder_photo() {
+        check_admin_referer( 'vesho_upload_workorder_photo' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorized' );
+        global $wpdb;
+        $wid = absint( $_POST['workorder_id'] ?? 0 );
+        if ( $wid && ! empty( $_FILES['workorder_photos']['name'][0] ) ) {
+            require_once ABSPATH . 'wp-admin/includes/file.php';
+            $files = $_FILES['workorder_photos'];
+            foreach ( $files['name'] as $i => $name ) {
+                if ( ! $name ) continue;
+                $file = [
+                    'name'     => $files['name'][$i],
+                    'type'     => $files['type'][$i],
+                    'tmp_name' => $files['tmp_name'][$i],
+                    'error'    => $files['error'][$i],
+                    'size'     => $files['size'][$i],
+                ];
+                $upload = wp_handle_upload( $file, [ 'test_form' => false ] );
+                if ( ! empty( $upload['url'] ) ) {
+                    $wpdb->insert( $wpdb->prefix . 'vesho_workorder_photos', [
+                        'workorder_id' => $wid,
+                        'filename'     => $upload['url'],
+                        'created_at'   => current_time('mysql'),
+                    ]);
+                }
+            }
+        }
+        wp_redirect( add_query_arg( ['page'=>'vesho-crm-workorders','action'=>'edit','workorder_id'=>$wid,'msg'=>'photo_uploaded'], admin_url('admin.php') ) );
+        exit;
+    }
+
+    public static function handle_delete_workorder_photo() {
+        $photo_id = absint( $_GET['photo_id'] ?? 0 );
+        $wid      = absint( $_GET['workorder_id'] ?? 0 );
+        check_admin_referer( 'vesho_delete_photo_' . $photo_id );
+        if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorized' );
+        global $wpdb;
+        if ( $photo_id ) {
+            $photo = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}vesho_workorder_photos WHERE id=%d", $photo_id ) );
+            if ( $photo ) {
+                // Delete file from server
+                $upload_dir = wp_upload_dir();
+                $file_path  = str_replace( $upload_dir['baseurl'], $upload_dir['basedir'], $photo->filename );
+                if ( file_exists( $file_path ) ) @unlink( $file_path );
+                $wpdb->delete( $wpdb->prefix . 'vesho_workorder_photos', ['id' => $photo_id] );
+            }
+        }
+        wp_redirect( add_query_arg( ['page'=>'vesho-crm-workorders','action'=>'edit','workorder_id'=>$wid,'msg'=>'photo_deleted'], admin_url('admin.php') ) );
+        exit;
+    }
+
     // ── Price list ────────────────────────────────────────────────────────────
     public static function handle_save_pricelist() {
         check_admin_referer( 'vesho_save_pricelist' );
@@ -1099,6 +1160,111 @@ private static function load_view( $name ) {
         $id = absint( $_GET['pricelist_id'] ?? 0 );
         if ( $id ) $wpdb->delete($wpdb->prefix.'vesho_price_list', array('id'=>$id));
         wp_redirect( add_query_arg( array('page'=>'vesho-crm-pricelist','msg'=>'deleted'), admin_url('admin.php') ) );
+        exit;
+    }
+
+    // ── Suppliers ─────────────────────────────────────────────────────────────
+    public static function handle_save_supplier() {
+        check_admin_referer( 'vesho_save_supplier' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorized' );
+        global $wpdb;
+        $id   = absint( $_POST['supplier_id'] ?? 0 );
+        $data = [
+            'name'       => sanitize_text_field($_POST['name'] ?? ''),
+            'contact'    => sanitize_text_field($_POST['contact'] ?? ''),
+            'email'      => sanitize_email($_POST['email'] ?? ''),
+            'phone'      => sanitize_text_field($_POST['phone'] ?? ''),
+            'address'    => sanitize_text_field($_POST['address'] ?? ''),
+            'reg_code'   => sanitize_text_field($_POST['reg_code'] ?? ''),
+            'vat_number' => sanitize_text_field($_POST['vat_number'] ?? ''),
+            'notes'      => sanitize_textarea_field($_POST['notes'] ?? ''),
+        ];
+        if ( ! $data['name'] ) wp_die( 'Nimi on kohustuslik' );
+        if ( $id ) {
+            $wpdb->update( $wpdb->prefix.'vesho_suppliers', $data, ['id'=>$id] );
+        } else {
+            $data['created_at'] = current_time('mysql');
+            $wpdb->insert( $wpdb->prefix.'vesho_suppliers', $data );
+            $id = $wpdb->insert_id;
+        }
+        wp_redirect( add_query_arg( ['page'=>'vesho-crm-suppliers','action'=>'edit','supplier_id'=>$id,'msg'=>'saved'], admin_url('admin.php') ) );
+        exit;
+    }
+
+    public static function handle_delete_supplier() {
+        $id = absint( $_GET['supplier_id'] ?? 0 );
+        check_admin_referer( 'vesho_delete_supplier_'.$id );
+        if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorized' );
+        global $wpdb;
+        if ( $id ) $wpdb->delete( $wpdb->prefix.'vesho_suppliers', ['id'=>$id] );
+        wp_redirect( add_query_arg( ['page'=>'vesho-crm-suppliers','msg'=>'deleted'], admin_url('admin.php') ) );
+        exit;
+    }
+
+    // ── Purchase Orders ───────────────────────────────────────────────────────
+    public static function handle_save_purchase_order() {
+        check_admin_referer( 'vesho_save_purchase_order' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorized' );
+        global $wpdb;
+        $id   = absint( $_POST['po_id'] ?? 0 );
+        $items_raw = $_POST['items'] ?? [];
+
+        // Calculate total
+        $total = 0;
+        foreach ( $items_raw as $item ) {
+            $qty   = (float)($item['quantity'] ?? 0);
+            $price = (float)($item['unit_price'] ?? 0);
+            $total += $qty * $price;
+        }
+
+        $data = [
+            'supplier_id'   => absint($_POST['supplier_id'] ?? 0) ?: null,
+            'order_number'  => sanitize_text_field($_POST['order_number'] ?? ''),
+            'order_date'    => sanitize_text_field($_POST['order_date'] ?? '') ?: null,
+            'expected_date' => sanitize_text_field($_POST['expected_date'] ?? '') ?: null,
+            'status'        => sanitize_text_field($_POST['status'] ?? 'draft'),
+            'total_amount'  => $total,
+            'notes'         => sanitize_textarea_field($_POST['notes'] ?? ''),
+        ];
+
+        if ( $id ) {
+            $wpdb->update( $wpdb->prefix.'vesho_purchase_orders', $data, ['id'=>$id] );
+            $wpdb->delete( $wpdb->prefix.'vesho_purchase_order_items', ['purchase_order_id'=>$id] );
+        } else {
+            $data['created_at'] = current_time('mysql');
+            $wpdb->insert( $wpdb->prefix.'vesho_purchase_orders', $data );
+            $id = $wpdb->insert_id;
+        }
+
+        // Save items
+        foreach ( $items_raw as $item ) {
+            $qty  = (float)($item['quantity'] ?? 0);
+            $price = (float)($item['unit_price'] ?? 0);
+            if ( $qty <= 0 ) continue;
+            $wpdb->insert( $wpdb->prefix.'vesho_purchase_order_items', [
+                'purchase_order_id' => $id,
+                'inventory_id'      => absint($item['inventory_id'] ?? 0) ?: null,
+                'product_name'      => sanitize_text_field($item['product_name'] ?? ''),
+                'quantity'          => $qty,
+                'unit_price'        => $price,
+                'line_total'        => $qty * $price,
+            ]);
+        }
+
+        wp_redirect( add_query_arg( ['page'=>'vesho-crm-purchase-orders','action'=>'edit','po_id'=>$id,'msg'=>'saved'], admin_url('admin.php') ) );
+        exit;
+    }
+
+    public static function handle_delete_purchase_order() {
+        $id = absint( $_GET['po_id'] ?? 0 );
+        check_admin_referer( 'vesho_delete_po_'.$id );
+        if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorized' );
+        global $wpdb;
+        if ( $id ) {
+            $wpdb->delete( $wpdb->prefix.'vesho_purchase_orders', ['id'=>$id] );
+            $wpdb->delete( $wpdb->prefix.'vesho_purchase_order_items', ['purchase_order_id'=>$id] );
+        }
+        wp_redirect( add_query_arg( ['page'=>'vesho-crm-purchase-orders','msg'=>'deleted'], admin_url('admin.php') ) );
         exit;
     }
 
@@ -2159,6 +2325,25 @@ private static function load_view( $name ) {
                 array( 'status' => 'scheduled', 'scheduled_date' => $date ?: null ),
                 array( 'id' => $id )
             );
+            // Email client: booking confirmed
+            $m = $wpdb->get_row($wpdb->prepare(
+                "SELECT m.*, d.name AS device_name, c.name AS client_name, c.email AS client_email
+                 FROM {$wpdb->prefix}vesho_maintenances m
+                 LEFT JOIN {$wpdb->prefix}vesho_devices d ON d.id=m.device_id
+                 LEFT JOIN {$wpdb->prefix}vesho_clients c ON c.id=COALESCE(m.client_id, d.client_id)
+                 WHERE m.id=%d", $id
+            ));
+            if ( $m && !empty($m->client_email) ) {
+                $co      = get_option('vesho_company_name', 'Vesho OÜ');
+                $fmt_date = $date ? date('d.m.Y', strtotime($date)) : '—';
+                $subject = $co . ' — Teie hooldus on kinnitatud';
+                $body    = "Tere, {$m->client_name}!\n\n";
+                $body   .= "Teie hooldusbroneeringul on kinnitatud.\n\n";
+                if ($m->device_name) $body .= "Seade: {$m->device_name}\n";
+                $body   .= "Planeeritud kuupäev: {$fmt_date}\n\n";
+                $body   .= "Küsimuste korral võtke meiega ühendust.\n\nLugupidamisega,\n{$co}";
+                wp_mail($m->client_email, $subject, $body);
+            }
         }
         wp_redirect( add_query_arg( array( 'page' => 'vesho-crm-reminders', 'msg' => 'confirmed' ), admin_url( 'admin.php' ) ) );
         exit;
@@ -2176,6 +2361,23 @@ private static function load_view( $name ) {
                 array( 'status' => 'cancelled' ),
                 array( 'id' => $id )
             );
+            // Email client: booking rejected
+            $m = $wpdb->get_row($wpdb->prepare(
+                "SELECT m.*, d.name AS device_name, c.name AS client_name, c.email AS client_email
+                 FROM {$wpdb->prefix}vesho_maintenances m
+                 LEFT JOIN {$wpdb->prefix}vesho_devices d ON d.id=m.device_id
+                 LEFT JOIN {$wpdb->prefix}vesho_clients c ON c.id=COALESCE(m.client_id, d.client_id)
+                 WHERE m.id=%d", $id
+            ));
+            if ( $m && !empty($m->client_email) ) {
+                $co      = get_option('vesho_company_name', 'Vesho OÜ');
+                $subject = $co . ' — Teie hooldusbroneering on tühistatud';
+                $body    = "Tere, {$m->client_name}!\n\n";
+                $body   .= "Kahjuks ei ole meil võimalik teie hooldusbroneeringut soovitud ajal täita.\n\n";
+                if ($m->device_name) $body .= "Seade: {$m->device_name}\n\n";
+                $body   .= "Palun võtke meiega ühendust uue aja broneerimiseks.\n\nLugupidamisega,\n{$co}";
+                wp_mail($m->client_email, $subject, $body);
+            }
         }
         wp_redirect( add_query_arg( array( 'page' => 'vesho-crm-reminders', 'msg' => 'rejected' ), admin_url( 'admin.php' ) ) );
         exit;

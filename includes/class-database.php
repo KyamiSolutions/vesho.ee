@@ -673,6 +673,57 @@ class Vesho_CRM_Database {
         self::maybe_add_column( "{$wpdb->prefix}vesho_inventory_writeoffs", 'order_id',     "INT UNSIGNED DEFAULT NULL" );
         self::maybe_add_column( "{$wpdb->prefix}vesho_inventory_writeoffs", 'order_number', "VARCHAR(30) DEFAULT NULL" );
 
+        // ── suppliers ────────────────────────────────────────────────────────
+        dbDelta( "CREATE TABLE {$wpdb->prefix}vesho_suppliers (
+            id          INT UNSIGNED NOT NULL AUTO_INCREMENT,
+            name        VARCHAR(255) NOT NULL,
+            contact     VARCHAR(255) DEFAULT '',
+            email       VARCHAR(255) DEFAULT '',
+            phone       VARCHAR(50)  DEFAULT '',
+            address     TEXT         DEFAULT '',
+            reg_code    VARCHAR(50)  DEFAULT '',
+            vat_number  VARCHAR(50)  DEFAULT '',
+            notes       TEXT         DEFAULT '',
+            active      TINYINT(1)   DEFAULT 1,
+            created_at  DATETIME     DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id)
+        ) $charset;" );
+
+        // ── purchase_orders ──────────────────────────────────────────────────
+        dbDelta( "CREATE TABLE {$wpdb->prefix}vesho_purchase_orders (
+            id              INT UNSIGNED NOT NULL AUTO_INCREMENT,
+            supplier_id     INT UNSIGNED DEFAULT NULL,
+            order_number    VARCHAR(50)  DEFAULT '',
+            order_date      DATE         DEFAULT NULL,
+            expected_date   DATE         DEFAULT NULL,
+            status          VARCHAR(20)  DEFAULT 'draft',
+            total_amount    DECIMAL(10,2) DEFAULT 0.00,
+            notes           TEXT         DEFAULT '',
+            created_at      DATETIME     DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY idx_po_supplier (supplier_id),
+            KEY idx_po_status   (status)
+        ) $charset;" );
+
+        // ── purchase_order_items ─────────────────────────────────────────────
+        dbDelta( "CREATE TABLE {$wpdb->prefix}vesho_purchase_order_items (
+            id                  INT UNSIGNED NOT NULL AUTO_INCREMENT,
+            purchase_order_id   INT UNSIGNED NOT NULL,
+            inventory_id        INT UNSIGNED DEFAULT NULL,
+            product_name        VARCHAR(255) DEFAULT '',
+            sku                 VARCHAR(100) DEFAULT '',
+            quantity            DECIMAL(10,3) DEFAULT 0,
+            unit_price          DECIMAL(10,2) DEFAULT 0.00,
+            line_total          DECIMAL(10,2) DEFAULT 0.00,
+            received_qty        DECIMAL(10,3) DEFAULT 0,
+            PRIMARY KEY (id),
+            KEY idx_poi_order (purchase_order_id)
+        ) $charset;" );
+
+        // Link stock receipts to purchase orders
+        self::maybe_add_column( "{$wpdb->prefix}vesho_stock_receipts", 'purchase_order_id', 'INT UNSIGNED DEFAULT NULL' );
+        self::maybe_add_column( "{$wpdb->prefix}vesho_stock_receipts", 'supplier_id',       'INT UNSIGNED DEFAULT NULL' );
+
         // ── Insert default settings if empty ─────────────────────────────────
         self::seed_default_settings();
     }
