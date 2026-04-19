@@ -6,5 +6,5 @@
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-19",
-  "changelog": "<h4>2.2.74</h4><ul><li>Worker vastuvõtt: tooted näidatakse ka siis kui mõned veerud puuduvad tabelis (robust DESCRIBE check)</li></ul><h4>2.2.73</h4><ul><li>DB fix: inventory_id NOT NULL → NULL, uued tooted salvestatakse</li></ul><h4>2.2.72</h4><ul><li>Admin vastuvõtt: 3006-stiil tabel + delete + prindi EAN</li></ul>"
+  "changelog": "<h4>2.2.74</h4><ul><li>Uus versioon</li></ul>"
 }
