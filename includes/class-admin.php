@@ -1259,6 +1259,13 @@ private static function load_view( $name ) {
         if ( ! $receipt_id || ! $worker_id ) wp_send_json_error( 'Puuduvad andmed' );
         $worker = $wpdb->get_row( $wpdb->prepare( "SELECT name FROM {$wpdb->prefix}vesho_workers WHERE id=%d", $worker_id ) );
         if ( ! $worker ) wp_send_json_error( 'Töötajat ei leitud' );
+        // Validate: receipt must have at least 1 item
+        $item_count = (int)$wpdb->get_var( $wpdb->prepare(
+            "SELECT COUNT(*) FROM {$wpdb->prefix}vesho_stock_receipt_items WHERE receipt_id=%d", $receipt_id
+        ) );
+        if ( $item_count === 0 ) {
+            wp_send_json_error( 'Arvel pole tooteid. Lisa tooted enne töötajale saatmist.' );
+        }
         $wpdb->update( $wpdb->prefix . 'vesho_stock_receipts', array(
             'status'      => 'pending',
             'worker_id'   => $worker_id,

@@ -329,7 +329,10 @@ function doSend() {
             closeModal('modal-send');
             location.reload();
         } else {
-            alert('Viga: '+(d.data||''));
+            var msg = document.getElementById('send-msg');
+            msg.textContent = d.data || 'Viga';
+            msg.style.color = '#ef4444';
+            msg.style.display = '';
         }
     });
 }

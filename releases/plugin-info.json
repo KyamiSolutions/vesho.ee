@@ -1,10 +1,10 @@
 {
   "name": "Vesho CRM",
   "slug": "vesho-crm",
-  "version": "2.2.69",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.2.69/vesho-crm.zip",
+  "version": "2.2.70",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.2.70/vesho-crm.zip",
   "requires": "6.0",
   "tested": "6.7",
-  "last_updated": "2026-04-18",
-  "changelog": "<h4>2.2.69</h4><ul><li>Uus versioon</li></ul>"
+  "last_updated": "2026-04-19",
+  "changelog": "<h4>2.2.70</h4><ul><li>Valideerimine: ei saa saata töötajale arvet ilma kaubata (nagu 3006)</li></ul><h4>2.2.69</h4><ul><li>Admin vastuvõtt: Lisa kaup olemasolevale arvetele + vwpScanReceiptEan</li></ul><h4>2.2.68</h4><ul><li>Parandus: admin vastuvõtt Viga fix + EAN skänner nupp + tühi state</li></ul>"
 }
