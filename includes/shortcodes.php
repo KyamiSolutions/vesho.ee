@@ -1188,11 +1188,11 @@ add_shortcode( 'vesho_shop_grid', function ( $atts ) {
     .vshop-out-badge{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.55);color:#fff;font-size:10px;font-weight:700;padding:3px 7px;border-radius:20px}
     .vshop-card-body{padding:14px;display:flex;flex-direction:column;flex:1}
     .vshop-card-cat{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px}
-    .vshop-card-name{font-size:14px;font-weight:700;color:#0d1f2d;line-height:1.35;text-decoration:none;display:block;margin-bottom:4px}
+    .vshop-card-name{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;color:#0d1f2d;line-height:1.2;text-decoration:none;display:block;margin-bottom:4px}
     .vshop-card-name:hover{color:#00b4c8}
     .vshop-card-desc{font-size:11px;color:#6b8599;line-height:1.5;flex:1;margin-bottom:10px}
-    .vshop-price-orig{font-size:11px;color:#9ca3af;text-decoration:line-through}
-    .vshop-price{font-size:20px;font-weight:900;color:#0d1f2d;line-height:1.1}
+    .vshop-price-orig{font-size:12px;color:#9ca3af;text-decoration:line-through}
+    .vshop-price{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:#0d1f2d;line-height:1.1}
     .vshop-price.sale{color:#00b4c8}
     .vshop-price-unit{font-size:10px;color:#9ca3af;font-weight:400}
     .vshop-savings{font-size:10px;color:#059669;font-weight:700;margin-bottom:4px}
@@ -1211,7 +1211,7 @@ add_shortcode( 'vesho_shop_grid', function ( $atts ) {
     .vshop-grid.list-view .vshop-card-img{width:130px;height:auto;min-height:110px;flex-shrink:0;border-radius:10px 0 0 10px}
     .vshop-grid.list-view .vshop-card-body{padding:14px 16px;flex-direction:row;flex-wrap:wrap;align-items:center;gap:0}
     .vshop-grid.list-view .vshop-card-cat{width:100%;margin-bottom:2px}
-    .vshop-grid.list-view .vshop-card-name{font-size:15px;flex:1;margin-bottom:0;margin-right:16px}
+    .vshop-grid.list-view .vshop-card-name{font-size:17px;flex:1;margin-bottom:0;margin-right:16px}
     .vshop-grid.list-view .vshop-card-desc{display:none}
     .vshop-grid.list-view .vshop-price{font-size:18px}
     .vshop-grid.list-view .vshop-stock-ok,.vshop-grid.list-view .vshop-stock-no{margin-left:12px;margin-bottom:0}
