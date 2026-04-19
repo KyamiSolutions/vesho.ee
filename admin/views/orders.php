@@ -10,14 +10,19 @@ $all_clients   = $wpdb->get_results("SELECT id, name, email FROM {$wpdb->prefix}
 $all_inventory = $wpdb->get_results("SELECT id, name, sku, unit, sell_price, shop_price, quantity FROM {$wpdb->prefix}vesho_inventory WHERE archived=0 AND (shop_price > 0 OR sell_price > 0) ORDER BY name ASC");
 
 $statuses = [
-    'new'              => ['Uus',              '#ef4444', '#fee2e2'],
-    'picking'          => ['Komplekteerimisel','#f59e0b', '#fef9c3'],
-    'ready'            => ['Valmis',           '#3b82f6', '#dbeafe'],
-    'shipped'          => ['Saadetud',         '#8b5cf6', '#ede9fe'],
-    'fulfilled'        => ['Täidetud',         '#10b981', '#dcfce7'],
+    'pending_payment'  => ['Makse ootel',      '#f59e0b', '#fef9c3'],
+    'pending'          => ['Uus tellimus',      '#6b7280', '#f3f4f6'],
+    'processing'       => ['Komplekteerimisel','#8b5cf6', '#ede9fe'],
+    'confirmed'        => ['Valmis saatmiseks','#3b82f6', '#dbeafe'],
+    'shipped'          => ['Saadetud',         '#0ea5e9', '#e0f2fe'],
+    'completed'        => ['Täidetud',         '#10b981', '#dcfce7'],
     'cancelled'        => ['Tühistatud',       '#6b7280', '#f3f4f6'],
     'returned'         => ['Tagastatud',       '#f97316', '#ffedd5'],
-    'return_requested' => ['Tagastus ootel',   '#f97316', '#fff7ed'],
+    // Legacy fallbacks
+    'new'              => ['Uus (vana)',        '#ef4444', '#fee2e2'],
+    'picking'          => ['Komplekt. (vana)', '#f59e0b', '#fef9c3'],
+    'ready'            => ['Valmis (vana)',     '#3b82f6', '#dbeafe'],
+    'fulfilled'        => ['Täidetud (vana)',   '#10b981', '#dcfce7'],
 ];
 
 // ── Detail / edit view ───────────────────────────────────────────────────────
@@ -54,7 +59,7 @@ $orders = $wpdb->get_results(
      WHERE $where ORDER BY o.created_at DESC LIMIT 300"
 );
 $total     = count($orders);
-$new_count = (int)$wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}vesho_shop_orders WHERE status='new'");
+$new_count = (int)$wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}vesho_shop_orders WHERE status IN ('pending_payment','pending','new')");
 
 function vesho_so_badge($status, $statuses) {
     $s = $statuses[$status] ?? ['?', '#6b7280', '#f3f4f6'];
@@ -64,9 +69,9 @@ function vesho_so_badge($status, $statuses) {
 <div class="crm-wrap">
 <h1 class="crm-page-title">🛒 E-poe tellimused <span class="crm-count">(<?php echo $total; ?>)</span>
     <?php if ($new_count > 0): ?>
-    <a href="<?php echo admin_url('admin.php?page=vesho-crm-orders&status=new'); ?>"
-       style="margin-left:12px;font-size:13px;padding:3px 10px;background:#ef4444;color:#fff;border-radius:12px;text-decoration:none;font-weight:600">
-        🔴 <?php echo $new_count; ?> uut
+    <a href="<?php echo admin_url('admin.php?page=vesho-crm-orders&status=pending'); ?>"
+       style="margin-left:12px;font-size:13px;padding:3px 10px;background:#10b981;color:#fff;border-radius:12px;text-decoration:none;font-weight:600">
+        🔔 <?php echo $new_count; ?> ootel
     </a>
     <?php endif; ?>
 </h1>
@@ -316,7 +321,7 @@ if ( $edit->status === 'return_requested' ):
 <?php
 // ── Käsitsi tagasimakse nupp makstud tellimustele ────────────────────────────
 $can_refund = !empty($edit->paid_at) && !empty($edit->payment_method) && in_array($edit->payment_method, ['stripe','mc','maksekeskus','montonio']);
-if ( $can_refund && in_array($edit->status, ['ready','shipped','fulfilled','returned']) ):
+if ( $can_refund && in_array($edit->status, ['confirmed','shipped','completed','returned','ready','fulfilled']) ):
 ?>
 <div style="margin-bottom:16px;text-align:right">
     <button onclick="openManualRefund(<?php echo $edit->id; ?>)"
@@ -334,7 +339,7 @@ if ( $can_refund && in_array($edit->status, ['ready','shipped','fulfilled','retu
     <?php else: ?>
     <table class="crm-table">
         <thead><tr><th>Toode</th><th>Kogus</th><th>Ühikuhind</th><th>Kokku</th>
-        <?php if (in_array($edit->status,['picking'])): ?><th>Kogutud</th><?php endif; ?>
+        <?php if (in_array($edit->status,['picking','processing'])): ?><th>Kogutud</th><?php endif; ?>
         </tr></thead>
         <tbody>
         <?php $subtotal=0; foreach ($edit_items as $it):
@@ -349,7 +354,7 @@ if ( $can_refund && in_array($edit->status, ['ready','shipped','fulfilled','retu
             <td><?php echo rtrim(rtrim(number_format($it->quantity,3,',','.'),'0'),','); ?></td>
             <td><?php echo number_format($it->unit_price,2,',','.'); ?> €</td>
             <td><strong><?php echo number_format($it->total,2,',','.'); ?> €</strong></td>
-            <?php if (in_array($edit->status,['picking'])): ?>
+            <?php if (in_array($edit->status,['picking','processing'])): ?>
             <td>
                 <form method="POST" action="<?php echo admin_url('admin-post.php'); ?>" style="display:flex;gap:6px;align-items:center">
                     <?php wp_nonce_field('vesho_pick_item'); ?>
@@ -370,14 +375,14 @@ if ( $can_refund && in_array($edit->status, ['ready','shipped','fulfilled','retu
         <?php endforeach; ?>
         </tbody>
         <tfoot>
-            <tr><td colspan="3" style="text-align:right;font-weight:600">Tooted kokku:</td><td style="font-weight:600"><?php echo number_format($subtotal,2,',','.'); ?> €</td><?php if(in_array($edit->status,['picking'])): ?><td></td><?php endif; ?></tr>
+            <tr><td colspan="3" style="text-align:right;font-weight:600">Tooted kokku:</td><td style="font-weight:600"><?php echo number_format($subtotal,2,',','.'); ?> €</td><?php if(in_array($edit->status,['picking','processing'])): ?><td></td><?php endif; ?></tr>
             <?php if ($edit->shipping_price > 0): ?>
-            <tr><td colspan="3" style="text-align:right;color:#6b8599">Tarne:</td><td style="color:#6b8599"><?php echo number_format($edit->shipping_price,2,',','.'); ?> €</td><?php if(in_array($edit->status,['picking'])): ?><td></td><?php endif; ?></tr>
+            <tr><td colspan="3" style="text-align:right;color:#6b8599">Tarne:</td><td style="color:#6b8599"><?php echo number_format($edit->shipping_price,2,',','.'); ?> €</td><?php if(in_array($edit->status,['picking','processing'])): ?><td></td><?php endif; ?></tr>
             <?php endif; ?>
-            <tr><td colspan="3" style="text-align:right;font-weight:700;font-size:15px">Kokku:</td><td style="font-weight:700;font-size:15px;color:#10b981"><?php echo number_format($edit->total,2,',','.'); ?> €</td><?php if(in_array($edit->status,['picking'])): ?><td></td><?php endif; ?></tr>
+            <tr><td colspan="3" style="text-align:right;font-weight:700;font-size:15px">Kokku:</td><td style="font-weight:700;font-size:15px;color:#10b981"><?php echo number_format($edit->total,2,',','.'); ?> €</td><?php if(in_array($edit->status,['picking','processing'])): ?><td></td><?php endif; ?></tr>
         </tfoot>
     </table>
-    <?php if ($edit->status === 'picking'):
+    <?php if (in_array($edit->status, ['picking','processing'])):
         $all_picked = !in_array(0, array_column((array)$edit_items,'picked'));
     ?>
     <div style="padding:12px 16px;border-top:1px solid #e8edf1;display:flex;justify-content:flex-end">
@@ -388,15 +393,15 @@ if ( $can_refund && in_array($edit->status, ['ready','shipped','fulfilled','retu
             <?php wp_nonce_field('vesho_shop_order_status'); ?>
             <input type="hidden" name="action" value="vesho_shop_order_status">
             <input type="hidden" name="order_id" value="<?php echo $edit->id; ?>">
-            <input type="hidden" name="status" value="ready">
+            <input type="hidden" name="status" value="confirmed">
             <button type="submit" class="crm-btn crm-btn-primary"
                     <?php echo !$all_picked ? 'style="opacity:.5" disabled' : ''; ?>>
-                ✓ Märgi Valmis
+                ✓ Märgi Valmis saatmiseks
             </button>
         </form>
     </div>
     <?php endif; ?>
-    <?php if ($edit->status === 'ready'): ?>
+    <?php if (in_array($edit->status, ['confirmed','ready'])): ?>
     <div style="padding:12px 16px;border-top:1px solid #e8edf1;display:flex;justify-content:flex-end;gap:10px">
         <form method="POST" action="<?php echo admin_url('admin-post.php'); ?>">
             <?php wp_nonce_field('vesho_shop_order_status'); ?>
@@ -405,7 +410,7 @@ if ( $can_refund && in_array($edit->status, ['ready','shipped','fulfilled','retu
             <input type="hidden" name="status" value="shipped">
             <div style="display:flex;gap:8px;align-items:center">
                 <input type="text" name="tracking_number" placeholder="Jälgimisnumber (kui kuller/pakiautomaat)"
-                       value="<?php echo esc_attr($edit->tracking_number); ?>"
+                       value="<?php echo esc_attr($edit->tracking_number ?? ''); ?>"
                        style="padding:7px 10px;border:1px solid #dce3e9;border-radius:6px;font-size:13px;min-width:220px">
                 <button type="submit" class="crm-btn crm-btn-primary">📦 Märgi Saadetud</button>
             </div>
@@ -418,7 +423,7 @@ if ( $can_refund && in_array($edit->status, ['ready','shipped','fulfilled','retu
             <?php wp_nonce_field('vesho_shop_order_status'); ?>
             <input type="hidden" name="action" value="vesho_shop_order_status">
             <input type="hidden" name="order_id" value="<?php echo $edit->id; ?>">
-            <input type="hidden" name="status" value="fulfilled">
+            <input type="hidden" name="status" value="completed">
             <button type="submit" class="crm-btn crm-btn-primary">✓ Märgi Täidetud</button>
         </form>
         <form method="POST" action="<?php echo admin_url('admin-post.php'); ?>" style="display:inline">
@@ -492,7 +497,7 @@ if ( $can_refund && in_array($edit->status, ['ready','shipped','fulfilled','retu
         ?>
         <tr>
             <td><input type="checkbox" class="row-check" value="<?php echo $o->id; ?>"
-                       <?php echo $o->status !== 'new' ? 'disabled style="opacity:.3"' : ''; ?>></td>
+                       <?php echo !in_array($o->status,['pending','new']) ? 'disabled style="opacity:.3"' : ''; ?>></td>
             <td><strong style="color:#1a2a38"><a href="<?php echo admin_url('admin.php?page=vesho-crm-orders&action=view&order_id='.$o->id); ?>" style="color:inherit;text-decoration:none">#<?php echo esc_html($o->order_number); ?></a></strong></td>
             <td>
                 <div style="font-weight:500"><?php echo $o->client_id ? '<a href="'.admin_url('admin.php?page=vesho-crm-clients&action=view&client_id='.$o->client_id).'">'.esc_html($display_name).'</a>' : esc_html($display_name); ?></div>
@@ -516,16 +521,16 @@ if ( $can_refund && in_array($edit->status, ['ready','shipped','fulfilled','retu
             <td class="td-actions">
                 <a href="<?php echo admin_url('admin.php?page=vesho-crm-orders&action=view&order_id='.$o->id); ?>" class="crm-btn crm-btn-icon crm-btn-sm" title="Vaata">👁️</a>
                 <a href="<?php echo admin_url('admin.php?page=vesho-crm-orders&action=edit&order_id='.$o->id); ?>" class="crm-btn crm-btn-icon crm-btn-sm" title="Muuda">✏️</a>
-                <?php if ($o->status === 'new'): ?>
+                <?php if (in_array($o->status, ['pending','new'])): ?>
                 <form method="POST" action="<?php echo admin_url('admin-post.php'); ?>" style="display:inline">
                     <?php wp_nonce_field('vesho_shop_order_status'); ?>
                     <input type="hidden" name="action" value="vesho_shop_order_status">
                     <input type="hidden" name="order_id" value="<?php echo $o->id; ?>">
-                    <input type="hidden" name="status" value="picking">
-                    <button type="submit" class="crm-btn crm-btn-sm" style="background:#fef9c3;color:#b45309;border:none;cursor:pointer" title="Alusta komplekteerimist">▶ Alusta</button>
+                    <input type="hidden" name="status" value="processing">
+                    <button type="submit" class="crm-btn crm-btn-sm" style="background:#fef9c3;color:#b45309;border:none;cursor:pointer" title="Saada töötajale komplekteerima">▶ Saada töötajale</button>
                 </form>
                 <?php endif; ?>
-                <?php if (in_array($o->status,['new','picking'])): ?>
+                <?php if (in_array($o->status,['pending_payment','pending','new','processing','picking'])): ?>
                 <a href="<?php echo wp_nonce_url(admin_url('admin-post.php?action=vesho_delete_shop_order&order_id='.$o->id),'vesho_delete_shop_order'); ?>"
                    class="crm-btn crm-btn-icon crm-btn-sm" onclick="return confirm('Kustuta tellimus? Laokogused taastatakse.')">🗑️</a>
                 <?php endif; ?>
