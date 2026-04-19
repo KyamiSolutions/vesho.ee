@@ -221,10 +221,17 @@ add_shortcode( 'vesho_shop', function( $atts ) {
     $vat_pct  = (int)round($vat_rate * 100); // e.g. 24
 
     // Payment settings
-    $stripe_enabled   = get_option('vesho_stripe_enabled','0')==='1' && get_option('vesho_stripe_pub_key','');
+    // Payment — checkbox AND keys must both be set (matches admin settings panel)
+    $stripe_enabled   = get_option('vesho_stripe_enabled','0')==='1'
+                        && get_option('vesho_stripe_pub_key','')
+                        && get_option('vesho_stripe_secret_key','');
     $stripe_pub_key   = (string) get_option('vesho_stripe_pub_key','');
-    $mc_enabled       = (bool)( get_option('vesho_mc_shop_id','') && get_option('vesho_mc_secret_key','') );
-    $montonio_enabled = (bool)( get_option('vesho_montonio_access_key','') && get_option('vesho_montonio_secret_key','') );
+    $mc_enabled       = get_option('vesho_mc_enabled','0')==='1'
+                        && get_option('vesho_mc_shop_id','')
+                        && get_option('vesho_mc_secret_key','');
+    $montonio_enabled = get_option('vesho_montonio_enabled','0')==='1'
+                        && get_option('vesho_montonio_access_key','')
+                        && get_option('vesho_montonio_secret_key','');
 
     // Delivery options — option keys match Seaded → E-pood admin panel
     $del_opts = [];

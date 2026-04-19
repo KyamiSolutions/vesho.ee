@@ -3144,10 +3144,10 @@ function setMsg(m){document.getElementById('vcp-pay-msg').textContent=m;}
         $client_discount = $client ? (float)($client->loyalty_pct ?? 0) : 0;
 
         // Payment settings
-        $stripe_enabled  = get_option('vesho_stripe_enabled', '0') === '1' && get_option('vesho_stripe_pub_key', '');
+        $stripe_enabled  = get_option('vesho_stripe_enabled', '0') === '1' && get_option('vesho_stripe_pub_key', '') && get_option('vesho_stripe_secret_key', '');
         $stripe_pub_key  = get_option('vesho_stripe_pub_key', '');
-        $mc_enabled      = (bool)(get_option('vesho_mc_shop_id', '') && get_option('vesho_mc_secret_key', ''));
-        $montonio_enabled= (bool)(get_option('vesho_montonio_access_key', '') && get_option('vesho_montonio_secret_key', ''));
+        $mc_enabled      = get_option('vesho_mc_enabled', '0') === '1' && get_option('vesho_mc_shop_id', '') && get_option('vesho_mc_secret_key', '');
+        $montonio_enabled= get_option('vesho_montonio_enabled', '0') === '1' && get_option('vesho_montonio_access_key', '') && get_option('vesho_montonio_secret_key', '');
 
         // Delivery options
         $del_opts = [];
@@ -4082,10 +4082,10 @@ if(CFG.initialView==='success'&&CFG.returnOrder){
         $client_discount = $client ? (float)($client->loyalty_pct ?? 0) : 0;
 
         // Payment settings
-        $stripe_enabled   = get_option('vesho_stripe_enabled', '0') === '1' && get_option('vesho_stripe_pub_key', '');
+        $stripe_enabled   = get_option('vesho_stripe_enabled', '0') === '1' && get_option('vesho_stripe_pub_key', '') && get_option('vesho_stripe_secret_key', '');
         $stripe_pub_key   = get_option('vesho_stripe_pub_key', '');
-        $mc_enabled       = (bool)(get_option('vesho_mc_shop_id', '') && get_option('vesho_mc_secret_key', ''));
-        $montonio_enabled = (bool)(get_option('vesho_montonio_access_key', '') && get_option('vesho_montonio_secret_key', ''));
+        $mc_enabled       = get_option('vesho_mc_enabled', '0') === '1' && get_option('vesho_mc_shop_id', '') && get_option('vesho_mc_secret_key', '');
+        $montonio_enabled = get_option('vesho_montonio_enabled', '0') === '1' && get_option('vesho_montonio_access_key', '') && get_option('vesho_montonio_secret_key', '');
 
         // Delivery options
         $del_opts = [];
