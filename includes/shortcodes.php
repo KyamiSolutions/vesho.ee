@@ -175,6 +175,7 @@ add_shortcode( 'vesho_shop_grid', function ( $atts ) {
 
     // ── Session bootstrap ──────────────────────────────────────────────────
     if ( session_status() === PHP_SESSION_NONE ) session_start();
+    $nav_cart_count = array_sum( $_SESSION['vesho_cart'] ?? [] );
 
     // ── Handle POST actions ────────────────────────────────────────────────
     $post_action = sanitize_key( $_POST['shop_action'] ?? '' );
@@ -255,17 +256,175 @@ add_shortcode( 'vesho_shop_grid', function ( $atts ) {
     ob_start();
     ?>
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800;900&display=swap');
-    .vsho-root{font-family:'Barlow',system-ui,sans-serif;color:#1a2a38;line-height:1.5}
-    .vsho-root *{box-sizing:border-box;font-family:inherit}
-    <?php if($show_hero): ?>
-    .vsho-hero{background:linear-gradient(135deg,#0b1c2b 0%,#0d3347 100%);padding:80px 32px 72px;text-align:center;margin-top:-1px}
+    @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@300;400;500;600;700&display=swap');
+    .vsho-root{font-family:'Barlow',sans-serif;color:#1a2a38;line-height:1.6;background:#f4f7f9}
+    .vsho-root *{box-sizing:border-box}
+    /* ── Shop header nav (3006 style) ── */
+    .vsho-shopnav{background:#0d1f2d;padding:18px 0;border-bottom:2px solid #00b4c8}
+    .vsho-shopnav-inner{max-width:1280px;margin:0 auto;padding:0 24px;display:flex;align-items:center;justify-content:space-between}
+    .vsho-shopnav-logo{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:1.4rem;color:#fff;text-transform:uppercase;letter-spacing:2px;text-decoration:none}
+    .vsho-shopnav-logo span{color:#00b4c8}
+    .vsho-shopnav-links{display:flex;align-items:center;gap:24px}
+    .vsho-shopnav-links a{color:rgba(255,255,255,.8);font-weight:500;font-size:.95rem;text-decoration:none;transition:color .2s;position:relative}
+    .vsho-shopnav-links a:hover{color:#00b4c8}
+    .vsho-shopnav-badge{background:#00b4c8;color:#fff;font-size:.7rem;font-weight:700;padding:2px 6px;border-radius:20px;margin-left:4px;vertical-align:middle}
+    /* ── Hero (optional) ── */
+    .vsho-hero{background:linear-gradient(135deg,#0b1c2b 0%,#0d3347 100%);padding:64px 32px 56px;text-align:center}
     .vsho-hero-eyebrow{color:#00b4c8;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;margin-bottom:14px}
-    .vsho-hero-title{color:#fff;font-size:52px;font-weight:900;line-height:1.05;margin:0 0 14px}
+    .vsho-hero-title{font-family:'Barlow Condensed',sans-serif;color:#fff;font-size:52px;font-weight:800;line-height:1.05;margin:0 0 14px;text-transform:uppercase}
     .vsho-hero-sub{color:#7a9eb0;font-size:16px}
-    <?php endif; ?>
+    /* ── Layout ── */
+    .vsho-layout{max-width:1280px;margin:0 auto;padding:32px 24px;display:grid;grid-template-columns:260px 1fr;gap:32px;align-items:start}
+    @media(max-width:900px){.vsho-layout{grid-template-columns:1fr;padding:20px 16px}}
+    .vsho-content{max-width:1280px;margin:0 auto;padding:32px 24px}
+    @media(max-width:900px){.vsho-content{padding:20px 16px}}
+    /* ── Sidebar ── */
+    .vsho-sidebar{background:#fff;border-radius:8px;padding:0;border:1px solid #e8ecef;align-self:start;position:sticky;top:24px;overflow:hidden}
+    @media(max-width:900px){.vsho-sidebar{position:static}}
+    .vsho-sidebar-hdr{background:#0d1f2d;padding:14px 20px;display:flex;align-items:center;gap:8px}
+    .vsho-sidebar-hdr-txt{color:#fff;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1rem;text-transform:uppercase;letter-spacing:.5px}
+    .vsho-sidebar-hdr-ico{color:#00b4c8;font-size:12px}
+    .vsho-cat-list{list-style:none;margin:0;padding:0}
+    .vsho-cat-list a{display:flex;align-items:center;justify-content:space-between;padding:11px 20px;color:#1a2a38;text-decoration:none;font-size:.92rem;border-bottom:1px solid #f0f4f8;transition:all .15s}
+    .vsho-cat-list a:hover{background:#f4f7f9;color:#00b4c8}
+    .vsho-cat-list a.active{background:#e0f7fa;color:#008fa0;font-weight:600}
+    .vsho-cat-list a:last-child{border-bottom:none}
+    .vsho-cat-count{font-size:.82rem;color:#5a7080;background:#f0f4f8;padding:1px 7px;border-radius:20px}
+    .vsho-cat-list a.active .vsho-cat-count{background:#00b4c8;color:#fff}
+    /* ── Toolbar ── */
+    .vsho-toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;gap:12px;flex-wrap:wrap}
+    .vsho-toolbar-left{display:flex;align-items:center;gap:12px;flex:1;min-width:0}
+    .vsho-search-form{display:flex;flex:1;max-width:360px;border:2px solid #e0e6eb;border-radius:6px;overflow:hidden;background:#fff}
+    .vsho-search-form input{flex:1;border:none;padding:9px 14px;font-family:'Barlow',sans-serif;font-size:.95rem;color:#1a2a38;outline:none;background:transparent;min-width:0}
+    .vsho-search-form button{padding:0 16px;background:#00b4c8;color:#fff;border:none;font-size:.85rem;font-weight:700;cursor:pointer;white-space:nowrap;font-family:'Barlow',sans-serif;text-transform:uppercase;letter-spacing:.5px}
+    .vsho-sort{padding:9px 14px;border:2px solid #e0e6eb;border-radius:6px;font-family:'Barlow',sans-serif;font-size:.92rem;color:#1a2a38;background:#fff;cursor:pointer}
+    .vsho-results{font-size:.88rem;color:#5a7080}
+    .vsho-view-toggle{display:flex;gap:4px}
+    .vsho-vbtn{padding:8px 11px;border:2px solid #e0e6eb;border-radius:6px;background:#fff;cursor:pointer;font-size:13px;color:#5a7080;transition:.12s;line-height:1}
+    .vsho-vbtn.active{background:#0d1f2d;border-color:#0d1f2d;color:#fff}
+    /* ── Product grid ── */
+    .vsho-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+    @media(max-width:1100px){.vsho-grid{grid-template-columns:repeat(2,1fr)}}
+    @media(max-width:560px){.vsho-grid{grid-template-columns:1fr}}
+    /* ── Product card ── */
+    .vsho-card{background:#fff;border-radius:8px;overflow:hidden;border:1px solid #e8ecef;transition:transform .2s,box-shadow .2s;display:flex;flex-direction:column}
+    .vsho-card:hover{transform:translateY(-4px);box-shadow:0 12px 32px rgba(0,0,0,.08)}
+    .vsho-card-img{height:200px;background:linear-gradient(135deg,#e8ecef,#d4dbe2);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;text-decoration:none;flex-shrink:0}
+    .vsho-card-img img{width:100%;height:100%;object-fit:cover}
+    .vsho-card-img-ph{font-size:3rem;opacity:.2;color:#0d1f2d;font-weight:800;font-family:'Barlow Condensed',sans-serif}
+    .vsho-card-badge{position:absolute;top:10px;left:10px;background:#00b4c8;color:#fff;padding:3px 10px;border-radius:4px;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+    .vsho-card-badge.out{background:#dc2626}
+    .vsho-card-body{padding:18px;display:flex;flex-direction:column;flex:1}
+    .vsho-card-cat{font-size:.78rem;color:#00b4c8;text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:5px}
+    .vsho-card-name{font-family:'Barlow Condensed',sans-serif;font-size:1.05rem;font-weight:700;color:#1a2a38;margin-bottom:6px;text-decoration:none;display:block;line-height:1.2}
+    .vsho-card-name:hover{color:#00b4c8}
+    .vsho-card-desc{font-size:.88rem;color:#5a7080;margin-bottom:12px;flex:1;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+    .vsho-card-footer{display:flex;justify-content:space-between;align-items:center;margin-top:auto}
+    .vsho-price{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:1.3rem;color:#0d1f2d}
+    .vsho-price .old{font-size:.88rem;color:#5a7080;text-decoration:line-through;font-weight:400;margin-right:4px}
+    .vsho-price .cur{color:#0d1f2d}
+    .vsho-price.sale .cur{color:#00b4c8}
+    .vsho-stock-ok{font-size:.8rem;color:#16a34a;font-weight:600;margin-bottom:8px}
+    .vsho-stock-no{font-size:.8rem;color:#dc2626;font-weight:600;margin-bottom:8px}
+    .vsho-btn{padding:8px 16px;background:#00b4c8;color:#fff;border:none;border-radius:4px;font-family:'Barlow',sans-serif;font-weight:600;font-size:.83rem;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;transition:background .2s;white-space:nowrap}
+    .vsho-btn:hover{background:#008fa0}
+    .vsho-btn:disabled{background:#e2e8f0;color:#94a3b8;cursor:not-allowed}
+    /* ── List view ── */
+    .vsho-grid.list-view{grid-template-columns:1fr;gap:10px}
+    .vsho-grid.list-view .vsho-card{flex-direction:row}
+    .vsho-grid.list-view .vsho-card-img{width:130px;height:auto;min-height:110px;flex-shrink:0}
+    .vsho-grid.list-view .vsho-card-body{flex-direction:row;flex-wrap:wrap;align-items:center;padding:14px 18px}
+    .vsho-grid.list-view .vsho-card-cat{width:100%}
+    .vsho-grid.list-view .vsho-card-name{flex:1;margin:0 16px 0 0;font-size:1rem}
+    .vsho-grid.list-view .vsho-card-desc{display:none}
+    .vsho-grid.list-view .vsho-card-footer{margin-top:0}
+    /* ── Pagination ── */
+    .vsho-pag{display:flex;gap:8px;justify-content:center;margin-top:32px;flex-wrap:wrap}
+    .vsho-pag a,.vsho-pag span{display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:6px;border:2px solid #e0e6eb;font-weight:600;font-size:.88rem;text-decoration:none;color:#1a2a38;background:#fff;transition:all .15s}
+    .vsho-pag a:hover{border-color:#00b4c8;color:#00b4c8}
+    .vsho-pag span.current{background:#00b4c8;border-color:#00b4c8;color:#fff}
+    .vsho-pag span.dots{border:none;background:none;color:#5a7080}
+    /* ── Campaign bar ── */
+    .vsho-cam{display:flex;align-items:center;gap:16px;background:linear-gradient(135deg,#e0f7fa,#b2ebf2);border:1.5px solid #00b4c8;border-radius:8px;padding:14px 20px;margin-bottom:24px}
+    .vsho-cam-badge{background:#00b4c8;color:#fff;font-size:.95rem;font-weight:900;padding:5px 14px;border-radius:6px;white-space:nowrap;font-family:'Barlow Condensed',sans-serif}
+    /* ── Cart table ── */
+    .vsho-cart-section{max-width:1000px;margin:0 auto}
+    .vsho-cart-h{font-family:'Barlow Condensed',sans-serif;font-size:2rem;color:#0d1f2d;margin-bottom:24px;text-transform:uppercase;font-weight:800}
+    .vsho-cart-tbl{width:100%;background:#fff;border-radius:8px;border:1px solid #e8ecef;border-collapse:collapse;overflow:hidden;margin-bottom:24px}
+    .vsho-cart-tbl thead{background:#0d1f2d}
+    .vsho-cart-tbl th{padding:14px 20px;text-align:left;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.88rem;text-transform:uppercase;letter-spacing:1px;color:#fff}
+    .vsho-cart-tbl td{padding:16px 20px;border-bottom:1px solid #f0f4f8;vertical-align:middle;font-size:.92rem}
+    .vsho-cart-tbl tbody tr:last-child td{border-bottom:none}
+    .vsho-cart-item-name{font-weight:600;color:#0d1f2d}
+    .vsho-cart-item-unit{font-size:.8rem;color:#5a7080}
+    .vsho-cart-qty input{width:60px;padding:7px;text-align:center;border:2px solid #e0e6eb;border-radius:4px;font-family:'Barlow',sans-serif;font-size:.92rem}
+    .vsho-cart-remove{background:none;border:none;color:#dc2626;cursor:pointer;font-size:.85rem;font-weight:600;transition:opacity .2s}
+    .vsho-cart-remove:hover{opacity:.7}
+    .vsho-cart-summary{background:#fff;border-radius:8px;border:1px solid #e8ecef;padding:24px;max-width:400px;margin-left:auto}
+    .vsho-cart-sum-row{display:flex;justify-content:space-between;padding:9px 0;font-size:.92rem;color:#5a7080}
+    .vsho-cart-sum-row.total{border-top:2px solid #0d1f2d;margin-top:8px;padding-top:14px;font-size:1.05rem;font-weight:700;color:#0d1f2d}
+    .vsho-cart-empty{text-align:center;padding:60px 24px;color:#5a7080}
+    .vsho-cart-empty h2{color:#0d1f2d;margin-bottom:12px;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase}
+    /* ── Buttons ── */
+    .vsho-btn-primary{padding:12px 28px;background:#00b4c8;color:#fff;border:none;border-radius:6px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1rem;text-transform:uppercase;letter-spacing:1px;cursor:pointer;transition:background .2s;text-decoration:none;display:inline-block}
+    .vsho-btn-primary:hover{background:#008fa0;color:#fff}
+    .vsho-btn-primary:disabled{background:#e2e8f0;color:#94a3b8;cursor:not-allowed}
+    .vsho-btn-secondary{padding:12px 24px;background:#fff;color:#0d1f2d;border:2px solid #e0e6eb;border-radius:6px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1rem;text-transform:uppercase;letter-spacing:1px;cursor:pointer;transition:all .2s;text-decoration:none;display:inline-block}
+    .vsho-btn-secondary:hover{border-color:#0d1f2d}
+    /* ── FAB ── */
+    .vsho-fab{position:fixed;bottom:24px;right:24px;z-index:9999}
+    .vsho-fab a{display:flex;align-items:center;gap:10px;background:#0d1f2d;color:#fff;padding:13px 22px;border-radius:50px;text-decoration:none;font-weight:700;font-size:.9rem;box-shadow:0 4px 20px rgba(13,31,45,.3);transition:background .2s}
+    .vsho-fab a:hover{background:#162840;color:#fff}
+    .vsho-fab-badge{background:#00b4c8;color:#fff;font-size:.7rem;font-weight:800;padding:2px 7px;border-radius:20px}
+    .vsho-toast{display:none;position:fixed;bottom:80px;right:24px;z-index:10000;background:#0d1f2d;color:#fff;padding:11px 18px;border-radius:8px;font-size:.88rem;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.22)}
+    /* ── Product detail ── */
+    .vsho-pd{max-width:1280px;margin:0 auto;padding:32px 24px;display:grid;grid-template-columns:260px 1fr;gap:32px;align-items:start}
+    @media(max-width:900px){.vsho-pd{grid-template-columns:1fr;padding:20px 16px}}
+    .vsho-pd-right{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:start}
+    @media(max-width:700px){.vsho-pd-right{grid-template-columns:1fr;gap:24px}}
+    .vsho-pd-img{background:#fff;border-radius:8px;overflow:hidden;border:1px solid #e8ecef;aspect-ratio:1;display:flex;align-items:center;justify-content:center}
+    .vsho-pd-img img{width:100%;height:100%;object-fit:cover}
+    .vsho-pd-img-ph{font-size:5rem;opacity:.2;color:#0d1f2d;font-family:'Barlow Condensed',sans-serif;font-weight:800}
+    .vsho-pd-info{padding:8px 0}
+    .vsho-pd-cat{font-size:.8rem;color:#00b4c8;text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:8px}
+    .vsho-pd-title{font-family:'Barlow Condensed',sans-serif;font-size:2.2rem;font-weight:800;color:#0d1f2d;margin:0 0 14px;text-transform:uppercase;line-height:1.1}
+    .vsho-pd-price{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:2rem;color:#0d1f2d;margin-bottom:20px}
+    .vsho-pd-price .old{font-size:1.1rem;color:#5a7080;text-decoration:line-through;font-weight:400;margin-right:8px}
+    .vsho-pd-price .sale{color:#00b4c8}
+    .vsho-pd-desc{color:#5a7080;font-size:.95rem;line-height:1.7;margin-bottom:24px;padding:16px;background:#fff;border-radius:6px;border:1px solid #e8ecef}
+    .vsho-pd-stock-ok{color:#16a34a;font-weight:600;font-size:.9rem;margin-bottom:16px}
+    .vsho-pd-stock-no{color:#dc2626;font-weight:600;font-size:.9rem;margin-bottom:16px}
+    .vsho-pd-qty{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+    .vsho-pd-qty label{font-weight:600;font-size:.85rem;text-transform:uppercase;letter-spacing:.5px;color:#0d1f2d}
+    .vsho-pd-qty input{width:70px;padding:10px;text-align:center;border:2px solid #e0e6eb;border-radius:6px;font-family:'Barlow',sans-serif;font-size:1rem;color:#0d1f2d}
+    /* ── Breadcrumb ── */
+    .vsho-bread{display:flex;align-items:center;gap:8px;font-size:.88rem;margin-bottom:20px;color:#5a7080}
+    .vsho-bread a{color:#00b4c8;text-decoration:none}
+    .vsho-bread a:hover{color:#008fa0}
+    /* ── Steps (checkout) ── */
+    .vsho-steps{display:flex;justify-content:center;gap:32px;margin-bottom:28px;flex-wrap:wrap}
+    .vsho-step{display:flex;align-items:center;gap:8px;font-size:.88rem;color:#5a7080;font-weight:500}
+    .vsho-step.active{color:#0d1f2d;font-weight:700}
+    .vsho-step-num{width:28px;height:28px;border-radius:50%;border:2px solid #e0e6eb;display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700}
+    .vsho-step.active .vsho-step-num{background:#00b4c8;border-color:#00b4c8;color:#fff}
+    .vsho-step.done .vsho-step-num{background:#0d1f2d;border-color:#0d1f2d;color:#fff}
+    /* ── Success/cancel ── */
+    .vsho-result{text-align:center;padding:60px 20px}
+    .vsho-result h2{font-family:'Barlow Condensed',sans-serif;font-size:2rem;text-transform:uppercase;color:#0d1f2d;margin:16px 0 8px}
+    .vsho-result p{color:#5a7080}
     </style>
     <div class="vsho-root">
+    <nav class="vsho-shopnav">
+      <div class="vsho-shopnav-inner">
+        <a href="<?php echo esc_url($page_url); ?>" class="vsho-shopnav-logo">VESHO <span>OÜ</span></a>
+        <div class="vsho-shopnav-links">
+          <a href="<?php echo esc_url($page_url); ?>">🏪 Pood</a>
+          <a href="<?php echo esc_url(add_query_arg('shop_view','cart',$page_url)); ?>">
+            🛒 Ostukorv<?php if($nav_cart_count>0) echo ' <span class="vsho-shopnav-badge">'.$nav_cart_count.'</span>'; ?>
+          </a>
+        </div>
+      </div>
+    </nav>
     <?php if($show_hero): ?>
     <div class="vsho-hero">
       <div class="vsho-hero-eyebrow">VESHO OÜ</div>
