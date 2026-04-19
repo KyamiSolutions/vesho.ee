@@ -1,10 +1,10 @@
 {
   "name": "Vesho CRM",
   "slug": "vesho-crm",
-  "version": "2.2.82",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.2.82/vesho-crm.zip",
+  "version": "2.2.83",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.2.83/vesho-crm.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-19",
-  "changelog": "<h4>2.2.82</h4><ul><li>Avaliku saidi teated: nocache headers + cache-bust + DESCRIBE type check</li></ul><h4>2.2.81</h4><ul><li>AJAX-põhine public notices, töötab cache'iga</li></ul><h4>2.2.80</h4><ul><li>Teated pärast navbar-i</li></ul><h4>2.2.79</h4><ul><li>Hotfix parse error</li></ul>"
+  "changelog": "<h4>2.2.83</h4><ul><li>Avaliku saidi teated: otse PHP output navbar alla, ei sõltu AJAX-ist</li></ul><h4>2.2.82</h4><ul><li>AJAX nocache + cache-bust</li></ul><h4>2.2.81</h4><ul><li>AJAX-põhine public notices</li></ul><h4>2.2.80</h4><ul><li>Teated pärast navbar-i</li></ul>"
 }

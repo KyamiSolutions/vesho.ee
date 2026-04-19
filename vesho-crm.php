@@ -3,7 +3,7 @@
  * Plugin Name: Vesho CRM
  * Plugin URI:  https://vesho.ee
  * Description: CRM ja klientide portaal Vesho OÜ-le. Haldab kliente, seadmeid, hooldusi, arveid ja teenuseid.
- * Version:     2.2.82
+ * Version:     2.2.83
  * Author:      Vesho OÜ
  * Author URI:  https://vesho.ee
  * Text Domain: vesho-crm
@@ -15,7 +15,7 @@
 defined( 'ABSPATH' ) || exit;
 
 // ── Constants ──────────────────────────────────────────────────────────────────
-define('VESHO_CRM_VERSION', '2.2.82');
+define('VESHO_CRM_VERSION', '2.2.83');
 define( 'VESHO_CRM_FILE',     __FILE__ );
 define( 'VESHO_CRM_PATH',     plugin_dir_path( __FILE__ ) );
 define( 'VESHO_CRM_URL',      plugin_dir_url( __FILE__ ) );
@@ -310,15 +310,14 @@ add_action( 'wp_ajax_vesho_save_update_server', function() {
     wp_send_json_success();
 } );
 
-// ── Public site notices: AJAX endpoint (töötab LiteSpeed Cache'iga) ──────────
-add_action( 'wp_ajax_vesho_get_public_notices',        'vesho_ajax_public_notices' );
-add_action( 'wp_ajax_nopriv_vesho_get_public_notices', 'vesho_ajax_public_notices' );
-function vesho_ajax_public_notices() {
-    nocache_headers();
+// ── Public site notices (otse PHP output, navbar alla) ───────────────────────
+add_action( 'vesho_after_header', 'vesho_public_notices' );
+function vesho_public_notices() {
+    if ( is_admin() ) return;
     global $wpdb;
     $today = current_time('Y-m-d');
     $cols = $wpdb->get_col("DESCRIBE `{$wpdb->prefix}vesho_portal_notices`") ?: [];
-    $type_sel = in_array('type', $cols) ? "COALESCE(type,'info')" : "'info'";
+    $type_sel = in_array('type',$cols) ? "COALESCE(type,'info')" : "'info'";
     $notices = $wpdb->get_results( $wpdb->prepare(
         "SELECT id, title, message, {$type_sel} as type FROM {$wpdb->prefix}vesho_portal_notices
          WHERE active=1 AND target IN ('client','both')
@@ -327,48 +326,27 @@ function vesho_ajax_public_notices() {
          ORDER BY created_at DESC LIMIT 5",
         $today, $today
     ) );
-    wp_send_json_success( $notices ?: [] );
-}
-
-// ── Inject JS loader on frontend (cache-safe) ─────────────────────────────────
-add_action( 'wp_footer', 'vesho_public_notices_js' );
-function vesho_public_notices_js() {
-    if ( is_admin() ) return;
-    $ajax = admin_url('admin-ajax.php');
-    ?>
-<script>
-(function(){
-  var dm = (function(){try{return JSON.parse(sessionStorage.getItem('vpub_dm')||'[]');}catch(e){return [];}})();
-  function dismiss(id){dm.push(id);sessionStorage.setItem('vpub_dm',JSON.stringify(dm));var el=document.getElementById('vpubn-'+id);if(el)el.remove();}
-  fetch('<?php echo esc_js($ajax); ?>?action=vesho_get_public_notices&_='+Date.now())
-    .then(function(r){return r.json();})
-    .then(function(res){
-      if(!res.success||!res.data||!res.data.length) return;
-      var wrap = document.createElement('div');
-      wrap.id = 'vesho-public-notices';
-      res.data.forEach(function(n){
-        if(dm.indexOf(n.id)!==-1) return;
-        var bg = n.type==='warning'?'rgba(245,158,11,0.12)':n.type==='success'?'rgba(16,185,129,0.12)':'rgba(99,102,241,0.12)';
-        var br = n.type==='warning'?'rgba(245,158,11,0.3)':n.type==='success'?'rgba(16,185,129,0.3)':'rgba(99,102,241,0.3)';
-        var cl = n.type==='warning'?'#f59e0b':n.type==='success'?'#10b981':'#818cf8';
-        var ic = n.type==='warning'?'⚠️':n.type==='success'?'✅':'ℹ️';
-        var d = document.createElement('div');
-        d.id = 'vpubn-'+n.id;
-        d.style.cssText = 'background:'+bg+';border-bottom:1px solid '+br+';padding:10px 20px;display:flex;align-items:center;gap:10px;font-size:13px;font-family:inherit';
-        d.innerHTML = '<span style="font-size:16px">'+ic+'</span>'
-          +'<span style="color:'+cl+';font-weight:600">'+n.title+'</span>'
-          +'<span style="color:#9ca3af"> — '+n.message+'</span>'
-          +'<button onclick="(function(){var dm=(function(){try{return JSON.parse(sessionStorage.getItem(\'vpub_dm\')||\'[]\');}catch(e){return [];}})();dm.push('+n.id+');sessionStorage.setItem(\'vpub_dm\',JSON.stringify(dm));var el=document.getElementById(\'vpubn-'+n.id+'\');if(el)el.remove();})()" style="margin-left:auto;background:none;border:none;cursor:pointer;color:#9ca3af;font-size:20px;line-height:1;padding:0 4px">×</button>';
-        wrap.appendChild(d);
-      });
-      if(!wrap.children.length) return;
-      var header = document.querySelector('.site-top-wrapper');
-      if(header && header.parentNode) header.parentNode.insertBefore(wrap, header.nextSibling);
-      else document.body.insertBefore(wrap, document.body.firstChild);
-    }).catch(function(){});
-})();
-</script>
-    <?php
+    if ( empty($notices) ) return;
+    echo '<script>var _vpub_dm=(function(){try{return JSON.parse(sessionStorage.getItem("vpub_dm")||"[]");}catch(e){return [];}})();</script>';
+    foreach ( $notices as $n ) {
+        $type   = $n->type ?? 'info';
+        $bg     = $type==='warning' ? 'rgba(245,158,11,0.12)' : ($type==='success' ? 'rgba(16,185,129,0.12)' : 'rgba(99,102,241,0.12)');
+        $border = $type==='warning' ? 'rgba(245,158,11,0.3)'  : ($type==='success' ? 'rgba(16,185,129,0.3)'  : 'rgba(99,102,241,0.3)');
+        $color  = $type==='warning' ? '#f59e0b' : ($type==='success' ? '#10b981' : '#818cf8');
+        $icon   = $type==='warning' ? '⚠️' : ($type==='success' ? '✅' : 'ℹ️');
+        $id     = (int)$n->id;
+        printf(
+            '<div id="vpubn-%1$d" style="background:%2$s;border-bottom:1px solid %3$s;padding:10px 20px;display:flex;align-items:center;gap:10px;font-size:13px">'
+            . '<span style="font-size:16px">%4$s</span>'
+            . '<span style="color:%5$s;font-weight:600">%6$s</span>'
+            . '<span style="color:#9ca3af"> — %7$s</span>'
+            . '<button onclick="var dm=(function(){try{return JSON.parse(sessionStorage.getItem(\'vpub_dm\')||\'[]\');}catch(e){return [];}})();dm.push(%1$d);sessionStorage.setItem(\'vpub_dm\',JSON.stringify(dm));this.closest(\'[id^=vpubn-]\').remove()" style="margin-left:auto;background:none;border:none;cursor:pointer;color:#9ca3af;font-size:20px;line-height:1;padding:0 4px">×</button>'
+            . '</div>',
+            $id, $bg, $border, $icon, $color,
+            esc_html($n->title), esc_html($n->message)
+        );
+    }
+    echo '<script>(function(){_vpub_dm.forEach(function(id){var el=document.getElementById("vpubn-"+id);if(el)el.remove();});})();</script>';
 }
 
 // ── Plugin action links ───────────────────────────────────────────────────────
