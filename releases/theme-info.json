@@ -1,10 +1,10 @@
 {
   "name": "Vesho",
   "slug": "vesho",
-  "version": "2.5.11",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.5.11/vesho-theme.zip",
+  "version": "2.5.12",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.5.12/vesho-theme.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-19",
-  "changelog": "<h4>2.5.11</h4><ul><li>Fix: header logo — vesho_company_logo seadete optsioon prioriteediga</li></ul><h4>2.5.10</h4><ul><li>Versioon sünkroon pluginaga</li></ul><h4>2.5.9</h4><ul><li>Fix: küpsiste bänner footer.php-s</li></ul>"
+  "changelog": "<h4>2.5.12</h4><ul><li>Fix: topbar sotsiaalmeedia ikoonid — kuva ainult täidetud lingid, peida 'Jälgi meid' kui tühi</li><li>Fix: header logo vesho_company_logo optsioonist</li></ul><h4>2.5.11</h4><ul><li>Fix: header logo seadete optsioon prioriteediga</li></ul>"
 }
