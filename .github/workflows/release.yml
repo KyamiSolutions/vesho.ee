@@ -63,28 +63,55 @@ jobs:
           THEME_URL="https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/vesho-theme.zip"
 
           python3 -c "
-          import json
+          import json, os
+          version = '${VERSION}'
+          today   = '${TODAY}'
+          plugin_url = '${PLUGIN_URL}'
+          theme_url  = '${THEME_URL}'
+
+          # Read existing changelog so we don't overwrite it
+          try:
+            with open('releases/plugin-info.json') as f:
+              existing_plugin = json.load(f)
+            plugin_changelog = existing_plugin.get('changelog', '')
+          except Exception:
+            plugin_changelog = ''
+          # Prepend new version entry only if not already present
+          entry = f'<h4>{version}</h4><ul><li>Uus versioon</li></ul>'
+          if f'<h4>{version}</h4>' not in plugin_changelog:
+            plugin_changelog = entry + plugin_changelog
+
+          try:
+            with open('releases/theme-info.json') as f:
+              existing_theme = json.load(f)
+            theme_changelog = existing_theme.get('changelog', '')
+          except Exception:
+            theme_changelog = ''
+          if f'<h4>{version}</h4>' not in theme_changelog:
+            theme_changelog = entry + theme_changelog
+
           plugin = {
             'name': 'Vesho CRM',
             'slug': 'vesho-crm',
-            'version': '${VERSION}',
-            'download_url': '${PLUGIN_URL}',
+            'version': version,
+            'download_url': plugin_url,
             'requires': '6.0',
             'tested': '6.7',
-            'last_updated': '${TODAY}',
-            'changelog': '<h4>${VERSION}</h4><ul><li>Uus versioon</li></ul>'
+            'last_updated': today,
+            'changelog': plugin_changelog
           }
           with open('releases/plugin-info.json', 'w') as f:
             json.dump(plugin, f, indent=2, ensure_ascii=False)
+
           theme = {
             'name': 'Vesho',
             'slug': 'vesho',
-            'version': '${VERSION}',
-            'download_url': '${THEME_URL}',
+            'version': version,
+            'download_url': theme_url,
             'requires': '6.0',
             'tested': '6.7',
-            'last_updated': '${TODAY}',
-            'changelog': '<h4>${VERSION}</h4><ul><li>Uus versioon</li></ul>'
+            'last_updated': today,
+            'changelog': theme_changelog
           }
           with open('releases/theme-info.json', 'w') as f:
             json.dump(theme, f, indent=2, ensure_ascii=False)
