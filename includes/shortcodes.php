@@ -648,15 +648,19 @@ add_shortcode( 'vesho_shop_grid', function () {
         @media(max-width:820px){.vshop-layout{grid-template-columns:1fr}}
         .vshop-sidebar{position:sticky;top:24px}
         @media(max-width:820px){.vshop-sidebar{position:static}}
-        .vshop-sidebar-box{background:#fff;border-radius:12px;padding:20px;box-shadow:0 2px 12px rgba(13,31,45,.06);margin-bottom:14px}
-        .vshop-sidebar-title{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#94a3b8;margin:0 0 12px}
-        .vshop-cat-link{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;text-decoration:none;color:#4b6174;font-size:13px;font-weight:500;transition:.12s}
-        .vshop-cat-link:hover{background:#f0f4f8;color:#0d1f2d}
-        .vshop-cat-link.active{background:#f0f9ff;color:#0097aa;font-weight:700}
+        .vshop-sidebar-box{background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.07);margin-bottom:14px;border:1px solid #dce8ef}
+        .vshop-sidebar-header{background:#0d1f2d;padding:11px 14px;display:flex;align-items:center;gap:8px}
+        .vshop-sidebar-header-icon{color:#00b4c8;font-size:13px}
+        .vshop-sidebar-header-text{color:#fff;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+        .vshop-cat-link{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid #dce8ef;text-decoration:none;color:#1a2a38;font-size:13px;font-weight:500;transition:.12s}
+        .vshop-cat-link:last-child{border-bottom:none}
+        .vshop-cat-link:hover{background:#f4f7f9;color:#00b4c8}
+        .vshop-cat-link.active{background:#e0f7fa;color:#00b4c8;font-weight:700}
         .vshop-cat-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-        .vshop-cat-count{margin-left:auto;font-size:11px;color:#94a3b8;font-weight:400}
-        .vshop-search-form{display:flex;border:1.5px solid #e2e8f0;border-radius:9px;overflow:hidden;background:#fff;margin-bottom:14px}
-        .vshop-search-form input{flex:1;border:none;padding:10px 14px;font-size:13px;outline:none;color:#0d1f2d;background:transparent;min-width:0}
+        .vshop-cat-count{margin-left:auto;font-size:11px;background:#f0f4f8;color:#5a7080;padding:2px 7px;border-radius:20px;font-weight:600}
+        .vshop-cat-link.active .vshop-cat-count{background:#00b4c8;color:#fff}
+        .vshop-search-form{display:flex;border:1.5px solid #dce8ef;border-radius:8px;overflow:hidden;background:#fff;margin-bottom:14px}
+        .vshop-search-form input{flex:1;border:none;padding:10px 14px;font-size:13px;outline:none;color:#1a2a38;background:transparent;min-width:0}
         .vshop-search-form button{padding:0 14px;background:#00b4c8;color:#fff;border:none;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
         /* Product detail */
         .vpd-wrap{font-family:inherit}
@@ -744,7 +748,10 @@ add_shortcode( 'vesho_shop_grid', function () {
           </form>
           <?php if ( ! empty( $managed_cats ) ) : ?>
           <div class="vshop-sidebar-box">
-            <div class="vshop-sidebar-title">Kategooriad</div>
+            <div class="vshop-sidebar-header">
+              <span class="vshop-sidebar-header-icon">▼</span>
+              <span class="vshop-sidebar-header-text">Kategooriad</span>
+            </div>
             <a href="<?php echo esc_url($page_url); ?>" class="vshop-cat-link">
               <span class="vshop-cat-dot" style="background:#0d1f2d"></span>
               Kõik tooted
@@ -983,13 +990,17 @@ add_shortcode( 'vesho_shop_grid', function () {
     /* Sidebar */
     .vshop-sidebar{position:sticky;top:24px}
     @media(max-width:820px){.vshop-sidebar{position:static}}
-    .vshop-sidebar-box{background:#fff;border-radius:12px;padding:20px;box-shadow:0 2px 12px rgba(13,31,45,.06);margin-bottom:14px}
-    .vshop-sidebar-title{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#94a3b8;margin:0 0 12px}
-    .vshop-cat-link{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;text-decoration:none;color:#4b6174;font-size:13px;font-weight:500;transition:.12s;cursor:pointer;border:none;background:none;width:100%;text-align:left}
-    .vshop-cat-link:hover{background:#f0f4f8;color:#0d1f2d}
-    .vshop-cat-link.active{background:#f0f9ff;color:#0097aa;font-weight:700}
+    .vshop-sidebar-box{background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.07);margin-bottom:14px;border:1px solid #dce8ef}
+    .vshop-sidebar-header{background:#0d1f2d;padding:11px 14px;display:flex;align-items:center;gap:8px}
+    .vshop-sidebar-header-icon{color:#00b4c8;font-size:13px}
+    .vshop-sidebar-header-text{color:#fff;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+    .vshop-cat-link{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid #dce8ef;text-decoration:none;color:#1a2a38;font-size:13px;font-weight:500;transition:.12s;cursor:pointer;border-top:none;border-left:none;border-right:none;background:none;width:100%;text-align:left}
+    .vshop-cat-link:last-child{border-bottom:none}
+    .vshop-cat-link:hover{background:#f4f7f9;color:#00b4c8}
+    .vshop-cat-link.active{background:#e0f7fa;color:#00b4c8;font-weight:700}
     .vshop-cat-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-    .vshop-cat-count{margin-left:auto;font-size:11px;color:#94a3b8;font-weight:400}
+    .vshop-cat-count{margin-left:auto;font-size:11px;background:#f0f4f8;color:#5a7080;padding:2px 7px;border-radius:20px;font-weight:600}
+    .vshop-cat-link.active .vshop-cat-count{background:#00b4c8;color:#fff}
     /* Topbar */
     .vshop-topbar{display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
     .vshop-search-form{display:flex;flex:1;min-width:160px;border:1.5px solid #e2e8f0;border-radius:9px;overflow:hidden;background:#fff}
@@ -1073,7 +1084,10 @@ add_shortcode( 'vesho_shop_grid', function () {
     <aside class="vshop-sidebar">
       <?php if ( ! empty( $managed_cats ) ) : ?>
       <div class="vshop-sidebar-box">
-        <div class="vshop-sidebar-title">Kategooriad</div>
+        <div class="vshop-sidebar-header">
+          <span class="vshop-sidebar-header-icon">▼</span>
+          <span class="vshop-sidebar-header-text">Kategooriad</span>
+        </div>
         <?php
         $all_href = add_query_arg( array_filter( ['vs'=>$search,'sort'=>$sort==='name'?null:$sort] ), $page_url );
         ?>
@@ -1258,5 +1272,28 @@ add_shortcode( 'vesho_shop_grid', function () {
     }
     </script>
     <?php
+    return ob_get_clean();
+} );
+
+// ── [vesho_shop] = hero + grid (live saidil) ─────────────────────────────────
+// Overrides the class-client-portal.php version — shortcodes.php on laetud pärast
+add_shortcode( 'vesho_shop', function ( $atts ) {
+    $atts = shortcode_atts( [ 'hero' => '1' ], $atts );
+    ob_start();
+    if ( $atts['hero'] !== '0' ) : ?>
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800;900&display=swap');
+    .vsho-hero{background:linear-gradient(135deg,#0b1c2b 0%,#0d3347 100%);padding:80px 32px 72px;text-align:center;margin-top:-1px;font-family:'Barlow',system-ui,sans-serif}
+    .vsho-hero-eyebrow{color:#00b4c8;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;margin-bottom:14px}
+    .vsho-hero-title{color:#fff;font-size:52px;font-weight:900;line-height:1.05;margin:0 0 14px}
+    .vsho-hero-sub{color:#7a9eb0;font-size:16px}
+    </style>
+    <div class="vsho-hero">
+      <div class="vsho-hero-eyebrow">VESHO OÜ</div>
+      <div class="vsho-hero-title">Pood</div>
+      <div class="vsho-hero-sub">Veesüsteemide seadmed ja tarvikud</div>
+    </div>
+    <?php endif;
+    echo do_shortcode( '[vesho_shop_grid]' );
     return ob_get_clean();
 } );
