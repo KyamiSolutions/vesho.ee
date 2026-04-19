@@ -8,7 +8,7 @@ $filter_st  = isset($_GET['status'])     ? sanitize_text_field($_GET['status']) 
 
 $all_clients  = $wpdb->get_results("SELECT id, name FROM {$wpdb->prefix}vesho_clients ORDER BY name ASC");
 $price_list   = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}vesho_price_list WHERE active=1 ORDER BY category ASC, name ASC");
-$inventory    = $wpdb->get_results("SELECT id, name, unit, unit_price, quantity FROM {$wpdb->prefix}vesho_inventory WHERE archived=0 AND quantity > 0 ORDER BY name ASC");
+$inventory    = $wpdb->get_results("SELECT id, name, unit, sell_price AS unit_price, quantity FROM {$wpdb->prefix}vesho_inventory WHERE archived=0 AND quantity > 0 ORDER BY name ASC");
 
 $edit = null;
 $edit_items = [];
