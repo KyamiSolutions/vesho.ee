@@ -382,6 +382,17 @@ if ( $can_refund && in_array($edit->status, ['confirmed','shipped','completed','
             <tr><td colspan="3" style="text-align:right;font-weight:700;font-size:15px">Kokku:</td><td style="font-weight:700;font-size:15px;color:#10b981"><?php echo number_format($edit->total,2,',','.'); ?> €</td><?php if(in_array($edit->status,['picking','processing'])): ?><td></td><?php endif; ?></tr>
         </tfoot>
     </table>
+    <?php if (in_array($edit->status, ['pending','new'])): ?>
+    <div style="padding:12px 16px;border-top:1px solid #e8edf1;display:flex;justify-content:flex-end">
+        <form method="POST" action="<?php echo admin_url('admin-post.php'); ?>">
+            <?php wp_nonce_field('vesho_shop_order_status'); ?>
+            <input type="hidden" name="action" value="vesho_shop_order_status">
+            <input type="hidden" name="order_id" value="<?php echo $edit->id; ?>">
+            <input type="hidden" name="status" value="processing">
+            <button type="submit" class="crm-btn crm-btn-primary" onclick="return confirm('Saada tellimus töötajate järjekorda?')">▶ Saada töötajatele</button>
+        </form>
+    </div>
+    <?php endif; ?>
     <?php if (in_array($edit->status, ['picking','processing'])):
         $all_picked = !in_array(0, array_column((array)$edit_items,'picked'));
     ?>
@@ -522,7 +533,16 @@ if ( $can_refund && in_array($edit->status, ['confirmed','shipped','completed','
                 <a href="<?php echo admin_url('admin.php?page=vesho-crm-orders&action=view&order_id='.$o->id); ?>" class="crm-btn crm-btn-icon crm-btn-sm" title="Vaata">👁️</a>
                 <a href="<?php echo admin_url('admin.php?page=vesho-crm-orders&action=edit&order_id='.$o->id); ?>" class="crm-btn crm-btn-icon crm-btn-sm" title="Muuda">✏️</a>
                 <?php if (in_array($o->status, ['pending','new'])): ?>
-                <span style="font-size:11px;color:#10b981;font-weight:600" title="Töötajad võtavad tellimuse ise järjekorrast">⏳ Järjekorras</span>
+                <form method="POST" action="<?php echo admin_url('admin-post.php'); ?>" style="display:inline" onsubmit="return confirm('Saada tellimus töötajate järjekorda?')">
+                    <?php wp_nonce_field('vesho_shop_order_status'); ?>
+                    <input type="hidden" name="action" value="vesho_shop_order_status">
+                    <input type="hidden" name="order_id" value="<?php echo $o->id; ?>">
+                    <input type="hidden" name="status" value="processing">
+                    <button type="submit" class="crm-btn crm-btn-icon crm-btn-sm" title="Saada töötajale">▶</button>
+                </form>
+                <?php endif; ?>
+                <?php if ($o->status === 'processing' && empty($o->worker_id)): ?>
+                <span style="font-size:11px;color:#8b5cf6;font-weight:600" title="Ootab töötajat">⏳ Järjekorras</span>
                 <?php endif; ?>
                 <?php if (in_array($o->status,['pending_payment','pending','new','processing','picking'])): ?>
                 <a href="<?php echo wp_nonce_url(admin_url('admin-post.php?action=vesho_delete_shop_order&order_id='.$o->id),'vesho_delete_shop_order'); ?>"

@@ -2071,9 +2071,9 @@ document.querySelectorAll('.vwp-hist-header').forEach(function(hdr){
 
     private static function tab_tellimused($wid, $nonce, $ajax) {
         global $wpdb;
-        // Pending orders (not yet claimed)
+        // Unclaimed orders (admin pushed to processing, no worker yet)
         $pending_count = (int)$wpdb->get_var(
-            "SELECT COUNT(*) FROM {$wpdb->prefix}vesho_shop_orders WHERE status='pending' AND (worker_id IS NULL OR worker_id=0)"
+            "SELECT COUNT(*) FROM {$wpdb->prefix}vesho_shop_orders WHERE status='processing' AND (worker_id IS NULL OR worker_id=0)"
         );
         // My claimed order
         $my_order = $wpdb->get_row($wpdb->prepare(
@@ -3662,7 +3662,7 @@ document.querySelectorAll('.vwp-hist-header').forEach(function(hdr){
         if (!self::get_current_worker()) wp_send_json_error(['message'=>'Pole sisse logitud']);
         global $wpdb;
         $count = (int)$wpdb->get_var(
-            "SELECT COUNT(*) FROM {$wpdb->prefix}vesho_shop_orders WHERE status='pending' AND (worker_id IS NULL OR worker_id=0)"
+            "SELECT COUNT(*) FROM {$wpdb->prefix}vesho_shop_orders WHERE status='processing' AND (worker_id IS NULL OR worker_id=0)"
         );
         wp_send_json_success(['count' => $count]);
     }
@@ -3674,12 +3674,13 @@ document.querySelectorAll('.vwp-hist-header').forEach(function(hdr){
         global $wpdb;
         $order = $wpdb->get_row(
             "SELECT id FROM {$wpdb->prefix}vesho_shop_orders
-             WHERE status='pending' AND (worker_id IS NULL OR worker_id=0)
+             WHERE status='processing' AND (worker_id IS NULL OR worker_id=0)
              ORDER BY created_at ASC LIMIT 1"
         );
         if (!$order) wp_send_json_error(['message'=>'Tellimusi pole saadaval']);
+        // Claim: assign worker_id, status stays 'processing' (same as 3006)
         $wpdb->update("{$wpdb->prefix}vesho_shop_orders",
-            ['worker_id'=>$worker->id,'status'=>'processing'],['id'=>$order->id]);
+            ['worker_id'=>$worker->id],['id'=>$order->id]);
         wp_send_json_success(['message'=>'Tellimus võetud']);
     }
 
