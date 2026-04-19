@@ -110,10 +110,14 @@ class Vesho_CRM_Admin {
     // ── Scanner assets ─────────────────────────────────────────────────────────
 
     public static function enqueue_scanner_assets( $hook ) {
-        // Load on Vesho CRM pages that use barcode scanning
         $screen = get_current_screen();
         if ( ! $screen ) return;
         $page = sanitize_text_field( $_GET['page'] ?? '' );
+
+        // Media uploader — seadete lehel logo valimiseks
+        if ( $page === 'vesho-crm-settings' ) {
+            wp_enqueue_media();
+        }
         $scanner_pages = [
             'vesho-crm-orders',
             'vesho-crm-inventory',
