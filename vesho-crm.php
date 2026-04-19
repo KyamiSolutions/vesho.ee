@@ -3,7 +3,7 @@
  * Plugin Name: Vesho CRM
  * Plugin URI:  https://vesho.ee
  * Description: CRM ja klientide portaal Vesho OÜ-le. Haldab kliente, seadmeid, hooldusi, arveid ja teenuseid.
- * Version:     2.3.13
+ * Version:     2.4.0
  * Author:      Vesho OÜ
  * Author URI:  https://vesho.ee
  * Text Domain: vesho-crm
@@ -15,7 +15,7 @@
 defined( 'ABSPATH' ) || exit;
 
 // ── Constants ──────────────────────────────────────────────────────────────────
-define('VESHO_CRM_VERSION', '2.3.13');
+define('VESHO_CRM_VERSION', '2.4.0');
 define( 'VESHO_CRM_FILE',     __FILE__ );
 define( 'VESHO_CRM_PATH',     plugin_dir_path( __FILE__ ) );
 define( 'VESHO_CRM_URL',      plugin_dir_url( __FILE__ ) );
@@ -509,6 +509,25 @@ function vesho_crm_log_activity( $action, $description, $object_type = '', $obje
     ) );
 }
 
+// ── AJAX: Activity log (admin) ────────────────────────────────────────────────
+add_action('wp_ajax_vesho_get_activity_log', 'vesho_ajax_get_activity_log');
+function vesho_ajax_get_activity_log() {
+    if (!current_user_can('manage_options')) wp_send_json_error('Pole lubatud');
+    global $wpdb;
+    $limit       = min(500, max(1, absint($_POST['limit'] ?? 50)));
+    $offset      = absint($_POST['offset'] ?? 0);
+    $action_f    = sanitize_text_field($_POST['action_filter'] ?? '');
+    $type_f      = sanitize_text_field($_POST['object_type'] ?? '');
+    $where       = '1=1';
+    $args        = [];
+    if ($action_f) { $where .= ' AND action=%s'; $args[] = $action_f; }
+    if ($type_f)   { $where .= ' AND object_type=%s'; $args[] = $type_f; }
+    $total = (int)$wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}vesho_activity_log WHERE $where" . ($args ? call_user_func_array([$wpdb,'prepare'],array_merge([' '],array_slice($args,0))) : ''));
+    $sql   = "SELECT * FROM {$wpdb->prefix}vesho_activity_log WHERE $where ORDER BY created_at DESC LIMIT %d OFFSET %d";
+    $rows  = $wpdb->get_results($wpdb->prepare($sql, ...array_merge($args, [$limit, $offset])));
+    wp_send_json_success(['rows' => $rows, 'total' => $total]);
+}
+
 // ── WP-Cron: schedule daily job ──────────────────────────────────────────────
 add_action( 'plugins_loaded', 'vesho_crm_schedule_cron' );
 function vesho_crm_schedule_cron() {
@@ -561,8 +580,43 @@ function vesho_validate_paid_amount( string $type, int $id, $paid_amount ): bool
         $expected = (float) $wpdb->get_var( $wpdb->prepare(
             "SELECT amount FROM {$wpdb->prefix}vesho_invoices WHERE id=%d", $id
         ));
+    } elseif ( $type === 'shop_order' ) {
+        $expected = (float) $wpdb->get_var( $wpdb->prepare(
+            "SELECT total FROM {$wpdb->prefix}vesho_shop_orders WHERE id=%d", $id
+        ));
     } else { return true; }
     return abs($paid - $expected) <= 0.02;
+}
+
+// ── Shop order payment confirmation (idempotent) ──────────────────────────────
+function vesho_confirm_shop_order( int $order_id ): bool {
+    global $wpdb;
+    $updated = $wpdb->query( $wpdb->prepare(
+        "UPDATE {$wpdb->prefix}vesho_shop_orders SET status='confirmed' WHERE id=%d AND status IN ('new','pending_payment')",
+        $order_id
+    ));
+    if ( $updated > 0 ) {
+        // Send confirmation email
+        $o = $wpdb->get_row( $wpdb->prepare(
+            "SELECT order_number, total, client_name, client_email FROM {$wpdb->prefix}vesho_shop_orders WHERE id=%d", $order_id
+        ));
+        if ( $o && $o->client_email ) {
+            $co = get_option( 'vesho_company_name', get_bloginfo('name') );
+            wp_mail(
+                $o->client_email,
+                "[{$co}] Tellimus #{$o->order_number} kinnitatud",
+                "Tere {$o->client_name},\n\nTeie tellimus #{$o->order_number} ({$o->total} €) on kinnitatud.\nVõtame varsti ühendust tarne osas.\n\nAitäh!\n{$co}"
+            );
+        }
+        // Notify admin
+        $admin_email = get_option('vesho_notify_email', get_option('admin_email'));
+        if ( $admin_email && $o ) {
+            $co = get_option( 'vesho_company_name', get_bloginfo('name') );
+            wp_mail( $admin_email, "[{$co}] Uus tellimus #{$o->order_number}", "Uus kinnitatud tellimus #{$o->order_number} ({$o->total} €) kliendilt {$o->client_name}." );
+        }
+        vesho_crm_log_activity( 'confirm_order', "Tellimus kinnitatud maksega", 'shop_order', $order_id );
+    }
+    return $updated > 0;
 }
 
 // ── AJAX: Payment method config ───────────────────────────────────────────────
@@ -1006,10 +1060,13 @@ function vesho_rest_stripe_webhook( WP_REST_Request $request ) {
     $event = json_decode($body, true);
     if (($event['type'] ?? '') === 'payment_intent.succeeded') {
         $pi         = $event['data']['object'];
-        $invoice_id = intval($pi['metadata']['invoice_id'] ?? 0);
         $paid_eur   = ($pi['amount_received'] ?? 0) / 100;
+        $invoice_id = intval($pi['metadata']['invoice_id'] ?? 0);
+        $order_id   = intval($pi['metadata']['order_id'] ?? 0);
         if ($invoice_id && vesho_validate_paid_amount('invoice', $invoice_id, $paid_eur)) {
             vesho_mark_invoice_paid($invoice_id);
+        } elseif ($order_id && vesho_validate_paid_amount('shop_order', $order_id, $paid_eur)) {
+            vesho_confirm_shop_order($order_id);
         }
     }
     return new WP_REST_Response(['received'=>true], 200);
@@ -1057,6 +1114,11 @@ function vesho_rest_mc_notify( WP_REST_Request $request ) {
         if ($inv_id && vesho_validate_paid_amount('invoice', $inv_id, $verified_amount)) {
             vesho_mark_invoice_paid($inv_id);
         }
+    } elseif (str_starts_with($merchant_data, 'order:')) {
+        $ord_id = intval(explode(':', $merchant_data)[1]);
+        if ($ord_id && vesho_validate_paid_amount('shop_order', $ord_id, $verified_amount)) {
+            vesho_confirm_shop_order($ord_id);
+        }
     }
     return new WP_REST_Response(['ok'=>true], 200);
 }
@@ -1078,6 +1140,11 @@ function vesho_rest_montonio_notify( WP_REST_Request $request ) {
         $inv_id = intval(explode('-', $ref, 2)[1]);
         if ($inv_id && vesho_validate_paid_amount('invoice', $inv_id, $paid_amount)) {
             vesho_mark_invoice_paid($inv_id);
+        }
+    } elseif (str_starts_with($ref, 'order-')) {
+        $ord_id = intval(explode('-', $ref, 2)[1]);
+        if ($ord_id && vesho_validate_paid_amount('shop_order', $ord_id, $paid_amount)) {
+            vesho_confirm_shop_order($ord_id);
         }
     }
     return new WP_REST_Response(['ok'=>true], 200);
@@ -2449,7 +2516,7 @@ function vesho_ajax_shop_place_order() {
                 'amount'           => number_format($total, 2, '.', ''),
                 'currency'         => 'EUR',
                 'reference'        => $order_number,
-                'merchant_data'    => $order_number,
+                'merchant_data'    => 'order:' . $order_id,
                 'return_url'       => $return_url,
                 'cancel_url'       => add_query_arg(['shop_view' => 'cancel'], $shop_url),
                 'notification_url' => rest_url('vesho-crm/v1/mc-notify'),
@@ -2470,7 +2537,7 @@ function vesho_ajax_shop_place_order() {
         $return_url = add_query_arg(['vesho_shop_montonio_return' => 1, 'order_id' => $order_id], $shop_url);
         $payload = [
             'accessKey'         => $ak,
-            'merchantReference' => $order_number,
+            'merchantReference' => 'order-' . $order_id,
             'returnUrl'         => $return_url,
             'notificationUrl'   => rest_url('vesho-crm/v1/montonio-webhook'),
             'currency'          => 'EUR',

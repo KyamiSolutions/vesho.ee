@@ -46,6 +46,9 @@ class Vesho_CRM_Database {
         $wpdb->query( "ALTER TABLE {$wpdb->prefix}vesho_clients ADD COLUMN IF NOT EXISTS email_verified TINYINT(1) DEFAULT 0" );
         $wpdb->query( "ALTER TABLE {$wpdb->prefix}vesho_clients ADD COLUMN IF NOT EXISTS email_verify_token VARCHAR(100) DEFAULT ''" );
 
+        // Devices: service interval (months) for auto-scheduling next maintenance
+        $wpdb->query( "ALTER TABLE {$wpdb->prefix}vesho_devices ADD COLUMN IF NOT EXISTS service_interval INT UNSIGNED DEFAULT NULL COMMENT 'Hoolduse intervall kuudes'" );
+
         // ── devices ─────────────────────────────────────────────────────────
         dbDelta( "CREATE TABLE {$wpdb->prefix}vesho_devices (
             id            INT UNSIGNED NOT NULL AUTO_INCREMENT,

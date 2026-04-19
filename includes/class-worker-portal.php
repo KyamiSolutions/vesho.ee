@@ -3109,6 +3109,32 @@ document.querySelectorAll('.vwp-hist-header').forEach(function(hdr){
             $invoice_number = $inv_num;
         }
 
+        // ── Auto-schedule next maintenance if device has service_interval ───
+        if (!empty($order->device_id)) {
+            $device = $wpdb->get_row($wpdb->prepare(
+                "SELECT id, name, client_id, service_interval FROM {$wpdb->prefix}vesho_devices WHERE id=%d LIMIT 1",
+                $order->device_id
+            ));
+            if ($device && (int)($device->service_interval ?? 0) > 0) {
+                $next_date = date('Y-m-d', strtotime('+' . (int)$device->service_interval . ' months'));
+                // Only create if no future maintenance already scheduled
+                $existing = $wpdb->get_var($wpdb->prepare(
+                    "SELECT COUNT(*) FROM {$wpdb->prefix}vesho_maintenances WHERE device_id=%d AND scheduled_date>=%s AND status NOT IN ('completed','cancelled')",
+                    $device->id, date('Y-m-d')
+                ));
+                if (!$existing) {
+                    $wpdb->insert($wpdb->prefix . 'vesho_maintenances', [
+                        'device_id'      => $device->id,
+                        'scheduled_date' => $next_date,
+                        'description'    => 'Automaatne järgmine hooldus (' . $device->service_interval . ' kuu järel)',
+                        'status'         => 'scheduled',
+                        'created_at'     => current_time('mysql'),
+                    ]);
+                    vesho_crm_log_activity('auto_schedule', "Automaatne järgmine hooldus seadmele #{$device->id} ({$device->name}) kuupäevaks {$next_date}", 'maintenance', $wpdb->insert_id);
+                }
+            }
+        }
+
         wp_send_json_success(['message' => 'Töökäsk lõpetatud!', 'invoice_number' => $invoice_number]);
     }
 
