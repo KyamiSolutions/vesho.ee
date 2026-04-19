@@ -377,6 +377,7 @@ add_shortcode( 'vesho_shop_grid', function ( $atts ) {
     .vsho-fab a:hover{background:#162840;color:#fff}
     .vsho-fab-badge{background:#00b4c8;color:#fff;font-size:.7rem;font-weight:800;padding:2px 7px;border-radius:20px}
     .vsho-toast{display:none;position:fixed;bottom:80px;right:24px;z-index:10000;background:#0d1f2d;color:#fff;padding:11px 18px;border-radius:8px;font-size:.88rem;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.22)}
+    .vsho-no-img{color:#94a3b8;font-size:.8rem;font-weight:500;letter-spacing:.5px;text-align:center}
     /* ── Product detail ── */
     .vsho-pd{max-width:1280px;margin:0 auto;padding:32px 24px;display:grid;grid-template-columns:260px 1fr;gap:32px;align-items:start}
     @media(max-width:900px){.vsho-pd{grid-template-columns:1fr;padding:20px 16px}}
@@ -988,7 +989,7 @@ add_shortcode( 'vesho_shop_grid', function ( $atts ) {
               <?php if (!empty($item->image_url)): ?>
                 <img src="<?php echo esc_url($item->image_url); ?>" alt="<?php echo esc_attr($item->name); ?>">
               <?php else: ?>
-                <svg viewBox="0 0 32 32" fill="none"><path d="M16 4C16 4 6 14 6 20C6 25.5228 10.4772 30 16 30C21.5228 30 26 25.5228 26 20C26 14 16 4 16 4Z" fill="<?php echo esc_attr($pd_cat_color); ?>"/></svg>
+                <div class="vsho-no-img" style="font-size:1rem">Pilt puudub</div>
               <?php endif; ?>
               <?php if ($pd_disc > 0) echo '<span class="vpd-disc-badge">-'.(int)$pd_disc.'%</span>'; ?>
               <?php if (!$in_stock) echo '<span class="vpd-out-badge">Laost otsas</span>'; ?>
@@ -1347,7 +1348,7 @@ add_shortcode( 'vesho_shop_grid', function ( $atts ) {
             <?php if(!empty($item->image_url)): ?>
               <img src="<?php echo esc_url($item->image_url); ?>" alt="<?php echo esc_attr($item->name); ?>" loading="lazy">
             <?php else: ?>
-              <svg viewBox="0 0 32 32" fill="none"><path d="M16 4C16 4 6 14 6 20C6 25.5228 10.4772 30 16 30C21.5228 30 26 25.5228 26 20C26 14 16 4 16 4Z" fill="<?php echo esc_attr($cat_color); ?>" opacity=".5"/></svg>
+              <div class="vsho-no-img">Pilt puudub</div>
             <?php endif; ?>
           </a>
           <div class="vshop-card-body">
