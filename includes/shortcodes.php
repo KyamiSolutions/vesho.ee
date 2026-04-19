@@ -1186,7 +1186,7 @@ add_shortcode( 'vesho_shop_grid', function ( $atts ) {
     .vshop-out-badge{position:absolute;top:8px;right:8px;background:#6b7280;color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:3px}
     .vshop-card-body{padding:10px 12px 12px;display:flex;flex-direction:column;flex:1;border-top:1px solid #f0f0f0}
     .vshop-card-cat{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;margin-bottom:3px;color:#00b4c8}
-    .vshop-card-name{font-family:var(--font-cond,sans-serif);font-size:16px;font-weight:700;color:#1a1a1a;line-height:1.3;text-decoration:none;display:block;margin-bottom:6px}
+    .vshop-card-name{font-family:inherit;font-size:14px;font-weight:400;color:#1a1a1a;line-height:1.4;text-decoration:none;display:block;margin-bottom:6px}
     .vshop-card-name:hover{color:#00b4c8}
     .vshop-card-desc{display:none}
     .vshop-price-wrap{margin-top:auto}
