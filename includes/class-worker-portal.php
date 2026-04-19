@@ -3756,7 +3756,7 @@ document.querySelectorAll('.vwp-hist-header').forEach(function(hdr){
             }
         }
 
-        $order_update = ['status' => 'confirmed', 'updated_at' => current_time('mysql')];
+        $order_update = ['status' => 'confirmed', 'updated_at' => current_time('mysql'), 'packed_at' => current_time('mysql')];
         if ($refund_pending > 0.001) {
             $order_update['refund_pending_amount'] = round($refund_pending, 2);
         }

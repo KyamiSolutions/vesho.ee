@@ -1,10 +1,10 @@
 {
   "name": "Vesho CRM",
   "slug": "vesho-crm",
-  "version": "2.5.5",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.5.5/vesho-crm.zip",
+  "version": "2.5.6",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.5.6/vesho-crm.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-19",
-  "changelog": "<h4>2.5.5</h4><ul><li>Fix: release_order ei lähtesta staatust 'pending' — jääb 'processing' (nagu 3006)</li><li>Fix: EAN skannimine seab koguse automaatselt originaalile (nagu 3006)</li><li>Lisa: statistikakaardid admin tellimuste vaates (Aktiivsed/Makse ootel/Teel/Täidetud)</li><li>Lisa: '🔄 Tagastus ootel' märgis tellimusloetelus</li><li>Lisa: krediitarve email nupp tagastatud tellimustele</li></ul><h4>2.5.4</h4><ul><li>Fix: 'Ei võetud vastu' AJAX handler implementeeritud (puudus täiesti)</li><li>Fix: Dialog 2 nupuga — 'Ei tee tagasimakset' + 'Tee tagasimakse' (nagu 3006)</li><li>Fix: confirmed staatus label 'Valmis saatmiseks' → 'Valmis' (nagu guide)</li><li>Inventory restore põhineb nüüd algsel quantity-l (nagu 3006)</li></ul><h4>2.5.3</h4><ul><li>Fix: töötaja portaal näitab 'processing' tellimusi; admin ▶ nupp</li></ul>"
+  "changelog": "<h4>2.5.6</h4><ul><li>Lisa: cancel tellimus teeb automaatse tagasimakse (nagu 3006)</li><li>Lisa: bulk saatmine töötajatele vähendab laoseisu</li><li>Lisa: packed_at veerg — komplekteerimise kellaaeg</li><li>Lisa: komplekteerija nimi + packed_at detail vaates</li><li>Lisa: EAN skanner admin komplekteerimisel</li><li>Lisa: items_summary loetelu vaates (GROUP_CONCAT, ei N+1)</li><li>Lisa: 30s auto-refresh admin loetelu vaates</li><li>Fix: 'Märgi Valmis saatmiseks' → 'Märgi Valmis'</li></ul><h4>2.5.5</h4><ul><li>Fix: release_order ei lähtesta staatust</li><li>Fix: EAN skannimine seab koguse automaatselt</li><li>Lisa: statistikakaardid, tagastus badge, krediitarve email</li></ul>"
 }

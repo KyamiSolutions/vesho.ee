@@ -53,10 +53,13 @@ if ( $search  ) { $where .= $wpdb->prepare(
 ); }
 
 $orders = $wpdb->get_results(
-    "SELECT o.*, c.name as client_name
+    "SELECT o.*, c.name as client_name,
+            GROUP_CONCAT(soi.name ORDER BY soi.id SEPARATOR ', ') AS items_summary,
+            COUNT(soi.id) AS items_count
      FROM {$wpdb->prefix}vesho_shop_orders o
      LEFT JOIN {$wpdb->prefix}vesho_clients c ON c.id=o.client_id
-     WHERE $where ORDER BY o.created_at DESC LIMIT 300"
+     LEFT JOIN {$wpdb->prefix}vesho_shop_order_items soi ON soi.order_id=o.id
+     WHERE $where GROUP BY o.id ORDER BY o.created_at DESC LIMIT 300"
 );
 $total     = count($orders);
 $new_count = (int)$wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}vesho_shop_orders WHERE status IN ('pending_payment','pending','new')");
@@ -256,6 +259,25 @@ $display_name = $edit->client_name ?: $edit->guest_name ?: '—';
     <?php if ($edit->notes): ?>
     <div style="padding:0 20px 16px;font-size:13px;color:#6b8599"><strong>Märkused:</strong> <?php echo esc_html($edit->notes); ?></div>
     <?php endif; ?>
+    <?php
+    // Worker info (3006 ShopOrders.jsx — assigned_worker_name + packed_at)
+    $worker_info = null;
+    if (!empty($edit->worker_id)) {
+        $worker_info = $wpdb->get_row($wpdb->prepare(
+            "SELECT name FROM {$wpdb->prefix}vesho_workers WHERE id=%d", $edit->worker_id
+        ));
+    }
+    if ($worker_info || !empty($edit->packed_at)):
+    ?>
+    <div style="padding:0 20px 16px;display:flex;gap:20px;font-size:13px;flex-wrap:wrap">
+        <?php if ($worker_info): ?>
+        <div><span style="color:#6b8599">Komplekteerija:</span> <strong><?php echo esc_html($worker_info->name); ?></strong></div>
+        <?php endif; ?>
+        <?php if (!empty($edit->packed_at)): ?>
+        <div><span style="color:#6b8599">Komplekteeritud:</span> <strong><?php echo date('d.m.Y H:i', strtotime($edit->packed_at)); ?></strong></div>
+        <?php endif; ?>
+    </div>
+    <?php endif; ?>
 </div>
 
 <?php
@@ -367,8 +389,9 @@ if ( $edit->status === 'returned' && $credit_email ):
         <?php $subtotal=0; foreach ($edit_items as $it):
             $subtotal += $it->total;
             $picked_qty = $it->picked_qty !== null ? $it->picked_qty : $it->quantity;
+            $it_ean = $wpdb->get_var($wpdb->prepare("SELECT ean FROM {$wpdb->prefix}vesho_inventory WHERE id=%d", $it->inventory_id));
         ?>
-        <tr>
+        <tr data-ean="<?php echo esc_attr($it_ean ?? ''); ?>" data-orig-qty="<?php echo (float)$it->quantity; ?>">
             <td>
                 <strong><?php echo esc_html($it->name); ?></strong>
                 <?php if ($it->sku ?? ''): ?><span style="font-size:11px;color:#6b8599">[<?php echo esc_html($it->sku??''); ?>]</span><?php endif; ?>
@@ -418,6 +441,15 @@ if ( $edit->status === 'returned' && $credit_email ):
     <?php if (in_array($edit->status, ['picking','processing'])):
         $all_picked = !in_array(0, array_column((array)$edit_items,'picked'));
     ?>
+    <!-- EAN scanner for admin picking (3006 ShopOrders.jsx parity) -->
+    <div style="padding:12px 16px;border-top:1px solid #f0f4f8;background:#f8fafc;display:flex;gap:8px;align-items:center">
+        <span style="font-size:13px;color:#64748b">📷 EAN skannimine:</span>
+        <input type="text" id="admin-ean-scan" placeholder="Skänni või sisesta EAN..." autocomplete="off"
+               style="flex:1;padding:7px 10px;border:1px solid #dce3e9;border-radius:6px;font-size:14px;max-width:280px">
+        <button type="button" id="admin-ean-camera-btn"
+                style="background:#00b4c8;color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:13px;cursor:pointer">📷</button>
+        <span id="admin-ean-feedback" style="font-size:20px;min-width:24px"></span>
+    </div>
     <div style="padding:12px 16px;border-top:1px solid #e8edf1;display:flex;justify-content:flex-end">
         <?php if (!$all_picked): ?>
         <span style="font-size:13px;color:#f59e0b;margin-right:12px;align-self:center">⚠ Kõik tooted pole veel kogutud</span>
@@ -429,7 +461,7 @@ if ( $edit->status === 'returned' && $credit_email ):
             <input type="hidden" name="status" value="confirmed">
             <button type="submit" class="crm-btn crm-btn-primary"
                     <?php echo !$all_picked ? 'style="opacity:.5" disabled' : ''; ?>>
-                ✓ Märgi Valmis saatmiseks
+                ✓ Märgi Valmis
             </button>
         </form>
     </div>
@@ -550,8 +582,9 @@ if ( $edit->status === 'returned' && $credit_email ):
         <?php
         $shipping_icons = ['pickup'=>'🏪','courier'=>'🚚','parcelshop'=>'📦'];
         foreach ($orders as $o):
-            $item_count = (int)$wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$wpdb->prefix}vesho_shop_order_items WHERE order_id=%d",$o->id));
             $display_name = $o->client_name ?: $o->guest_name ?: '—';
+            $items_summary = $o->items_summary ?: '—';
+            $items_count   = (int)($o->items_count ?? 0);
         ?>
         <tr>
             <td><input type="checkbox" class="row-check" value="<?php echo $o->id; ?>"
@@ -561,7 +594,7 @@ if ( $edit->status === 'returned' && $credit_email ):
                 <div style="font-weight:500"><?php echo $o->client_id ? '<a href="'.admin_url('admin.php?page=vesho-crm-clients&action=view&client_id='.$o->client_id).'">'.esc_html($display_name).'</a>' : esc_html($display_name); ?></div>
                 <?php if ($o->guest_email): ?><div style="font-size:11px;color:#6b8599"><?php echo esc_html($o->guest_email); ?></div><?php endif; ?>
             </td>
-            <td style="color:#6b8599"><?php echo $item_count; ?> tk</td>
+            <td style="color:#6b8599;font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="<?php echo esc_attr($items_summary); ?>"><?php echo $items_count; ?> tk — <?php echo esc_html(mb_strimwidth($items_summary, 0, 40, '…')); ?></td>
             <td><strong><?php echo number_format($o->total,2,',','.'); ?> €</strong></td>
             <td><?php echo ($shipping_icons[$o->shipping_method]??'📦'); ?></td>
             <td>
@@ -780,6 +813,52 @@ function sendCreditNote(orderId) {
         .catch(function(){ alert('Ühenduse viga'); if(btn){btn.disabled=false;btn.textContent='📧 Saada krediitarve';} });
 }
 
+// ── Admin EAN scanner (3006 ShopOrders.jsx parity) ────────────────────────────
+(function(){
+  var eanInp = document.getElementById('admin-ean-scan');
+  var eanFb  = document.getElementById('admin-ean-feedback');
+  if (!eanInp) return;
+
+  // Build EAN → row map from pick forms
+  var eanMap = {};
+  document.querySelectorAll('[data-item-ean]').forEach(function(el){
+    var ean = el.dataset.itemEan;
+    if (ean) eanMap[ean] = el.dataset.itemId;
+  });
+
+  function handleAdminEan(ean) {
+    ean = (ean||'').trim();
+    if (!eanInp) eanInp.value = '';
+    else eanInp.value = '';
+    if (!ean) return;
+    // Find row by EAN
+    var row = document.querySelector('tr[data-ean="'+ean+'"]');
+    if (!row) {
+      if (eanFb) { eanFb.textContent = '❌'; setTimeout(function(){ eanFb.textContent=''; }, 1500); }
+      return;
+    }
+    row.scrollIntoView({behavior:'smooth', block:'center'});
+    row.style.outline = '3px solid #10b981';
+    setTimeout(function(){ row.style.outline = ''; }, 2000);
+    // Set qty to original and submit
+    var qtyInp = row.querySelector('input[name="picked_qty"]');
+    var origQty = row.dataset.origQty;
+    if (qtyInp && origQty) qtyInp.value = origQty;
+    if (eanFb) { eanFb.textContent = '✅'; setTimeout(function(){ eanFb.textContent=''; eanInp.focus(); }, 1500); }
+  }
+
+  eanInp.addEventListener('keydown', function(e){ if(e.key==='Enter'){e.preventDefault();handleAdminEan(this.value);} });
+  eanInp.addEventListener('change', function(){ handleAdminEan(this.value); });
+
+  var camBtn = document.getElementById('admin-ean-camera-btn');
+  if (camBtn) camBtn.addEventListener('click', function(){
+    if (typeof window.VeshoScanner === 'undefined') { alert('Scanner ei ole saadaval'); return; }
+    window.VeshoScanner.open({title:'Skänni toote EAN', autoConfirm:true, manualInput:false,
+      onResult: function(code){ handleAdminEan(code); }
+    });
+  });
+})();
+
 // ── Partial refund helpers ────────────────────────────────────────────────────
 var veshoRefundNonce = '<?php echo wp_create_nonce("vesho_portal_nonce"); ?>';
 
@@ -888,4 +967,21 @@ if (camBtn) {
 }
 
 })();
+
+// ── 30s auto-refresh (matches 3006 ShopOrders.jsx setInterval) ───────────────
+<?php if (!$edit): // Only on list view ?>
+(function(){
+  var refreshTimer = setInterval(function(){
+    // Only refresh if no modals open and user is not interacting
+    if (document.querySelector('.modal-overlay') || document.activeElement.tagName === 'INPUT') return;
+    window.location.reload();
+  }, 30000);
+  // Cancel refresh if user starts editing
+  document.addEventListener('click', function(e){
+    if (e.target.closest('form') || e.target.tagName === 'BUTTON') {
+      clearInterval(refreshTimer);
+    }
+  });
+})();
+<?php endif; ?>
 </script>

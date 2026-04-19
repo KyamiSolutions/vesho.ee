@@ -657,6 +657,10 @@ class Vesho_CRM_Database {
         self::maybe_add_column( "{$wpdb->prefix}vesho_shop_orders", 'client_company', "VARCHAR(255) DEFAULT NULL" );
         self::maybe_add_column( "{$wpdb->prefix}vesho_shop_orders", 'shipping_cost',         "DECIMAL(10,2) DEFAULT 0" );
         self::maybe_add_column( "{$wpdb->prefix}vesho_shop_orders", 'refund_pending_amount', "DECIMAL(10,2) DEFAULT 0.00" );
+        self::maybe_add_column( "{$wpdb->prefix}vesho_shop_orders", 'packed_at', "DATETIME DEFAULT NULL" );
+
+        self::maybe_add_column( "{$wpdb->prefix}vesho_inventory_writeoffs", 'order_id',     "INT UNSIGNED DEFAULT NULL" );
+        self::maybe_add_column( "{$wpdb->prefix}vesho_inventory_writeoffs", 'order_number', "VARCHAR(30) DEFAULT NULL" );
 
         // ── Insert default settings if empty ─────────────────────────────────
         self::seed_default_settings();

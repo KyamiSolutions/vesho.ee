@@ -1911,6 +1911,13 @@ private static function load_view( $name ) {
                     $it->quantity, $it->inventory_id
                 ) );
             }
+            // Auto-refund on cancel (matches 3006 /admin/orders/:id/cancel)
+            $order_for_refund = $wpdb->get_row( $wpdb->prepare(
+                "SELECT * FROM {$wpdb->prefix}vesho_shop_orders WHERE id=%d", $order_id
+            ) );
+            if ( $order_for_refund && !empty($order_for_refund->paid_at) && (float)$order_for_refund->total > 0 ) {
+                self::do_payment_refund( $order_for_refund, (float)$order_for_refund->total );
+            }
         }
         // Restore stock on returned
         if ( $status === 'returned' ) {
@@ -1987,6 +1994,17 @@ private static function load_view( $name ) {
                 $order = $wpdb->get_row( $wpdb->prepare( "SELECT status FROM {$wpdb->prefix}vesho_shop_orders WHERE id=%d", $oid ) );
                 if ( $order && in_array($order->status, ['pending', 'new']) ) {
                     $wpdb->update( $wpdb->prefix . 'vesho_shop_orders', array( 'status' => 'processing' ), array( 'id' => $oid ) );
+                    // Deduct inventory (same as single order send_to_workers)
+                    $items = $wpdb->get_results( $wpdb->prepare(
+                        "SELECT inventory_id, quantity FROM {$wpdb->prefix}vesho_shop_order_items WHERE order_id=%d AND inventory_id IS NOT NULL",
+                        $oid
+                    ) );
+                    foreach ( $items as $it ) {
+                        $wpdb->query( $wpdb->prepare(
+                            "UPDATE {$wpdb->prefix}vesho_inventory SET quantity = GREATEST(0, quantity - %f) WHERE id = %d",
+                            $it->quantity, $it->inventory_id
+                        ) );
+                    }
                 }
             }
         }
