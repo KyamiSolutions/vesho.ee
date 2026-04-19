@@ -786,6 +786,7 @@ function vesho_admin_bar_modal_fix() {
     ?>
     <style id="vesho-adminbar-fix">
         /* Sticky header must sit below admin bar */
+        body.admin-bar .site-top-wrapper { top: 32px !important; }
         body.admin-bar .site-header { top: 32px !important; }
 
         /* Modal backdrops must cover the full remaining viewport */
@@ -803,6 +804,7 @@ function vesho_admin_bar_modal_fix() {
         }
 
         @media screen and (max-width: 782px) {
+            body.admin-bar .site-top-wrapper { top: 46px !important; }
             body.admin-bar .site-header { top: 46px !important; }
             body.admin-bar .modal-backdrop,
             body.admin-bar #modal-backdrop,
