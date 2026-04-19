@@ -44,9 +44,9 @@ window.addEventListener('resize', veshoAdjustTopHeight);
 <!-- ── Top Bar ────────────────────────────────────────────────────────────── -->
 <div class="site-topbar">
     <?php
-    $fb = get_theme_mod('vesho_facebook','');
-    $li = get_theme_mod('vesho_linkedin','');
-    $ig = get_theme_mod('vesho_instagram','');
+    $fb = get_theme_mod('vesho_facebook', get_option('vesho_facebook',''));
+    $li = get_theme_mod('vesho_linkedin', get_option('vesho_linkedin',''));
+    $ig = get_theme_mod('vesho_instagram', get_option('vesho_instagram',''));
     $has_social = $fb || $li || $ig;
     ?>
     <?php if ($has_social): ?>

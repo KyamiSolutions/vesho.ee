@@ -30,6 +30,11 @@
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg>
                             </a>
                         <?php endif; ?>
+                        <?php $ig = get_option( 'vesho_instagram', '' ); if ( $ig ) : ?>
+                            <a href="<?php echo esc_url( $ig ); ?>" class="footer-social__link" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
+                            </a>
+                        <?php endif; ?>
                         <?php $li = get_option( 'vesho_linkedin', '' ); if ( $li ) : ?>
                             <a href="<?php echo esc_url( $li ); ?>" class="footer-social__link" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z"/><circle cx="4" cy="4" r="2"/></svg>
@@ -87,7 +92,7 @@
                         $phone   = get_theme_mod( 'vesho_phone', vesho_get_setting( 'company_phone', '+372 5XXX XXXX' ) );
                         $email   = get_theme_mod( 'vesho_email', vesho_get_setting( 'company_email', 'info@vesho.ee' ) );
                         $address = get_theme_mod( 'vesho_address', vesho_get_setting( 'company_address', 'Tallinn, Eesti' ) );
-                        $hours   = vesho_get_setting( 'working_hours', 'E–R 9:00–18:00' );
+                        $hours   = get_option( 'vesho_working_hours', 'E–R 9:00–18:00' );
                         ?>
                         <li class="footer-contact__item">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.64A2 2 0 012 .81h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.09 8.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>

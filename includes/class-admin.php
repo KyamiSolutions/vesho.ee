@@ -1507,6 +1507,7 @@ private static function load_view( $name ) {
         $text_fields = array(
             'company_name','company_reg','company_vat','company_address',
             'company_phone','company_email','company_bank','company_iban',
+            'working_hours','facebook','instagram','linkedin',
             'invoice_prefix','invoice_start','portal_page','login_page','worker_page',
             'portal_title','portal_login_sub','notify_email','maintenance_reminder_days',
             'vat_rate','invoice_due_days','ga_id',
