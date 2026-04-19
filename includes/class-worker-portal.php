@@ -339,7 +339,7 @@ class Vesho_CRM_Worker_Portal {
            ORDER BY created_at DESC LIMIT 5",
           $today_wn, $today_wn
       ));
-      <?php if (!empty($worker_notices)): ?>
+      if (!empty($worker_notices)): ?>
       <script>var _vwn_dm=(function(){try{return JSON.parse(sessionStorage.getItem("vwn_dm")||"[]");}catch(e){return [];}})();</script>
       <?php endif; ?>
       <?php foreach ($worker_notices as $wn) :

@@ -1,10 +1,10 @@
 {
   "name": "Vesho CRM",
   "slug": "vesho-crm",
-  "version": "2.2.84",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.2.84/vesho-crm.zip",
+  "version": "2.2.85",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.2.85/vesho-crm.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-19",
-  "changelog": "<h4>2.2.84</h4><ul><li>EAN scanner vastuvõtul: AJAX lookup inventuurist, täidab vormi automaatselt</li><li>Tellimused: localStorage salvestab komplekteerimise seisu üle lehe värskenduse</li><li>Töötaja portaali teated: lisa sulgemise nupp (dismiss)</li></ul><h4>2.2.83</h4><ul><li>Avaliku saidi teated: otse PHP output navbar alla, ei sõltu AJAX-ist</li></ul><h4>2.2.82</h4><ul><li>AJAX nocache + cache-bust</li></ul><h4>2.2.81</h4><ul><li>AJAX-põhine public notices</li></ul><h4>2.2.80</h4><ul><li>Teated pärast navbar-i</li></ul>"
+  "changelog": "<h4>2.2.85</h4><ul><li>Hotfix: parse error worker-portal rida 342</li></ul><h4>2.2.84</h4><ul><li>EAN scanner vastuvõtul + tellimused localStorage + notices dismiss</li></ul><h4>2.2.83</h4><ul><li>Avaliku saidi teated otse PHP</li></ul>"
 }
