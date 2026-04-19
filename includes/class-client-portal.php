@@ -1756,13 +1756,57 @@ window.vwpOpenPayment=function(id,amount){
         if(!d.success)return;
         var cfg=d.data,methods=document.getElementById('vcp-pay-methods');
         methods.innerHTML='';
-        if(cfg.mc_enabled){var b=document.createElement('button');b.textContent='🏦 Panka / kaardiga (Maksekeskus)';b.style='width:100%;padding:13px;background:#fff;border:2px solid #00b4c8;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;color:#00b4c8';b.onclick=function(){vwpPayMC()};methods.appendChild(b);}
-        if(cfg.montonio_enabled){var b2=document.createElement('button');b2.textContent='🏦 Pangalink / järelmaks (Montonio)';b2.style='width:100%;padding:13px;background:#fff;border:2px solid #6366f1;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;color:#6366f1';b2.onclick=function(){vwpPayMontonio()};methods.appendChild(b2);}
+        if(cfg.mc_enabled){var b=document.createElement('button');b.textContent='🏦 Panka / kaardiga (Maksekeskus)';b.style='width:100%;padding:13px;background:#fff;border:2px solid #00b4c8;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;color:#00b4c8;margin-bottom:6px';b.onclick=function(){vwpShowBankPicker()};methods.appendChild(b);}
+        if(cfg.montonio_enabled){var b2=document.createElement('button');b2.textContent='🏦 Pangalink / järelmaks (Montonio)';b2.style='width:100%;padding:13px;background:#fff;border:2px solid #6366f1;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;color:#6366f1;margin-bottom:6px';b2.onclick=function(){vwpPayMontonio()};methods.appendChild(b2);}
         if(cfg.stripe_enabled&&cfg.stripe_pub_key){var b3=document.createElement('button');b3.textContent='💳 Kaardiga (Stripe)';b3.style='width:100%;padding:13px;background:#fff;border:2px solid #635bff;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;color:#635bff';b3.onclick=function(){vwpInitStripe(cfg.stripe_pub_key)};methods.appendChild(b3);}
         if(!cfg.mc_enabled&&!cfg.montonio_enabled&&!cfg.stripe_enabled)methods.innerHTML='<p style="text-align:center;color:#888;font-size:13px">Makselahendus pole seadistatud.</p>';
     });
 };
-function vwpPayMC(){setMsg('Suunamine Maksekeskusesse...');fetch(ajaxUrl,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'action=vesho_pay_invoice_mc&nonce='+nonce+'&invoice_id='+_invId}).then(r=>r.json()).then(d=>{if(d.success&&d.data.redirect_url)window.location.href=d.data.redirect_url;else setMsg('❌ '+(d.data&&d.data.message?d.data.message:'Viga'));});}
+var MC_BANKS=[
+  {id:'swedbank',name:'Swedbank',color:'#f37229'},
+  {id:'seb',name:'SEB',color:'#007b40'},
+  {id:'lhv',name:'LHV',color:'#e8b100'},
+  {id:'luminor',name:'Luminor',color:'#ff523f'},
+  {id:'coop',name:'Coop Pank',color:'#00b050'},
+  {id:'bigbank',name:'Bigbank',color:'#ee3124'},
+  {id:'inbank',name:'Inbank',color:'#6b21a8'},
+  {id:'revolut',name:'Revolut',color:'#1a1b25'},
+];
+function vwpShowBankPicker(){
+  var existing=document.getElementById('vcp-bank-picker-overlay');
+  if(existing) existing.remove();
+  var overlay=document.createElement('div');
+  overlay.id='vcp-bank-picker-overlay';
+  overlay.style='position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:10002;display:flex;align-items:center;justify-content:center;padding:16px';
+  var box=document.createElement('div');
+  box.style='background:#fff;border-radius:16px;padding:24px;max-width:380px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.25)';
+  box.innerHTML='<div style="font-size:16px;font-weight:700;color:#1e293b;margin-bottom:4px">Vali pank</div><div style="font-size:12px;color:#94a3b8;margin-bottom:18px">Suunatakse valitud panga lehele</div>';
+  var grid=document.createElement('div');
+  grid.style='display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px';
+  MC_BANKS.forEach(function(bank){
+    var btn=document.createElement('button');
+    btn.textContent=bank.name;
+    btn.style='padding:12px;border-radius:10px;border:2px solid '+bank.color+';background:#fff;color:'+bank.color+';font-size:13px;font-weight:700;cursor:pointer;transition:background 0.15s';
+    btn.onmouseenter=function(){btn.style.background=bank.color+'18'};
+    btn.onmouseleave=function(){btn.style.background='#fff'};
+    btn.onclick=function(){overlay.remove();vwpPayMC(bank.id);};
+    grid.appendChild(btn);
+  });
+  box.appendChild(grid);
+  var skipBtn=document.createElement('button');
+  skipBtn.textContent='Jätka ilma pangavalikuta';
+  skipBtn.style='width:100%;padding:10px;border-radius:10px;border:1px solid #e2e8f0;background:#f8fafc;color:#64748b;font-size:13px;cursor:pointer;margin-bottom:8px';
+  skipBtn.onclick=function(){overlay.remove();vwpPayMC('');};
+  var cancelBtn=document.createElement('button');
+  cancelBtn.textContent='Tühista';
+  cancelBtn.style='width:100%;padding:8px;border:none;background:transparent;color:#94a3b8;font-size:13px;cursor:pointer';
+  cancelBtn.onclick=function(){overlay.remove();};
+  box.appendChild(skipBtn);box.appendChild(cancelBtn);
+  overlay.appendChild(box);
+  overlay.onclick=function(e){if(e.target===overlay)overlay.remove();};
+  document.body.appendChild(overlay);
+}
+function vwpPayMC(bankId){setMsg('Suunamine Maksekeskusesse...');var body='action=vesho_pay_invoice_mc&nonce='+nonce+'&invoice_id='+_invId;if(bankId)body+='&bank_id='+encodeURIComponent(bankId);fetch(ajaxUrl,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:body}).then(r=>r.json()).then(d=>{if(d.success&&d.data.redirect_url)window.location.href=d.data.redirect_url;else setMsg('❌ '+(d.data&&d.data.message?d.data.message:'Viga'));});}
 function vwpPayMontonio(){setMsg('Suunamine Montoniole...');fetch(ajaxUrl,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'action=vesho_pay_invoice_montonio&nonce='+nonce+'&invoice_id='+_invId}).then(r=>r.json()).then(d=>{if(d.success&&d.data.redirect_url)window.location.href=d.data.redirect_url;else setMsg('❌ '+(d.data&&d.data.message?d.data.message:'Viga'));});}
 function vwpInitStripe(pubKey){document.getElementById('vcp-pay-stripe-form').style.display='block';if(_stripe)return;if(!window.Stripe){var s=document.createElement('script');s.src='https://js.stripe.com/v3/';s.onload=function(){vwpInitStripe(pubKey)};document.head.appendChild(s);return;}_stripe=Stripe(pubKey);var el=_stripe.elements();_cardEl=el.create('card',{style:{base:{fontSize:'16px',color:'#1e293b'}}});_cardEl.mount('#vcp-stripe-element');}
 window.vwpSubmitStripe=function(){setMsg('Töötleme makset...');fetch(ajaxUrl,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'action=vesho_pay_invoice_stripe&nonce='+nonce+'&invoice_id='+_invId}).then(r=>r.json()).then(d=>{if(!d.success){setMsg('❌ '+(d.data&&d.data.message?d.data.message:'Viga'));return;}_stripe.confirmCardPayment(d.data.client_secret,{payment_method:{card:_cardEl}}).then(function(result){if(result.error)setMsg('❌ '+result.error.message);else fetch(ajaxUrl,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'action=vesho_confirm_stripe_payment&nonce='+nonce+'&invoice_id='+_invId}).then(r=>r.json()).then(d2=>{if(d2.success&&d2.data.message){setMsg('✅ '+d2.data.message);setTimeout(function(){location.reload()},2000);}});});});};
