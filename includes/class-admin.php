@@ -192,6 +192,7 @@ class Vesho_CRM_Admin {
         add_submenu_page( 'vesho-crm', 'Laoaadressid', 'Laoaadressid', $cap, 'vesho-crm-locations', array( __CLASS__, 'page_locations' ) );
         add_submenu_page( 'vesho-crm', 'Tarnijad', 'Tarnijad', $cap, 'vesho-crm-suppliers', array( __CLASS__, 'page_suppliers' ) );
         add_submenu_page( 'vesho-crm', 'Ostutellimused', 'Ostutellimused', $cap, 'vesho-crm-purchase-orders', array( __CLASS__, 'page_purchase_orders' ) );
+        add_submenu_page( 'vesho-crm', 'Hinnakiri', 'Hinnakiri', $cap, 'vesho-crm-pricelist', array( __CLASS__, 'page_pricelist' ) );
 
         // ── MUU ──
         add_submenu_page( 'vesho-crm', 'Portaali teated', 'Portaali teated', $cap, 'vesho-crm-notices', array( __CLASS__, 'page_notices' ) );
