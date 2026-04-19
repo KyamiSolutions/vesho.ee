@@ -32,6 +32,7 @@ class Vesho_CRM_Client_Portal {
             'vesho_client_delete_account',
             'vesho_client_cancel_order',
         ];
+        add_action('wp_ajax_vesho_client_reply_ticket', [__CLASS__, 'ajax_client_reply_ticket']);
         add_action('wp_ajax_vesho_client_return_request', [__CLASS__, 'ajax_client_return_request']);
 
         foreach ($nopriv_actions as $action) {
@@ -2088,6 +2089,19 @@ function setMsg(m){document.getElementById('vcp-pay-msg').textContent=m;}
         $tickets = $wpdb->get_results($wpdb->prepare(
             "SELECT * FROM {$wpdb->prefix}vesho_support_tickets WHERE client_id=%d ORDER BY created_at DESC LIMIT 30", $cid
         ));
+        // Load reply threads for all tickets
+        $ticket_ids = array_column((array)$tickets, 'id');
+        $replies_by_ticket = [];
+        if (!empty($ticket_ids)) {
+            $placeholders = implode(',', array_fill(0, count($ticket_ids), '%d'));
+            $all_replies  = $wpdb->get_results($wpdb->prepare(
+                "SELECT * FROM {$wpdb->prefix}vesho_ticket_replies WHERE ticket_id IN ($placeholders) ORDER BY created_at ASC",
+                ...$ticket_ids
+            ));
+            foreach ($all_replies as $rep) {
+                $replies_by_ticket[$rep->ticket_id][] = $rep;
+            }
+        }
         ?>
 <h2 class="vcp-section-title">Tugipiletid</h2>
 <div class="vcp-card" style="margin-bottom:24px">
@@ -2112,39 +2126,105 @@ function setMsg(m){document.getElementById('vcp-pay-msg').textContent=m;}
 </div>
 
 <?php if (!empty($tickets)): ?>
-  <div style="display:flex;flex-direction:column;gap:12px">
-  <?php foreach ($tickets as $t): ?>
-  <div class="vcp-card" style="padding:16px;border-left:4px solid <?php echo $t->status==='closed'?'#22c55e':($t->status==='open'?'#f59e0b':'#3b82f6'); ?>">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
-      <div>
-        <div style="font-weight:600;font-size:14px"><?php echo esc_html($t->subject); ?></div>
-        <div style="font-size:12px;color:#888;margin-top:2px">#<?php echo $t->id; ?> &middot; <?php echo $t->created_at ? date('d.m.Y H:i', strtotime($t->created_at)) : '—'; ?></div>
+  <div style="display:flex;flex-direction:column;gap:16px">
+  <?php foreach ($tickets as $t):
+    $border_color = $t->status==='closed' ? '#22c55e' : ($t->status==='in_progress' ? '#3b82f6' : '#f59e0b');
+    $thread = $replies_by_ticket[$t->id] ?? [];
+    $has_thread = !empty($thread);
+    $card_id = 'ticket-card-'.$t->id;
+  ?>
+  <div class="vcp-card" id="<?php echo $card_id; ?>" style="padding:0;border-left:4px solid <?php echo $border_color; ?>;overflow:hidden">
+
+    <!-- Pileti päis — klikitav avamiseks -->
+    <div onclick="vshToggleTicket(<?php echo $t->id; ?>)"
+         style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:16px;cursor:pointer;user-select:none">
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:14px;color:#1a2a38"><?php echo esc_html($t->subject); ?></div>
+        <div style="font-size:12px;color:#888;margin-top:2px">
+          #<?php echo $t->id; ?> &middot; <?php echo $t->created_at ? date('d.m.Y H:i', strtotime($t->created_at)) : '—'; ?>
+          <?php if ($has_thread): ?>&middot; <span style="color:#00b4c8"><?php echo count($thread); ?> vastus<?php echo count($thread)>1?'t':''; ?></span><?php endif; ?>
+        </div>
       </div>
-      <?php echo self::status_badge($t->status ?? 'open', 'ticket'); ?>
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+        <?php echo self::status_badge($t->status ?? 'open', 'ticket'); ?>
+        <span id="vsh-arrow-<?php echo $t->id; ?>" style="font-size:12px;color:#6b8599;transition:transform .2s">▼</span>
+      </div>
     </div>
-    <?php if (!empty($t->attachment_url)): ?>
-    <div style="margin-top:8px">
-      <?php
-        $ext = strtolower(pathinfo($t->attachment_url, PATHINFO_EXTENSION));
-        $is_image = in_array($ext, ['jpg','jpeg','png','gif','webp']);
-      ?>
-      <?php if ($is_image): ?>
-        <a href="<?php echo esc_url($t->attachment_url); ?>" target="_blank" rel="noopener">
-          <img src="<?php echo esc_url($t->attachment_url); ?>" style="max-width:200px;max-height:120px;border-radius:6px;border:1px solid #e2e8f0;object-fit:cover" alt="manust">
-        </a>
+
+    <!-- Sisu — peidetud vaikimisi -->
+    <div id="vsh-body-<?php echo $t->id; ?>" style="display:none;border-top:1px solid #f0f4f7">
+
+      <!-- Sõnumite ahel -->
+      <div style="padding:16px;display:flex;flex-direction:column;gap:10px;max-height:420px;overflow-y:auto;scroll-behavior:smooth" id="vsh-thread-<?php echo $t->id; ?>">
+
+        <!-- Algne sõnum kliendilt -->
+        <div style="display:flex;gap:10px;align-items:flex-start">
+          <div style="width:28px;height:28px;border-radius:50%;background:#e0f2fe;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0">👤</div>
+          <div style="flex:1">
+            <div style="font-size:11px;color:#888;margin-bottom:4px">
+              <strong style="color:#374151">Sina</strong> &middot; <?php echo $t->created_at ? date('d.m.Y H:i', strtotime($t->created_at)) : '—'; ?>
+            </div>
+            <div style="background:#f4f7f9;border-radius:0 8px 8px 8px;padding:10px 14px;font-size:13px;line-height:1.6;white-space:pre-wrap"><?php echo esc_html($t->message ?? ''); ?></div>
+            <?php if (!empty($t->attachment_url)): ?>
+            <div style="margin-top:6px">
+              <?php $ext = strtolower(pathinfo($t->attachment_url, PATHINFO_EXTENSION));
+                    $is_image = in_array($ext, ['jpg','jpeg','png','gif','webp']); ?>
+              <?php if ($is_image): ?>
+                <a href="<?php echo esc_url($t->attachment_url); ?>" target="_blank" rel="noopener">
+                  <img src="<?php echo esc_url($t->attachment_url); ?>" style="max-width:200px;max-height:120px;border-radius:6px;border:1px solid #e2e8f0;object-fit:cover" alt="manus">
+                </a>
+              <?php else: ?>
+                <a href="<?php echo esc_url($t->attachment_url); ?>" target="_blank" rel="noopener" style="font-size:12px;color:#00b4c8">📎 Vaata manust</a>
+              <?php endif; ?>
+            </div>
+            <?php endif; ?>
+          </div>
+        </div>
+
+        <?php if ($has_thread): ?>
+          <?php foreach ($thread as $rep): ?>
+          <div style="display:flex;gap:10px;align-items:flex-start;flex-direction:row-reverse">
+            <div style="width:28px;height:28px;border-radius:50%;background:#d1fae5;display:flex;align-items:center;justify-content:middle;font-size:12px;flex-shrink:0;align-items:center;justify-content:center">🛠</div>
+            <div style="flex:1">
+              <div style="font-size:11px;color:#888;margin-bottom:4px;text-align:right">
+                <strong style="color:#374151">Vesho tugi</strong> &middot; <?php echo $rep->created_at ? date('d.m.Y H:i', strtotime($rep->created_at)) : '—'; ?>
+              </div>
+              <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px 0 8px 8px;padding:10px 14px;font-size:13px;line-height:1.6;white-space:pre-wrap;text-align:left"><?php echo esc_html($rep->message); ?></div>
+            </div>
+          </div>
+          <?php endforeach; ?>
+        <?php elseif (!empty($t->reply)): ?>
+          <!-- Legacy single reply -->
+          <div style="display:flex;gap:10px;align-items:flex-start;flex-direction:row-reverse">
+            <div style="width:28px;height:28px;border-radius:50%;background:#d1fae5;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0">🛠</div>
+            <div style="flex:1">
+              <div style="font-size:11px;color:#888;margin-bottom:4px;text-align:right"><strong style="color:#374151">Vesho tugi</strong></div>
+              <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px 0 8px 8px;padding:10px 14px;font-size:13px;line-height:1.6;white-space:pre-wrap;text-align:left"><?php echo esc_html($t->reply); ?></div>
+            </div>
+          </div>
+        <?php endif; ?>
+
+      </div><!-- /sõnumid -->
+
+      <?php if ($t->status !== 'closed'): ?>
+      <!-- Vastuse vorm — threadi all, eraldi ribana -->
+      <div style="border-top:1px solid #f0f4f7;padding:12px 16px;background:#fafbfc">
+        <div id="vsh-reply-msg-<?php echo $t->id; ?>" class="vcp-msg" style="display:none;margin-bottom:8px"></div>
+        <form id="vsh-reply-form-<?php echo $t->id; ?>" style="display:flex;gap:8px;align-items:flex-end">
+          <input type="hidden" name="nonce" value="<?php echo $nonce; ?>">
+          <input type="hidden" name="ticket_id" value="<?php echo $t->id; ?>">
+          <textarea name="reply_message" rows="2"
+            style="flex:1;box-sizing:border-box;border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px;font-size:13px;resize:none;font-family:inherit;line-height:1.5"
+            placeholder="Kirjuta vastus..."></textarea>
+          <button type="submit" class="vcp-btn-primary" style="font-size:13px;padding:9px 16px;white-space:nowrap;flex-shrink:0">Saada</button>
+        </form>
+      </div>
       <?php else: ?>
-        <a href="<?php echo esc_url($t->attachment_url); ?>" target="_blank" rel="noopener" style="font-size:12px;color:#00b4c8">
-          &#128206; Vaata manust
-        </a>
+      <div style="border-top:1px solid #f0f4f7;padding:10px 16px;background:#f8fafb;font-size:12px;color:#9ca3af;text-align:center">Pilet on suletud</div>
       <?php endif; ?>
-    </div>
-    <?php endif; ?>
-    <?php if (!empty($t->reply)): ?>
-    <div style="margin-top:12px;padding:12px;background:#f0f9f0;border-radius:6px;font-size:13px">
-      <strong style="color:#166534;font-size:11px;display:block;margin-bottom:4px">&#9993;&#65039; VESHO VASTUS</strong>
-      <?php echo nl2br(esc_html($t->reply)); ?>
-    </div>
-    <?php endif; ?>
+
+    </div><!-- /body -->
+
   </div>
   <?php endforeach; ?>
   </div>
@@ -2153,20 +2233,55 @@ function setMsg(m){document.getElementById('vcp-pay-msg').textContent=m;}
 <?php endif; ?>
 <script>
 (function(){
+  // ── Uue pileti vorm ───────────────────────────────────────────────────────
   var form=document.getElementById('vcp-ticket-form');
-  if(!form) return;
-  form.addEventListener('submit',function(e){
-    e.preventDefault();
-    var msg=document.getElementById('vcp-ticket-msg');
-    var fd=new FormData(form); fd.append('action','vesho_submit_ticket');
-    var btn=form.querySelector('button[type=submit]'); btn.disabled=true; btn.textContent='...';
-    fetch('<?php echo $ajax; ?>',{method:'POST',body:fd}).then(function(r){return r.json();}).then(function(d){
-      msg.style.display='block';
-      msg.className='vcp-msg '+(d.success?'success':'error');
-      msg.textContent=(d.data&&d.data.message)||(d.success?'Pilet saadetud!':'Viga');
-      if(d.success){ form.reset(); setTimeout(function(){window.location.reload();},1200); }
-      btn.disabled=false; btn.textContent='Saada pilet';
-    }).catch(function(){ msg.style.display='block'; msg.className='vcp-msg error'; msg.textContent='Ühenduse viga'; btn.disabled=false; btn.textContent='Saada pilet'; });
+  if(form){
+    form.addEventListener('submit',function(e){
+      e.preventDefault();
+      var msg=document.getElementById('vcp-ticket-msg');
+      var fd=new FormData(form); fd.append('action','vesho_submit_ticket');
+      var btn=form.querySelector('button[type=submit]'); btn.disabled=true; btn.textContent='...';
+      fetch('<?php echo $ajax; ?>',{method:'POST',body:fd}).then(function(r){return r.json();}).then(function(d){
+        msg.style.display='block';
+        msg.className='vcp-msg '+(d.success?'success':'error');
+        msg.textContent=(d.data&&d.data.message)||(d.success?'Pilet saadetud!':'Viga');
+        if(d.success){ form.reset(); setTimeout(function(){window.location.reload();},1200); }
+        btn.disabled=false; btn.textContent='Saada pilet';
+      }).catch(function(){ msg.style.display='block'; msg.className='vcp-msg error'; msg.textContent='Ühenduse viga'; btn.disabled=false; btn.textContent='Saada pilet'; });
+    });
+  }
+
+  // ── Pileti avamine/sulgemine ──────────────────────────────────────────────
+  window.vshToggleTicket = function(id){
+    var body   = document.getElementById('vsh-body-'+id);
+    var arrow  = document.getElementById('vsh-arrow-'+id);
+    var thread = document.getElementById('vsh-thread-'+id);
+    if(!body) return;
+    var open = body.style.display !== 'none';
+    body.style.display = open ? 'none' : 'block';
+    if(arrow) arrow.style.transform = open ? '' : 'rotate(180deg)';
+    if(!open && thread) setTimeout(function(){ thread.scrollTop = thread.scrollHeight; }, 50);
+  };
+
+  // ── Kliendi vastuse vorm igale piletile ───────────────────────────────────
+  document.querySelectorAll('[id^="vsh-reply-form-"]').forEach(function(replyForm){
+    replyForm.addEventListener('submit', function(e){
+      e.preventDefault();
+      var tid = replyForm.querySelector('[name="ticket_id"]').value;
+      var msg = document.getElementById('vsh-reply-msg-'+tid);
+      var fd  = new FormData(replyForm);
+      fd.append('action', 'vesho_client_reply_ticket');
+      var btn = replyForm.querySelector('button[type=submit]');
+      btn.disabled=true; btn.textContent='...';
+      fetch('<?php echo $ajax; ?>',{method:'POST',body:fd}).then(function(r){return r.json();}).then(function(d){
+        if(msg){ msg.style.display='block'; msg.className='vcp-msg '+(d.success?'success':'error'); msg.textContent=(d.data&&d.data.message)||(d.success?'Vastus saadetud!':'Viga'); }
+        if(d.success){ setTimeout(function(){window.location.reload();},800); }
+        btn.disabled=false; btn.textContent='Saada vastus';
+      }).catch(function(){
+        if(msg){ msg.style.display='block'; msg.className='vcp-msg error'; msg.textContent='Ühenduse viga'; }
+        btn.disabled=false; btn.textContent='Saada vastus';
+      });
+    });
   });
 })();
 </script>
@@ -2767,6 +2882,51 @@ function setMsg(m){document.getElementById('vcp-pay-msg').textContent=m;}
             }
         }
         wp_send_json_success(['message' => 'Pilet edukalt saadetud! Vastame esimesel võimalusel.']);
+    }
+
+    // ── AJAX: Client reply to existing ticket ─────────────────────────────────
+
+    public static function ajax_client_reply_ticket() {
+        check_ajax_referer('vesho_portal_nonce', 'nonce');
+        $client = self::get_current_client();
+        if (!$client) wp_send_json_error(['message' => 'Pole sisse logitud']);
+        global $wpdb;
+        $tid     = absint($_POST['ticket_id'] ?? 0);
+        $message = sanitize_textarea_field($_POST['reply_message'] ?? '');
+        if (!$tid || !$message) wp_send_json_error(['message' => 'Vastus ei tohi olla tühi']);
+
+        // Make sure ticket belongs to this client
+        $ticket = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM {$wpdb->prefix}vesho_support_tickets WHERE id=%d AND client_id=%d LIMIT 1",
+            $tid, $client->id
+        ));
+        if (!$ticket) wp_send_json_error(['message' => 'Pilet ei leitud']);
+        if ($ticket->status === 'closed') wp_send_json_error(['message' => 'Pilet on suletud']);
+
+        $wpdb->insert($wpdb->prefix . 'vesho_ticket_replies', [
+            'ticket_id'  => $tid,
+            'author'     => 'client',
+            'message'    => $message,
+            'created_at' => current_time('mysql'),
+        ]);
+
+        // Re-open ticket to in_progress if it was closed
+        $wpdb->update($wpdb->prefix . 'vesho_support_tickets', [
+            'status'     => 'in_progress',
+            'updated_at' => current_time('mysql'),
+        ], ['id' => $tid]);
+
+        // Notify admin
+        $notify_email = get_option('vesho_notify_email', get_option('admin_email'));
+        if ($notify_email) {
+            $co = get_option('vesho_company_name', 'Vesho CRM');
+            wp_mail($notify_email,
+                "[{$co}] Klient vastas piletile #{$tid}: {$ticket->subject}",
+                "Klient: {$client->name} ({$client->email})\n\n{$message}"
+            );
+        }
+
+        wp_send_json_success(['message' => 'Vastus saadetud!']);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
