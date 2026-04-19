@@ -2513,11 +2513,16 @@ document.querySelectorAll('.vwp-hist-header').forEach(function(hdr){
     if(eanInp) eanInp.value='';
     if(idx>=0){
       var it=allItems[idx];
+      // Auto-set qty to original (matches 3006 WorkerPortal.jsx EAN scan behaviour)
+      var origQty=it.qty;
+      qtyState[it.id]=origQty;
       pickedState[it.id]=true;
-      setRowUI(it.id,true,qtyState[it.id]);
-      lsSavePicked();
+      setRowUI(it.id,true,origQty);
+      lsSavePicked();lsSaveQty();
       updateProgress();
-      if(feedback){feedback.textContent='✓ Toode märgitud kogutud';feedback.style.color='#10b981';}
+      var row=document.getElementById('shop-row-'+it.id);
+      if(row) row.scrollIntoView({behavior:'smooth',block:'center'});
+      if(feedback){feedback.textContent='✓ '+it.name+' — '+origQty+' tk';feedback.style.color='#10b981';}
     } else {
       if(feedback){feedback.textContent='✗ EAN ei vasta ühelegi tootele';feedback.style.color='#ef4444';}
     }
@@ -3690,8 +3695,9 @@ document.querySelectorAll('.vwp-hist-header').forEach(function(hdr){
         if (!$worker) wp_send_json_error(['message'=>'Pole sisse logitud']);
         global $wpdb;
         $order_id = absint($_POST['order_id']??0);
+        // Release: only clear worker_id, status stays 'processing' (matches 3006)
         $wpdb->update("{$wpdb->prefix}vesho_shop_orders",
-            ['worker_id'=>null,'status'=>'pending'],['id'=>$order_id,'worker_id'=>$worker->id]);
+            ['worker_id'=>null],['id'=>$order_id,'worker_id'=>$worker->id]);
         wp_send_json_success(['message'=>'Tellimus vabastatud']);
     }
 

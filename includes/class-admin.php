@@ -83,6 +83,7 @@ class Vesho_CRM_Admin {
         add_action( 'wp_ajax_vesho_order_issue_refund',      array( __CLASS__, 'ajax_order_issue_refund' ) );
         add_action( 'wp_ajax_vesho_order_manual_refund',     array( __CLASS__, 'ajax_order_manual_refund' ) );
         add_action( 'wp_ajax_vesho_order_not_received',      array( __CLASS__, 'ajax_order_not_received' ) );
+        add_action( 'wp_ajax_vesho_send_credit_note',         array( __CLASS__, 'ajax_send_credit_note' ) );
         add_action( 'admin_post_vesho_generate_worker_barcode', array( __CLASS__, 'handle_generate_worker_barcode' ) );
         add_action( 'admin_post_vesho_approve_return',           array( __CLASS__, 'handle_approve_return' ) );
         add_action( 'admin_post_vesho_reject_return',            array( __CLASS__, 'handle_reject_return' ) );
@@ -3069,5 +3070,74 @@ private static function load_view( $name ) {
         }
 
         wp_send_json_success( ['message' => 'Tellimus märgitud tagastatuvaks.' . $refund_msg] );
+    }
+
+    /**
+     * Send credit note email to customer for a returned shop order (3006 parity).
+     */
+    public static function ajax_send_credit_note() {
+        check_ajax_referer( 'vesho_admin_nonce', 'nonce' );
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_send_json_error( ['message' => 'Pole lubatud'] );
+        }
+        global $wpdb;
+        $order_id = absint( $_POST['order_id'] ?? 0 );
+        if ( ! $order_id ) wp_send_json_error( ['message' => 'Vale tellimuse ID'] );
+
+        $order = $wpdb->get_row( $wpdb->prepare(
+            "SELECT o.*, c.name AS client_name, c.email AS client_email
+             FROM {$wpdb->prefix}vesho_shop_orders o
+             LEFT JOIN {$wpdb->prefix}vesho_clients c ON c.id = o.client_id
+             WHERE o.id = %d", $order_id
+        ) );
+        if ( ! $order ) wp_send_json_error( ['message' => 'Tellimust ei leitud'] );
+
+        $to = $order->client_email ?: $order->guest_email ?: '';
+        if ( ! $to ) wp_send_json_error( ['message' => 'Kliendil puudub emailiaadress'] );
+
+        $items = $wpdb->get_results( $wpdb->prepare(
+            "SELECT * FROM {$wpdb->prefix}vesho_shop_order_items WHERE order_id = %d ORDER BY id ASC", $order_id
+        ) );
+
+        $shop_name = get_bloginfo('name') ?: 'Vesho';
+        $name      = $order->client_name ?: $order->guest_name ?: 'Klient';
+        $nr        = esc_html( $order->order_number );
+        $total     = number_format( (float)$order->total, 2, ',', '.' );
+
+        $rows_html = '';
+        foreach ( $items as $it ) {
+            $rows_html .= '<tr>'
+                . '<td style="padding:6px 10px;border-bottom:1px solid #e2e8f0">' . esc_html($it->product_name) . '</td>'
+                . '<td style="padding:6px 10px;border-bottom:1px solid #e2e8f0;text-align:right">' . (float)$it->quantity . ' ' . esc_html($it->unit ?: 'tk') . '</td>'
+                . '<td style="padding:6px 10px;border-bottom:1px solid #e2e8f0;text-align:right">' . number_format((float)($it->unit_price ?? 0), 2, ',', '.') . ' €</td>'
+                . '</tr>';
+        }
+
+        $subject = "[{$shop_name}] Krediitarve — tellimus #{$nr}";
+        $body = '<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#1a2a38">'
+            . '<h2 style="color:#0d1f2d">Krediitarve</h2>'
+            . '<p>Lugupeetud ' . esc_html($name) . ',</p>'
+            . '<p>Teie tellimus <strong>#' . $nr . '</strong> on tagastatud. Allpool on krediitarve kokkuvõte.</p>'
+            . '<table style="width:100%;border-collapse:collapse;margin:16px 0">'
+            . '<thead><tr style="background:#f8fafc">'
+            . '<th style="padding:8px 10px;text-align:left;border-bottom:2px solid #e2e8f0">Toode</th>'
+            . '<th style="padding:8px 10px;text-align:right;border-bottom:2px solid #e2e8f0">Kogus</th>'
+            . '<th style="padding:8px 10px;text-align:right;border-bottom:2px solid #e2e8f0">Hind</th>'
+            . '</tr></thead>'
+            . '<tbody>' . $rows_html . '</tbody>'
+            . '<tfoot><tr><td colspan="2" style="padding:10px;font-weight:700">Kokku tagastatav</td>'
+            . '<td style="padding:10px;font-weight:700;text-align:right">' . $total . ' €</td></tr></tfoot>'
+            . '</table>'
+            . '<p style="color:#64748b;font-size:13px">Kui teil on küsimusi, võtke meiega ühendust.<br>' . esc_html($shop_name) . '</p>'
+            . '</div>';
+
+        $headers = ['Content-Type: text/html; charset=UTF-8'];
+        $sent = wp_mail( $to, $subject, $body, $headers );
+
+        if ( $sent ) {
+            wp_send_json_success( ['message' => 'Krediitarve saadetud aadressile ' . $to] );
+        } else {
+            wp_send_json_error( ['message' => 'Emaili saatmine ebaõnnestus'] );
+        }
     }
 }

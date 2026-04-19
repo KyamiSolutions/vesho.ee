@@ -1,10 +1,10 @@
 {
   "name": "Vesho CRM",
   "slug": "vesho-crm",
-  "version": "2.5.4",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.5.4/vesho-crm.zip",
+  "version": "2.5.5",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.5.5/vesho-crm.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-19",
-  "changelog": "<h4>2.5.4</h4><ul><li>Fix: 'Ei võetud vastu' AJAX handler implementeeritud (puudus täiesti)</li><li>Fix: Dialog 2 nupuga — 'Ei tee tagasimakset' + 'Tee tagasimakse' (nagu 3006)</li><li>Fix: confirmed staatus label 'Valmis saatmiseks' → 'Valmis' (nagu guide)</li><li>Inventory restore põhineb nüüd algsel quantity-l (nagu 3006)</li></ul><h4>2.5.3</h4><ul><li>Fix: töötaja portaal näitab 'processing' tellimusi; admin ▶ nupp</li></ul>"
+  "changelog": "<h4>2.5.5</h4><ul><li>Fix: release_order ei lähtesta staatust 'pending' — jääb 'processing' (nagu 3006)</li><li>Fix: EAN skannimine seab koguse automaatselt originaalile (nagu 3006)</li><li>Lisa: statistikakaardid admin tellimuste vaates (Aktiivsed/Makse ootel/Teel/Täidetud)</li><li>Lisa: '🔄 Tagastus ootel' märgis tellimusloetelus</li><li>Lisa: krediitarve email nupp tagastatud tellimustele</li></ul><h4>2.5.4</h4><ul><li>Fix: 'Ei võetud vastu' AJAX handler implementeeritud (puudus täiesti)</li><li>Fix: Dialog 2 nupuga — 'Ei tee tagasimakset' + 'Tee tagasimakse' (nagu 3006)</li><li>Fix: confirmed staatus label 'Valmis saatmiseks' → 'Valmis' (nagu guide)</li><li>Inventory restore põhineb nüüd algsel quantity-l (nagu 3006)</li></ul><h4>2.5.3</h4><ul><li>Fix: töötaja portaal näitab 'processing' tellimusi; admin ▶ nupp</li></ul>"
 }

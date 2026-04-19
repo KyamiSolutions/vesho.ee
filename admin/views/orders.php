@@ -61,6 +61,12 @@ $orders = $wpdb->get_results(
 $total     = count($orders);
 $new_count = (int)$wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}vesho_shop_orders WHERE status IN ('pending_payment','pending','new')");
 
+// Stats cards (matches 3006 ShopOrders.jsx)
+$stat_active   = (int)$wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}vesho_shop_orders WHERE status IN ('pending','processing','confirmed')");
+$stat_payment  = (int)$wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}vesho_shop_orders WHERE status='pending_payment'");
+$stat_shipped  = (int)$wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}vesho_shop_orders WHERE status='shipped'");
+$stat_done     = (int)$wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}vesho_shop_orders WHERE status='completed'");
+
 function vesho_so_badge($status, $statuses) {
     $s = $statuses[$status] ?? ['?', '#6b7280', '#f3f4f6'];
     return '<span style="display:inline-block;padding:2px 10px;border-radius:99px;font-size:11px;font-weight:600;background:'.$s[2].';color:'.$s[1].'">'.esc_html($s[0]).'</span>';
@@ -331,6 +337,22 @@ if ( $can_refund && in_array($edit->status, ['confirmed','shipped','completed','
 </div>
 <?php endif; ?>
 
+<?php
+// ── Krediitarve email nupp tagastatud tellimustele (3006 parity) ─────────────
+$credit_email = $edit->client_email ?: $edit->guest_email ?: '';
+if ( $edit->status === 'returned' && $credit_email ):
+?>
+<div style="margin-bottom:16px;display:flex;align-items:center;gap:10px;background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:12px 16px">
+    <div style="flex:1;font-size:13px;color:#9a3412">
+        <strong>📦 Tellimus tagastatud</strong> — krediitarve saatmata?
+    </div>
+    <button id="btn-send-credit-note" onclick="sendCreditNote(<?php echo $edit->id; ?>)"
+            style="background:#ea580c;color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">
+        📧 Saada krediitarve
+    </button>
+</div>
+<?php endif; ?>
+
 <!-- Tooted -->
 <div class="crm-card" style="margin-bottom:16px">
     <div class="crm-card-header"><span class="crm-card-title">📦 Tooted</span></div>
@@ -452,6 +474,31 @@ if ( $can_refund && in_array($edit->status, ['confirmed','shipped','completed','
 
 <?php /* ─── LIST VIEW ───────────────────────────────────────────────────── */ ?>
 <?php else: ?>
+
+<!-- Stats cards (3006 parity) -->
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:18px">
+    <a href="<?php echo admin_url('admin.php?page=vesho-crm-orders'); ?>" style="text-decoration:none">
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px 16px;text-align:center">
+        <div style="font-size:26px;font-weight:800;color:#8b5cf6"><?php echo $stat_active; ?></div>
+        <div style="font-size:12px;color:#64748b;margin-top:2px">Aktiivsed</div>
+    </div></a>
+    <a href="<?php echo admin_url('admin.php?page=vesho-crm-orders&status=pending_payment'); ?>" style="text-decoration:none">
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px 16px;text-align:center">
+        <div style="font-size:26px;font-weight:800;color:#f59e0b"><?php echo $stat_payment; ?></div>
+        <div style="font-size:12px;color:#64748b;margin-top:2px">Makse ootel</div>
+    </div></a>
+    <a href="<?php echo admin_url('admin.php?page=vesho-crm-orders&status=shipped'); ?>" style="text-decoration:none">
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px 16px;text-align:center">
+        <div style="font-size:26px;font-weight:800;color:#0ea5e9"><?php echo $stat_shipped; ?></div>
+        <div style="font-size:12px;color:#64748b;margin-top:2px">Teel</div>
+    </div></a>
+    <a href="<?php echo admin_url('admin.php?page=vesho-crm-orders&status=completed'); ?>" style="text-decoration:none">
+    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px 16px;text-align:center">
+        <div style="font-size:26px;font-weight:800;color:#10b981"><?php echo $stat_done; ?></div>
+        <div style="font-size:12px;color:#64748b;margin-top:2px">Täidetud</div>
+    </div></a>
+</div>
+
 <div class="crm-card">
     <div class="crm-toolbar" style="flex-wrap:wrap;gap:8px">
         <a href="<?php echo admin_url('admin.php?page=vesho-crm-orders&action=add'); ?>" class="crm-btn crm-btn-primary">+ Uus tellimus</a>
@@ -519,6 +566,9 @@ if ( $can_refund && in_array($edit->status, ['confirmed','shipped','completed','
             <td><?php echo ($shipping_icons[$o->shipping_method]??'📦'); ?></td>
             <td>
                 <?php echo vesho_so_badge($o->status, $statuses); ?>
+                <?php if (!empty($o->refund_pending_amount) && (float)$o->refund_pending_amount > 0): ?>
+                <span style="display:inline-block;margin-left:4px;font-size:11px;color:#ea580c;font-weight:600" title="Tagasimakse ootel: <?php echo number_format((float)$o->refund_pending_amount,2,',','.'); ?> €">🔄 Tagastus ootel</span>
+                <?php endif; ?>
                 <?php if ($o->status === 'shipped'): ?>
                 <button type="button" class="crm-btn crm-btn-sm not-received-btn"
                         data-order-id="<?php echo $o->id; ?>"
@@ -705,6 +755,30 @@ document.querySelectorAll('.not-received-btn').forEach(function(btn){
         document.getElementById('nr-with-refund').addEventListener('click', function(){ doNotReceived(true); });
     });
 });
+
+// ── Credit note email (3006 parity) ──────────────────────────────────────────
+function sendCreditNote(orderId) {
+    var btn = document.getElementById('btn-send-credit-note');
+    if (!confirm('Saada krediitarve kliendile emailile?')) return;
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Saadan...'; }
+    var fd = new FormData();
+    fd.append('action',   'vesho_send_credit_note');
+    fd.append('nonce',    '<?php echo wp_create_nonce("vesho_admin_nonce"); ?>');
+    fd.append('order_id', orderId);
+    fetch(ajaxurl, {method:'POST', body:fd})
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+            if (d.success) {
+                alert('✅ ' + (d.data && d.data.message ? d.data.message : 'Email saadetud'));
+                if (btn) { btn.textContent = '✅ Saadetud'; }
+            } else {
+                var msg = (d.data && d.data.message) ? d.data.message : 'Viga';
+                alert('❌ ' + msg);
+                if (btn) { btn.disabled = false; btn.textContent = '📧 Saada krediitarve'; }
+            }
+        })
+        .catch(function(){ alert('Ühenduse viga'); if(btn){btn.disabled=false;btn.textContent='📧 Saada krediitarve';} });
+}
 
 // ── Partial refund helpers ────────────────────────────────────────────────────
 var veshoRefundNonce = '<?php echo wp_create_nonce("vesho_portal_nonce"); ?>';
