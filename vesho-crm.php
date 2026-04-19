@@ -3,7 +3,7 @@
  * Plugin Name: Vesho CRM
  * Plugin URI:  https://vesho.ee
  * Description: CRM ja klientide portaal Vesho OÜ-le. Haldab kliente, seadmeid, hooldusi, arveid ja teenuseid.
- * Version:     2.2.91
+ * Version:     2.2.92
  * Author:      Vesho OÜ
  * Author URI:  https://vesho.ee
  * Text Domain: vesho-crm
@@ -15,7 +15,7 @@
 defined( 'ABSPATH' ) || exit;
 
 // ── Constants ──────────────────────────────────────────────────────────────────
-define('VESHO_CRM_VERSION', '2.2.91');
+define('VESHO_CRM_VERSION', '2.2.92');
 define( 'VESHO_CRM_FILE',     __FILE__ );
 define( 'VESHO_CRM_PATH',     plugin_dir_path( __FILE__ ) );
 define( 'VESHO_CRM_URL',      plugin_dir_url( __FILE__ ) );
@@ -2257,6 +2257,20 @@ function vesho_ajax_shop_place_order() {
     if (session_status() === PHP_SESSION_NONE) session_start();
     global $wpdb;
 
+    // Accept items_json from [vesho_shop] shortcode JS (overrides session cart)
+    $items_json = sanitize_text_field($_POST['items_json'] ?? '');
+    if ($items_json) {
+        $json_items = json_decode(stripslashes($items_json), true);
+        if (is_array($json_items) && !empty($json_items)) {
+            $_SESSION['vesho_cart'] = [];
+            foreach ($json_items as $ji) {
+                $pid = absint($ji['pid'] ?? 0);
+                $qty = absint($ji['qty'] ?? 0);
+                if ($pid && $qty) $_SESSION['vesho_cart'][$pid] = $qty;
+            }
+        }
+    }
+
     $cart = $_SESSION['vesho_cart'] ?? [];
     if (empty($cart)) wp_send_json_error('Ostukorv on tühi');
 
@@ -2267,8 +2281,22 @@ function vesho_ajax_shop_place_order() {
     $address  = sanitize_text_field($_POST['address'] ?? '');
     $city     = sanitize_text_field($_POST['city'] ?? '');
     $postcode = sanitize_text_field($_POST['postcode'] ?? '');
-    $shipping_method = sanitize_text_field($_POST['shipping_method'] ?? 'pickup');
+    $shipping_method = sanitize_text_field($_POST['shipping_method'] ?? $_POST['shipping_method'] ?? 'pickup');
     $payment_method  = sanitize_text_field($_POST['payment_method'] ?? 'stripe');
+
+    // Resolve logged-in client info from session
+    if (is_user_logged_in()) {
+        $wp_user = wp_get_current_user();
+        $db_client = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM {$wpdb->prefix}vesho_clients WHERE user_id=%d LIMIT 1",
+            $wp_user->ID
+        ));
+        if ($db_client) {
+            if (!$name)  $name  = $db_client->name;
+            if (!$email) $email = $db_client->email;
+            if (!$phone) $phone = $db_client->phone ?? '';
+        }
+    }
 
     // Calculate totals
     $subtotal   = 0;
@@ -2394,7 +2422,7 @@ function vesho_ajax_shop_place_order() {
         $pi = json_decode(wp_remote_retrieve_body($resp), true);
         if (!empty($pi['client_secret'])) {
             $wpdb->update($wpdb->prefix . 'vesho_shop_orders', ['stripe_payment_id' => $pi['id']], ['id' => $order_id]);
-            wp_send_json_success(['method' => 'stripe', 'client_secret' => $pi['client_secret'], 'order_id' => $order_id]);
+            wp_send_json_success(['method' => 'stripe', 'client_secret' => $pi['client_secret'], 'order_id' => $order_id, 'order_number' => $order_number, 'total' => $total, 'discount_amount' => $discount_amount, 'campaign_name' => $campaign_name, 'shipping_price' => $shipping_cost]);
         }
         wp_send_json_error('Stripe viga: ' . ($pi['error']['message'] ?? 'tundmatu'));
 
@@ -2424,7 +2452,7 @@ function vesho_ajax_shop_place_order() {
         $txn = json_decode(wp_remote_retrieve_body($resp), true);
         if (!empty($txn['payment_link'])) {
             $wpdb->update($wpdb->prefix . 'vesho_shop_orders', ['mc_transaction_id' => $txn['id']], ['id' => $order_id]);
-            wp_send_json_success(['method' => 'mc', 'redirect_url' => $txn['payment_link'], 'order_id' => $order_id]);
+            wp_send_json_success(['method' => 'mc', 'redirect_url' => $txn['payment_link'], 'order_id' => $order_id, 'order_number' => $order_number, 'total' => $total]);
         }
         wp_send_json_error('Maksekeskus viga');
 
@@ -2465,6 +2493,51 @@ function vesho_ajax_shop_place_order() {
     }
 
     wp_send_json_error('Makseviis ei ole seadistatud');
+}
+
+// ── AJAX: Shop – confirm Stripe payment (update order status) ─────────────────
+add_action('wp_ajax_vesho_shop_stripe_confirm',        'vesho_ajax_shop_stripe_confirm');
+add_action('wp_ajax_nopriv_vesho_shop_stripe_confirm', 'vesho_ajax_shop_stripe_confirm');
+function vesho_ajax_shop_stripe_confirm() {
+    check_ajax_referer('vesho_cart_nonce', 'nonce');
+    global $wpdb;
+    $order_id = absint($_POST['order_id'] ?? 0);
+    if (!$order_id) wp_send_json_error('order_id puudub');
+
+    $order = $wpdb->get_row($wpdb->prepare(
+        "SELECT id, stripe_payment_id, total, order_number FROM {$wpdb->prefix}vesho_shop_orders WHERE id=%d LIMIT 1",
+        $order_id
+    ));
+    if (!$order) wp_send_json_error('Tellimust ei leitud');
+
+    // Verify with Stripe
+    $secret_key = get_option('vesho_stripe_secret_key', '');
+    if ($secret_key && $order->stripe_payment_id) {
+        $resp = wp_remote_get('https://api.stripe.com/v1/payment_intents/' . $order->stripe_payment_id, [
+            'headers' => ['Authorization' => 'Basic ' . base64_encode($secret_key . ':')],
+        ]);
+        $pi = json_decode(wp_remote_retrieve_body($resp), true);
+        if (($pi['status'] ?? '') !== 'succeeded') {
+            wp_send_json_error('Makse pole kinnitatud (staatus: ' . ($pi['status'] ?? 'tundmatu') . ')');
+        }
+    }
+
+    $wpdb->update($wpdb->prefix . 'vesho_shop_orders', ['status' => 'confirmed'], ['id' => $order_id]);
+
+    // Email client
+    $email_row = $wpdb->get_row($wpdb->prepare(
+        "SELECT client_email, client_name FROM {$wpdb->prefix}vesho_shop_orders WHERE id=%d", $order_id
+    ));
+    if ($email_row && $email_row->client_email) {
+        $co = get_option('vesho_company_name', get_bloginfo('name'));
+        wp_mail(
+            $email_row->client_email,
+            "[{$co}] Tellimus #{$order->order_number} kinnitatud",
+            "Tere {$email_row->client_name},\n\nTeie tellimus #{$order->order_number} ({$order->total} €) on kinnitatud. Võtame ühendust tarne osas.\n\nAitäh!"
+        );
+    }
+
+    wp_send_json_success(['order_number' => $order->order_number, 'total' => $order->total]);
 }
 
 // ── AJAX: Inventory categories ────────────────────────────────────────────────

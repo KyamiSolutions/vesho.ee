@@ -11,6 +11,7 @@ class Vesho_CRM_Client_Portal {
         add_shortcode('vesho_client_portal', [__CLASS__, 'shortcode_portal']);
         add_shortcode('vesho_client_login',  [__CLASS__, 'shortcode_login']);
         add_shortcode('vesho_price_list',    [__CLASS__, 'shortcode_price_list']);
+        add_shortcode('vesho_shop',          [__CLASS__, 'shortcode_shop']);
         // Invoice print — fires before WordPress outputs the theme, so no header appears
         add_action('template_redirect', [__CLASS__, 'maybe_print_invoice']);
 
@@ -3102,6 +3103,924 @@ function setMsg(m){document.getElementById('vcp-pay-msg').textContent=m;}
         }
 
         wp_send_json_success(['message' => 'Tellimus tühistatud']);
+    }
+
+    // ── [vesho_shop] shortcode ────────────────────────────────────────────────
+    public static function shortcode_shop($atts) {
+        global $wpdb;
+
+        // Handle payment return URL params
+        $shop_view       = 'shop';
+        $return_order_id = absint($_GET['order_id'] ?? 0);
+        if (!empty($_GET['vesho_shop_mc_return']))       $shop_view = 'success';
+        elseif (!empty($_GET['vesho_shop_montonio_return'])) $shop_view = 'success';
+        elseif (!empty($_GET['shop_view']) && $_GET['shop_view'] === 'cancel') $shop_view = 'cancelled';
+
+        // Products
+        $products = $wpdb->get_results(
+            "SELECT id, name, category, shop_price, shop_description, quantity, unit
+             FROM {$wpdb->prefix}vesho_inventory
+             WHERE show_in_shop=1 AND shop_price>0 AND archived=0
+             ORDER BY category ASC, name ASC"
+        );
+
+        // Categories
+        $categories = array_values(array_unique(array_filter(array_column($products, 'category'))));
+
+        // Active shop campaign
+        $today    = date('Y-m-d');
+        $campaign = $wpdb->get_row(
+            "SELECT * FROM {$wpdb->prefix}vesho_campaigns
+             WHERE paused=0
+               AND (valid_from IS NULL OR valid_from <= '$today')
+               AND (valid_until IS NULL OR valid_until >= '$today')
+               AND (target='epood' OR target='both')
+             ORDER BY discount_percent DESC LIMIT 1"
+        );
+
+        // Client
+        $client          = self::get_current_client();
+        $client_discount = $client ? (float)($client->loyalty_pct ?? 0) : 0;
+
+        // Payment settings
+        $stripe_enabled  = get_option('vesho_stripe_enabled', '0') === '1' && get_option('vesho_stripe_pub_key', '');
+        $stripe_pub_key  = get_option('vesho_stripe_pub_key', '');
+        $mc_enabled      = (bool)(get_option('vesho_mc_shop_id', '') && get_option('vesho_mc_secret_key', ''));
+        $montonio_enabled= (bool)(get_option('vesho_montonio_access_key', '') && get_option('vesho_montonio_secret_key', ''));
+
+        // Delivery options
+        $del_opts = [];
+        if (get_option('vesho_shop_delivery_pickup',  '1') !== '0')
+            $del_opts[] = ['id'=>'pickup',  'label'=>'Kaupluses pealekorjamine', 'icon'=>'🏪', 'price'=>(float)get_option('vesho_shop_delivery_pickup_price',  '0')];
+        if (get_option('vesho_shop_delivery_courier', '1') !== '0')
+            $del_opts[] = ['id'=>'courier', 'label'=>'Kuller',                   'icon'=>'🚚', 'price'=>(float)get_option('vesho_shop_delivery_courier_price', '6.99')];
+        if (get_option('vesho_shop_delivery_parcel',  '1') !== '0')
+            $del_opts[] = ['id'=>'omniva',  'label'=>'Pakiautomaat (Omniva/DPD)','icon'=>'📦', 'price'=>(float)get_option('vesho_shop_delivery_parcel_price',  '3.99')];
+        if (empty($del_opts))
+            $del_opts[] = ['id'=>'pickup',  'label'=>'Pealekorjamine',           'icon'=>'🏪', 'price'=>0.0];
+
+        // Return-URL order for success display
+        $return_order = null;
+        if ($return_order_id && $shop_view === 'success') {
+            $return_order = $wpdb->get_row($wpdb->prepare(
+                "SELECT order_number, total FROM {$wpdb->prefix}vesho_shop_orders WHERE id=%d",
+                $return_order_id
+            ));
+        }
+
+        $nonce = wp_create_nonce('vesho_cart_nonce');
+
+        // JS config object
+        $cfg = wp_json_encode([
+            'ajaxurl'          => admin_url('admin-ajax.php'),
+            'nonce'            => $nonce,
+            'stripeEnabled'    => (bool)$stripe_enabled,
+            'stripePubKey'     => (string)$stripe_pub_key,
+            'mcEnabled'        => $mc_enabled,
+            'montonioEnabled'  => $montonio_enabled,
+            'clientDiscount'   => $client_discount,
+            'clientLoggedIn'   => (bool)$client,
+            'clientName'       => $client ? $client->name : '',
+            'clientEmail'      => $client ? $client->email : '',
+            'clientPhone'      => $client ? ($client->phone ?? '') : '',
+            'campDiscount'     => $campaign ? (float)$campaign->discount_percent : 0,
+            'campName'         => $campaign ? $campaign->name : '',
+            'campFreeShip'     => $campaign ? (bool)$campaign->free_shipping : false,
+            'campGuests'       => $campaign ? (bool)$campaign->visible_to_guests : false,
+            'deliveryOptions'  => $del_opts,
+            'initialView'      => $shop_view,
+            'returnOrder'      => $return_order,
+        ]);
+
+        ob_start();
+        ?>
+<style>
+#vesho-shop-root{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1e293b;line-height:1.5}
+#vesho-shop-root *{box-sizing:border-box}
+.vshop-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:20px;padding:24px}
+.vshop-card{background:#fff;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden;display:flex;flex-direction:column;transition:all .2s;cursor:default}
+.vshop-card:hover{transform:translateY(-3px);box-shadow:0 12px 32px rgba(0,0,0,.1);border-color:#cbd5e1}
+.vshop-card-img{height:140px;display:flex;align-items:center;justify-content:center;font-size:64px;background:linear-gradient(135deg,#f1f5f9,#e2e8f0)}
+.vshop-card-body{padding:16px;flex:1;display:flex;flex-direction:column;gap:8px}
+.vshop-card-name{font-weight:700;font-size:14px;color:#1e293b}
+.vshop-card-desc{font-size:12px;color:#6b7280;flex:1}
+.vshop-card-price{font-size:20px;font-weight:800;color:#1e293b}
+.vshop-card-footer{padding:0 16px 16px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.vshop-add-btn{background:#00b4c8;color:#fff;border:none;border-radius:10px;padding:9px 18px;font-size:13px;font-weight:700;cursor:pointer;flex:1;transition:background .15s}
+.vshop-add-btn:hover{background:#009ab2}
+.vshop-add-btn:disabled{background:#94a3b8;cursor:not-allowed}
+.vshop-qty-ctrl{display:flex;align-items:center;gap:6px;flex:1;justify-content:space-between}
+.vshop-qty-ctrl button{width:32px;height:32px;border:1px solid #e2e8f0;border-radius:8px;background:#f8fafc;cursor:pointer;font-size:16px;font-weight:700;color:#475569;transition:all .15s;display:flex;align-items:center;justify-content:center}
+.vshop-qty-ctrl button:hover{background:#00b4c8;color:#fff;border-color:#00b4c8}
+.vshop-qty-ctrl span{font-size:16px;font-weight:700;color:#1e293b;min-width:24px;text-align:center}
+.vshop-fab{position:fixed;bottom:28px;right:28px;width:60px;height:60px;border-radius:50%;background:#00b4c8;color:#fff;border:none;cursor:pointer;font-size:24px;box-shadow:0 4px 20px rgba(0,180,200,.4);z-index:9990;display:flex;align-items:center;justify-content:center;transition:transform .15s}
+.vshop-fab:hover{transform:scale(1.08)}
+.vshop-fab-badge{position:absolute;top:-4px;right:-4px;background:#ef4444;color:#fff;border-radius:50%;width:22px;height:22px;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;border:2px solid #fff}
+.vshop-sidebar-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9991;opacity:0;transition:opacity .25s}
+.vshop-sidebar{position:fixed;top:0;right:0;bottom:0;width:min(420px,100vw);background:#fff;z-index:9992;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);box-shadow:-4px 0 40px rgba(0,0,0,.15)}
+.vshop-overlay{position:fixed;inset:0;background:#f8fafc;z-index:9993;overflow-y:auto;display:flex;align-items:flex-start;justify-content:center;padding:32px 16px}
+.vshop-overlay-inner{width:100%;max-width:480px}
+.vshop-inp{width:100%;padding:10px 14px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;color:#1e293b;outline:none;background:#f8fafc;transition:border .15s}
+.vshop-inp:focus{border-color:#00b4c8;background:#fff}
+.vshop-btn-acc{background:#00b4c8;color:#fff;border:none;border-radius:12px;padding:13px 20px;font-size:15px;font-weight:700;cursor:pointer;transition:background .15s;display:flex;align-items:center;justify-content:center;gap:8px}
+.vshop-btn-acc:hover:not(:disabled){background:#009ab2}
+.vshop-btn-acc:disabled{opacity:.6;cursor:not-allowed}
+.vshop-btn-gray{background:#f1f5f9;color:#475569;border:none;border-radius:12px;padding:13px 18px;font-size:14px;font-weight:600;cursor:pointer;transition:background .15s}
+.vshop-btn-gray:hover{background:#e2e8f0}
+.vshop-step-bar{display:flex;align-items:center;justify-content:center;gap:0;margin-bottom:28px}
+.vshop-err{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:10px;padding:10px 14px;color:#dc2626;font-size:13px;margin-bottom:14px}
+.vshop-cat-btn{padding:7px 16px;border-radius:20px;border:1px solid #e2e8f0;background:#fff;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap}
+.vshop-cat-btn.active,.vshop-cat-btn:hover{background:#00b4c8;color:#fff;border-color:#00b4c8}
+@media(max-width:600px){.vshop-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;padding:16px}.vshop-card-img{height:100px;font-size:48px}.vshop-overlay{padding:16px 8px}}
+</style>
+<div id="vesho-shop-root">
+
+<?php if ($campaign && ($campaign->target === 'epood' || $campaign->target === 'both')) : ?>
+<div style="background:linear-gradient(135deg,rgba(0,180,200,.12),rgba(168,85,247,.1));border-bottom:1px solid rgba(0,180,200,.25);padding:12px 24px;text-align:center">
+  <span style="font-size:18px;margin-right:8px">🎉</span>
+  <strong style="font-size:14px"><?php echo esc_html($campaign->name); ?></strong>
+  <?php if ($campaign->description) : ?><span style="color:#6b7280;font-size:13px;margin-left:8px"><?php echo esc_html($campaign->description); ?></span><?php endif; ?>
+  <?php if ($campaign->discount_percent > 0) : ?>
+  <span style="margin-left:10px;background:rgba(0,180,200,.2);color:#007a8c;font-weight:700;font-size:13px;padding:2px 10px;border-radius:20px">-<?php echo (float)$campaign->discount_percent; ?>%</span>
+  <?php elseif ($campaign->free_shipping) : ?>
+  <span style="margin-left:10px;background:rgba(16,185,129,.15);color:#059669;font-weight:700;font-size:13px;padding:2px 10px;border-radius:20px">Tasuta tarne</span>
+  <?php endif; ?>
+</div>
+<?php endif; ?>
+
+<!-- Hero -->
+<div style="background:#fff;border-bottom:1px solid #e2e8f0;padding:40px 24px 32px">
+  <div style="max-width:1160px;margin:0 auto">
+    <div style="font-size:11px;font-weight:700;color:#00b4c8;letter-spacing:.15em;text-transform:uppercase;margin-bottom:10px"><?php echo esc_html(get_option('vesho_shop_hero_badge','Vesho E-pood')); ?></div>
+    <h1 style="font-size:clamp(1.6rem,3.5vw,2.4rem);font-weight:900;color:#0f172a;letter-spacing:-.03em;margin:0 0 10px"><?php echo esc_html(get_option('vesho_shop_hero_title','Varuosad ja materjalid')); ?></h1>
+    <p style="color:#6b7280;font-size:14px;margin:0 0 20px;max-width:480px"><?php echo esc_html(get_option('vesho_shop_hero_desc','Kvaliteetsed tooted kiire tarnega. Registreeritud klientidele eripakkumised.')); ?></p>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <div style="position:relative;max-width:340px;width:100%">
+        <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:14px;pointer-events:none">🔍</span>
+        <input id="vshop-search" type="text" placeholder="Otsi tooteid..." style="width:100%;padding:10px 12px 10px 36px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;outline:none;background:#f8fafc" oninput="veshoShop.onSearch(this.value)">
+      </div>
+      <?php if ($client_discount > 0) : ?>
+      <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(0,180,200,.08);border:1px solid rgba(0,180,200,.2);border-radius:8px;padding:7px 14px;font-size:12px;color:#007a8c;font-weight:600">
+        🎁 Kliendikaardi allahindlus: <strong><?php echo $client_discount; ?>%</strong>
+      </div>
+      <?php endif; ?>
+    </div>
+  </div>
+</div>
+
+<!-- Category tabs -->
+<?php if (!empty($categories)) : ?>
+<div style="background:#f8fafc;border-bottom:1px solid #e2e8f0;padding:12px 24px;overflow-x:auto">
+  <div style="display:flex;gap:8px;max-width:1160px;margin:0 auto;min-width:max-content">
+    <button class="vshop-cat-btn active" onclick="veshoShop.onCategory(null,this)" data-cat="">Kõik</button>
+    <?php foreach ($categories as $cat) : ?>
+    <button class="vshop-cat-btn" onclick="veshoShop.onCategory('<?php echo esc_js($cat); ?>',this)" data-cat="<?php echo esc_attr($cat); ?>"><?php echo esc_html($cat); ?></button>
+    <?php endforeach; ?>
+  </div>
+</div>
+<?php endif; ?>
+
+<!-- Product grid -->
+<div class="vshop-grid" id="vshop-grid">
+<?php
+$icons = ['🔧','⚙️','🔩','🛠️','💡','🔌','❄️','🌡️','🔑','🪛'];
+foreach ($products as $i => $p) :
+    $icon = $icons[$i % count($icons)];
+    $in_stock = (int)$p->quantity > 0;
+?>
+<div class="vshop-card" data-pid="<?php echo $p->id; ?>" data-name="<?php echo esc_attr(strtolower($p->name . ' ' . ($p->shop_description ?? ''))); ?>" data-cat="<?php echo esc_attr($p->category); ?>">
+  <div class="vshop-card-img"><?php echo $icon; ?></div>
+  <div class="vshop-card-body">
+    <?php if ($p->category) : ?><div style="font-size:11px;color:#00b4c8;font-weight:700;letter-spacing:.05em;text-transform:uppercase;margin-bottom:2px"><?php echo esc_html($p->category); ?></div><?php endif; ?>
+    <div class="vshop-card-name"><?php echo esc_html($p->name); ?></div>
+    <?php if ($p->shop_description) : ?><div class="vshop-card-desc"><?php echo esc_html($p->shop_description); ?></div><?php endif; ?>
+    <?php if (!$in_stock) : ?><div style="font-size:11px;color:#ef4444;font-weight:600">Laost otsas</div><?php endif; ?>
+    <div class="vshop-card-price"><?php echo number_format((float)$p->shop_price, 2, '.', ''); ?> €</div>
+  </div>
+  <div class="vshop-card-footer">
+    <div id="vshop-ctrl-<?php echo $p->id; ?>" style="flex:1">
+      <button class="vshop-add-btn" <?php if (!$in_stock) echo 'disabled'; ?> onclick="veshoShop.addToCart(<?php echo $p->id; ?>,'<?php echo esc_js($p->name); ?>',<?php echo (float)$p->shop_price; ?>,<?php echo (int)$p->quantity; ?>)"><?php echo $in_stock ? '+ Lisa korvi' : 'Otsas'; ?></button>
+    </div>
+  </div>
+</div>
+<?php endforeach; ?>
+<?php if (empty($products)) : ?>
+<div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:#94a3b8">
+  <div style="font-size:48px;margin-bottom:12px">🛒</div>
+  <div style="font-size:16px;font-weight:600">Poodi pole veel tooteid lisatud</div>
+</div>
+<?php endif; ?>
+</div>
+<div id="vshop-no-results" style="display:none;text-align:center;padding:60px 20px;color:#94a3b8">
+  <div style="font-size:48px;margin-bottom:12px">🔍</div>
+  <div style="font-size:16px;font-weight:600">Otsingule vastavaid tooteid ei leitud</div>
+</div>
+
+<!-- Cart FAB -->
+<button class="vshop-fab" id="vshop-fab" onclick="veshoShop.openCart()" style="display:none">
+  🛒
+  <span class="vshop-fab-badge" id="vshop-fab-badge">0</span>
+</button>
+
+<!-- Overlays container -->
+<div id="vshop-overlay-root"></div>
+
+</div><!-- #vesho-shop-root -->
+
+<script>
+(function(){
+var CFG = <?php echo $cfg; ?>;
+var ICONS=['🔧','⚙️','🔩','🛠️','💡','🔌','❄️','🌡️','🔑','🪛'];
+var MC_BANKS=[
+  {id:'swedbank',  name:'Swedbank',  color:'#f36b00'},
+  {id:'seb',       name:'SEB',       color:'#60b33c'},
+  {id:'lhv',       name:'LHV',       color:'#f5a800'},
+  {id:'luminor',   name:'Luminor',   color:'#c00000'},
+  {id:'coop',      name:'Coop',      color:'#24a148'},
+  {id:'bigbank',   name:'Bigbank',   color:'#c0392b'},
+  {id:'inbank',    name:'Inbank',    color:'#7c3aed'},
+  {id:'revolut',   name:'Revolut',   color:'#191c20'},
+];
+
+// ── State ──────────────────────────────────────────────────────────────────
+var cart = [];
+var cartSidebarOpen = false;
+var deliveryMethod = CFG.deliveryOptions[0] ? CFG.deliveryOptions[0].id : 'pickup';
+var deliveryAddress = '';
+var deliveryPhone = CFG.clientPhone || '';
+var guestName = '', guestEmail = '', guestPhone = '';
+var pendingOrder = null;
+var paymentError = '';
+var paymentLoading = false;
+var checkoutMode = CFG.stripeEnabled ? 'stripe' : (CFG.mcEnabled ? 'mc' : (CFG.montonioEnabled ? 'montonio' : 'stripe'));
+var stripeInst = null, stripeElems = null, stripeCard = null;
+var mcBanks = [];
+var view = 'shop'; // shop | cart | guest | delivery | payment | mc-banks | success | cancelled
+
+// Load cart from localStorage
+function loadCart(){
+  try{ var s=JSON.parse(localStorage.getItem('vesho_cart')||'[]'); if(Array.isArray(s)) cart=s; }catch(e){}
+}
+function saveCart(){
+  localStorage.setItem('vesho_cart',JSON.stringify(cart));
+  updateFab();
+}
+function cartTotal(){
+  var disc = effectiveDiscount();
+  return cart.reduce(function(s,c){ return s + applyDisc(c.price,disc)*c.qty; },0);
+}
+function cartOrig(){
+  return cart.reduce(function(s,c){ return s + c.price*c.qty; },0);
+}
+function effectiveDiscount(){
+  return Math.max(CFG.clientDiscount || 0, CFG.campGuests || CFG.clientLoggedIn ? CFG.campDiscount : 0);
+}
+function applyDisc(p,d){ return d>0 ? p*(1-d/100) : p; }
+function cartCount(){ return cart.reduce(function(s,c){ return s+c.qty; },0); }
+
+function updateFab(){
+  var fab=document.getElementById('vshop-fab');
+  var badge=document.getElementById('vshop-fab-badge');
+  if(!fab) return;
+  var n=cartCount();
+  fab.style.display = n>0 ? 'flex' : 'none';
+  if(badge) badge.textContent=n;
+}
+
+function updateCardCtrls(){
+  cart.forEach(function(item){
+    var el=document.getElementById('vshop-ctrl-'+item.pid);
+    if(!el) return;
+    el.innerHTML='<div class="vshop-qty-ctrl">'+
+      '<button onclick="veshoShop.setQty('+item.pid+','+(item.qty-1)+')">−</button>'+
+      '<span>'+item.qty+'</span>'+
+      '<button onclick="veshoShop.setQty('+item.pid+','+(item.qty+1)+')">+</button>'+
+      '</div>';
+  });
+  // Reset cards not in cart
+  var cards=document.querySelectorAll('#vshop-grid .vshop-card');
+  cards.forEach(function(card){
+    var pid=parseInt(card.dataset.pid);
+    var inCart=cart.find(function(c){ return c.pid===pid; });
+    if(!inCart){
+      var ctrl=document.getElementById('vshop-ctrl-'+pid);
+      if(ctrl && ctrl.querySelector('.vshop-qty-ctrl')){
+        var btn=ctrl.querySelector('.vshop-add-btn');
+        if(!btn){
+          ctrl.innerHTML='<button class="vshop-add-btn" onclick="veshoShop.restoreAdd('+pid+')">+ Lisa korvi</button>';
+        }
+      }
+    }
+  });
+}
+
+// ── Search / filter ────────────────────────────────────────────────────────
+var currentSearch='', currentCat='';
+function filterProducts(){
+  var cards=document.querySelectorAll('#vshop-grid .vshop-card');
+  var visible=0;
+  cards.forEach(function(card){
+    var name=card.dataset.name||'';
+    var cat=card.dataset.cat||'';
+    var matchS=!currentSearch||name.includes(currentSearch.toLowerCase());
+    var matchC=!currentCat||cat===currentCat;
+    card.style.display=(matchS&&matchC)?'':'none';
+    if(matchS&&matchC) visible++;
+  });
+  var noRes=document.getElementById('vshop-no-results');
+  if(noRes) noRes.style.display=visible===0?'block':'none';
+}
+
+// ── Cart sidebar ───────────────────────────────────────────────────────────
+function renderCartSidebar(){
+  var root=document.getElementById('vshop-overlay-root');
+  if(!root) return;
+  var disc=effectiveDiscount();
+  var total=cartTotal();
+  var orig=cartOrig();
+  var saved=orig-total;
+  var delivOption=CFG.deliveryOptions.find(function(d){ return d.id===deliveryMethod; })||{price:0};
+  var shipCost=CFG.campFreeShip?0:delivOption.price;
+  var grandTotal=total+shipCost;
+
+  var html='<div class="vshop-sidebar-bg" id="vsb-bg" onclick="veshoShop.closeCart()"></div>'+
+    '<div class="vshop-sidebar" id="vsb">'+
+      '<div style="display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid #e2e8f0">'+
+        '<div style="font-size:18px;font-weight:800;color:#0f172a">🛒 Ostukorv</div>'+
+        '<button onclick="veshoShop.closeCart()" style="border:none;background:none;font-size:20px;cursor:pointer;color:#94a3b8;padding:4px">✕</button>'+
+      '</div>'+
+      '<div style="flex:1;overflow-y:auto;padding:16px 24px">';
+
+  if(cart.length===0){
+    html+='<div style="text-align:center;padding:48px 0;color:#94a3b8"><div style="font-size:48px;margin-bottom:12px">🛒</div><div style="font-size:15px;font-weight:600">Ostukorv on tühi</div></div>';
+  } else {
+    cart.forEach(function(item){
+      var dp=applyDisc(item.price,disc);
+      html+='<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #f1f5f9">'+
+        '<div style="width:44px;height:44px;border-radius:10px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">'+ICONS[item.pid%ICONS.length]+'</div>'+
+        '<div style="flex:1;min-width:0">'+
+          '<div style="font-size:13px;font-weight:700;color:#1e293b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escHtml(item.name)+'</div>'+
+          (disc>0?'<div style="font-size:11px;color:#10b981">−'+disc+'% allahindlus</div>':'')+
+          '<div style="font-size:13px;color:#00b4c8;font-weight:700;margin-top:2px">'+(dp*item.qty).toFixed(2)+' €</div>'+
+        '</div>'+
+        '<div class="vshop-qty-ctrl" style="flex-shrink:0">'+
+          '<button onclick="veshoShop.setQty('+item.pid+','+(item.qty-1)+')">−</button>'+
+          '<span>'+item.qty+'</span>'+
+          '<button onclick="veshoShop.setQty('+item.pid+','+(item.qty+1)+')">+</button>'+
+        '</div>'+
+      '</div>';
+    });
+  }
+
+  html+='</div>';
+
+  if(cart.length>0){
+    html+='<div style="padding:16px 24px;border-top:1px solid #e2e8f0">'+
+      (disc>0?'<div style="display:flex;justify-content:space-between;font-size:12px;color:#10b981;margin-bottom:6px"><span>Säästsite</span><span>−'+saved.toFixed(2)+' €</span></div>':'')+
+      (CFG.campFreeShip?'<div style="font-size:12px;color:#10b981;margin-bottom:6px">✓ Tasuta tarne ('+escHtml(CFG.campName)+')</div>':
+        (shipCost>0?'<div style="display:flex;justify-content:space-between;font-size:12px;color:#6b7280;margin-bottom:6px"><span>Tarne</span><span>'+shipCost.toFixed(2)+' €</span></div>':''))+
+      '<div style="display:flex;justify-content:space-between;font-size:17px;font-weight:800;color:#0f172a;margin-bottom:16px"><span>Kokku</span><span>'+grandTotal.toFixed(2)+' €</span></div>'+
+
+      // Payment method selector
+      '<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">'+
+        (CFG.stripeEnabled?'<button onclick="veshoShop.setCheckoutMode(\'stripe\')" id="vsb-mode-stripe" style="flex:1;padding:9px;border:2px solid '+(checkoutMode==='stripe'?'#00b4c8':'#e2e8f0')+';border-radius:10px;background:'+(checkoutMode==='stripe'?'rgba(0,180,200,.08)':'#fff')+';cursor:pointer;font-size:12px;font-weight:700;color:#0f172a">💳 Kaart</button>':'')+
+        (CFG.mcEnabled?'<button onclick="veshoShop.setCheckoutMode(\'mc\')" id="vsb-mode-mc" style="flex:1;padding:9px;border:2px solid '+(checkoutMode==='mc'?'#00b4c8':'#e2e8f0')+';border-radius:10px;background:'+(checkoutMode==='mc'?'rgba(0,180,200,.08)':'#fff')+';cursor:pointer;font-size:12px;font-weight:700;color:#0f172a">🏦 Pank</button>':'')+
+        (CFG.montonioEnabled?'<button onclick="veshoShop.setCheckoutMode(\'montonio\')" id="vsb-mode-montonio" style="flex:1;padding:9px;border:2px solid '+(checkoutMode==='montonio'?'#00b4c8':'#e2e8f0')+';border-radius:10px;background:'+(checkoutMode==='montonio'?'rgba(0,180,200,.08)':'#fff')+';cursor:pointer;font-size:12px;font-weight:700;color:#0f172a">🏦 Montonio</button>':'')+
+      '</div>'+
+
+      '<button class="vshop-btn-acc" style="width:100%" onclick="veshoShop.startCheckout()">Vormista tellimus →</button>'+
+    '</div>';
+  }
+
+  html+='</div>';
+
+  root.innerHTML=html;
+  // Animate in
+  setTimeout(function(){
+    var bg=document.getElementById('vsb-bg');
+    var sb=document.getElementById('vsb');
+    if(bg) bg.style.opacity='1';
+    if(sb) sb.style.transform='translateX(0)';
+  },10);
+}
+
+// ── Checkout steps ─────────────────────────────────────────────────────────
+function renderStepBar(steps,activeIdx){
+  var html='<div class="vshop-step-bar">';
+  steps.forEach(function(s,i){
+    var done=i<activeIdx, active=i===activeIdx;
+    html+='<div style="display:flex;align-items:center">'+
+      '<div style="display:flex;flex-direction:column;align-items:center;gap:4px">'+
+        '<div style="width:32px;height:32px;border-radius:50%;background:'+(done?'#10b981':active?'#00b4c8':'#f1f5f9')+';border:2px solid '+(done?'#10b981':active?'#00b4c8':'#e2e8f0')+';display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:'+(done||active?'#fff':'#94a3b8')+';transition:all .3s">'+
+          (done?'✓':(i+1))+
+        '</div>'+
+        '<span style="font-size:11px;color:'+(active?'#0f172a':'#94a3b8')+';font-weight:'+(active?700:400)+'">'+s+'</span>'+
+      '</div>'+
+      (i<steps.length-1?'<div style="width:40px;height:2px;background:'+(done?'#10b981':'#e2e8f0')+';margin:0 4px;margin-bottom:18px;transition:background .3s"></div>':'')+
+    '</div>';
+  });
+  return html+'</div>';
+}
+
+function getSteps(){
+  return CFG.clientLoggedIn ? ['Tarne','Makse','Kinnitus'] : ['Kontakt','Tarne','Makse','Kinnitus'];
+}
+function getStepIdx(v){
+  if(CFG.clientLoggedIn){
+    return {delivery:0,payment:1,'mc-banks':1,success:2}[v]??0;
+  }
+  return {guest:0,delivery:1,payment:2,'mc-banks':2,success:3}[v]??0;
+}
+
+function renderOverlay(contentHtml){
+  var root=document.getElementById('vshop-overlay-root');
+  if(!root) return;
+  root.innerHTML='<div class="vshop-overlay"><div class="vshop-overlay-inner">'+contentHtml+'</div></div>';
+}
+
+function renderGuestStep(){
+  var steps=getSteps(), idx=getStepIdx('guest');
+  var html=renderStepBar(steps,idx)+
+    '<div style="text-align:center;margin-bottom:24px"><h2 style="font-size:1.4rem;font-weight:800;color:#0f172a;margin:0 0 6px">Kontaktandmed</h2><p style="color:#6b7280;font-size:14px;margin:0">Sisesta oma andmed tellimuse kinnitamiseks</p></div>'+
+    '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:24px;margin-bottom:14px">'+
+      '<label style="display:block;font-size:13px;color:#6b7280;margin-bottom:14px">Nimi *<input id="vg-name" class="vshop-inp" style="margin-top:4px;display:block" placeholder="Sinu nimi" value="'+escAttr(guestName)+'" oninput="veshoShop.guestName=this.value"></label>'+
+      '<label style="display:block;font-size:13px;color:#6b7280;margin-bottom:14px">E-post *<input id="vg-email" class="vshop-inp" type="email" style="margin-top:4px;display:block" placeholder="sinu@email.ee" value="'+escAttr(guestEmail)+'" oninput="veshoShop.guestEmail=this.value"></label>'+
+      '<label style="display:block;font-size:13px;color:#6b7280">Telefon<input id="vg-phone" class="vshop-inp" style="margin-top:4px;display:block" placeholder="+372 5xxx xxxx" value="'+escAttr(guestPhone)+'" oninput="veshoShop.guestPhone=this.value"></label>'+
+    '</div>'+
+    (paymentError?'<div class="vshop-err">⚠️ '+escHtml(paymentError)+'</div>':'')+
+    '<div style="display:flex;gap:10px">'+
+      '<button class="vshop-btn-acc" style="flex:1" onclick="veshoShop.nextFromGuest()">Jätka →</button>'+
+      '<button class="vshop-btn-gray" onclick="veshoShop.backToCart()">← Tagasi</button>'+
+    '</div>';
+  renderOverlay(html);
+}
+
+function renderDeliveryStep(){
+  var steps=getSteps(), idx=getStepIdx('delivery');
+  var html=renderStepBar(steps,idx)+
+    '<div style="text-align:center;margin-bottom:24px"><h2 style="font-size:1.4rem;font-weight:800;color:#0f172a;margin:0 0 6px">Tarneinfo</h2><p style="color:#6b7280;font-size:14px;margin:0">Vali tarnimisviis</p></div>'+
+    '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:24px;margin-bottom:14px">';
+
+  if(CFG.clientLoggedIn){
+    html+='<label style="display:block;font-size:13px;color:#6b7280;margin-bottom:16px">Telefoninumber<input id="vd-phone" class="vshop-inp" style="margin-top:4px;display:block" placeholder="+372 5xxx xxxx" value="'+escAttr(deliveryPhone)+'" oninput="veshoShop.deliveryPhone=this.value"></label>';
+  }
+
+  html+='<div style="font-size:13px;color:#6b7280;margin-bottom:8px">Tarnimisviis *</div><div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">';
+  CFG.deliveryOptions.forEach(function(opt){
+    var sel=deliveryMethod===opt.id;
+    var priceStr=opt.price===0?'<span style="color:#10b981;font-weight:700">Tasuta</span>':opt.price.toFixed(2)+' €';
+    html+='<button onclick="veshoShop.setDelivery(\''+opt.id+'\')" style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:12px;border:2px solid '+(sel?'#00b4c8':'#e2e8f0')+';background:'+(sel?'rgba(0,180,200,.06)':'#f8fafc')+';cursor:pointer;text-align:left;transition:all .15s">'+
+      '<span style="font-size:22px">'+opt.icon+'</span>'+
+      '<div style="flex:1"><div style="font-size:14px;font-weight:600;color:#0f172a">'+escHtml(opt.label)+'</div></div>'+
+      '<div style="font-size:13px;font-weight:700;flex-shrink:0">'+priceStr+'</div>'+
+      (sel?'<span style="color:#00b4c8;font-size:18px;margin-left:4px">✓</span>':'')+
+    '</button>';
+  });
+  html+='</div>';
+
+  if(deliveryMethod!=='pickup'){
+    html+='<label style="display:block;font-size:13px;color:#6b7280">'+(deliveryMethod==='omniva'?'Pakiautomaadi nimi *':'Tarne aadress *')+'<input id="vd-addr" class="vshop-inp" style="margin-top:4px;display:block" placeholder="'+(deliveryMethod==='omniva'?'nt Omniva Tallinn Viru':'Tänav, maja, linn')+'" value="'+escAttr(deliveryAddress)+'" oninput="veshoShop.deliveryAddress=this.value"></label>';
+  }
+
+  html+='</div>'+
+    (paymentError?'<div class="vshop-err">⚠️ '+escHtml(paymentError)+'</div>':'')+
+    '<div style="display:flex;gap:10px">'+
+      '<button class="vshop-btn-acc" style="flex:1" '+(paymentLoading?'disabled':'')+' onclick="veshoShop.proceedToPayment()">'+(paymentLoading?'⏳ Laadin...':'Jätka →')+'</button>'+
+      '<button class="vshop-btn-gray" onclick="veshoShop.'+(CFG.clientLoggedIn?'backToCart':'gotoGuest')+'()">← Tagasi</button>'+
+    '</div>';
+  renderOverlay(html);
+}
+
+function renderPaymentStep(){
+  var steps=getSteps(), idx=getStepIdx('payment');
+  var disc=effectiveDiscount();
+  var html=renderStepBar(steps,idx)+
+    '<div style="text-align:center;margin-bottom:24px"><h2 style="font-size:1.4rem;font-weight:800;color:#0f172a;margin:0 0 6px">Makseandmed</h2><p style="color:#6b7280;font-size:14px;margin:0">Tellimus <strong>#'+escHtml(pendingOrder.order_number)+'</strong></p></div>'+
+    // Order summary
+    '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:16px 20px;margin-bottom:16px">'+
+      '<div style="font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:#94a3b8;font-weight:700;margin-bottom:10px">Tellimuse kokkuvõte</div>';
+
+  cart.forEach(function(c){
+    var dp=applyDisc(c.price,disc);
+    html+='<div style="display:flex;justify-content:space-between;font-size:13px;padding:5px 0;border-bottom:1px solid #f1f5f9;color:#475569">'+
+      '<span style="color:#0f172a">'+escHtml(c.name)+' <span style="color:#94a3b8">×'+c.qty+'</span></span>'+
+      '<span style="font-weight:600">'+(dp*c.qty).toFixed(2)+' €</span>'+
+    '</div>';
+  });
+
+  if(pendingOrder.discount_amount > 0.01){
+    html+='<div style="display:flex;justify-content:space-between;font-size:12px;color:#10b981;padding:6px 0">'+
+      '<span>'+(pendingOrder.campaign_name?'🎉 '+pendingOrder.campaign_name:'Kliendikaardi soodustus ('+disc+'%)')+'</span>'+
+      '<span>−'+Number(pendingOrder.discount_amount).toFixed(2)+' €</span>'+
+    '</div>';
+  }
+  if(pendingOrder.shipping_price > 0){
+    html+='<div style="display:flex;justify-content:space-between;font-size:13px;color:#6b7280;padding:6px 0">'+
+      '<span>Tarne</span><span>'+Number(pendingOrder.shipping_price).toFixed(2)+' €</span>'+
+    '</div>';
+  }
+  html+='<div style="display:flex;justify-content:space-between;padding-top:10px;border-top:1px solid #e2e8f0;margin-top:4px">'+
+    '<span style="font-size:15px;font-weight:700;color:#0f172a">Kokku</span>'+
+    '<span style="font-size:20px;font-weight:800;color:#0f172a">'+Number(pendingOrder.total).toFixed(2)+' €</span>'+
+  '</div></div>'+
+  // Stripe mount
+  '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:20px;margin-bottom:14px">'+
+    '<div style="font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:#94a3b8;font-weight:700;margin-bottom:14px">Makseandmed</div>'+
+    '<div id="vshop-stripe-mount" style="min-height:44px"></div>'+
+  '</div>'+
+  (paymentError?'<div class="vshop-err">⚠️ '+escHtml(paymentError)+'</div>':'')+
+  '<div style="display:flex;gap:10px">'+
+    '<button class="vshop-btn-acc" style="flex:1;box-shadow:0 4px 14px rgba(0,180,200,.3)" '+(paymentLoading?'disabled':'')+' onclick="veshoShop.confirmStripe()">'+(paymentLoading?'⏳ Töötlen...':'🔒 Maksa '+Number(pendingOrder.total).toFixed(2)+' €')+'</button>'+
+    '<button class="vshop-btn-gray" '+(paymentLoading?'disabled':'')+' onclick="veshoShop.cancelCheckout()">Tühista</button>'+
+  '</div>'+
+  '<div style="text-align:center;font-size:11px;color:#94a3b8;margin-top:10px">🔒 Makse on krüpteeritud ja turvaline · Stripe</div>';
+
+  renderOverlay(html);
+
+  // Mount Stripe
+  setTimeout(function(){
+    loadStripeAndMount();
+  },120);
+}
+
+function renderMcBanksStep(){
+  var steps=getSteps(), idx=getStepIdx('mc-banks');
+  var html=renderStepBar(steps,idx)+
+    '<div style="text-align:center;margin-bottom:24px">'+
+      '<div style="font-size:40px;margin-bottom:10px">🏦</div>'+
+      '<div style="font-size:20px;font-weight:800;color:#0f172a">Vali pank</div>'+
+      '<div style="font-size:13px;color:#6b7280;margin-top:6px">Sind suunatakse panga veebilehele</div>'+
+    '</div>';
+
+  if(pendingOrder){
+    html+='<div style="background:#f8fafc;border-radius:10px;padding:12px 16px;margin-bottom:18px;display:flex;justify-content:space-between">'+
+      '<span style="font-size:13px;color:#6b7280">Tellimus '+escHtml(pendingOrder.order_number||'')+'</span>'+
+      '<span style="font-size:15px;font-weight:700;color:#0f172a">'+Number(pendingOrder.total||0).toFixed(2)+' €</span>'+
+    '</div>';
+  }
+
+  if(mcBanks.length>0){
+    html+='<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:18px">';
+    mcBanks.forEach(function(bank){
+      html+='<a href="#" onclick="veshoShop.redirectToBank(event,\''+escAttr(bank.url||'')+'\',\''+escAttr(bank.name||'')+'\',\''+escAttr(bank.id||bank.country||'')+'\');return false" style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px 10px;border-radius:14px;border:1px solid #e2e8f0;background:#f8fafc;text-decoration:none;transition:all .15s" onmouseover="this.style.borderColor=\'#00b4c8\';this.style.background=\'rgba(0,180,200,.06)\'" onmouseout="this.style.borderColor=\'#e2e8f0\';this.style.background=\'#f8fafc\'">'+
+        (bank.logo_url?'<img src="'+escAttr(bank.logo_url)+'" alt="'+escAttr(bank.name)+'" style="height:34px;object-fit:contain">':
+          '<div style="width:44px;height:44px;border-radius:10px;background:'+escAttr(getStaticBankColor(bank))+';display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:16px">'+escHtml((bank.name||'?')[0])+'</div>')+
+        '<span style="font-size:12px;font-weight:600;color:#0f172a;text-align:center">'+escHtml(bank.name||bank.id||'Pank')+'</span>'+
+      '</a>';
+    });
+    html+='</div>';
+  } else {
+    // No MC bank data — show static bank list with direct MC redirect
+    html+='<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:18px">';
+    MC_BANKS.forEach(function(bank){
+      html+='<button onclick="veshoShop.redirectMCDirect(\''+escAttr(bank.id)+'\')" style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px 10px;border-radius:14px;border:1px solid #e2e8f0;background:#f8fafc;cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor=\'#00b4c8\';this.style.background=\'rgba(0,180,200,.06)\'" onmouseout="this.style.borderColor=\'#e2e8f0\';this.style.background=\'#f8fafc\'">'+
+        '<div style="width:44px;height:44px;border-radius:10px;background:'+bank.color+';display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:16px">'+bank.name[0]+'</div>'+
+        '<span style="font-size:12px;font-weight:600;color:#0f172a">'+bank.name+'</span>'+
+      '</button>';
+    });
+    html+='</div>';
+  }
+
+  if(paymentError) html+='<div class="vshop-err">⚠️ '+escHtml(paymentError)+'</div>';
+  html+='<button class="vshop-btn-gray" style="width:100%" onclick="veshoShop.cancelCheckout()">← Tagasi</button>';
+  renderOverlay(html);
+}
+
+function renderSuccessStep(order){
+  var html='<div style="text-align:center;padding:32px 0">'+
+    '<div style="width:80px;height:80px;border-radius:50%;background:rgba(16,185,129,.15);border:2px solid rgba(16,185,129,.3);display:flex;align-items:center;justify-content:center;font-size:36px;margin:0 auto 20px">✅</div>'+
+    '<h2 style="font-size:1.7rem;font-weight:800;color:#0f172a;margin:0 0 8px">Makse õnnestus!</h2>'+
+    (order?'<p style="color:#6b7280;font-size:15px;margin:0 0 6px">Tellimus <strong>#'+escHtml(order.order_number||order.order_number||'')+'</strong> on kinnitatud.</p>'+
+      '<p style="color:#10b981;font-size:22px;font-weight:800;margin:0 0 24px">'+Number(order.total||0).toFixed(2)+' €</p>':'')+
+    '<p style="color:#6b7280;font-size:14px;margin:0 0 24px">Saatsime kinnituse teie e-postile. Võtame teiega tarne osas ühendust.</p>'+
+    '<button class="vshop-btn-acc" onclick="veshoShop.backToShop()">Tagasi poodi</button>'+
+  '</div>';
+  renderOverlay(html);
+}
+
+function renderCancelledStep(){
+  var html='<div style="text-align:center;padding:32px 0">'+
+    '<div style="font-size:48px;margin-bottom:16px">❌</div>'+
+    '<h2 style="font-size:1.5rem;font-weight:800;color:#0f172a;margin:0 0 10px">Makse tühistati</h2>'+
+    '<p style="color:#6b7280;font-size:14px;margin:0 0 24px">Tellimust ei loodud. Proovi uuesti.</p>'+
+    '<button class="vshop-btn-acc" onclick="veshoShop.backToShop()">Tagasi poodi</button>'+
+  '</div>';
+  renderOverlay(html);
+}
+
+// ── Stripe ─────────────────────────────────────────────────────────────────
+function loadStripeAndMount(){
+  if(!CFG.stripeEnabled||!CFG.stripePubKey) return;
+  if(window.Stripe){
+    mountStripeElements();
+    return;
+  }
+  var s=document.createElement('script');
+  s.src='https://js.stripe.com/v3/';
+  s.onload=function(){ mountStripeElements(); };
+  s.onerror=function(){ setPayError('Stripe laadimine ebaõnnestus'); };
+  document.head.appendChild(s);
+}
+function mountStripeElements(){
+  if(!pendingOrder||!pendingOrder.client_secret) return;
+  try{
+    stripeInst=window.Stripe(CFG.stripePubKey);
+    stripeElems=stripeInst.elements({
+      clientSecret:pendingOrder.client_secret,
+      appearance:{theme:'stripe',variables:{colorPrimary:'#00b4c8',borderRadius:'10px',fontFamily:'inherit'}}
+    });
+    stripeCard=stripeElems.create('payment');
+    var mount=document.getElementById('vshop-stripe-mount');
+    if(mount) stripeCard.mount(mount);
+  }catch(e){ setPayError('Stripe: '+e.message); }
+}
+
+// ── AJAX helpers ───────────────────────────────────────────────────────────
+function ajaxPost(action,data,cb){
+  var fd=new FormData();
+  fd.append('action',action);
+  fd.append('nonce',CFG.nonce);
+  for(var k in data) fd.append(k,data[k]);
+  fetch(CFG.ajaxurl,{method:'POST',body:fd})
+    .then(function(r){ return r.json(); })
+    .then(function(d){ cb(null,d); })
+    .catch(function(e){ cb(e,null); });
+}
+
+function setPayError(msg){ paymentError=msg; paymentLoading=false; redrawCurrentStep(); }
+function setPayLoading(v){ paymentLoading=v; redrawCurrentStep(); }
+function redrawCurrentStep(){
+  if(view==='guest') renderGuestStep();
+  else if(view==='delivery') renderDeliveryStep();
+  else if(view==='payment') renderPaymentStep();
+  else if(view==='mc-banks') renderMcBanksStep();
+}
+
+function placeOrder(paymentMethod,onSuccess){
+  paymentLoading=true;
+  var data={
+    payment_method: paymentMethod,
+    shipping_method: deliveryMethod,
+    address: deliveryAddress,
+    phone: deliveryPhone||(CFG.clientLoggedIn?CFG.clientPhone:guestPhone)||'',
+  };
+  if(!CFG.clientLoggedIn){
+    data.name=guestName||'';
+    data.email=guestEmail||'';
+  }
+  // Send cart as JSON so server can use it even if session differs
+  data.items_json=JSON.stringify(cart.map(function(c){ return {pid:c.pid, qty:c.qty}; }));
+
+  ajaxPost('vesho_shop_place_order',data,function(err,resp){
+    paymentLoading=false;
+    if(err||!resp||!resp.success){
+      setPayError((resp&&resp.data)||'Viga tellimuse loomisel');
+      return;
+    }
+    onSuccess(resp.data);
+  });
+}
+
+function getStaticBankColor(bank){
+  var map={'swedbank':'#f36b00','seb':'#60b33c','lhv':'#f5a800','luminor':'#c00000','coop':'#24a148','bigbank':'#c0392b','inbank':'#7c3aed','revolut':'#191c20'};
+  var id=(bank.id||'').toLowerCase();
+  return map[id]||'#64748b';
+}
+
+// ── Public API ─────────────────────────────────────────────────────────────
+window.veshoShop = {
+  // State refs (for inline oninput handlers)
+  get guestName(){ return guestName; },  set guestName(v){ guestName=v; },
+  get guestEmail(){ return guestEmail; }, set guestEmail(v){ guestEmail=v; },
+  get guestPhone(){ return guestPhone; }, set guestPhone(v){ guestPhone=v; },
+  get deliveryPhone(){ return deliveryPhone; }, set deliveryPhone(v){ deliveryPhone=v; },
+  get deliveryAddress(){ return deliveryAddress; }, set deliveryAddress(v){ deliveryAddress=v; },
+
+  addToCart: function(pid,name,price,maxQty){
+    var ex=cart.find(function(c){ return c.pid===pid; });
+    if(ex) ex.qty=Math.min(ex.qty+1,maxQty);
+    else cart.push({pid:pid,name:name,price:price,qty:1,maxQty:maxQty});
+    saveCart();
+    updateCardCtrls();
+    this.openCart();
+  },
+
+  restoreAdd: function(pid){
+    var card=document.querySelector('.vshop-card[data-pid="'+pid+'"]');
+    if(card){
+      var ctrl=document.getElementById('vshop-ctrl-'+pid);
+      if(ctrl) ctrl.innerHTML='<button class="vshop-add-btn" onclick="veshoShop.addToCart('+pid+',\'\',0,999)">+ Lisa korvi</button>';
+    }
+  },
+
+  setQty: function(pid,qty){
+    if(qty<=0){ cart=cart.filter(function(c){ return c.pid!==pid; }); }
+    else{
+      var item=cart.find(function(c){ return c.pid===pid; });
+      if(item) item.qty=Math.min(qty,item.maxQty||999);
+    }
+    saveCart();
+    updateCardCtrls();
+    if(cartSidebarOpen) renderCartSidebar();
+  },
+
+  openCart: function(){
+    cartSidebarOpen=true;
+    renderCartSidebar();
+  },
+
+  closeCart: function(){
+    cartSidebarOpen=false;
+    var bg=document.getElementById('vsb-bg');
+    var sb=document.getElementById('vsb');
+    if(bg){ bg.style.opacity='0'; }
+    if(sb){ sb.style.transform='translateX(100%)'; }
+    setTimeout(function(){
+      var root=document.getElementById('vshop-overlay-root');
+      if(root&&!root.querySelector('.vshop-overlay')) root.innerHTML='';
+    },300);
+  },
+
+  onSearch: function(val){
+    currentSearch=val;
+    filterProducts();
+  },
+
+  onCategory: function(cat,btn){
+    currentCat=cat||'';
+    document.querySelectorAll('.vshop-cat-btn').forEach(function(b){ b.classList.remove('active'); });
+    if(btn) btn.classList.add('active');
+    filterProducts();
+  },
+
+  setCheckoutMode: function(mode){
+    checkoutMode=mode;
+    renderCartSidebar();
+  },
+
+  setDelivery: function(method){
+    deliveryMethod=method;
+    renderDeliveryStep();
+  },
+
+  startCheckout: function(){
+    this.closeCart();
+    paymentError='';
+    if(!CFG.clientLoggedIn){
+      view='guest'; guestName=CFG.clientName||''; guestEmail=CFG.clientEmail||''; guestPhone=CFG.clientPhone||'';
+      setTimeout(renderGuestStep,150);
+    } else {
+      view='delivery';
+      setTimeout(renderDeliveryStep,150);
+    }
+  },
+
+  nextFromGuest: function(){
+    guestName=document.getElementById('vg-name')?document.getElementById('vg-name').value:guestName;
+    guestEmail=document.getElementById('vg-email')?document.getElementById('vg-email').value:guestEmail;
+    guestPhone=document.getElementById('vg-phone')?document.getElementById('vg-phone').value:guestPhone;
+    if(!guestName.trim()||!guestEmail.trim()){ setPayError('Nimi ja e-post on kohustuslikud'); return; }
+    paymentError=''; view='delivery'; renderDeliveryStep();
+  },
+
+  backToCart: function(){
+    view='shop';
+    var root=document.getElementById('vshop-overlay-root');
+    if(root) root.innerHTML='';
+    this.openCart();
+  },
+
+  gotoGuest: function(){
+    view='guest'; renderGuestStep();
+  },
+
+  proceedToPayment: function(){
+    deliveryAddress=document.getElementById('vd-addr')?document.getElementById('vd-addr').value:deliveryAddress;
+    deliveryPhone=document.getElementById('vd-phone')?document.getElementById('vd-phone').value:deliveryPhone;
+    if(deliveryMethod!=='pickup'&&!deliveryAddress.trim()){
+      setPayError(deliveryMethod==='omniva'?'Sisesta pakiautomaadi nimi':'Sisesta tarne aadress'); return;
+    }
+    paymentError='';
+
+    if(checkoutMode==='mc'){
+      placeOrder('mc',function(data){
+        pendingOrder=data;
+        if(data.redirect_url){
+          // Show bank picker with static banks (redirect_url is the MC payment link)
+          mcBanks=[]; // No individual bank URLs from this endpoint
+          view='mc-banks';
+          renderMcBanksStep();
+        } else {
+          setPayError('MC: ei saanud makselinki');
+        }
+      });
+      paymentLoading=true; renderDeliveryStep();
+    } else if(checkoutMode==='montonio'){
+      placeOrder('montonio',function(data){
+        pendingOrder=data;
+        if(data.redirect_url){
+          window.location.href=data.redirect_url;
+        } else {
+          setPayError('Montonio: ei saanud makselinki');
+        }
+      });
+      paymentLoading=true; renderDeliveryStep();
+    } else {
+      // Stripe
+      placeOrder('stripe',function(data){
+        pendingOrder=data;
+        if(!data.client_secret){
+          // No Stripe (disabled or order confirmed directly)
+          cart=[]; saveCart(); updateCardCtrls();
+          view='success'; renderSuccessStep(data);
+          return;
+        }
+        view='payment';
+        renderPaymentStep();
+      });
+      paymentLoading=true; renderDeliveryStep();
+    }
+  },
+
+  confirmStripe: function(){
+    if(!stripeInst||!stripeElems){ setPayError('Stripe pole laetud'); return; }
+    paymentLoading=true; renderPaymentStep();
+    stripeInst.confirmPayment({elements:stripeElems,redirect:'if_required'})
+      .then(function(result){
+        if(result.error){ setPayError(result.error.message||'Makse ebaõnnestus'); return; }
+        // Notify server
+        ajaxPost('vesho_shop_stripe_confirm',{order_id:pendingOrder.order_id},function(err,resp){
+          if(err||!resp||!resp.success){ setPayError((resp&&resp.data)||'Serveri kinnitus ebaõnnestus'); return; }
+          cart=[]; saveCart(); updateCardCtrls();
+          var confirmedOrder=resp.data||pendingOrder;
+          view='success'; renderSuccessStep(confirmedOrder);
+        });
+      });
+  },
+
+  redirectToBank: function(e,url,name,id){
+    if(e) e.preventDefault();
+    if(!url){ setPayError('Pangalink pole saadaval'); return; }
+    try{
+      var u=new URL(url);
+      var trusted=['payment.maksekeskus.ee','payment.test.maksekeskus.ee','sandbox-payment.maksekeskus.ee'];
+      if(!trusted.includes(u.hostname)){ setPayError('Keeldutud redirect: '+u.hostname); return; }
+      window.location.href=url;
+    }catch(err){ setPayError('Vigane URL'); }
+  },
+
+  redirectMCDirect: function(bankId){
+    // pendingOrder.redirect_url is the MC payment link — append bank if possible
+    if(pendingOrder&&pendingOrder.redirect_url){
+      window.location.href=pendingOrder.redirect_url;
+    } else {
+      setPayError('MC makselink pole saadaval');
+    }
+  },
+
+  cancelCheckout: function(){
+    view='shop';
+    pendingOrder=null; paymentError=''; paymentLoading=false;
+    stripeInst=null; stripeElems=null; stripeCard=null;
+    var root=document.getElementById('vshop-overlay-root');
+    if(root) root.innerHTML='';
+  },
+
+  backToShop: function(){
+    // Remove URL params and reload clean
+    var url=window.location.pathname;
+    history.replaceState({},'',url);
+    view='shop';
+    pendingOrder=null; paymentError='';
+    var root=document.getElementById('vshop-overlay-root');
+    if(root) root.innerHTML='';
+  },
+};
+
+// ── Utils ───────────────────────────────────────────────────────────────────
+function escHtml(s){
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function escAttr(s){
+  return String(s||'').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// ── Init ────────────────────────────────────────────────────────────────────
+loadCart();
+updateFab();
+updateCardCtrls();
+
+// Handle initial view from PHP (MC/Montonio return)
+if(CFG.initialView==='success'&&CFG.returnOrder){
+  setTimeout(function(){ renderSuccessStep(CFG.returnOrder); },100);
+} else if(CFG.initialView==='cancelled'){
+  setTimeout(function(){ renderCancelledStep(); },100);
+}
+
+})();
+</script>
+        <?php
+        return ob_get_clean();
     }
 
     // ── Fix: hide firma fields on register form load ──────────────────────────
