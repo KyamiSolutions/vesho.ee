@@ -8,6 +8,10 @@ $company_phone   = get_option('vesho_company_phone',   '');
 $company_email   = get_option('vesho_company_email',   '');
 $company_bank    = get_option('vesho_company_bank',    '');
 $company_iban    = get_option('vesho_company_iban',    '');
+$company_facebook  = get_option('vesho_facebook',      '');
+$company_instagram = get_option('vesho_instagram',     '');
+$company_linkedin  = get_option('vesho_linkedin',      '');
+$working_hours     = get_option('vesho_working_hours', 'E–R 9:00–18:00');
 $invoice_prefix  = get_option('vesho_invoice_prefix',  'INV-');
 $invoice_start   = get_option('vesho_invoice_start',   '1001');
 $portal_page     = get_option('vesho_portal_page',     '');
@@ -94,6 +98,28 @@ $services_page_subtitle = get_option('vesho_services_page_subtitle', '');
                     <div class="crm-form-group">
                         <label class="crm-form-label">IBAN</label>
                         <input class="crm-form-input" type="text" name="company_iban" value="<?php echo esc_attr($company_iban); ?>">
+                    </div>
+                    <div class="crm-form-group">
+                        <label class="crm-form-label">Tööajad</label>
+                        <input class="crm-form-input" type="text" name="working_hours" value="<?php echo esc_attr($working_hours); ?>" placeholder="nt. E–R 9:00–18:00">
+                        <small class="crm-form-hint">Kuvatakse jaluses ja portaalis</small>
+                    </div>
+                </div>
+                <div class="crm-card" style="margin-bottom:16px">
+                    <div class="crm-card-header"><span class="crm-card-title">Sotsiaalmeedia</span></div>
+                    <div style="padding:20px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px">
+                    <div class="crm-form-group">
+                        <label class="crm-form-label">Facebook URL</label>
+                        <input class="crm-form-input" type="url" name="facebook" value="<?php echo esc_attr($company_facebook); ?>" placeholder="https://facebook.com/...">
+                    </div>
+                    <div class="crm-form-group">
+                        <label class="crm-form-label">Instagram URL</label>
+                        <input class="crm-form-input" type="url" name="instagram" value="<?php echo esc_attr($company_instagram); ?>" placeholder="https://instagram.com/...">
+                    </div>
+                    <div class="crm-form-group">
+                        <label class="crm-form-label">LinkedIn URL</label>
+                        <input class="crm-form-input" type="url" name="linkedin" value="<?php echo esc_attr($company_linkedin); ?>" placeholder="https://linkedin.com/company/...">
+                    </div>
                     </div>
                 </div>
                 </div>
