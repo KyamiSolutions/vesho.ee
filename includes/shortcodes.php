@@ -1055,7 +1055,7 @@ add_shortcode( 'vesho_shop_grid', function ( $atts ) {
                 <?php if (!empty($rel->image_url)): ?>
                   <img src="<?php echo esc_url($rel->image_url); ?>" alt="<?php echo esc_attr($rel->name); ?>">
                 <?php else: ?>
-                  <svg viewBox="0 0 32 32" fill="none"><path d="M16 4C16 4 6 14 6 20C6 25.5228 10.4772 30 16 30C21.5228 30 26 25.5228 26 20C26 14 16 4 16 4Z" fill="<?php echo esc_attr($pd_cat_color); ?>"/></svg>
+                  <div class="vsho-no-img">Pilt puudub</div>
                 <?php endif; ?>
               </div>
               <div class="vpd-rel-body">
@@ -1198,7 +1198,7 @@ add_shortcode( 'vesho_shop_grid', function ( $atts ) {
     @media(max-width:560px){.vshop-grid{grid-template-columns:repeat(2,1fr)}}
     @media(max-width:380px){.vshop-grid{grid-template-columns:1fr}}
     /* Cards */
-    .vshop-card{background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(13,31,45,.07);overflow:hidden;display:flex;flex-direction:column;transition:box-shadow .18s,transform .18s;border:1.5px solid #f0f4f8}
+    .vshop-card{background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(13,31,45,.07);overflow:hidden;display:flex;flex-direction:column;transition:box-shadow .18s,transform .18s;border:1.5px solid #f0f4f8;cursor:pointer}
     .vshop-card:hover{box-shadow:0 6px 24px rgba(13,31,45,.11);transform:translateY(-2px);border-color:#e0f7fa}
     .vshop-card-img{height:160px;background:linear-gradient(145deg,#e8f8fa,#d0f0f5);display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;text-decoration:none;flex-shrink:0}
     .vshop-card-img img{width:100%;height:100%;object-fit:cover}
@@ -1341,7 +1341,7 @@ add_shortcode( 'vesho_shop_grid', function ( $atts ) {
         $cat_color = '#00b4c8';
         foreach($managed_cats as $mc){ if($mc->name===$item->category){$cat_color=$mc->color;break;} }
       ?>
-        <div class="vshop-card">
+        <div class="vshop-card" onclick="location.href='<?php echo esc_js($detail_url); ?>'">
           <a href="<?php echo esc_url($detail_url); ?>" class="vshop-card-img">
             <?php if($disc!==null) echo '<span class="vshop-disc-badge">-'.(int)$eff_discount.'%</span>'; ?>
             <?php if(!$in_stock) echo '<span class="vshop-out-badge">Otsas</span>'; ?>
@@ -1369,7 +1369,7 @@ add_shortcode( 'vesho_shop_grid', function ( $atts ) {
             <?php else: ?>
             <div class="vshop-stock-no">✗ Laost otsas</div>
             <?php endif; ?>
-            <button class="vshop-btn" onclick="veshoAddToCart(<?php echo $item->id; ?>,'<?php echo esc_js($item->name); ?>')" <?php echo $in_stock?'':'disabled'; ?>>🛒 Lisa korvi</button>
+            <button class="vshop-btn" onclick="event.stopPropagation();veshoAddToCart(<?php echo $item->id; ?>,'<?php echo esc_js($item->name); ?>')" <?php echo $in_stock?'':'disabled'; ?>>🛒 Lisa korvi</button>
           </div>
         </div>
       <?php endforeach; ?>
