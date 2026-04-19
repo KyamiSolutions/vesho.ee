@@ -2209,10 +2209,10 @@ document.querySelectorAll('.vwp-hist-header').forEach(function(hdr){
         $pending_count = (int)$wpdb->get_var(
             "SELECT COUNT(*) FROM {$wpdb->prefix}vesho_shop_orders WHERE status='processing' AND (worker_id IS NULL OR worker_id=0)"
         );
-        // My claimed order
+        // My claimed order — only processing (confirmed = already packed, don't show modal again)
         $my_order = $wpdb->get_row($wpdb->prepare(
             "SELECT so.* FROM {$wpdb->prefix}vesho_shop_orders so
-             WHERE so.worker_id=%d AND so.status IN ('processing','confirmed') LIMIT 1", $wid
+             WHERE so.worker_id=%d AND so.status='processing' LIMIT 1", $wid
         ));
         $my_items = $my_order ? $wpdb->get_results($wpdb->prepare(
             "SELECT soi.*, COALESCE(inv.ean, '') AS ean, COALESCE(inv.sku,'') AS sku
@@ -3858,8 +3858,11 @@ document.querySelectorAll('.vwp-hist-header').forEach(function(hdr){
         global $wpdb;
         $order_id = absint($_POST['order_id']??0);
         // Release: only clear worker_id, status stays 'processing' (matches 3006)
-        $wpdb->update("{$wpdb->prefix}vesho_shop_orders",
-            ['worker_id'=>null],['id'=>$order_id,'worker_id'=>$worker->id]);
+        // Use raw query — $wpdb->update() doesn't handle NULL correctly
+        $wpdb->query($wpdb->prepare(
+            "UPDATE {$wpdb->prefix}vesho_shop_orders SET worker_id=NULL WHERE id=%d AND worker_id=%d",
+            $order_id, (int)$worker->id
+        ));
         wp_send_json_success(['message'=>'Tellimus vabastatud']);
     }
 
