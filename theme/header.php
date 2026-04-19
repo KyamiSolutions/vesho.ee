@@ -62,7 +62,10 @@ window.addEventListener('resize', veshoAdjustTopHeight);
 
         <!-- Logo -->
         <a class="header-logo" href="<?php echo esc_url( home_url( '/' ) ); ?>" rel="home" aria-label="<?php bloginfo( 'name' ); ?> – avaleht">
-            <?php if ( has_custom_logo() ) : ?>
+            <?php $_vesho_logo = get_option('vesho_company_logo',''); ?>
+            <?php if ( $_vesho_logo ) : ?>
+                <img src="<?php echo esc_url($_vesho_logo); ?>" alt="<?php bloginfo('name'); ?>" style="max-height:44px;width:auto;display:block">
+            <?php elseif ( has_custom_logo() ) : ?>
                 <?php the_custom_logo(); ?>
             <?php else : ?>
                 <span class="header-logo__icon" aria-hidden="true">
