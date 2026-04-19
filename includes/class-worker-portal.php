@@ -34,6 +34,8 @@ class Vesho_CRM_Worker_Portal {
             'vesho_worker_pack_order',
             // Location check
             'vesho_check_warehouse_location',
+            // EAN lookup
+            'vesho_worker_lookup_ean',
         ];
         foreach ($nopriv as $a) {
             add_action('wp_ajax_nopriv_' . $a, [__CLASS__, 'ajax_' . str_replace('vesho_worker_', '', $a)]);
@@ -337,19 +339,27 @@ class Vesho_CRM_Worker_Portal {
            ORDER BY created_at DESC LIMIT 5",
           $today_wn, $today_wn
       ));
-      foreach ($worker_notices as $wn) :
+      <?php if (!empty($worker_notices)): ?>
+      <script>var _vwn_dm=(function(){try{return JSON.parse(sessionStorage.getItem("vwn_dm")||"[]");}catch(e){return [];}})();</script>
+      <?php endif; ?>
+      <?php foreach ($worker_notices as $wn) :
           $wtype  = $wn->type ?? 'info';
           $wbg    = $wtype==='warning' ? 'rgba(245,158,11,0.12)' : ($wtype==='success' ? 'rgba(16,185,129,0.12)' : 'rgba(99,102,241,0.12)');
           $wbord  = $wtype==='warning' ? 'rgba(245,158,11,0.3)'  : ($wtype==='success' ? 'rgba(16,185,129,0.3)'  : 'rgba(99,102,241,0.3)');
           $wcol   = $wtype==='warning' ? '#f59e0b' : ($wtype==='success' ? '#10b981' : '#818cf8');
           $wicon  = $wtype==='warning' ? '⚠️' : ($wtype==='success' ? '✅' : 'ℹ️');
+          $wid_n  = (int)$wn->id;
       ?>
-      <div style="background:<?php echo $wbg; ?>;border-bottom:1px solid <?php echo $wbord; ?>;padding:10px 20px;display:flex;align-items:center;gap:10px;font-size:13px;margin-bottom:8px;border-radius:6px">
+      <div id="vwpn-<?php echo $wid_n; ?>" style="background:<?php echo $wbg; ?>;border-bottom:1px solid <?php echo $wbord; ?>;padding:10px 20px;display:flex;align-items:center;gap:10px;font-size:13px;margin-bottom:8px;border-radius:6px">
         <span style="font-size:16px"><?php echo $wicon; ?></span>
         <span style="color:<?php echo $wcol; ?>;font-weight:600"><?php echo esc_html($wn->title); ?></span>
         <span style="color:#9ca3af">— <?php echo esc_html($wn->message); ?></span>
+        <button onclick="var dm=(function(){try{return JSON.parse(sessionStorage.getItem('vwn_dm')||'[]');}catch(e){return [];}})();dm.push(<?php echo $wid_n; ?>);sessionStorage.setItem('vwn_dm',JSON.stringify(dm));document.getElementById('vwpn-<?php echo $wid_n; ?>').remove()" style="margin-left:auto;background:none;border:none;cursor:pointer;color:#9ca3af;font-size:20px;line-height:1;padding:0 4px">×</button>
       </div>
       <?php endforeach; ?>
+      <?php if (!empty($worker_notices)): ?>
+      <script>(function(){_vwn_dm.forEach(function(id){var el=document.getElementById("vwpn-"+id);if(el)el.remove();});})();</script>
+      <?php endif; ?>
       <?php
       switch ($tab) {
           case 'overview':   self::tab_overview($worker, $wid, $nonce, $ajax); break;
@@ -1494,6 +1504,17 @@ class Vesho_CRM_Worker_Portal {
     <div style="font-size:16px;font-weight:700;color:#0d1f2d;margin-bottom:4px">Lisa tundmatu kaup</div>
     <div style="font-size:12px;color:#64748b;margin-bottom:16px">Arve: <span id="vwp-add-item-bref"></span></div>
     <div style="display:flex;flex-direction:column;gap:12px">
+      <!-- EAN scan/lookup at top (auto-fills form from inventory) -->
+      <div style="background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:8px;padding:10px 12px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#64748b;margin-bottom:6px">📷 Skänni EAN — täidab vormi automaatselt</div>
+        <div style="display:flex;gap:6px">
+          <input id="vwp-ai-ean-scan" placeholder="Skänni või sisesta EAN..." autocomplete="off"
+            style="flex:1;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;font-family:monospace;min-width:0"
+            onkeydown="if(event.key==='Enter'){event.preventDefault();vwpLookupEan();}">
+          <button type="button" onclick="vwpLookupEan()" style="padding:0 12px;background:rgba(0,180,200,.1);color:#00b4c8;border:1px solid rgba(0,180,200,.25);border-radius:8px;font-size:12px;cursor:pointer;white-space:nowrap;flex-shrink:0">Otsi</button>
+        </div>
+        <div id="vwp-ai-ean-msg" style="font-size:12px;margin-top:6px;display:none"></div>
+      </div>
       <label style="font-size:13px;color:#374151">Toote nimi *<br>
         <input id="vwp-ai-name" placeholder="Toote nimetus" style="width:100%;margin-top:4px;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px;box-sizing:border-box"></label>
       <label style="font-size:13px;color:#374151">EAN / Vöötkood<br>
@@ -1716,13 +1737,47 @@ class Vesho_CRM_Worker_Portal {
     currentRecvId=rid;
     document.getElementById('vwp-add-item-bref').textContent=bref;
     document.getElementById('vwp-ai-name').value='';
+    document.getElementById('vwp-ai-ean-scan').value=preEan||'';
     document.getElementById('vwp-ai-ean').value=preEan||'';
     document.getElementById('vwp-ai-qty').value='';
     document.getElementById('vwp-ai-price').value='';
     document.getElementById('vwp-ai-loc').value='';
     document.getElementById('vwp-ai-notes').value='';
     document.getElementById('vwp-add-item-msg').style.display='none';
+    document.getElementById('vwp-ai-ean-msg').style.display='none';
     document.getElementById('vwp-add-item-modal').style.display='flex';
+    // If pre-filled EAN, auto-lookup
+    if(preEan) setTimeout(vwpLookupEan,50);
+  };
+
+  window.vwpLookupEan = function(){
+    var scanInp=document.getElementById('vwp-ai-ean-scan');
+    var ean=(scanInp?scanInp.value:'').trim();
+    var msgEl=document.getElementById('vwp-ai-ean-msg');
+    if(!ean){if(msgEl){msgEl.style.display='none';}return;}
+    if(msgEl){msgEl.textContent='Otsin...';msgEl.style.color='#64748b';msgEl.style.display='';}
+    var fd=new FormData();
+    fd.append('action','vesho_worker_lookup_ean');
+    fd.append('nonce',NONCE);
+    fd.append('ean',ean);
+    fetch(AJAX,{method:'POST',body:fd}).then(function(r){return r.json();}).then(function(d){
+      if(d.success){
+        var p=d.data;
+        document.getElementById('vwp-ai-name').value=p.name||'';
+        document.getElementById('vwp-ai-ean').value=p.ean||ean;
+        if(p.unit){var usel=document.getElementById('vwp-ai-unit');if(usel)usel.value=p.unit;}
+        if(p.selling_price){document.getElementById('vwp-ai-price').value=p.selling_price;}
+        if(msgEl){msgEl.textContent='Leitud: '+p.name;msgEl.style.color='#10b981';msgEl.style.display='';}
+        document.getElementById('vwp-ai-qty').focus();
+      } else {
+        // Not found — copy EAN to EAN field, let user fill manually
+        document.getElementById('vwp-ai-ean').value=ean;
+        if(msgEl){msgEl.textContent='EAN ei leitud — täida käsitsi';msgEl.style.color='#f59e0b';msgEl.style.display='';}
+        document.getElementById('vwp-ai-name').focus();
+      }
+    }).catch(function(){
+      if(msgEl){msgEl.textContent='Ühenduse viga';msgEl.style.color='#dc2626';msgEl.style.display='';}
+    });
   };
 
   window.vwpScanReceiptEan = function(rid, bref){
@@ -1943,6 +1998,36 @@ $all_picked = !empty($my_items) && count(array_filter($my_items, fn($i) => $i->p
   var AJAX='<?php echo $ajax; ?>', NONCE='<?php echo $nonce; ?>';
   var allItems=<?php echo json_encode(array_map(fn($i)=>['id'=>$i->id,'name'=>$i->name,'qty'=>$i->quantity,'price'=>$i->unit_price,'picked'=>(bool)$i->picked], $my_items??[])); ?>;
   var invoicePrinted=false, labelPrinted=false;
+  var CURRENT_ORDER_ID=<?php echo $my_order ? (int)$my_order->id : 'null'; ?>;
+  var LS_KEY='vesho_picking_state';
+
+  // ── localStorage helpers ─────────────────────────────────────────────────
+  function lsGet(){try{return JSON.parse(localStorage.getItem(LS_KEY)||'{}');}catch(e){return {};}}
+  function lsSet(s){try{localStorage.setItem(LS_KEY,JSON.stringify(s));}catch(e){}}
+  function lsSaveItem(orderId,itemId,picked){
+    var s=lsGet(); if(!s[orderId]) s[orderId]={};
+    s[orderId][itemId]=picked; lsSet(s);
+  }
+  function lsClearOrder(orderId){var s=lsGet();delete s[orderId];lsSet(s);}
+
+  // ── Restore picking state from localStorage on page load ─────────────────
+  if(CURRENT_ORDER_ID){
+    var saved=lsGet()[CURRENT_ORDER_ID]||{};
+    Object.keys(saved).forEach(function(itemId){
+      var picked=saved[itemId];
+      var cb=document.getElementById('shop-cb-'+itemId);
+      var row=document.getElementById('shop-row-'+itemId);
+      if(cb && !cb.checked && picked){
+        cb.checked=true;
+        if(row){row.style.opacity='.4';row.classList.add('picked');var nm=row.querySelector('div[style*="font-size:13px"]');if(nm)nm.style.textDecoration='line-through';}
+      } else if(cb && cb.checked && !picked){
+        cb.checked=false;
+        if(row){row.style.opacity='1';row.classList.remove('picked');var nm=row.querySelector('div[style*="font-size:13px"]');if(nm)nm.style.textDecoration='';}
+      }
+    });
+    updateProgress();
+    checkPickGate();
+  }
 
   // Claim order
   var claimBtn=document.getElementById('vwp-claim-btn');
@@ -1964,17 +2049,29 @@ $all_picked = !empty($my_items) && count(array_filter($my_items, fn($i) => $i->p
 
   // Toggle pick
   window.togglePick = function(itemId, picked){
+    // Optimistic UI update + localStorage save immediately
+    var row=document.getElementById('shop-row-'+itemId);
+    if(row){
+      row.style.opacity=picked?'.4':'1';
+      var nameEl=row.querySelector('div[style*="font-size:13px"]');
+      if(nameEl)nameEl.style.textDecoration=picked?'line-through':'';
+      if(picked){ row.classList.add('picked'); } else { row.classList.remove('picked'); }
+    }
+    if(CURRENT_ORDER_ID) lsSaveItem(CURRENT_ORDER_ID, itemId, picked);
+    updateProgress();
+    checkPickGate();
     var fd=new FormData(); fd.append('action','vesho_worker_pick_item'); fd.append('nonce',NONCE);
     fd.append('item_id',itemId); fd.append('picked',picked?1:0);
     fetch(AJAX,{method:'POST',body:fd}).then(r=>r.json()).then(d=>{
-      if(d.success){
-        var row=document.getElementById('shop-row-'+itemId);
+      if(!d.success){
+        // Revert on failure
         if(row){
-          row.style.opacity=picked?'.4':'1';
+          row.style.opacity=picked?'1':'.4';
           var nameEl=row.querySelector('div[style*="font-size:13px"]');
-          if(nameEl)nameEl.style.textDecoration=picked?'line-through':'';
-          if(picked){ row.classList.add('picked'); } else { row.classList.remove('picked'); }
+          if(nameEl)nameEl.style.textDecoration=picked?'':'line-through';
+          if(picked){ row.classList.remove('picked'); } else { row.classList.add('picked'); }
         }
+        if(CURRENT_ORDER_ID) lsSaveItem(CURRENT_ORDER_ID, itemId, !picked);
         updateProgress();
         checkPickGate();
       }
@@ -2114,7 +2211,8 @@ $all_picked = !empty($my_items) && count(array_filter($my_items, fn($i) => $i->p
     });
     packBtn.disabled=true;
     fetch(AJAX,{method:'POST',body:fd}).then(r=>r.json()).then(d=>{
-      if(d.success) location.reload(); else{showMsg(false,d.data?.message||'Viga');packBtn.disabled=false;}
+      if(d.success){if(CURRENT_ORDER_ID) lsClearOrder(CURRENT_ORDER_ID); location.reload();}
+      else{showMsg(false,d.data?.message||'Viga');packBtn.disabled=false;}
     });
   });
 
@@ -3178,6 +3276,44 @@ $all_picked = !empty($my_items) && count(array_filter($my_items, fn($i) => $i->p
         } else {
             wp_send_json_success(['occupied' => false]);
         }
+    }
+
+    // ── AJAX: EAN lookup in inventory ─────────────────────────────────────────
+
+    public static function ajax_lookup_ean() {
+        check_ajax_referer('vesho_portal_nonce', 'nonce');
+        $worker = self::get_current_worker();
+        if (!$worker) wp_send_json_error(['message' => 'Pole sisse logitud']);
+        global $wpdb;
+        $ean = sanitize_text_field($_POST['ean'] ?? '');
+        if (!$ean) wp_send_json_error(['message' => 'EAN puudub']);
+        // Check if ean column exists
+        $inv_cols = $wpdb->get_col("DESCRIBE `{$wpdb->prefix}vesho_inventory`") ?: [];
+        if (!in_array('ean', $inv_cols, true)) {
+            wp_send_json_error(['message' => 'EAN ei leitud', 'not_found' => true]);
+        }
+        $item = $wpdb->get_row($wpdb->prepare(
+            "SELECT id, name, sku, unit, selling_price, ean FROM {$wpdb->prefix}vesho_inventory WHERE ean=%s AND quantity > 0 LIMIT 1",
+            $ean
+        ));
+        if (!$item) {
+            // Try with any quantity
+            $item = $wpdb->get_row($wpdb->prepare(
+                "SELECT id, name, sku, unit, selling_price, ean FROM {$wpdb->prefix}vesho_inventory WHERE ean=%s LIMIT 1",
+                $ean
+            ));
+        }
+        if (!$item) {
+            wp_send_json_error(['message' => 'EAN ei leitud', 'not_found' => true]);
+        }
+        wp_send_json_success([
+            'id'            => (int) $item->id,
+            'name'          => $item->name,
+            'sku'           => $item->sku ?? '',
+            'unit'          => $item->unit ?? 'tk',
+            'selling_price' => $item->selling_price ? (float) $item->selling_price : null,
+            'ean'           => $item->ean,
+        ]);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
