@@ -1,10 +1,10 @@
 {
   "name": "Vesho CRM",
   "slug": "vesho-crm",
-  "version": "2.5.8",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.5.8/vesho-crm.zip",
+  "version": "2.5.9",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.5.9/vesho-crm.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-19",
-  "changelog": "<h4>2.5.8</h4><ul><li>Fix: globaalne teadaanne banner fixed headeri sees (admin bar offset fix)</li></ul><h4>2.5.7</h4><ul><li>Lisa: globaalne teadaanne — nähtav KÕIGIL lehtedel kõigile külastajatele</li><li>Lisa: kiirteate haldus seadetes (avalda/uuenda/eemalda ühe klikiga)</li><li>Lisa: teadaanne nähtav ka poodi külastajatele (sh külalised)</li></ul><h4>2.5.6</h4><ul><li>Cancel → automaatne refund, bulk inventory, packed_at, EAN admin, auto-refresh</li></ul>"
+  "changelog": "<h4>2.5.9</h4><ul><li>Fix: küpsiste bänner eemaldatud portaalist, lisatud avalikule lehele (külalised)</li></ul><h4>2.5.8</h4><ul><li>Fix: globaalne teadaanne banner fixed headeri sees (admin bar offset fix)</li></ul><h4>2.5.7</h4><ul><li>Lisa: globaalne teadaanne — nähtav KÕIGIL lehtedel kõigile külastajatele</li></ul><h4>2.5.6</h4><ul><li>Cancel → automaatne refund, bulk inventory, packed_at, EAN admin, auto-refresh</li></ul>"
 }
