@@ -1,10 +1,10 @@
 {
   "name": "Vesho",
   "slug": "vesho",
-  "version": "2.9.1",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.9.1/vesho-theme.zip",
+  "version": "2.9.2",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.9.2/vesho-theme.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-19",
-  "changelog": "<h4>2.9.1</h4><ul><li>Feat: avalehekülje shortcode'id Elementori jaoks</li><li>Refactor: index.php kasutab shortcode funktsioone (ei dubleeri koodi)</li></ul><h4>2.9.0</h4><ul><li>Feat: Customizer täiendused, Elementori mallilehed</li></ul>"
+  "changelog": "<h4>2.9.2</h4><ul><li>Feat: komponentide shortcode'id Elementori jaoks</li></ul><h4>2.9.1</h4><ul><li>Feat: shortcode'id + KM fix</li></ul><h4>2.9.0</h4><ul><li>Feat: Customizer + Elementori mallilehed</li></ul>"
 }

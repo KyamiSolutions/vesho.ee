@@ -1,10 +1,10 @@
 {
   "name": "Vesho CRM",
   "slug": "vesho-crm",
-  "version": "2.9.1",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.9.1/vesho-crm.zip",
+  "version": "2.9.2",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.9.2/vesho-crm.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-19",
-  "changelog": "<h4>2.9.1</h4><ul><li>Feat: avalehekülje shortcode'id Elementori jaoks — [vesho_hero] [vesho_stats] [vesho_services] [vesho_why_us] [vesho_cta]</li><li>Fix: KM vaikemäär 22% → 24% (Eesti 2024)</li></ul><h4>2.9.0</h4><ul><li>Feat: Customizer — jaluse lühikirjeldus, veergude pealkirjad, teenuste sektsiooni tekstid muudetavad</li><li>Feat: mallid 'Täislaius – Elementor' ja 'Lõuend – Elementor'</li></ul><h4>2.8.5</h4><ul><li>Feat: marsruudiplaneerija, koordinaadid, tagastused, krediitarved, lukustatud hind</li></ul>"
+  "changelog": "<h4>2.9.2</h4><ul><li>Feat: [vesho_services_cards] [vesho_stats_grid] [vesho_why_items] — komponentide shortcode'id Elementori kombineerimisel</li></ul><h4>2.9.1</h4><ul><li>Feat: avalehekülje shortcode'id Elementori jaoks</li><li>Fix: KM vaikemäär 22% → 24%</li></ul><h4>2.9.0</h4><ul><li>Feat: Customizer täiendused, Elementori mallilehed</li></ul>"
 }
