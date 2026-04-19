@@ -1002,6 +1002,58 @@ private static function load_view( $name ) {
                 wp_mail($email_to, $subject, $body);
             }
         }
+
+        // Auto-invoice + client email when status changes to 'completed'
+        $new_status = $data['status'] ?? '';
+        $prev_status = '';
+        if ( $id ) {
+            $prev_row = $wpdb->get_row($wpdb->prepare("SELECT status, client_id, title, price FROM {$wpdb->prefix}vesho_workorders WHERE id=%d", $new_id));
+            // Note: we already updated, so fetch fresh
+        }
+        $wo_fresh = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}vesho_workorders WHERE id=%d", $new_id));
+        // We need old status — read it before update. Re-check via msg: if msg=updated it was existing.
+        if ( $new_status === 'completed' && $msg === 'updated' ) {
+            // Check if auto-invoice already exists for this workorder
+            $existing_inv = $wpdb->get_var($wpdb->prepare(
+                "SELECT COUNT(*) FROM {$wpdb->prefix}vesho_invoices WHERE description LIKE %s",
+                '%Töökäsk #'.$new_id.'%'
+            ));
+            if ( ! $existing_inv && $wo_fresh ) {
+                $co          = get_option('vesho_company_name', 'Vesho OÜ');
+                $inv_prefix  = get_option('vesho_invoice_prefix', 'INV');
+                $inv_num     = Vesho_CRM_Database::get_next_invoice_number();
+                $due_days    = (int) get_option('vesho_invoice_due_days', 14);
+                $inv_amount  = $wo_fresh->price > 0 ? (float)$wo_fresh->price : 0.00;
+                $inv_desc    = 'Töökäsk #' . $new_id . ( $wo_fresh->title ? ': ' . $wo_fresh->title : '' );
+                $wpdb->insert( $wpdb->prefix.'vesho_invoices', [
+                    'client_id'      => (int)$wo_fresh->client_id,
+                    'invoice_number' => $inv_num,
+                    'invoice_date'   => current_time('Y-m-d'),
+                    'due_date'       => date('Y-m-d', strtotime('+' . $due_days . ' days')),
+                    'amount'         => $inv_amount,
+                    'status'         => 'draft',
+                    'description'    => $inv_desc,
+                    'created_at'     => current_time('mysql'),
+                ] );
+            }
+            // Send client completion email
+            if ( $wo_fresh && $wo_fresh->client_id ) {
+                $client = $wpdb->get_row($wpdb->prepare(
+                    "SELECT * FROM {$wpdb->prefix}vesho_clients WHERE id=%d", $wo_fresh->client_id
+                ));
+                if ( $client && !empty($client->email) ) {
+                    $co      = get_option('vesho_company_name', 'Vesho OÜ');
+                    $subject = $co . ' — Teie töö on lõpetatud';
+                    $body    = "Tere, {$client->name}!\n\n";
+                    $body   .= "Teie töökäsk on lõpetatud.\n\n";
+                    $body   .= "Töökäsk: " . ($wo_fresh->title ?: '#' . $new_id) . "\n";
+                    if (!empty($wo_fresh->notes)) $body .= "Märkused: {$wo_fresh->notes}\n";
+                    $body   .= "\nArve saadetakse teile eraldi. Küsimuste korral võtke meiega ühendust.\n\nLugupidamisega,\n{$co}";
+                    wp_mail($client->email, $subject, $body);
+                }
+            }
+        }
+
         wp_redirect( add_query_arg( array('page'=>'vesho-crm-workorders','msg'=>$msg), admin_url('admin.php') ) );
         exit;
     }
@@ -1083,14 +1135,47 @@ private static function load_view( $name ) {
         check_admin_referer( 'vesho_ticket_action' );
         if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorized' );
         global $wpdb;
-        $id    = absint( $_POST['ticket_id'] ?? 0 );
-        $reply = sanitize_textarea_field( $_POST['reply'] ?? '' );
-        if ( $id ) {
-            $wpdb->update( $wpdb->prefix.'vesho_support_tickets', [
-                'reply'      => $reply,
-                'status'     => 'closed',
-                'updated_at' => current_time('mysql'),
-            ], ['id' => $id] );
+        $id      = absint( $_POST['ticket_id'] ?? 0 );
+        $reply   = sanitize_textarea_field( $_POST['reply'] ?? '' );
+        $close   = ! empty( $_POST['close_ticket'] );
+        if ( $id && $reply ) {
+            // Insert into replies thread
+            $current_user = wp_get_current_user();
+            $author = $current_user->display_name ?: 'Admin';
+            $wpdb->insert( $wpdb->prefix.'vesho_ticket_replies', [
+                'ticket_id'  => $id,
+                'author'     => $author,
+                'message'    => $reply,
+                'created_at' => current_time('mysql'),
+            ] );
+            // Update ticket updated_at and optionally status
+            $update = [ 'updated_at' => current_time('mysql') ];
+            if ( $close ) $update['status'] = 'closed';
+            else {
+                // Set to in_progress if still open
+                $cur_status = $wpdb->get_var($wpdb->prepare(
+                    "SELECT status FROM {$wpdb->prefix}vesho_support_tickets WHERE id=%d", $id
+                ));
+                if ( $cur_status === 'open' ) $update['status'] = 'in_progress';
+            }
+            $wpdb->update( $wpdb->prefix.'vesho_support_tickets', $update, ['id' => $id] );
+
+            // Send reply email to client
+            $ticket = $wpdb->get_row($wpdb->prepare(
+                "SELECT t.*, c.email as client_email, c.name as client_name
+                 FROM {$wpdb->prefix}vesho_support_tickets t
+                 LEFT JOIN {$wpdb->prefix}vesho_clients c ON c.id=t.client_id
+                 WHERE t.id=%d", $id
+            ));
+            if ( $ticket && !empty($ticket->client_email) ) {
+                $co      = get_option('vesho_company_name', 'Vesho OÜ');
+                $subject = $co . ' — Vastus teie tugipiletile: ' . $ticket->subject;
+                $body    = "Tere, {$ticket->client_name}!\n\n";
+                $body   .= "Teie tugipiletile on vastatud:\n\n";
+                $body   .= "---\n{$reply}\n---\n\n";
+                $body   .= "Lugupidamisega,\n{$co}";
+                wp_mail($ticket->client_email, $subject, $body);
+            }
         }
         wp_redirect( add_query_arg( ['page'=>'vesho-crm-tickets','action'=>'view','ticket_id'=>$id,'msg'=>'replied'], admin_url('admin.php') ) );
         exit;
