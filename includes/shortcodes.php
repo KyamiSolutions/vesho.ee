@@ -256,14 +256,13 @@ add_shortcode( 'vesho_shop_grid', function ( $atts ) {
     ob_start();
     ?>
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@300;400;500;600;700&display=swap');
-    .vsho-root{font-family:'Barlow',sans-serif;color:#1a2a38;line-height:1.6;background:#f4f7f9}
+    .vsho-root{font-family:var(--font-main,'Barlow',sans-serif);color:#1a2a38;line-height:1.6;background:#f4f7f9}
     .vsho-root *{box-sizing:border-box}
     /* ── Shop header nav (3006 style) ── */
     /* ── Hero (optional) ── */
     .vsho-hero{background:linear-gradient(135deg,#0b1c2b 0%,#0d3347 100%);padding:64px 32px 56px;text-align:center}
     .vsho-hero-eyebrow{color:#00b4c8;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;margin-bottom:14px}
-    .vsho-hero-title{font-family:'Barlow Condensed',sans-serif;color:#fff;font-size:52px;font-weight:800;line-height:1.05;margin:0 0 14px;text-transform:uppercase}
+    .vsho-hero-title{font-family:var(--font-cond,'Barlow Condensed',sans-serif);color:#fff;font-size:52px;font-weight:800;line-height:1.05;margin:0 0 14px;text-transform:uppercase}
     .vsho-hero-sub{color:#7a9eb0;font-size:16px}
     /* ── Layout ── */
     .vsho-layout{max-width:1280px;margin:0 auto;padding:32px 24px;display:grid;grid-template-columns:260px 1fr;gap:32px;align-items:start}
@@ -274,7 +273,7 @@ add_shortcode( 'vesho_shop_grid', function ( $atts ) {
     .vsho-sidebar{background:#fff;border-radius:8px;padding:0;border:1px solid #e8ecef;align-self:start;position:sticky;top:24px;overflow:hidden}
     @media(max-width:900px){.vsho-sidebar{position:static}}
     .vsho-sidebar-hdr{background:#0d1f2d;padding:14px 20px;display:flex;align-items:center;gap:8px}
-    .vsho-sidebar-hdr-txt{color:#fff;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1rem;text-transform:uppercase;letter-spacing:.5px}
+    .vsho-sidebar-hdr-txt{color:#fff;font-family:var(--font-cond,'Barlow Condensed',sans-serif);font-weight:700;font-size:1rem;text-transform:uppercase;letter-spacing:.5px}
     .vsho-sidebar-hdr-ico{color:#00b4c8;font-size:12px}
     .vsho-cat-list{list-style:none;margin:0;padding:0}
     .vsho-cat-list a{display:flex;align-items:center;justify-content:space-between;padding:11px 20px;color:#1a2a38;text-decoration:none;font-size:.92rem;border-bottom:1px solid #f0f4f8;transition:all .15s}
@@ -287,9 +286,9 @@ add_shortcode( 'vesho_shop_grid', function ( $atts ) {
     .vsho-toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;gap:12px;flex-wrap:wrap}
     .vsho-toolbar-left{display:flex;align-items:center;gap:12px;flex:1;min-width:0}
     .vsho-search-form{display:flex;flex:1;max-width:360px;border:2px solid #e0e6eb;border-radius:6px;overflow:hidden;background:#fff}
-    .vsho-search-form input{flex:1;border:none;padding:9px 14px;font-family:'Barlow',sans-serif;font-size:.95rem;color:#1a2a38;outline:none;background:transparent;min-width:0}
-    .vsho-search-form button{padding:0 16px;background:#00b4c8;color:#fff;border:none;font-size:.85rem;font-weight:700;cursor:pointer;white-space:nowrap;font-family:'Barlow',sans-serif;text-transform:uppercase;letter-spacing:.5px}
-    .vsho-sort{padding:9px 14px;border:2px solid #e0e6eb;border-radius:6px;font-family:'Barlow',sans-serif;font-size:.92rem;color:#1a2a38;background:#fff;cursor:pointer}
+    .vsho-search-form input{flex:1;border:none;padding:9px 14px;font-family:var(--font-main,'Barlow',sans-serif);font-size:.95rem;color:#1a2a38;outline:none;background:transparent;min-width:0}
+    .vsho-search-form button{padding:0 16px;background:#00b4c8;color:#fff;border:none;font-size:.85rem;font-weight:700;cursor:pointer;white-space:nowrap;font-family:var(--font-main,'Barlow',sans-serif);text-transform:uppercase;letter-spacing:.5px}
+    .vsho-sort{padding:9px 14px;border:2px solid #e0e6eb;border-radius:6px;font-family:var(--font-main,'Barlow',sans-serif);font-size:.92rem;color:#1a2a38;background:#fff;cursor:pointer}
     .vsho-results{font-size:.88rem;color:#5a7080}
     .vsho-view-toggle{display:flex;gap:4px}
     .vsho-vbtn{padding:8px 11px;border:2px solid #e0e6eb;border-radius:6px;background:#fff;cursor:pointer;font-size:13px;color:#5a7080;transition:.12s;line-height:1}
@@ -303,22 +302,22 @@ add_shortcode( 'vesho_shop_grid', function ( $atts ) {
     .vsho-card:hover{transform:translateY(-4px);box-shadow:0 12px 32px rgba(0,0,0,.08)}
     .vsho-card-img{height:200px;background:linear-gradient(135deg,#e8ecef,#d4dbe2);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;text-decoration:none;flex-shrink:0}
     .vsho-card-img img{width:100%;height:100%;object-fit:cover}
-    .vsho-card-img-ph{font-size:3rem;opacity:.2;color:#0d1f2d;font-weight:800;font-family:'Barlow Condensed',sans-serif}
+    .vsho-card-img-ph{font-size:3rem;opacity:.2;color:#0d1f2d;font-weight:800;font-family:var(--font-cond,'Barlow Condensed',sans-serif)}
     .vsho-card-badge{position:absolute;top:10px;left:10px;background:#00b4c8;color:#fff;padding:3px 10px;border-radius:4px;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
     .vsho-card-badge.out{background:#dc2626}
     .vsho-card-body{padding:18px;display:flex;flex-direction:column;flex:1}
     .vsho-card-cat{font-size:.78rem;color:#00b4c8;text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:5px}
-    .vsho-card-name{font-family:'Barlow Condensed',sans-serif;font-size:1.05rem;font-weight:700;color:#1a2a38;margin-bottom:6px;text-decoration:none;display:block;line-height:1.2}
+    .vsho-card-name{font-family:var(--font-cond,'Barlow Condensed',sans-serif);font-size:1.05rem;font-weight:700;color:#1a2a38;margin-bottom:6px;text-decoration:none;display:block;line-height:1.2}
     .vsho-card-name:hover{color:#00b4c8}
     .vsho-card-desc{font-size:.88rem;color:#5a7080;margin-bottom:12px;flex:1;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
     .vsho-card-footer{display:flex;justify-content:space-between;align-items:center;margin-top:auto}
-    .vsho-price{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:1.3rem;color:#0d1f2d}
+    .vsho-price{font-family:var(--font-cond,'Barlow Condensed',sans-serif);font-weight:800;font-size:1.3rem;color:#0d1f2d}
     .vsho-price .old{font-size:.88rem;color:#5a7080;text-decoration:line-through;font-weight:400;margin-right:4px}
     .vsho-price .cur{color:#0d1f2d}
     .vsho-price.sale .cur{color:#00b4c8}
     .vsho-stock-ok{font-size:.8rem;color:#16a34a;font-weight:600;margin-bottom:8px}
     .vsho-stock-no{font-size:.8rem;color:#dc2626;font-weight:600;margin-bottom:8px}
-    .vsho-btn{padding:8px 16px;background:#00b4c8;color:#fff;border:none;border-radius:4px;font-family:'Barlow',sans-serif;font-weight:600;font-size:.83rem;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;transition:background .2s;white-space:nowrap}
+    .vsho-btn{padding:8px 16px;background:#00b4c8;color:#fff;border:none;border-radius:4px;font-family:var(--font-main,'Barlow',sans-serif);font-weight:600;font-size:.83rem;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;transition:background .2s;white-space:nowrap}
     .vsho-btn:hover{background:#008fa0}
     .vsho-btn:disabled{background:#e2e8f0;color:#94a3b8;cursor:not-allowed}
     /* ── List view ── */
@@ -338,30 +337,30 @@ add_shortcode( 'vesho_shop_grid', function ( $atts ) {
     .vsho-pag span.dots{border:none;background:none;color:#5a7080}
     /* ── Campaign bar ── */
     .vsho-cam{display:flex;align-items:center;gap:16px;background:linear-gradient(135deg,#e0f7fa,#b2ebf2);border:1.5px solid #00b4c8;border-radius:8px;padding:14px 20px;margin-bottom:24px}
-    .vsho-cam-badge{background:#00b4c8;color:#fff;font-size:.95rem;font-weight:900;padding:5px 14px;border-radius:6px;white-space:nowrap;font-family:'Barlow Condensed',sans-serif}
+    .vsho-cam-badge{background:#00b4c8;color:#fff;font-size:.95rem;font-weight:900;padding:5px 14px;border-radius:6px;white-space:nowrap;font-family:var(--font-cond,'Barlow Condensed',sans-serif)}
     /* ── Cart table ── */
     .vsho-cart-section{max-width:1000px;margin:0 auto}
-    .vsho-cart-h{font-family:'Barlow Condensed',sans-serif;font-size:2rem;color:#0d1f2d;margin-bottom:24px;text-transform:uppercase;font-weight:800}
+    .vsho-cart-h{font-family:var(--font-cond,'Barlow Condensed',sans-serif);font-size:2rem;color:#0d1f2d;margin-bottom:24px;text-transform:uppercase;font-weight:800}
     .vsho-cart-tbl{width:100%;background:#fff;border-radius:8px;border:1px solid #e8ecef;border-collapse:collapse;overflow:hidden;margin-bottom:24px}
     .vsho-cart-tbl thead{background:#0d1f2d}
-    .vsho-cart-tbl th{padding:14px 20px;text-align:left;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.88rem;text-transform:uppercase;letter-spacing:1px;color:#fff}
+    .vsho-cart-tbl th{padding:14px 20px;text-align:left;font-family:var(--font-cond,'Barlow Condensed',sans-serif);font-weight:700;font-size:.88rem;text-transform:uppercase;letter-spacing:1px;color:#fff}
     .vsho-cart-tbl td{padding:16px 20px;border-bottom:1px solid #f0f4f8;vertical-align:middle;font-size:.92rem}
     .vsho-cart-tbl tbody tr:last-child td{border-bottom:none}
     .vsho-cart-item-name{font-weight:600;color:#0d1f2d}
     .vsho-cart-item-unit{font-size:.8rem;color:#5a7080}
-    .vsho-cart-qty input{width:60px;padding:7px;text-align:center;border:2px solid #e0e6eb;border-radius:4px;font-family:'Barlow',sans-serif;font-size:.92rem}
+    .vsho-cart-qty input{width:60px;padding:7px;text-align:center;border:2px solid #e0e6eb;border-radius:4px;font-family:var(--font-main,'Barlow',sans-serif);font-size:.92rem}
     .vsho-cart-remove{background:none;border:none;color:#dc2626;cursor:pointer;font-size:.85rem;font-weight:600;transition:opacity .2s}
     .vsho-cart-remove:hover{opacity:.7}
     .vsho-cart-summary{background:#fff;border-radius:8px;border:1px solid #e8ecef;padding:24px;max-width:400px;margin-left:auto}
     .vsho-cart-sum-row{display:flex;justify-content:space-between;padding:9px 0;font-size:.92rem;color:#5a7080}
     .vsho-cart-sum-row.total{border-top:2px solid #0d1f2d;margin-top:8px;padding-top:14px;font-size:1.05rem;font-weight:700;color:#0d1f2d}
     .vsho-cart-empty{text-align:center;padding:60px 24px;color:#5a7080}
-    .vsho-cart-empty h2{color:#0d1f2d;margin-bottom:12px;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase}
+    .vsho-cart-empty h2{color:#0d1f2d;margin-bottom:12px;font-family:var(--font-cond,'Barlow Condensed',sans-serif);text-transform:uppercase}
     /* ── Buttons ── */
-    .vsho-btn-primary{padding:12px 28px;background:#00b4c8;color:#fff;border:none;border-radius:6px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1rem;text-transform:uppercase;letter-spacing:1px;cursor:pointer;transition:background .2s;text-decoration:none;display:inline-block}
+    .vsho-btn-primary{padding:12px 28px;background:#00b4c8;color:#fff;border:none;border-radius:6px;font-family:var(--font-cond,'Barlow Condensed',sans-serif);font-weight:700;font-size:1rem;text-transform:uppercase;letter-spacing:1px;cursor:pointer;transition:background .2s;text-decoration:none;display:inline-block}
     .vsho-btn-primary:hover{background:#008fa0;color:#fff}
     .vsho-btn-primary:disabled{background:#e2e8f0;color:#94a3b8;cursor:not-allowed}
-    .vsho-btn-secondary{padding:12px 24px;background:#fff;color:#0d1f2d;border:2px solid #e0e6eb;border-radius:6px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1rem;text-transform:uppercase;letter-spacing:1px;cursor:pointer;transition:all .2s;text-decoration:none;display:inline-block}
+    .vsho-btn-secondary{padding:12px 24px;background:#fff;color:#0d1f2d;border:2px solid #e0e6eb;border-radius:6px;font-family:var(--font-cond,'Barlow Condensed',sans-serif);font-weight:700;font-size:1rem;text-transform:uppercase;letter-spacing:1px;cursor:pointer;transition:all .2s;text-decoration:none;display:inline-block}
     .vsho-btn-secondary:hover{border-color:#0d1f2d}
     /* ── FAB ── */
     .vsho-fab{position:fixed;bottom:24px;right:24px;z-index:9999}
@@ -377,11 +376,11 @@ add_shortcode( 'vesho_shop_grid', function ( $atts ) {
     @media(max-width:700px){.vsho-pd-right{grid-template-columns:1fr;gap:24px}}
     .vsho-pd-img{background:#fff;border-radius:8px;overflow:hidden;border:1px solid #e8ecef;aspect-ratio:1;display:flex;align-items:center;justify-content:center}
     .vsho-pd-img img{width:100%;height:100%;object-fit:cover}
-    .vsho-pd-img-ph{font-size:5rem;opacity:.2;color:#0d1f2d;font-family:'Barlow Condensed',sans-serif;font-weight:800}
+    .vsho-pd-img-ph{font-size:5rem;opacity:.2;color:#0d1f2d;font-family:var(--font-cond,'Barlow Condensed',sans-serif);font-weight:800}
     .vsho-pd-info{padding:8px 0}
     .vsho-pd-cat{font-size:.8rem;color:#00b4c8;text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:8px}
-    .vsho-pd-title{font-family:'Barlow Condensed',sans-serif;font-size:2.2rem;font-weight:800;color:#0d1f2d;margin:0 0 14px;text-transform:uppercase;line-height:1.1}
-    .vsho-pd-price{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:2rem;color:#0d1f2d;margin-bottom:20px}
+    .vsho-pd-title{font-family:var(--font-cond,'Barlow Condensed',sans-serif);font-size:2.2rem;font-weight:800;color:#0d1f2d;margin:0 0 14px;text-transform:uppercase;line-height:1.1}
+    .vsho-pd-price{font-family:var(--font-cond,'Barlow Condensed',sans-serif);font-weight:800;font-size:2rem;color:#0d1f2d;margin-bottom:20px}
     .vsho-pd-price .old{font-size:1.1rem;color:#5a7080;text-decoration:line-through;font-weight:400;margin-right:8px}
     .vsho-pd-price .sale{color:#00b4c8}
     .vsho-pd-desc{color:#5a7080;font-size:.95rem;line-height:1.7;margin-bottom:24px;padding:16px;background:#fff;border-radius:6px;border:1px solid #e8ecef}
@@ -389,7 +388,7 @@ add_shortcode( 'vesho_shop_grid', function ( $atts ) {
     .vsho-pd-stock-no{color:#dc2626;font-weight:600;font-size:.9rem;margin-bottom:16px}
     .vsho-pd-qty{display:flex;align-items:center;gap:12px;margin-bottom:20px}
     .vsho-pd-qty label{font-weight:600;font-size:.85rem;text-transform:uppercase;letter-spacing:.5px;color:#0d1f2d}
-    .vsho-pd-qty input{width:70px;padding:10px;text-align:center;border:2px solid #e0e6eb;border-radius:6px;font-family:'Barlow',sans-serif;font-size:1rem;color:#0d1f2d}
+    .vsho-pd-qty input{width:70px;padding:10px;text-align:center;border:2px solid #e0e6eb;border-radius:6px;font-family:var(--font-main,'Barlow',sans-serif);font-size:1rem;color:#0d1f2d}
     /* ── Breadcrumb ── */
     .vsho-bread{display:flex;align-items:center;gap:8px;font-size:.88rem;margin-bottom:20px;color:#5a7080}
     .vsho-bread a{color:#00b4c8;text-decoration:none}
@@ -403,7 +402,7 @@ add_shortcode( 'vesho_shop_grid', function ( $atts ) {
     .vsho-step.done .vsho-step-num{background:#0d1f2d;border-color:#0d1f2d;color:#fff}
     /* ── Success/cancel ── */
     .vsho-result{text-align:center;padding:60px 20px}
-    .vsho-result h2{font-family:'Barlow Condensed',sans-serif;font-size:2rem;text-transform:uppercase;color:#0d1f2d;margin:16px 0 8px}
+    .vsho-result h2{font-family:var(--font-cond,'Barlow Condensed',sans-serif);font-size:2rem;text-transform:uppercase;color:#0d1f2d;margin:16px 0 8px}
     .vsho-result p{color:#5a7080}
     </style>
     <div class="vsho-root">
@@ -1178,41 +1177,42 @@ add_shortcode( 'vesho_shop_grid', function ( $atts ) {
     @media(max-width:820px){.vshop-grid{grid-template-columns:repeat(3,1fr)}}
     @media(max-width:560px){.vshop-grid{grid-template-columns:repeat(2,1fr)}}
     @media(max-width:380px){.vshop-grid{grid-template-columns:1fr}}
-    /* Cards */
-    .vshop-card{background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(13,31,45,.07);overflow:hidden;display:flex;flex-direction:column;transition:box-shadow .18s,transform .18s;border:1.5px solid #f0f4f8;cursor:pointer}
-    .vshop-card:hover{box-shadow:0 6px 24px rgba(13,31,45,.11);transform:translateY(-2px);border-color:#e0f7fa}
-    .vshop-card-img{height:160px;background:linear-gradient(145deg,#e8f8fa,#d0f0f5);display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;text-decoration:none;flex-shrink:0}
-    .vshop-card-img img{width:100%;height:100%;object-fit:cover}
-    .vshop-card-img svg{width:52px;height:52px;opacity:.6}
-    .vshop-disc-badge{position:absolute;top:8px;left:8px;background:#00b4c8;color:#fff;font-size:11px;font-weight:800;padding:3px 8px;border-radius:20px;z-index:1}
-    .vshop-out-badge{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.55);color:#fff;font-size:10px;font-weight:700;padding:3px 7px;border-radius:20px}
-    .vshop-card-body{padding:14px;display:flex;flex-direction:column;flex:1}
-    .vshop-card-cat{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px}
-    .vshop-card-name{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;color:#0d1f2d;line-height:1.2;text-decoration:none;display:block;margin-bottom:4px}
+    /* Cards — Oomipood-inspired clean style */
+    .vshop-card{background:#fff;border-radius:4px;box-shadow:none;overflow:hidden;display:flex;flex-direction:column;transition:box-shadow .18s;border:1px solid #e8e8e8;cursor:pointer}
+    .vshop-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.12);border-color:#ccc}
+    .vshop-card-img{aspect-ratio:1/1;background:#f7f7f7;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;text-decoration:none;flex-shrink:0;padding:10px}
+    .vshop-card-img img{width:100%;height:100%;object-fit:contain}
+    .vshop-disc-badge{position:absolute;top:8px;left:8px;background:#00b4c8;color:#fff;font-size:11px;font-weight:800;padding:2px 7px;border-radius:3px;z-index:1}
+    .vshop-out-badge{position:absolute;top:8px;right:8px;background:#6b7280;color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:3px}
+    .vshop-card-body{padding:10px 12px 12px;display:flex;flex-direction:column;flex:1;border-top:1px solid #f0f0f0}
+    .vshop-card-cat{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;margin-bottom:3px;color:#00b4c8}
+    .vshop-card-name{font-family:var(--font-cond,sans-serif);font-size:16px;font-weight:700;color:#1a1a1a;line-height:1.3;text-decoration:none;display:block;margin-bottom:6px}
     .vshop-card-name:hover{color:#00b4c8}
-    .vshop-card-desc{font-size:11px;color:#6b8599;line-height:1.5;flex:1;margin-bottom:10px}
-    .vshop-price-orig{font-size:12px;color:#9ca3af;text-decoration:line-through}
-    .vshop-price{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:#0d1f2d;line-height:1.1}
+    .vshop-card-desc{display:none}
+    .vshop-price-wrap{margin-top:auto}
+    .vshop-price-orig{font-size:11px;color:#9ca3af;text-decoration:line-through;margin-bottom:1px}
+    .vshop-price{font-family:var(--font-cond,sans-serif);font-size:20px;font-weight:800;color:#0d1f2d;line-height:1}
     .vshop-price.sale{color:#00b4c8}
     .vshop-price-unit{font-size:10px;color:#9ca3af;font-weight:400}
-    .vshop-savings{font-size:10px;color:#059669;font-weight:700;margin-bottom:4px}
-    .vshop-stock-ok{font-size:11px;color:#059669;font-weight:600;margin-bottom:8px}
-    .vshop-stock-no{font-size:11px;color:#ef4444;font-weight:600;margin-bottom:8px}
-    .vshop-btn{width:100%;padding:9px;background:#00b4c8;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;transition:background .15s}
+    .vshop-savings{font-size:10px;color:#059669;font-weight:600;margin-top:2px}
+    .vshop-stock-ok{font-size:11px;color:#16a34a;font-weight:500;margin:5px 0 8px;display:flex;align-items:center;gap:4px}
+    .vshop-stock-ok::before{content:'';width:7px;height:7px;border-radius:50%;background:#16a34a;flex-shrink:0}
+    .vshop-stock-no{font-size:11px;color:#dc2626;font-weight:500;margin:5px 0 8px;display:flex;align-items:center;gap:4px}
+    .vshop-stock-no::before{content:'';width:7px;height:7px;border-radius:50%;background:#dc2626;flex-shrink:0}
+    .vshop-btn{width:100%;padding:8px;background:#00b4c8;color:#fff;border:none;border-radius:3px;font-size:12px;font-weight:700;cursor:pointer;transition:background .15s;text-transform:uppercase;letter-spacing:.5px}
     .vshop-btn:hover{background:#0097aa}
     .vshop-btn:disabled{background:#e2e8f0;cursor:not-allowed;color:#9ca3af}
     /* View toggle */
     .vshop-view-toggle{display:flex;gap:4px;margin-left:auto}
-    .vshop-vbtn{padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;background:#fff;cursor:pointer;font-size:14px;color:#94a3b8;transition:.12s;line-height:1}
+    .vshop-vbtn{padding:8px 10px;border:1px solid #e2e8f0;border-radius:4px;background:#fff;cursor:pointer;font-size:14px;color:#94a3b8;transition:.12s;line-height:1}
     .vshop-vbtn.active{background:#0d1f2d;border-color:#0d1f2d;color:#fff}
     /* List view */
-    .vshop-grid.list-view{grid-template-columns:1fr;gap:10px}
-    .vshop-grid.list-view .vshop-card{flex-direction:row;border-radius:10px}
-    .vshop-grid.list-view .vshop-card-img{width:130px;height:auto;min-height:110px;flex-shrink:0;border-radius:10px 0 0 10px}
-    .vshop-grid.list-view .vshop-card-body{padding:14px 16px;flex-direction:row;flex-wrap:wrap;align-items:center;gap:0}
+    .vshop-grid.list-view{grid-template-columns:1fr;gap:8px}
+    .vshop-grid.list-view .vshop-card{flex-direction:row;border-radius:4px}
+    .vshop-grid.list-view .vshop-card-img{width:120px;aspect-ratio:1/1;flex-shrink:0;border-radius:0;border-right:1px solid #f0f0f0}
+    .vshop-grid.list-view .vshop-card-body{padding:12px 16px;flex-direction:row;flex-wrap:wrap;align-items:center;gap:0;border-top:none}
     .vshop-grid.list-view .vshop-card-cat{width:100%;margin-bottom:2px}
-    .vshop-grid.list-view .vshop-card-name{font-size:17px;flex:1;margin-bottom:0;margin-right:16px}
-    .vshop-grid.list-view .vshop-card-desc{display:none}
+    .vshop-grid.list-view .vshop-card-name{font-size:14px;flex:1;margin-bottom:0;margin-right:16px}
     .vshop-grid.list-view .vshop-price{font-size:18px}
     .vshop-grid.list-view .vshop-stock-ok,.vshop-grid.list-view .vshop-stock-no{margin-left:12px;margin-bottom:0}
     .vshop-grid.list-view .vshop-btn{width:auto;padding:8px 16px;margin-left:auto;flex-shrink:0;white-space:nowrap}
@@ -1334,21 +1334,22 @@ add_shortcode( 'vesho_shop_grid', function ( $atts ) {
           </a>
           <div class="vshop-card-body">
             <?php if($item->category): ?>
-            <div class="vshop-card-cat" style="color:<?php echo esc_attr($cat_color); ?>"><?php echo esc_html($item->category); ?></div>
+            <div class="vshop-card-cat"><?php echo esc_html($item->category); ?></div>
             <?php endif; ?>
             <a href="<?php echo esc_url($detail_url); ?>" class="vshop-card-name"><?php echo esc_html($item->name); ?></a>
-            <?php if($desc_text) echo '<div class="vshop-card-desc">'.esc_html(wp_trim_words($desc_text,12,'…')).'</div>'; ?>
-            <?php if($disc!==null): ?>
-            <div class="vshop-price-orig"><?php echo number_format($orig,2,',',' '); ?> €</div>
-            <div class="vshop-price sale"><?php echo number_format($disc,2,',',' '); ?> € <span class="vshop-price-unit">/ <?php echo esc_html($item->unit?:'tk'); ?></span></div>
-            <div class="vshop-savings">Säästad <?php echo number_format($orig-$disc,2,',',' '); ?> €</div>
-            <?php else: ?>
-            <div class="vshop-price"><?php echo number_format($orig,2,',',' '); ?> € <span class="vshop-price-unit">/ <?php echo esc_html($item->unit?:'tk'); ?></span></div>
-            <?php endif; ?>
+            <div class="vshop-price-wrap">
+              <?php if($disc!==null): ?>
+              <div class="vshop-price-orig"><?php echo number_format($orig,2,',',' '); ?> €</div>
+              <div class="vshop-price sale"><?php echo number_format($disc,2,',',' '); ?> € <span class="vshop-price-unit">/ <?php echo esc_html($item->unit?:'tk'); ?></span></div>
+              <div class="vshop-savings">Säästad <?php echo number_format($orig-$disc,2,',',' '); ?> €</div>
+              <?php else: ?>
+              <div class="vshop-price"><?php echo number_format($orig,2,',',' '); ?> € <span class="vshop-price-unit">/ <?php echo esc_html($item->unit?:'tk'); ?></span></div>
+              <?php endif; ?>
+            </div>
             <?php if($in_stock): ?>
-            <div class="vshop-stock-ok">✓ Laos (<?php echo (int)$item->quantity; ?> <?php echo esc_html($item->unit?:'tk'); ?>)</div>
+            <div class="vshop-stock-ok">Laos (<?php echo (int)$item->quantity; ?> <?php echo esc_html($item->unit?:'tk'); ?>)</div>
             <?php else: ?>
-            <div class="vshop-stock-no">✗ Laost otsas</div>
+            <div class="vshop-stock-no">Laost otsas</div>
             <?php endif; ?>
             <button class="vshop-btn" onclick="event.stopPropagation();veshoAddToCart(<?php echo $item->id; ?>,'<?php echo esc_js($item->name); ?>')" <?php echo $in_stock?'':'disabled'; ?>>🛒 Lisa korvi</button>
           </div>
