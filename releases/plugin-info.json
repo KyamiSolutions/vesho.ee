@@ -1,10 +1,10 @@
 {
   "name": "Vesho CRM",
   "slug": "vesho-crm",
-  "version": "2.5.13",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.5.13/vesho-crm.zip",
+  "version": "2.5.14",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.5.14/vesho-crm.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-19",
-  "changelog": "<h4>2.5.13</h4><ul><li>Feat: auto-arve (mustand) töökäsu lõpetamisel</li><li>Feat: kliendile email töö lõpetamisel</li><li>Feat: tugipiletite vastuste ahel (thread) — iga vastus eraldi kirjana</li><li>Feat: vastuse saatmisel kliendile email</li><li>Feat: sulge pilet / jäta avatuks valik vastamisel</li><li>Feat: dashboard — maksmata arvete kogusumma €</li><li>Feat: dashboard — tähtaja ületanud arved hoiatus</li><li>Feat: dashboard — 6-kuu käibegraafik</li><li>Feat: dashboard — top 5 kliendid käibe järgi</li></ul><h4>2.5.12</h4><ul><li>Fix: topbar sotsiaalmeedia ikoonid — kuva ainult täidetud lingid</li><li>Fix: header logo loeb vesho_company_logo seadete optsiooni</li></ul><h4>2.5.11</h4><ul><li>Fix: logo valimine seadetes wp_enqueue_media</li></ul><h4>2.5.10</h4><ul><li>Fix: küpsiste bänner avalikule lehele</li></ul>"
+  "changelog": "<h4>2.5.14</h4><ul><li>Feat: tugipiletite chat-vaade kliendi portaalis — sõnumite ahel, kliendi vastamine, automaatne scroll</li><li>Fix: localhost auto-kinnita email arenduskeskkonnas</li></ul><h4>2.5.13</h4><ul><li>Feat: auto-arve töökäsu lõpetamisel</li><li>Feat: kliendile email töö lõpetamisel</li><li>Feat: tugipiletite vastuste ahel (admin)</li><li>Feat: dashboard — maksmata arvete €, ületähtaja hoiatus, 6-kuu graafik, top kliendid</li></ul><h4>2.5.12</h4><ul><li>Fix: topbar sotsiaalmeedia ikoonid</li><li>Fix: header logo vesho_company_logo optsioonist</li></ul>"
 }

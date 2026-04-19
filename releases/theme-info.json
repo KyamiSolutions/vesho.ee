@@ -1,10 +1,10 @@
 {
   "name": "Vesho",
   "slug": "vesho",
-  "version": "2.5.13",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.5.13/vesho-theme.zip",
+  "version": "2.5.14",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.5.14/vesho-theme.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-19",
-  "changelog": "<h4>2.5.13</h4><ul><li>Feat: dashboard täiendused — käibegraafik, top kliendid, ületähtaeg</li></ul><h4>2.5.12</h4><ul><li>Fix: topbar sotsiaalmeedia ikoonid — kuva ainult täidetud lingid, peida 'Jälgi meid' kui tühi</li><li>Fix: header logo vesho_company_logo optsioonist</li></ul><h4>2.5.11</h4><ul><li>Fix: header logo seadete optsioon prioriteediga</li></ul>"
+  "changelog": "<h4>2.5.14</h4><ul><li>Feat: tugipiletite chat-vaade kliendi portaalis</li><li>Fix: localhost email auto-kinnitus</li></ul><h4>2.5.13</h4><ul><li>Feat: dashboard täiendused — käibegraafik, top kliendid, ületähtaeg</li></ul><h4>2.5.12</h4><ul><li>Fix: topbar sotsiaalmeedia ikoonid</li><li>Fix: header logo</li></ul>"
 }
