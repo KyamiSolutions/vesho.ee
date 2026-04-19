@@ -2844,18 +2844,33 @@ $all_picked = !empty($my_items) && count(array_filter($my_items, fn($i) => $i->p
         if (!self::get_current_worker() && !current_user_can('manage_options')) wp_send_json_error(['message'=>'Pole sisse logitud']);
         global $wpdb;
         $receipt_id = absint($_POST['receipt_id']??0);
+
+        // Get existing columns of the items table (safe against missing columns)
+        $existing_cols = $wpdb->get_col("DESCRIBE `{$wpdb->prefix}vesho_stock_receipt_items`") ?: [];
+        $has = fn($c) => in_array($c, $existing_cols, true);
+
+        // Build safe SELECT with fallbacks for columns that may not exist yet
+        $name_expr  = $has('product_name') ? "COALESCE(inv.name, sri.product_name)" : "COALESCE(inv.name, '')";
+        $sku_expr   = $has('product_sku')  ? "COALESCE(inv.sku, sri.product_sku)"   : "COALESCE(inv.sku, '')";
+        $unit_expr  = $has('product_unit') ? "COALESCE(inv.unit, sri.product_unit)" : "COALESCE(inv.unit, 'tk')";
+        $ean_expr   = $has('ean')          ? "COALESCE(inv.ean, sri.ean)"           : "inv.ean";
+
         $items = $wpdb->get_results($wpdb->prepare(
             "SELECT sri.*,
-                    COALESCE(inv.name, sri.product_name) AS name,
-                    COALESCE(inv.sku,  sri.product_sku)  AS sku,
-                    COALESCE(inv.unit, sri.product_unit) AS unit,
-                    COALESCE(inv.ean,  sri.ean)          AS ean,
+                    {$name_expr} AS name,
+                    {$sku_expr}  AS sku,
+                    {$unit_expr} AS unit,
+                    {$ean_expr}  AS ean,
                     inv.selling_price AS inv_selling_price
              FROM {$wpdb->prefix}vesho_stock_receipt_items sri
              LEFT JOIN {$wpdb->prefix}vesho_inventory inv ON inv.id=sri.inventory_id
              WHERE sri.receipt_id=%d
              ORDER BY sri.id ASC", $receipt_id
         ));
+
+        if ($wpdb->last_error) {
+            error_log('vesho_worker_get_receipt_items SQL error: ' . $wpdb->last_error . ' | receipt_id=' . $receipt_id);
+        }
 
         // Fallback: if no items in detail table, read from main receipts row (legacy format)
         if (empty($items)) {
