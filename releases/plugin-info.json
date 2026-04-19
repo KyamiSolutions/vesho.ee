@@ -1,10 +1,10 @@
 {
   "name": "Vesho CRM",
   "slug": "vesho-crm",
-  "version": "2.2.98",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.2.98/vesho-crm.zip",
+  "version": "2.2.99",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.2.99/vesho-crm.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-19",
-  "changelog": "<h4>2.2.98</h4><ul><li>Shop: täielik CSS ümberkirjutus – kõik reeglid #vshop prefiksiga, teema konflikti kaitse, font-family garanteeritud</li></ul><h4>2.2.97</h4><ul><li>Shop: [vesho_shop_grid] shortcode ilma hero'ta</li></ul><h4>2.2.96</h4><ul><li>Shop: hero font fix</li></ul><h4>2.2.95</h4><ul><li>Shop: hero sektsioon shortcode sisse</li></ul><h4>2.2.93</h4><ul><li>Shop: sidebar disain</li></ul>"
+  "changelog": "<h4>2.2.99</h4><ul><li>Shop: täielik HTML/CSS ümberkirjutus – kõik #vshop prefiksiga, font garanteeritud, puhas struktuur</li></ul>"
 }

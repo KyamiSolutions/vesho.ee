@@ -4131,199 +4131,171 @@ if(CFG.initialView==='success'&&CFG.returnOrder){
         ob_start();
         ?>
 <style>
-#vshop{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#1a2a38;line-height:1.5}
-#vshop *{box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
+#vshop{all:revert;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#1a2a38;line-height:1.5;box-sizing:border-box}
+#vshop *{box-sizing:border-box;font-family:inherit}
+/* ── Hero ── */
+#vshop .vs-hero{background:linear-gradient(160deg,#0b1c2b 0%,#0d2a3a 100%);padding:80px 24px 72px;text-align:center;margin-bottom:32px}
+#vshop .vs-hero-eye{color:#00b4c8;font-size:11px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;margin:0 0 18px;display:block}
+#vshop .vs-hero-ttl{color:#ffffff;font-size:48px;font-weight:900;margin:0 0 16px;line-height:1;display:block}
+#vshop .vs-hero-sub{color:#7a9eb0;font-size:16px;margin:0;display:block}
 /* ── Campaign banner ── */
-#vshop .vs-camp{background:linear-gradient(135deg,#e0f7fa,#b2ebf2);border:1px solid rgba(0,180,200,.25);border-radius:14px;padding:14px 20px;display:flex;align-items:center;gap:14px;margin-bottom:20px}
+#vshop .vs-camp{background:linear-gradient(135deg,#e0f7fa,#b2ebf2);border:1px solid rgba(0,180,200,.25);border-radius:14px;padding:14px 20px;display:flex;align-items:center;gap:14px;margin-bottom:24px}
 #vshop .vs-camp-badge{background:#00b4c8;color:#fff;font-size:12px;font-weight:800;padding:4px 10px;border-radius:8px;white-space:nowrap;flex-shrink:0}
-#vshop .vs-camp-name{font-weight:700;font-size:14px;color:#0d3d4f}
-#vshop .vs-camp-date{font-size:12px;color:#5a8090;margin-top:1px}
+#vshop .vs-camp-name{font-weight:700;font-size:14px;color:#0d3d4f;margin:0}
+#vshop .vs-camp-date{font-size:12px;color:#5a8090;margin:2px 0 0}
 /* ── Layout ── */
-#vshop .vs-layout{display:flex;gap:20px;align-items:flex-start}
+#vshop .vs-layout{display:flex;gap:24px;align-items:flex-start}
 /* ── Sidebar ── */
-#vshop .vs-sidebar{flex:0 0 200px;background:#fff;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden;position:sticky;top:80px}
-#vshop .vs-sidebar-header{padding:14px 16px 10px;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#94a3b8;border-bottom:1px solid #f1f5f9}
-#vshop .vs-cat-item{display:flex;align-items:center;gap:10px;padding:10px 16px;cursor:pointer;transition:background .13s;border-bottom:1px solid #f8fafc;font-size:13px;color:#475569;font-weight:500;background:none;border-left:none;border-right:none;border-top:none;width:100%;text-align:left}
-#vshop .vs-cat-item:hover{background:#f8fafc;color:#1a2a38}
-#vshop .vs-cat-item.active{background:#e0f7fa;color:#007a8c;font-weight:700}
-#vshop .vs-cat-item.active .vs-cat-dot{box-shadow:0 0 0 3px rgba(0,180,200,.2)}
-#vshop .vs-cat-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
-#vshop .vs-cat-count{margin-left:auto;font-size:11px;color:#94a3b8;font-weight:600}
+#vshop .vs-sidebar{flex:0 0 210px;background:#fff;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden;position:sticky;top:80px}
+#vshop .vs-sidebar-hdr{padding:14px 16px 10px;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#94a3b8;border-bottom:1px solid #f1f5f9;margin:0}
+#vshop .vs-cat{display:flex;align-items:center;gap:10px;padding:11px 16px;cursor:pointer;border:none;border-bottom:1px solid #f8fafc;background:none;width:100%;text-align:left;font-size:13px;color:#475569;font-weight:500;transition:background .13s}
+#vshop .vs-cat:hover{background:#f8fafc;color:#1a2a38}
+#vshop .vs-cat.active{background:#e0f7fa;color:#007a8c;font-weight:700}
+#vshop .vs-cat.active .vs-dot{box-shadow:0 0 0 3px rgba(0,180,200,.22)}
+#vshop .vs-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;display:inline-block}
+#vshop .vs-cnt{margin-left:auto;font-size:11px;color:#94a3b8;font-weight:600}
 /* ── Main ── */
 #vshop .vs-main{flex:1;min-width:0}
 #vshop .vs-toolbar{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
 #vshop .vs-search-wrap{position:relative;flex:1;min-width:180px}
-#vshop .vs-search-wrap input{width:100%;padding:9px 12px 9px 36px;border:1px solid #e2e8f0;border-radius:10px;font-size:13px;color:#1a2a38;outline:none;background:#f8fafc;transition:border .15s}
+#vshop .vs-search-wrap input{width:100%;padding:9px 12px 9px 36px;border:1px solid #e2e8f0;border-radius:10px;font-size:13px;color:#1a2a38;outline:none;background:#f8fafc;transition:border .15s;font-family:inherit}
 #vshop .vs-search-wrap input:focus{border-color:#00b4c8;background:#fff}
-#vshop .vs-search-wrap .vs-search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:14px;pointer-events:none}
-#vshop .vs-search-btn{background:#00b4c8;color:#fff;border:none;border-radius:10px;padding:9px 16px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
+#vshop .vs-search-ico{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:14px;pointer-events:none}
+#vshop .vs-search-btn{background:#00b4c8;color:#fff;border:none;border-radius:10px;padding:9px 16px;font-size:13px;font-weight:700;cursor:pointer}
 #vshop .vs-search-btn:hover{background:#009ab2}
-#vshop .vs-sort-sel{border:1px solid #e2e8f0;border-radius:10px;padding:9px 12px;font-size:13px;color:#475569;background:#f8fafc;cursor:pointer;outline:none}
-#vshop .vs-view-btns{display:flex;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden}
-#vshop .vs-view-btn{background:#f8fafc;border:none;padding:9px 11px;cursor:pointer;color:#94a3b8;font-size:15px;transition:all .13s;line-height:1}
+#vshop .vs-sort{border:1px solid #e2e8f0;border-radius:10px;padding:9px 12px;font-size:13px;color:#475569;background:#f8fafc;cursor:pointer;outline:none;font-family:inherit}
+#vshop .vs-views{display:flex;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden}
+#vshop .vs-view-btn{background:#f8fafc;border:none;padding:9px 12px;cursor:pointer;color:#94a3b8;font-size:15px;line-height:1;transition:all .13s}
 #vshop .vs-view-btn.active,#vshop .vs-view-btn:hover{background:#00b4c8;color:#fff}
-#vshop .vs-count{font-size:13px;color:#94a3b8;margin-bottom:12px}
-#vshop .vs-count strong{color:#1a2a38}
+#vshop .vs-tcount{font-size:13px;color:#94a3b8;margin-bottom:12px}
+#vshop .vs-tcount strong{color:#1a2a38}
 /* ── Product grid ── */
-#vshop .vs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
+#vshop .vs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px}
 #vshop .vs-list{display:flex;flex-direction:column;gap:10px}
 /* ── Product card (grid) ── */
-#vshop .vs-card{background:#fff;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden;display:flex;flex-direction:column;transition:all .2s;cursor:default}
+#vshop .vs-card{background:#fff;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden;display:flex;flex-direction:column;transition:all .2s}
 #vshop .vs-card:hover{transform:translateY(-3px);box-shadow:0 10px 28px rgba(0,0,0,.09);border-color:#c7d6e0}
-#vshop .vs-card-img{height:130px;display:flex;align-items:center;justify-content:center;font-size:56px;background:linear-gradient(135deg,#f0f7ff,#e0f7fa)}
-#vshop .vs-card-body{padding:12px 14px;flex:1;display:flex;flex-direction:column;gap:5px}
-#vshop .vs-card-cat{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#00b4c8}
-#vshop .vs-card-name{font-weight:700;font-size:13px;color:#1a2a38;line-height:1.3}
-#vshop .vs-card-desc{font-size:11px;color:#6b7280;flex:1;line-height:1.4}
-#vshop .vs-card-price{font-size:18px;font-weight:800;color:#0d3d4f;margin-top:4px}
-#vshop .vs-card-footer{padding:0 14px 14px;display:flex;align-items:center;gap:8px}
-#vshop .vs-card-stock{font-size:11px;font-weight:600}
+#vshop .vs-card-img{height:120px;display:flex;align-items:center;justify-content:center;font-size:52px;background:linear-gradient(135deg,#f0f7ff,#e0f7fa)}
+#vshop .vs-card-body{padding:12px 14px;flex:1;display:flex;flex-direction:column;gap:4px}
+#vshop .vs-card-cat{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#00b4c8;margin:0}
+#vshop .vs-card-name{font-weight:700;font-size:13px;color:#1a2a38;line-height:1.3;margin:0}
+#vshop .vs-card-desc{font-size:11px;color:#6b7280;flex:1;line-height:1.4;margin:0}
+#vshop .vs-card-price{font-size:18px;font-weight:800;color:#0d3d4f;margin:4px 0 0}
+#vshop .vs-card-foot{padding:0 14px 14px;display:flex;align-items:center;gap:8px}
 /* ── Product card (list) ── */
 #vshop .vs-list-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;display:flex;align-items:center;gap:14px;padding:12px 16px;transition:all .15s}
 #vshop .vs-list-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.07);border-color:#c7d6e0}
-#vshop .vs-list-icon{width:54px;height:54px;border-radius:10px;background:linear-gradient(135deg,#f0f7ff,#e0f7fa);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0}
+#vshop .vs-list-ico{width:52px;height:52px;border-radius:10px;background:linear-gradient(135deg,#f0f7ff,#e0f7fa);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0}
 #vshop .vs-list-info{flex:1;min-width:0}
-#vshop .vs-list-name{font-weight:700;font-size:14px;color:#1a2a38}
-#vshop .vs-list-desc{font-size:12px;color:#6b7280;margin-top:1px}
+#vshop .vs-list-name{font-weight:700;font-size:14px;color:#1a2a38;margin:0}
+#vshop .vs-list-desc{font-size:12px;color:#6b7280;margin:2px 0 0}
 #vshop .vs-list-price{font-size:17px;font-weight:800;color:#0d3d4f;flex-shrink:0}
 /* ── Buttons ── */
-#vshop .vs-add-btn{background:#00b4c8;color:#fff;border:none;border-radius:9px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;transition:background .15s}
+#vshop .vs-add-btn{background:#00b4c8;color:#fff;border:none;border-radius:9px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;transition:background .15s;font-family:inherit}
 #vshop .vs-add-btn:hover{background:#009ab2}
 #vshop .vs-add-btn:disabled{background:#cbd5e1;cursor:not-allowed}
 #vshop .vs-qty{display:flex;align-items:center;gap:6px}
-#vshop .vs-qty button{width:28px;height:28px;border:1px solid #e2e8f0;border-radius:7px;background:#f8fafc;cursor:pointer;font-size:15px;font-weight:700;color:#475569;transition:all .13s;display:flex;align-items:center;justify-content:center;padding:0}
+#vshop .vs-qty button{width:28px;height:28px;border:1px solid #e2e8f0;border-radius:7px;background:#f8fafc;cursor:pointer;font-size:15px;font-weight:700;color:#475569;transition:all .13s;display:flex;align-items:center;justify-content:center;padding:0;font-family:inherit}
 #vshop .vs-qty button:hover{background:#00b4c8;color:#fff;border-color:#00b4c8}
 #vshop .vs-qty span{font-size:14px;font-weight:700;color:#1a2a38;min-width:22px;text-align:center}
 /* ── Empty state ── */
 #vshop .vs-empty{text-align:center;padding:60px 20px;color:#94a3b8}
-#vshop .vs-empty-icon{font-size:48px;margin-bottom:12px}
-#vshop .vs-empty-text{font-size:15px;font-weight:600}
+#vshop .vs-empty-ico{font-size:48px;margin-bottom:12px}
+#vshop .vs-empty-txt{font-size:15px;font-weight:600;margin:0}
 /* ── FAB cart ── */
 #vshop .vs-fab{position:fixed;bottom:28px;right:28px;width:58px;height:58px;border-radius:50%;background:#00b4c8;color:#fff;border:none;cursor:pointer;font-size:22px;box-shadow:0 4px 20px rgba(0,180,200,.4);z-index:9990;display:none;align-items:center;justify-content:center;transition:transform .15s}
 #vshop .vs-fab:hover{transform:scale(1.08)}
 #vshop .vs-fab-badge{position:absolute;top:-4px;right:-4px;background:#ef4444;color:#fff;border-radius:50%;width:20px;height:20px;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;border:2px solid #fff}
 /* ── Overlays ── */
-#vshop .vs-sidebar-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9991;opacity:0;pointer-events:none;transition:opacity .25s}
+#vshop .vs-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9991;opacity:0;pointer-events:none;transition:opacity .25s}
 #vshop .vs-drawer{position:fixed;top:0;right:0;bottom:0;width:min(400px,100vw);background:#fff;z-index:9992;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);box-shadow:-4px 0 40px rgba(0,0,0,.15)}
-#vshop .vs-overlay{position:fixed;inset:0;background:#f8fafc;z-index:9993;overflow-y:auto;display:flex;align-items:flex-start;justify-content:center;padding:32px 16px}
+#vshop .vs-ov{position:fixed;inset:0;background:#f8fafc;z-index:9993;overflow-y:auto;display:flex;align-items:flex-start;justify-content:center;padding:32px 16px}
 #vshop .vs-ov-inner{width:100%;max-width:480px}
 /* ── Form elements ── */
-#vshop .vs-inp{width:100%;padding:10px 14px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;color:#1a2a38;outline:none;background:#f8fafc;transition:border .15s;display:block}
+#vshop .vs-inp{width:100%;padding:10px 14px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;color:#1a2a38;outline:none;background:#f8fafc;transition:border .15s;display:block;font-family:inherit}
 #vshop .vs-inp:focus{border-color:#00b4c8;background:#fff}
-#vshop .vs-btn-teal{background:#00b4c8;color:#fff;border:none;border-radius:12px;padding:13px 20px;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:background .15s}
+#vshop .vs-btn-teal{background:#00b4c8;color:#fff;border:none;border-radius:12px;padding:13px 20px;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:background .15s;font-family:inherit;width:100%}
 #vshop .vs-btn-teal:hover:not(:disabled){background:#009ab2}
 #vshop .vs-btn-teal:disabled{opacity:.6;cursor:not-allowed}
-#vshop .vs-btn-gray{background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;border-radius:12px;padding:13px 18px;font-size:14px;font-weight:600;cursor:pointer;transition:all .15s}
+#vshop .vs-btn-gray{background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;border-radius:12px;padding:13px 18px;font-size:14px;font-weight:600;cursor:pointer;transition:all .15s;font-family:inherit}
 #vshop .vs-btn-gray:hover{background:#e2e8f0}
 #vshop .vs-err{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:10px;padding:10px 14px;color:#dc2626;font-size:13px;margin-bottom:14px}
-#vshop .vs-step-bar{display:flex;align-items:center;justify-content:center;gap:0;margin-bottom:28px}
+#vshop .vs-steps{display:flex;align-items:center;justify-content:center;gap:0;margin-bottom:28px}
 /* ── Delivery buttons ── */
-#vshop .vs-deliv-btn{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:12px;border:2px solid #e2e8f0;background:#f8fafc;cursor:pointer;text-align:left;transition:all .15s;width:100%}
+#vshop .vs-deliv-btn{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:12px;border:2px solid #e2e8f0;background:#f8fafc;cursor:pointer;text-align:left;transition:all .15s;width:100%;font-family:inherit}
 #vshop .vs-deliv-btn.sel{border-color:#00b4c8;background:rgba(0,180,200,.06)}
-/* ── Hero ── */
-#vshop .vs-hero{background:linear-gradient(160deg,#0b1c2b,#0d2a3a);padding:72px 24px 64px;text-align:center;margin:0 0 32px}
-#vshop .vs-hero-eyebrow{color:#00b4c8;font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;margin:0 0 16px}
-#vshop .vs-hero-title{color:#fff;font-size:46px;font-weight:800;margin:0 0 14px;line-height:1.1}
-#vshop .vs-hero-desc{color:#7a9eb0;font-size:16px;margin:0}
 /* ── Mobile ── */
 @media(max-width:700px){
   #vshop .vs-sidebar{display:none}
   #vshop .vs-layout{display:block}
-  #vshop .vs-grid{grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:12px}
-  #vshop .vs-overlay{padding:16px 8px}
-  #vshop .vs-hero{padding:48px 16px 40px}
-  #vshop .vs-hero-title{font-size:32px}
+  #vshop .vs-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+  #vshop .vs-ov{padding:16px 8px}
+  #vshop .vs-hero .vs-hero-ttl{font-size:32px}
 }
 </style>
 
 <div id="vshop">
 
-<?php if ($show_hero) : ?>
+<?php if ($show_hero): ?>
 <div class="vs-hero">
-  <div class="vs-hero-eyebrow">VESHO OÜ</div>
-  <div class="vs-hero-title">Pood</div>
-  <div class="vs-hero-desc">Veesüsteemide materjalid ja komponendid.</div>
+  <span class="vs-hero-eye">VESHO OÜ</span>
+  <span class="vs-hero-ttl">Pood</span>
+  <span class="vs-hero-sub">Veesüsteemide materjalid ja komponendid.</span>
 </div>
 <?php endif; ?>
 
-<?php if ($campaign && in_array($campaign->target, ['epood','both'], true)) : ?>
+<?php if ($campaign && in_array($campaign->target, ['epood','both'], true)): ?>
 <div class="vs-camp">
-  <?php if ($campaign->discount_percent > 0) : ?>
-  <span class="vs-camp-badge">-<?php echo (float)$campaign->discount_percent; ?>%</span>
-  <?php elseif ($campaign->free_shipping) : ?>
-  <span class="vs-camp-badge" style="background:#10b981">Tasuta tarne</span>
-  <?php else : ?>
-  <span style="font-size:20px">🎉</span>
-  <?php endif; ?>
+  <?php if ($campaign->discount_percent > 0): ?><span class="vs-camp-badge">-<?php echo (float)$campaign->discount_percent; ?>%</span>
+  <?php elseif ($campaign->free_shipping): ?><span class="vs-camp-badge" style="background:#10b981">Tasuta tarne</span>
+  <?php else: ?><span style="font-size:20px">🎉</span><?php endif; ?>
   <div>
-    <div class="vs-camp-name"><?php echo esc_html($campaign->name); ?>
-      <?php if ($campaign->description) : ?><span style="font-weight:400;color:#5a8090"> — <?php echo esc_html($campaign->description); ?></span><?php endif; ?>
-    </div>
-    <?php if ($campaign->valid_until) : ?>
-    <div class="vs-camp-date">Kehtib kuni <?php echo date('d.m.Y', strtotime($campaign->valid_until)); ?></div>
-    <?php endif; ?>
+    <p class="vs-camp-name"><?php echo esc_html($campaign->name); ?><?php if ($campaign->description): ?> <span style="font-weight:400;color:#5a8090"> — <?php echo esc_html($campaign->description); ?></span><?php endif; ?></p>
+    <?php if ($campaign->valid_until): ?><p class="vs-camp-date">Kehtib kuni <?php echo date('d.m.Y', strtotime($campaign->valid_until)); ?></p><?php endif; ?>
   </div>
 </div>
 <?php endif; ?>
 
 <div class="vs-layout">
-
-  <!-- Sidebar -->
   <aside class="vs-sidebar">
-    <div class="vs-sidebar-header">Kategooriad</div>
-    <button class="vs-cat-item active" id="vscat-all" onclick="vsShop.setCategory('',this)" style="border-bottom:1px solid #f1f5f9">
-      <span class="vs-cat-dot" style="background:#00b4c8"></span>
-      Kõik tooted
-      <span class="vs-cat-count" id="vscat-count-all"><?php echo $total_count; ?></span>
+    <p class="vs-sidebar-hdr">Kategooriad</p>
+    <button class="vs-cat active" id="vscat-all" onclick="vsShop.setCat('',this)">
+      <span class="vs-dot" style="background:#00b4c8"></span>Kõik tooted
+      <span class="vs-cnt" id="vscat-n-all"><?php echo $total_count; ?></span>
     </button>
-    <?php foreach ($db_cats as $cat) : ?>
-    <button class="vs-cat-item" id="vscat-<?php echo esc_attr(sanitize_title($cat->name)); ?>"
-            onclick="vsShop.setCategory('<?php echo esc_js($cat->name); ?>',this)"
-            data-cat="<?php echo esc_attr($cat->name); ?>">
-      <span class="vs-cat-dot" style="background:<?php echo esc_attr($cat->color ?: '#00b4c8'); ?>"></span>
-      <?php echo esc_html($cat->name); ?>
-      <span class="vs-cat-count" id="vscat-count-<?php echo esc_attr(sanitize_title($cat->name)); ?>"><?php echo (int)$cat->cnt; ?></span>
+    <?php foreach ($db_cats as $c): ?>
+    <button class="vs-cat" id="vscat-<?php echo esc_attr(sanitize_title($c->name)); ?>" onclick="vsShop.setCat('<?php echo esc_js($c->name); ?>',this)" data-cat="<?php echo esc_attr($c->name); ?>">
+      <span class="vs-dot" style="background:<?php echo esc_attr($c->color ?: '#00b4c8'); ?>"></span><?php echo esc_html($c->name); ?>
+      <span class="vs-cnt" id="vscat-n-<?php echo esc_attr(sanitize_title($c->name)); ?>"><?php echo (int)$c->cnt; ?></span>
     </button>
     <?php endforeach; ?>
   </aside>
 
-  <!-- Main -->
   <div class="vs-main">
-    <!-- Toolbar -->
     <div class="vs-toolbar">
       <div class="vs-search-wrap">
-        <span class="vs-search-icon">🔍</span>
-        <input type="text" id="vshop-search" placeholder="Otsi tooteid..." oninput="vsShop.onSearch(this.value)">
+        <span class="vs-search-ico">🔍</span>
+        <input type="text" id="vshop-q" placeholder="Otsi tooteid..." oninput="vsShop.onSearch(this.value)">
       </div>
-      <button class="vs-search-btn" onclick="vsShop.onSearch(document.getElementById('vshop-search').value)">Otsi</button>
-      <select class="vs-sort-sel" id="vshop-sort" onchange="vsShop.onSort(this.value)">
+      <button class="vs-search-btn" onclick="vsShop.onSearch(document.getElementById('vshop-q').value)">Otsi</button>
+      <select class="vs-sort" id="vshop-sort" onchange="vsShop.onSort(this.value)">
         <option value="az">Nimi A–Z</option>
         <option value="za">Nimi Z–A</option>
         <option value="asc">Hind ↑</option>
         <option value="desc">Hind ↓</option>
       </select>
-      <div class="vs-view-btns">
-        <button class="vs-view-btn active" id="vshop-view-grid" onclick="vsShop.setView('grid')" title="Ruudustik">⊞</button>
-        <button class="vs-view-btn" id="vshop-view-list" onclick="vsShop.setView('list')" title="Nimekiri">☰</button>
+      <div class="vs-views">
+        <button class="vs-view-btn active" id="vshop-vg" onclick="vsShop.setView('grid')" title="Ruudustik">⊞</button>
+        <button class="vs-view-btn" id="vshop-vl" onclick="vsShop.setView('list')" title="Nimekiri">☰</button>
       </div>
     </div>
-
-    <div class="vs-count" id="vshop-count"><strong><?php echo $total_count; ?></strong> toodet</div>
-
-    <!-- Products container — re-rendered by JS -->
+    <p class="vs-tcount" id="vshop-count"><strong><?php echo $total_count; ?></strong> toodet</p>
     <div id="vshop-products"></div>
   </div>
+</div>
 
-</div><!-- .vs-layout -->
-
-<!-- FAB -->
-<button class="vs-fab" id="vs-fab" onclick="vsShop.openCart()">
-  🛒<span class="vs-fab-badge" id="vs-fab-badge">0</span>
-</button>
-
-<!-- Overlays -->
+<button class="vs-fab" id="vs-fab" onclick="vsShop.openCart()">🛒<span class="vs-fab-badge" id="vs-fab-badge">0</span></button>
 <div id="vs-overlays"></div>
-
 </div><!-- #vshop -->
 
 <script>
@@ -4398,7 +4370,7 @@ function renderProducts(){
   if(cnt)cnt.innerHTML='<strong>'+list.length+'</strong> toodet'+(currentSearch||currentCat?' (filtreeritud)':'');
 
   if(list.length===0){
-    el.innerHTML='<div class="vs-empty"><div class="vs-empty-icon">🔍</div><div class="vs-empty-text">'+(PRODS.length===0?'Pood on varsti avatud.':'Otsingule vastavaid tooteid ei leitud')+'</div></div>';
+    el.innerHTML='<div class="vs-empty"><div class="vs-empty-ico">🔍</div><p class="vs-empty-txt">'+(PRODS.length===0?'Pood on varsti avatud.':'Otsingule vastavaid tooteid ei leitud')+'</p></div>';
     return;
   }
 
@@ -4414,19 +4386,19 @@ function renderProducts(){
       html+='<div class="vs-card" id="vc-'+p.id+'">';
       html+='<div class="vs-card-img">'+icon+'</div>';
       html+='<div class="vs-card-body">';
-      if(p.category)html+='<div class="vs-card-cat" style="color:'+esc(p.color)+'">'+esc(p.category)+'</div>';
-      html+='<div class="vs-card-name">'+esc(p.name)+'</div>';
-      if(p.desc)html+='<div class="vs-card-desc">'+esc(p.desc)+'</div>';
-      if(!inStock)html+='<div class="vs-card-stock" style="color:#ef4444">Laost otsas</div>';
+      if(p.category)html+='<p class="vs-card-cat" style="color:'+esc(p.color)+'">'+esc(p.category)+'</p>';
+      html+='<p class="vs-card-name">'+esc(p.name)+'</p>';
+      if(p.desc)html+='<p class="vs-card-desc">'+esc(p.desc)+'</p>';
+      if(!inStock)html+='<div style="font-size:11px;color:#ef4444;font-weight:600">Laost otsas</div>';
       html+='<div class="vs-card-price">'+(disc>0?'<span style="font-size:12px;color:#94a3b8;text-decoration:line-through;margin-right:4px">'+p.price.toFixed(2)+' €</span>':'')+dp.toFixed(2)+' €</div>';
       html+='</div>';
-      html+='<div class="vs-card-footer"><div id="vcc-'+p.id+'" style="flex:1">'+cardCtrlHtml(p,inCart,inStock)+'</div></div>';
+      html+='<div class="vs-card-foot"><div id="vcc-'+p.id+'" style="flex:1">'+cardCtrlHtml(p,inCart,inStock)+'</div></div>';
       html+='</div>';
     } else {
       html+='<div class="vs-list-card" id="vc-'+p.id+'">';
-      html+='<div class="vs-list-icon">'+icon+'</div>';
-      html+='<div class="vs-list-info"><div class="vs-list-name">'+esc(p.name)+'</div>';
-      if(p.desc)html+='<div class="vs-list-desc">'+esc(p.desc)+'</div>';
+      html+='<div class="vs-list-ico">'+icon+'</div>';
+      html+='<div class="vs-list-info"><p class="vs-list-name">'+esc(p.name)+'</p>';
+      if(p.desc)html+='<p class="vs-list-desc">'+esc(p.desc)+'</p>';
       if(!inStock)html+='<div style="font-size:11px;color:#ef4444;font-weight:600;margin-top:2px">Laost otsas</div>';
       html+='</div>';
       html+='<div class="vs-list-price">'+(disc>0?'<div style="font-size:11px;color:#94a3b8;text-decoration:line-through">'+p.price.toFixed(2)+' €</div>':'')+dp.toFixed(2)+' €</div>';
@@ -4460,7 +4432,7 @@ function renderCart(){
   var shipC=CFG.campFreeShip?0:delv.price;
   var grand=total+shipC;
 
-  var html='<div class="vs-sidebar-bg" id="vsb-bg" onclick="vsShop.closeCart()" style="pointer-events:auto"></div>'+
+  var html='<div class="vs-bg" id="vsb-bg" onclick="vsShop.closeCart()" style="pointer-events:auto"></div>'+
     '<div class="vs-drawer" id="vsb">';
 
   html+='<div style="display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid #e2e8f0">'+
@@ -4517,7 +4489,7 @@ function renderCart(){
 
 /* ── Checkout overlay helpers ─────────────────────────────────────────── */
 function stepBar(steps,idx){
-  var h='<div class="vs-step-bar">';
+  var h='<div class="vs-steps">';
   steps.forEach(function(s,i){
     var done=i<idx,act=i===idx;
     h+='<div style="display:flex;align-items:center"><div style="display:flex;flex-direction:column;align-items:center;gap:3px">'+
@@ -4530,7 +4502,7 @@ function stepBar(steps,idx){
 }
 function getSteps(){return CFG.clientLoggedIn?['Tarne','Makse','Kinnitus']:['Kontakt','Tarne','Makse','Kinnitus'];}
 function getStepIdx(v){return CFG.clientLoggedIn?({delivery:0,payment:1,'mc-banks':1,success:2}[v]||0):({guest:0,delivery:1,payment:2,'mc-banks':2,success:3}[v]||0);}
-function showOverlay(html){document.getElementById('vs-overlays').innerHTML='<div class="vs-overlay"><div class="vs-ov-inner">'+html+'</div></div>';}
+function showOverlay(html){document.getElementById('vs-overlays').innerHTML='<div class="vs-ov"><div class="vs-ov-inner">'+html+'</div></div>';}
 function redrawCheckout(){
   if(view==='guest')renderGuest();
   else if(view==='delivery')renderDelivery();
@@ -4692,9 +4664,9 @@ window.vsShop={
   get deliveryPhone(){return deliveryPhone;},set deliveryPhone(v){deliveryPhone=v;},
   get deliveryAddress(){return deliveryAddress;},set deliveryAddress(v){deliveryAddress=v;},
 
-  setCategory:function(cat,btn){
+  setCat:function(cat,btn){
     currentCat=cat;
-    document.querySelectorAll('.vs-cat-item').forEach(function(b){b.classList.remove('active');});
+    document.querySelectorAll('.vs-cat').forEach(function(b){b.classList.remove('active');});
     if(btn)btn.classList.add('active');
     renderProducts();
   },
@@ -4702,8 +4674,8 @@ window.vsShop={
   onSort:function(val){currentSort=val;renderProducts();},
   setView:function(v){
     currentView=v;
-    document.getElementById('vshop-view-grid').classList.toggle('active',v==='grid');
-    document.getElementById('vshop-view-list').classList.toggle('active',v==='list');
+    document.getElementById('vshop-vg').classList.toggle('active',v==='grid');
+    document.getElementById('vshop-vl').classList.toggle('active',v==='list');
     renderProducts();
   },
 
