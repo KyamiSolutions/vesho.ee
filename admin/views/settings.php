@@ -264,6 +264,7 @@ $services_page_subtitle = get_option('vesho_services_page_subtitle', '');
                                 'portal_show_services'     => 'Teenused (broneerimine)',
                                 'portal_show_invoices'     => 'Arved',
                                 'portal_show_support'      => 'Tugi / Piletid',
+                                'portal_show_orders'       => 'Tellimused (e-pood)',
                                 'show_contract_terms'      => 'Lepingutingimused (eraldi tab)',
                             ];
                             foreach ($tabs as $key => $label) :

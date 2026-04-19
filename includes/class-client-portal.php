@@ -716,6 +716,7 @@ function veshoResendVerify(){
         $show_services     = get_option('vesho_portal_show_services',     '1') === '1';
         $show_invoices     = get_option('vesho_portal_show_invoices',     '1') === '1';
         $show_support      = get_option('vesho_portal_show_support',      '1') === '1';
+        $show_orders       = get_option('vesho_portal_show_orders',       '1') === '1';
 
         $show_contract = get_option('vesho_show_contract_terms', '0') === '1';
 
@@ -725,7 +726,7 @@ function veshoResendVerify(){
         if ($show_maintenances || $show_services) $nav_items['maintenances'] = ['icon' => '&#128295;', 'label' => 'Hooldus'];
         if ($show_invoices)     $nav_items['invoices']     = ['icon' => '&#128196;', 'label' => 'Arved'];
         if ($show_support)      $nav_items['support']      = ['icon' => '&#127881;', 'label' => 'Tugi'];
-        $nav_items['orders']  = ['icon' => '&#128722;', 'label' => 'Tellimused'];
+        if ($show_orders)       $nav_items['orders']       = ['icon' => '&#128722;', 'label' => 'Tellimused'];
         if ($show_contract)     $nav_items['contract']     = ['icon' => '&#128221;', 'label' => 'Lepingutingimused'];
         $nav_items['profile'] = ['icon' => '&#128100;', 'label' => 'Profiil'];
 

@@ -1035,6 +1035,9 @@ private static function load_view( $name ) {
         $wo_fresh = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}vesho_workorders WHERE id=%d", $new_id));
         // We need old status — read it before update. Re-check via msg: if msg=updated it was existing.
         if ( $new_status === 'completed' && $msg === 'updated' ) {
+            // Only auto-invoice hooldus/paigaldus type work orders (not garantii/muu)
+            $auto_inv_types = ['hooldus', 'paigaldus', ''];
+            if ( in_array( $wo_fresh->work_type ?? '', $auto_inv_types, true ) ) {
             // Check if auto-invoice already exists for this workorder
             $existing_inv = $wpdb->get_var($wpdb->prepare(
                 "SELECT COUNT(*) FROM {$wpdb->prefix}vesho_invoices WHERE description LIKE %s",
@@ -1095,7 +1098,9 @@ private static function load_view( $name ) {
                     }
                 }
             }
-            // Send client completion email
+            } // end auto-invoice work_type check
+
+            // Send client completion email (always, regardless of work_type)
             if ( $wo_fresh && $wo_fresh->client_id ) {
                 $client = $wpdb->get_row($wpdb->prepare(
                     "SELECT * FROM {$wpdb->prefix}vesho_clients WHERE id=%d", $wo_fresh->client_id
@@ -1111,7 +1116,7 @@ private static function load_view( $name ) {
                     wp_mail($client->email, $subject, $body);
                 }
             }
-        }
+        } // end completed && updated
 
         wp_redirect( add_query_arg( array('page'=>'vesho-crm-workorders','msg'=>$msg), admin_url('admin.php') ) );
         exit;

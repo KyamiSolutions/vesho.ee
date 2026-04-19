@@ -80,8 +80,13 @@ $statuses = ['new'=>'Uus','open'=>'Avatud','resolved'=>'Lahendatud','spam'=>'Rä
                 <div style="background:#e0f7fa;border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:10px">
                     <span style="background:#00b4c8;color:#fff;font-size:12px;font-weight:800;padding:3px 10px;border-radius:20px">-<?php echo (int)$edit->campaign_discount_percent; ?>%</span>
                     <div>
-                        <div class="crm-form-label" style="margin-bottom:2px">Kampaania hind (lukustatud)</div>
+                        <div class="crm-form-label" style="margin-bottom:2px">Kampaania</div>
                         <div style="font-size:13px;font-weight:600;color:#0d1f2d"><?php echo esc_html($edit->campaign_name); ?></div>
+                        <?php if (!empty($edit->locked_price) && (float)$edit->locked_price > 0) : ?>
+                        <div style="font-size:12px;color:#0369a1;margin-top:2px">
+                            Lukustatud hind: <strong><?php echo number_format((float)$edit->locked_price, 2, ',', ' '); ?> €</strong>
+                        </div>
+                        <?php endif; ?>
                     </div>
                 </div>
                 <?php endif; ?>

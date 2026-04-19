@@ -659,8 +659,21 @@ class Vesho_CRM_Database {
         }
 
         // Return request extra fields
-        self::maybe_add_column( "{$wpdb->prefix}vesho_shop_orders", 'return_description', "TEXT DEFAULT NULL" );
-        self::maybe_add_column( "{$wpdb->prefix}vesho_shop_orders", 'return_photo_url',   "VARCHAR(500) DEFAULT NULL" );
+        self::maybe_add_column( "{$wpdb->prefix}vesho_shop_orders", 'return_description',  "TEXT DEFAULT NULL" );
+        self::maybe_add_column( "{$wpdb->prefix}vesho_shop_orders", 'return_photo_url',    "VARCHAR(500) DEFAULT NULL" );
+        self::maybe_add_column( "{$wpdb->prefix}vesho_shop_orders", 'return_status',       "VARCHAR(20) DEFAULT NULL" );
+        self::maybe_add_column( "{$wpdb->prefix}vesho_shop_orders", 'return_requested_at', "DATETIME DEFAULT NULL" );
+
+        // Client geocoordinates for route planning
+        self::maybe_add_column( "{$wpdb->prefix}vesho_clients", 'lat', 'DECIMAL(10,7) DEFAULT NULL' );
+        self::maybe_add_column( "{$wpdb->prefix}vesho_clients", 'lng', 'DECIMAL(10,7) DEFAULT NULL' );
+
+        // Invoice type (for credit note distinction)
+        self::maybe_add_column( "{$wpdb->prefix}vesho_invoices", 'invoice_type',        "VARCHAR(20) DEFAULT 'invoice'" );
+        self::maybe_add_column( "{$wpdb->prefix}vesho_invoices", 'original_invoice_id', "INT UNSIGNED DEFAULT NULL" );
+
+        // Guest request locked price at booking time
+        self::maybe_add_column( "{$wpdb->prefix}vesho_guest_requests", 'locked_price', "DECIMAL(10,2) DEFAULT NULL" );
 
         // Shop order fields for public cart/checkout
         self::maybe_add_column( "{$wpdb->prefix}vesho_shop_orders", 'client_name',    "VARCHAR(255) DEFAULT ''" );
