@@ -238,10 +238,10 @@ $cta_sub       = get_theme_mod( 'vesho_cta_sub',   'Võtke meiega ühendust ja s
     <section class="section services-preview" id="services-preview">
         <div class="container">
             <div class="section-header text-center">
-                <span class="section-label"><?php _e( 'Meie teenused', 'vesho' ); ?></span>
-                <h2 class="section-title"><?php _e( 'Mida me pakume', 'vesho' ); ?></h2>
+                <span class="section-label"><?php echo esc_html( get_theme_mod( 'vesho_services_label', __( 'Meie teenused', 'vesho' ) ) ); ?></span>
+                <h2 class="section-title"><?php echo esc_html( get_theme_mod( 'vesho_services_title', __( 'Mida me pakume', 'vesho' ) ) ); ?></h2>
                 <p class="section-desc" style="margin: 0 auto;">
-                    <?php _e( 'Professionaalsed veesüsteemide teenused – hooldusest paigalduseni. Kõik ühes kohas.', 'vesho' ); ?>
+                    <?php echo esc_html( get_theme_mod( 'vesho_services_desc', __( 'Professionaalsed veesüsteemide teenused – hooldusest paigalduseni. Kõik ühes kohas.', 'vesho' ) ) ); ?>
                 </p>
             </div>
 

@@ -21,7 +21,7 @@
                         <?php endif; ?>
                     </a>
                     <p class="footer-tagline">
-                        <?php _e( 'Professionaalsed veesüsteemide lahendused kodudele ja ettevõtetele üle Eesti.', 'vesho' ); ?>
+                        <?php echo esc_html( get_theme_mod( 'vesho_footer_tagline', 'Professionaalsed veesüsteemide lahendused kodudele ja ettevõtetele üle Eesti.' ) ); ?>
                     </p>
                     <!-- Social -->
                     <div class="footer-social">
@@ -40,7 +40,7 @@
 
                 <!-- Links Column 1: Teenused -->
                 <div class="footer-col">
-                    <h3 class="footer-col__title"><?php _e( 'Teenused', 'vesho' ); ?></h3>
+                    <h3 class="footer-col__title"><?php echo esc_html( get_theme_mod( 'vesho_footer_col1_title', __( 'Teenused', 'vesho' ) ) ); ?></h3>
                     <?php if ( has_nav_menu( 'footer-1' ) ) : ?>
                         <?php wp_nav_menu( array(
                             'theme_location' => 'footer-1',
@@ -61,7 +61,7 @@
 
                 <!-- Links Column 2: Ettevõte -->
                 <div class="footer-col">
-                    <h3 class="footer-col__title"><?php _e( 'Ettevõte', 'vesho' ); ?></h3>
+                    <h3 class="footer-col__title"><?php echo esc_html( get_theme_mod( 'vesho_footer_col2_title', __( 'Ettevõte', 'vesho' ) ) ); ?></h3>
                     <?php if ( has_nav_menu( 'footer-2' ) ) : ?>
                         <?php wp_nav_menu( array(
                             'theme_location' => 'footer-2',
@@ -81,7 +81,7 @@
 
                 <!-- Contact Column -->
                 <div class="footer-col">
-                    <h3 class="footer-col__title"><?php _e( 'Kontakt', 'vesho' ); ?></h3>
+                    <h3 class="footer-col__title"><?php echo esc_html( get_theme_mod( 'vesho_footer_col3_title', __( 'Kontakt', 'vesho' ) ) ); ?></h3>
                     <ul class="footer-contact">
                         <?php
                         $phone   = get_theme_mod( 'vesho_phone', vesho_get_setting( 'company_phone', '+372 5XXX XXXX' ) );

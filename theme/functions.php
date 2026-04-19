@@ -597,6 +597,16 @@ function vesho_customizer_register( $wp_customize ) {
         $wp_customize->add_control( $w[0], array( 'label' => __( $w[2], 'vesho' ), 'section' => 'vesho_homepage', 'type' => 'text' ) );
     }
 
+    // Services preview section header
+    foreach ( array(
+        array( 'vesho_services_label', 'Meie teenused',   'Teenused – silt' ),
+        array( 'vesho_services_title', 'Mida me pakume',  'Teenused – pealkiri' ),
+        array( 'vesho_services_desc',  'Professionaalsed veesüsteemide teenused – hooldusest paigalduseni. Kõik ühes kohas.', 'Teenused – kirjeldus' ),
+    ) as $sv ) {
+        $wp_customize->add_setting( $sv[0], array( 'default' => $sv[1], 'sanitize_callback' => 'sanitize_text_field' ) );
+        $wp_customize->add_control( $sv[0], array( 'label' => __( $sv[2], 'vesho' ), 'section' => 'vesho_homepage', 'type' => 'text' ) );
+    }
+
     // CTA section
     $wp_customize->add_setting( 'vesho_cta_title', array(
         'default'           => 'Valmis alustama?',
@@ -705,6 +715,16 @@ function vesho_customizer_register( $wp_customize ) {
         'section' => 'vesho_footer',
         'type'    => 'text',
     ) );
+
+    // Footer column titles
+    foreach ( array(
+        array( 'vesho_footer_col1_title', 'Teenused',  'Jalus – veerg 1 pealkiri' ),
+        array( 'vesho_footer_col2_title', 'Ettevõte',  'Jalus – veerg 2 pealkiri' ),
+        array( 'vesho_footer_col3_title', 'Kontakt',   'Jalus – veerg 3 pealkiri' ),
+    ) as $fc ) {
+        $wp_customize->add_setting( $fc[0], array( 'default' => $fc[1], 'sanitize_callback' => 'sanitize_text_field' ) );
+        $wp_customize->add_control( $fc[0], array( 'label' => __( $fc[2], 'vesho' ), 'section' => 'vesho_footer', 'type' => 'text' ) );
+    }
 }
 
 // ── Dünaamilised CSS variableid Customizerist ──────────────────────────────────
