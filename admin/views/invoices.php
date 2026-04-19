@@ -42,7 +42,7 @@ $stats = $wpdb->get_row("SELECT
     COUNT(CASE WHEN status='unpaid' OR status='overdue' THEN 1 END) as unpaid_count
     FROM {$wpdb->prefix}vesho_invoices");
 
-$vat_rate = (float) Vesho_CRM_Database::get_setting('vat_rate', '22');
+$vat_rate = (float) Vesho_CRM_Database::get_setting('vat_rate', '24');
 
 // Print/PDF view — professional A4 invoice
 if ( $action === 'print' && $invoice_id ) {

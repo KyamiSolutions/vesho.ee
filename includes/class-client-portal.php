@@ -3051,7 +3051,7 @@ function setMsg(m){document.getElementById('vcp-pay-msg').textContent=m;}
     public static function shortcode_price_list( $atts ) {
         global $wpdb;
         $atts = shortcode_atts(['category' => ''], $atts);
-        $vat_rate = (float) get_option('vesho_vat_rate', '22');
+        $vat_rate = (float) get_option('vesho_vat_rate', '24');
 
         $where = "visible_public=1 AND active=1";
         if ($atts['category']) {

@@ -167,7 +167,7 @@ function _vsho_cart( $wpdb ) {
         $sub += $line;
         $items[] = ['p'=>$r,'qty'=>$qty,'line'=>$line];
     }
-    $vr  = (float)get_option('vesho_vat_rate','22') / 100;
+    $vr  = (float)get_option('vesho_vat_rate','24') / 100;
     $vat = round( $sub * $vr, 2 );
     return ['items'=>$items,'count'=>(int)array_sum($raw),'subtotal'=>$sub,'vat'=>$vat,'total'=>round($sub+$vat,2)];
 }
@@ -217,7 +217,7 @@ add_shortcode( 'vesho_shop', function( $atts ) {
     $eff_disc    = max( $camp_disc, $client_disc ); // effective discount %
 
     // VAT rate from settings
-    $vat_rate = (float)get_option('vesho_vat_rate','22') / 100;
+    $vat_rate = (float)get_option('vesho_vat_rate','24') / 100;
     $vat_pct  = (int)round($vat_rate * 100); // e.g. 24
 
     // Payment settings

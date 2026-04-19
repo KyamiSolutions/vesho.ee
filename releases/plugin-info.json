@@ -1,10 +1,10 @@
 {
   "name": "Vesho CRM",
   "slug": "vesho-crm",
-  "version": "2.9.0",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.9.0/vesho-crm.zip",
+  "version": "2.9.1",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.9.1/vesho-crm.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-19",
-  "changelog": "<h4>2.9.0</h4><ul><li>Feat: Customizer – jaluse lühikirjeldus kasutab nüüd seadet (bugfix)</li><li>Feat: Customizer – jaluse veergude pealkirjad muudetavad</li><li>Feat: Customizer – teenuste sektsiooni silt/pealkiri/kirjeldus muudetavad</li><li>Feat: uus malli 'Täislaius – Elementor' Elementori lehtedele</li><li>Feat: uus malli 'Lõuend – Elementor' maandumislehtedele (ilma päise/jaluseta)</li></ul><h4>2.8.5</h4><ul><li>Feat: marsruudiplaneerija — Nominatim geokodeerimine + lähima-naabri optimeerimine</li><li>Feat: klientide tabel — lat/lng koordinaatide veerud</li><li>Feat: shop_orders — return_status, return_requested_at veerud</li><li>Feat: invoices — invoice_type, original_invoice_id veerud</li><li>Feat: guest_requests — locked_price veerg + kuvatakse päringute vaates</li><li>Feat: kliendi portaali seaded — Tellimuste tab on/off toggle</li><li>Fix: töökäsu auto-arve ainult hooldus/paigaldus tüübile</li><li>Fix: töökäsu valmimise email kõigile töötüüpidele</li></ul><h4>2.8.0</h4><ul><li>Feat: töölaud täiendused, klientide maksmata summad, töötajate aktiivsed käsud</li></ul>"
+  "changelog": "<h4>2.9.1</h4><ul><li>Feat: avalehekülje shortcode'id Elementori jaoks — [vesho_hero] [vesho_stats] [vesho_services] [vesho_why_us] [vesho_cta]</li><li>Fix: KM vaikemäär 22% → 24% (Eesti 2024)</li></ul><h4>2.9.0</h4><ul><li>Feat: Customizer — jaluse lühikirjeldus, veergude pealkirjad, teenuste sektsiooni tekstid muudetavad</li><li>Feat: mallid 'Täislaius – Elementor' ja 'Lõuend – Elementor'</li></ul><h4>2.8.5</h4><ul><li>Feat: marsruudiplaneerija, koordinaadid, tagastused, krediitarved, lukustatud hind</li></ul>"
 }

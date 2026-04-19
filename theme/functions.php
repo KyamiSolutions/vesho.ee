@@ -8,6 +8,9 @@
 
 defined( 'ABSPATH' ) || exit;
 
+// ── Avalehekülje shortcode'id ([vesho_hero], [vesho_stats] jne) ───────────────
+require_once get_template_directory() . '/inc/homepage-shortcodes.php';
+
 define( 'VESHO_THEME_VERSION', '1.0.0' );
 define( 'VESHO_THEME_URI', get_template_directory_uri() );
 define( 'VESHO_THEME_DIR', get_template_directory() );

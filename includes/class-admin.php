@@ -1197,7 +1197,7 @@ private static function load_view( $name ) {
             'category'       => sanitize_text_field($_POST['category']??''),
             'unit'           => sanitize_text_field($_POST['unit']??'tk'),
             'price'          => (float)($_POST['price']??0),
-            'vat_rate'       => (float)($_POST['vat_rate']??22),
+            'vat_rate'       => (float)($_POST['vat_rate']??24),
             'description'    => sanitize_textarea_field($_POST['description']??''),
             'active'         => isset($_POST['active']) ? 1 : 0,
             'sort_order'     => absint($_POST['sort_order']??0),
