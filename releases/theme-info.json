@@ -6,5 +6,5 @@
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-19",
-  "changelog": "<h4>2.2.72</h4><ul><li>Admin vastuvõtt: 3006-stiil tabel (TOODE|OODATAV|TEGELIK|ASUKOHT|STAATUS) + kustuta kaup nupp + prindi EAN</li></ul><h4>2.2.71</h4><ul><li>Uus tarnimine: AJAX + autocomplete otsing nagu 3006</li></ul>"
+  "changelog": "<h4>2.2.72</h4><ul><li>Uus versioon</li></ul>"
 }
