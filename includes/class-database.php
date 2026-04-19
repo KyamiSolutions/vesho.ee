@@ -252,7 +252,7 @@ class Vesho_CRM_Database {
         dbDelta( "CREATE TABLE {$wpdb->prefix}vesho_stock_receipt_items (
             id              INT UNSIGNED NOT NULL AUTO_INCREMENT,
             receipt_id      INT UNSIGNED NOT NULL,
-            inventory_id    INT UNSIGNED NOT NULL,
+            inventory_id    INT UNSIGNED DEFAULT NULL,
             quantity        DECIMAL(10,3) DEFAULT 0,
             purchase_price  DECIMAL(10,2) DEFAULT 0.00,
             PRIMARY KEY (id),
@@ -589,6 +589,8 @@ class Vesho_CRM_Database {
         self::maybe_add_column( "{$wpdb->prefix}vesho_stock_receipt_items", 'product_name',   "VARCHAR(255) DEFAULT ''" );
         self::maybe_add_column( "{$wpdb->prefix}vesho_stock_receipt_items", 'product_sku',    "VARCHAR(100) DEFAULT ''" );
         self::maybe_add_column( "{$wpdb->prefix}vesho_stock_receipt_items", 'product_unit',   "VARCHAR(20) DEFAULT 'tk'" );
+        // Fix: inventory_id was originally NOT NULL — allow NULL for new products not yet in inventory
+        self::maybe_modify_column_to_nullable( "{$wpdb->prefix}vesho_stock_receipt_items", 'inventory_id', "INT UNSIGNED DEFAULT NULL" );
 
         // Inventory product image
         self::maybe_add_column( "{$wpdb->prefix}vesho_inventory", 'image_url', "VARCHAR(500) DEFAULT ''" );
@@ -640,6 +642,21 @@ class Vesho_CRM_Database {
         $cols = $wpdb->get_col( "DESCRIBE `$table`" );
         if ( $cols && ! in_array( $column, $cols, true ) ) {
             $wpdb->query( "ALTER TABLE `$table` ADD COLUMN `$column` $definition" );
+        }
+    }
+
+    /**
+     * Modify a column to allow NULL if it currently has NOT NULL constraint.
+     */
+    private static function maybe_modify_column_to_nullable( $table, $column, $definition ) {
+        global $wpdb;
+        $row = $wpdb->get_row( $wpdb->prepare(
+            "SELECT IS_NULLABLE FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = %s AND COLUMN_NAME = %s",
+            $table, $column
+        ) );
+        if ( $row && strtoupper( $row->IS_NULLABLE ) === 'NO' ) {
+            $wpdb->query( "ALTER TABLE `$table` MODIFY COLUMN `$column` $definition" );
         }
     }
 

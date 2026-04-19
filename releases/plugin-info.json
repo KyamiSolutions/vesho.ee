@@ -1,10 +1,10 @@
 {
   "name": "Vesho CRM",
   "slug": "vesho-crm",
-  "version": "2.2.72",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.2.72/vesho-crm.zip",
+  "version": "2.2.73",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.2.73/vesho-crm.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-19",
-  "changelog": "<h4>2.2.72</h4><ul><li>Uus versioon</li></ul>"
+  "changelog": "<h4>2.2.73</h4><ul><li>DB fix: inventory_id veerg muudetud NOT NULL → NULL, et uued tooted salvestuks (EI SALVESTA JU TOOTEID lahendus)</li></ul><h4>2.2.72</h4><ul><li>Admin vastuvõtt: 3006-stiil tabel (TOODE|OODATAV|TEGELIK|ASUKOHT|STAATUS) + kustuta kaup nupp + prindi EAN</li></ul><h4>2.2.71</h4><ul><li>Uus tarnimine: AJAX + autocomplete otsing nagu 3006</li></ul>"
 }
