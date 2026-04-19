@@ -1362,20 +1362,30 @@ foreach ($notices as $notice) : ?>
         ));
 
         // ── Load ALL items for pending receipts upfront (3006 style – no lazy AJAX) ──
-        $pending_ids = array_map(fn($r) => (int)$r->id, $pending ?: []);
+        $pending_ids     = array_map(fn($r) => (int)$r->id, $pending ?: []);
         $preloaded_items = [];
         if (!empty($pending_ids)) {
+            // Safe column check — avoid query failure if migrations haven't run
+            $sri_cols    = $wpdb->get_col("DESCRIBE `{$wpdb->prefix}vesho_stock_receipt_items`") ?: [];
+            $has         = fn($c) => in_array($c, $sri_cols, true);
+            $name_sel    = $has('product_name') ? "COALESCE(inv.name, sri.product_name, '')" : "COALESCE(inv.name, '')";
+            $sku_sel     = $has('product_sku')  ? "COALESCE(inv.sku,  sri.product_sku,  '')" : "COALESCE(inv.sku, '')";
+            $unit_sel    = $has('product_unit') ? "COALESCE(inv.unit, sri.product_unit, 'tk')" : "COALESCE(inv.unit, 'tk')";
+            $ean_sel     = $has('ean')          ? "COALESCE(inv.ean,  sri.ean, '')"           : "COALESCE(inv.ean, '')";
+            $actual_sel  = $has('actual_qty')   ? 'sri.actual_qty'   : 'NULL';
+            $loc_sel     = $has('location')     ? 'sri.location'     : "''";
+            $sell_sel    = $has('selling_price') ? "COALESCE(inv.selling_price, sri.selling_price)" : 'inv.selling_price';
+
             $placeholders = implode(',', array_fill(0, count($pending_ids), '%d'));
             $rows = $wpdb->get_results($wpdb->prepare(
-                "SELECT sri.id, sri.receipt_id,
-                        sri.quantity, sri.actual_qty, sri.location,
-                        sri.purchase_price, sri.selling_price,
-                        COALESCE(inv.name, sri.product_name, '') AS name,
-                        COALESCE(inv.sku,  sri.product_sku,  '') AS sku,
-                        COALESCE(inv.unit, sri.product_unit, 'tk') AS unit,
-                        COALESCE(inv.ean,  sri.ean, '')           AS ean,
-                        COALESCE(inv.selling_price, sri.selling_price) AS sell_price,
-                        sri.inventory_id
+                "SELECT sri.id, sri.receipt_id, sri.quantity, sri.inventory_id,
+                        {$actual_sel} AS actual_qty,
+                        {$loc_sel}    AS location,
+                        {$name_sel}   AS name,
+                        {$sku_sel}    AS sku,
+                        {$unit_sel}   AS unit,
+                        {$ean_sel}    AS ean,
+                        {$sell_sel}   AS sell_price
                  FROM {$wpdb->prefix}vesho_stock_receipt_items sri
                  LEFT JOIN {$wpdb->prefix}vesho_inventory inv ON inv.id = sri.inventory_id
                  WHERE sri.receipt_id IN ($placeholders)
@@ -1388,10 +1398,10 @@ foreach ($notices as $notice) : ?>
                     'id'           => (int)$row->id,
                     'receipt_id'   => $rid,
                     'name'         => $row->name ?: '',
-                    'sku'          => $row->sku ?: '',
+                    'sku'          => $row->sku  ?: '',
                     'unit'         => $row->unit ?: 'tk',
-                    'ean'          => $row->ean ?: '',
-                    'quantity'     => (float)$row->quantity,
+                    'ean'          => $row->ean  ?: '',
+                    'quantity'     => (float)($row->quantity ?? 0),
                     'actual_qty'   => $row->actual_qty !== null ? (float)$row->actual_qty : null,
                     'location'     => $row->location ?: '',
                     'selling_price'=> $row->sell_price !== null ? (float)$row->sell_price : null,
