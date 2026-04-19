@@ -66,6 +66,7 @@ class Vesho_CRM_Admin {
         add_action( 'admin_post_vesho_client_send_access',   array( __CLASS__, 'handle_client_send_access' ) );
         add_action( 'admin_post_vesho_send_worker_pin',      array( __CLASS__, 'handle_send_worker_pin' ) );
         add_action( 'admin_post_vesho_send_invoice_email',   array( __CLASS__, 'handle_send_invoice_email' ) );
+        add_action( 'admin_post_vesho_delete_stockcount',       array( __CLASS__, 'handle_delete_stockcount' ) );
         add_action( 'admin_post_vesho_save_notice',              array( __CLASS__, 'handle_save_notice' ) );
         add_action( 'admin_post_vesho_delete_notice',            array( __CLASS__, 'handle_delete_notice' ) );
         add_action( 'admin_post_vesho_save_global_announcement', array( __CLASS__, 'handle_save_global_announcement' ) );
@@ -2083,6 +2084,24 @@ private static function load_view( $name ) {
             $wpdb->update( $wpdb->prefix.'vesho_invoices', ['status'=>'sent'], ['id'=>$id] );
         }
         wp_redirect( add_query_arg( ['page'=>'vesho-crm-invoices','msg'=>'email_sent'], admin_url('admin.php') ) );
+        exit;
+    }
+
+    // ── Stockcount delete ─────────────────────────────────────────────────────
+    public static function handle_delete_stockcount() {
+        $id = absint( $_GET['count_id'] ?? 0 );
+        check_admin_referer( 'vesho_delete_stockcount_' . $id );
+        if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorized' );
+        global $wpdb;
+        if ( $id ) {
+            // Only allow deleting non-finalized counts
+            $count = $wpdb->get_row( $wpdb->prepare( "SELECT status FROM {$wpdb->prefix}vesho_stock_counts WHERE id=%d", $id ) );
+            if ( $count && $count->status !== 'finalized' ) {
+                $wpdb->delete( $wpdb->prefix . 'vesho_stock_count_items', ['stock_count_id' => $id] );
+                $wpdb->delete( $wpdb->prefix . 'vesho_stock_counts',      ['id' => $id] );
+            }
+        }
+        wp_redirect( add_query_arg( ['page' => 'vesho-crm-stockcount', 'msg' => 'deleted'], admin_url('admin.php') ) );
         exit;
     }
 

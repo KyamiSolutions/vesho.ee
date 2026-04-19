@@ -83,11 +83,30 @@ $top_clients = $wpdb->get_results($wpdb->prepare(
 
 // ── Row 2 extras (shop, requests, stock, tickets) ─────────────────────────────
 $shop_orders    = (int) $wpdb->get_var(
-    "SELECT COUNT(*) FROM {$wpdb->prefix}vesho_shop_orders WHERE status IN ('new','picking')");
+    "SELECT COUNT(*) FROM {$wpdb->prefix}vesho_shop_orders WHERE status IN ('new','picking','pending','processing')");
 $new_requests   = (int) $wpdb->get_var(
     "SELECT COUNT(*) FROM {$wpdb->prefix}vesho_guest_requests WHERE status='new'");
 $low_stock      = (int) $wpdb->get_var(
-    "SELECT COUNT(*) FROM {$wpdb->prefix}vesho_inventory WHERE min_quantity IS NOT NULL AND quantity <= min_quantity AND archived=0");
+    "SELECT COUNT(*) FROM {$wpdb->prefix}vesho_inventory WHERE archived=0 AND (
+        (min_quantity IS NOT NULL AND quantity <= min_quantity) OR
+        (min_quantity IS NULL AND quantity <= 0)
+    )");
+
+// ── Prev month revenue for trend ──────────────────────────────────────────────
+$prev_month_start = date('Y-m-01', strtotime('-1 month'));
+$prev_month_end   = date('Y-m-t',  strtotime('-1 month'));
+$prev_month_revenue = (float) $wpdb->get_var($wpdb->prepare(
+    "SELECT COALESCE(SUM(amount),0) FROM {$wpdb->prefix}vesho_invoices WHERE status='paid' AND invoice_date BETWEEN %s AND %s",
+    $prev_month_start, $prev_month_end));
+
+// ── Worker activity this month ─────────────────────────────────────────────────
+$worker_stats = $wpdb->get_results($wpdb->prepare(
+    "SELECT w.name, COALESCE(SUM(wh.hours),0) as month_hours, COUNT(DISTINCT wh.workorder_id) as orders
+     FROM {$wpdb->prefix}vesho_workers w
+     LEFT JOIN {$wpdb->prefix}vesho_work_hours wh ON wh.worker_id=w.id AND wh.date>=%s
+     WHERE w.active=1
+     GROUP BY w.id ORDER BY month_hours DESC, w.name ASC LIMIT 8",
+    $month_start));
 $open_tickets   = (int) $wpdb->get_var(
     "SELECT COUNT(*) FROM {$wpdb->prefix}vesho_support_tickets WHERE status IN ('open','in_progress')");
 $open_tasks     = (int) $wpdb->get_var(
@@ -183,7 +202,15 @@ $status_labels = [
         <div class="crm-stat__icon" style="background:#d1fae5;color:#10b981">💰</div>
         <div>
             <span class="crm-stat__num" style="color:#10b981;font-size:20px"><?php echo number_format($month_revenue,0,',','&nbsp;'); ?> €</span>
-            <span class="crm-stat__label">Kuu tulu (tasutud)</span>
+            <span class="crm-stat__label">Kuu tulu (tasutud)
+                <?php if ($prev_month_revenue > 0) :
+                    $trend_pct = round(($month_revenue - $prev_month_revenue) / $prev_month_revenue * 100, 1);
+                    $trend_col = $trend_pct >= 0 ? '#16a34a' : '#dc2626';
+                    $trend_arrow = $trend_pct >= 0 ? '↑' : '↓';
+                ?>
+                <span style="color:<?php echo $trend_col; ?>;font-weight:700;font-size:11px;margin-left:4px"><?php echo $trend_arrow; ?><?php echo abs($trend_pct); ?>%</span>
+                <?php endif; ?>
+            </span>
         </div>
     </div>
 
@@ -460,5 +487,46 @@ $status_labels = [
     </div>
 
 </div>
+
+<!-- ── Töötajate aktiivsus (kuu) ────────────────────────────────────────────── -->
+<?php if (!empty($worker_stats)) : ?>
+<div style="padding:0 2px;margin-bottom:20px">
+    <div class="crm-card" style="margin:0">
+        <div class="crm-card-header">
+            <span class="crm-card-title">👷 Töötajate aktiivsus <?php echo date_i18n('F Y'); ?></span>
+            <a href="<?php echo admin_url('admin.php?page=vesho-crm-sales'); ?>" class="crm-btn crm-btn-outline crm-btn-sm">Müügiraport</a>
+        </div>
+        <table style="width:100%;border-collapse:collapse">
+            <thead>
+                <tr style="background:#f8fafc;border-bottom:2px solid var(--crm-border-light,#f0f4f7)">
+                    <th style="padding:10px 18px;text-align:left;font-size:11px;font-weight:600;color:#6b8599;text-transform:uppercase">Töötaja</th>
+                    <th style="padding:10px 18px;text-align:right;font-size:11px;font-weight:600;color:#6b8599;text-transform:uppercase">Tunnid</th>
+                    <th style="padding:10px 18px;text-align:right;font-size:11px;font-weight:600;color:#6b8599;text-transform:uppercase">Töökäsud</th>
+                    <th style="padding:10px 18px;text-align:left;font-size:11px;font-weight:600;color:#6b8599;text-transform:uppercase">Aktiivsus</th>
+                </tr>
+            </thead>
+            <tbody>
+            <?php
+            $ws_max = max(array_column((array)$worker_stats, 'month_hours') ?: [0]);
+            $ws_max = $ws_max > 0 ? $ws_max : 1;
+            foreach ($worker_stats as $ws) :
+                $pct = round(($ws->month_hours / $ws_max) * 100);
+            ?>
+            <tr style="border-bottom:1px solid var(--crm-border-light,#f0f4f7)">
+                <td style="padding:10px 18px;font-size:13px;font-weight:500;color:#1a2a38"><?php echo esc_html($ws->name); ?></td>
+                <td style="padding:10px 18px;font-size:13px;color:#374151;text-align:right"><?php echo number_format((float)$ws->month_hours,1); ?> h</td>
+                <td style="padding:10px 18px;font-size:13px;color:#374151;text-align:right"><?php echo (int)$ws->orders; ?></td>
+                <td style="padding:10px 18px">
+                    <div style="background:#f0f4f7;border-radius:4px;overflow:hidden;height:8px;min-width:80px">
+                        <div style="width:<?php echo $pct; ?>%;background:var(--crm-teal,#00b4c8);height:100%"></div>
+                    </div>
+                </td>
+            </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+</div>
+<?php endif; ?>
 
 </div><!-- .crm-wrap -->

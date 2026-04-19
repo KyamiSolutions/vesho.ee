@@ -3155,6 +3155,25 @@ document.querySelectorAll('.vwp-hist-header').forEach(function(hdr){
             }
         }
 
+        // ── Work-done email to client ─────────────────────────────────────────
+        if ( $order->client_id ) {
+            $client_email = $wpdb->get_var( $wpdb->prepare(
+                "SELECT email FROM {$wpdb->prefix}vesho_clients WHERE id=%d", $order->client_id
+            ) );
+            if ( $client_email ) {
+                $co      = get_option( 'vesho_company_name', 'Vesho OÜ' );
+                $subject = $co . ' — Töö on lõpetatud';
+                $body    = "Tere!\n\n";
+                $body   .= "Teie töökäsk on lõpetatud.\n";
+                if ( !empty($order->title) ) $body .= "Töö: {$order->title}\n";
+                $body   .= "Tehnik: {$worker->name}\n";
+                $body   .= "Kuupäev: " . current_time('d.m.Y') . "\n\n";
+                if ( $invoice_number ) $body .= "Arve number: {$invoice_number}\n\n";
+                $body   .= "Küsimuste korral võtke meiega ühendust.\n\nLugupidamisega,\n{$co}";
+                wp_mail( $client_email, $subject, $body );
+            }
+        }
+
         wp_send_json_success(['message' => 'Töökäsk lõpetatud!', 'invoice_number' => $invoice_number]);
     }
 

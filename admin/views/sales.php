@@ -147,6 +147,20 @@ $top_workers = $wpdb->get_results($wpdb->prepare(
      GROUP BY wh.worker_id ORDER BY total_hours DESC LIMIT 10", $year
 ));
 
+// Shop orders revenue by month
+$shop_monthly_rows = $wpdb->get_results($wpdb->prepare(
+    "SELECT MONTH(created_at) as m, SUM(total_price) as total, COUNT(*) as count
+     FROM {$wpdb->prefix}vesho_shop_orders
+     WHERE status IN ('shipped','completed','paid','confirmed') AND YEAR(created_at)=%d
+     GROUP BY MONTH(created_at) ORDER BY m ASC", $year
+));
+$shop_monthly_map = [];
+$shop_year_total  = 0;
+foreach ($shop_monthly_rows as $r) {
+    $shop_monthly_map[$r->m] = $r;
+    $shop_year_total += (float)$r->total;
+}
+
 $months_et = ['','Jaanuar','Veebruar','Märts','Aprill','Mai','Juuni','Juuli','August','September','Oktoober','November','Detsember'];
 ?>
 <div class="crm-wrap">
@@ -186,7 +200,10 @@ $months_et = ['','Jaanuar','Veebruar','Märts','Aprill','Mai','Juuni','Juuli','A
 
     <!-- Year KPI cards -->
     <div class="crm-stats-row" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:24px">
-        <div class="crm-stat-card"><div class="crm-stat-num"><?php echo vesho_crm_format_money($year_total); ?></div><div class="crm-stat-label">Aasta käive <?php echo $year; ?></div></div>
+        <div class="crm-stat-card"><div class="crm-stat-num"><?php echo vesho_crm_format_money($year_total); ?></div><div class="crm-stat-label">Arved <?php echo $year; ?></div></div>
+        <?php if ($shop_year_total > 0) : ?>
+        <div class="crm-stat-card"><div class="crm-stat-num" style="color:#1d4ed8"><?php echo vesho_crm_format_money($shop_year_total); ?></div><div class="crm-stat-label">🛒 Pood <?php echo $year; ?></div></div>
+        <?php endif; ?>
         <div class="crm-stat-card"><div class="crm-stat-num"><?php echo $year_count; ?></div><div class="crm-stat-label">Arvet (makstud+saadetud)</div></div>
         <div class="crm-stat-card"><div class="crm-stat-num" style="color:#ef4444"><?php echo vesho_crm_format_money($unpaid->total??0); ?></div><div class="crm-stat-label">Maksmata (<?php echo intval($unpaid->cnt); ?> arvet)</div></div>
         <div class="crm-stat-card"><div class="crm-stat-num"><?php echo $year_count>0 ? vesho_crm_format_money($year_total/$year_count) : '–'; ?></div><div class="crm-stat-label">Keskmine arve</div></div>
@@ -260,6 +277,7 @@ $months_et = ['','Jaanuar','Veebruar','Märts','Aprill','Mai','Juuni','Juuli','A
                     <th>Arved kokku</th>
                     <th>Tasutud</th>
                     <th>Saadetud</th>
+                    <th>Pood (tellimused)</th>
                     <th>Töökäsud lõpetatud</th>
                 </tr></thead>
                 <tbody>
@@ -267,18 +285,22 @@ $months_et = ['','Jaanuar','Veebruar','Märts','Aprill','Mai','Juuni','Juuli','A
                 for ($m=1; $m<=12; $m++) :
                     $paid_row = $monthly_paid_map[$m] ?? null;
                     $sent_row = $monthly_sent_map[$m] ?? null;
-                    $paid_amt = $paid_row ? floatval($paid_row->total) : 0;
-                    $sent_amt = $sent_row ? floatval($sent_row->total) : 0;
-                    $paid_cnt = $paid_row ? intval($paid_row->count) : 0;
-                    $sent_cnt = $sent_row ? intval($sent_row->count) : 0;
+                    $paid_amt  = $paid_row ? floatval($paid_row->total) : 0;
+                    $sent_amt  = $sent_row ? floatval($sent_row->total) : 0;
+                    $paid_cnt  = $paid_row ? intval($paid_row->count) : 0;
+                    $sent_cnt  = $sent_row ? intval($sent_row->count) : 0;
                     $total_cnt = $paid_cnt + $sent_cnt;
-                    $wo_cnt = $monthly_wo_map[$m] ?? 0;
+                    $wo_cnt    = $monthly_wo_map[$m] ?? 0;
+                    $shop_row  = $shop_monthly_map[$m] ?? null;
+                    $shop_amt  = $shop_row ? floatval($shop_row->total) : 0;
+                    $shop_cnt  = $shop_row ? intval($shop_row->count) : 0;
                 ?>
                 <tr>
                     <td><?php echo $months_et[$m]; ?></td>
                     <td><?php echo $total_cnt > 0 ? $total_cnt : '–'; ?></td>
                     <td><?php echo $paid_amt > 0 ? vesho_crm_format_money($paid_amt) : '–'; ?></td>
                     <td><?php echo $sent_amt > 0 ? vesho_crm_format_money($sent_amt) : '–'; ?></td>
+                    <td><?php echo $shop_amt > 0 ? vesho_crm_format_money($shop_amt).'<small style="color:#6b8599"> ('.$shop_cnt.')</small>' : '–'; ?></td>
                     <td><?php echo $wo_cnt > 0 ? $wo_cnt : '–'; ?></td>
                 </tr>
                 <?php endfor; ?>

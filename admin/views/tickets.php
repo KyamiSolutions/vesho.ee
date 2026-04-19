@@ -29,7 +29,7 @@ if ( $action === 'view' && $ticket_id ) {
 
 $where = '1=1';
 if ($filter_st) { $where .= $wpdb->prepare(' AND t.status=%s', $filter_st); }
-if ($search)    { $where .= $wpdb->prepare(' AND (t.subject LIKE %s OR c.name LIKE %s)', '%'.$wpdb->esc_like($search).'%', '%'.$wpdb->esc_like($search).'%'); }
+if ($search)    { $where .= $wpdb->prepare(' AND (t.subject LIKE %s OR c.name LIKE %s OR c.email LIKE %s)', '%'.$wpdb->esc_like($search).'%', '%'.$wpdb->esc_like($search).'%', '%'.$wpdb->esc_like($search).'%'); }
 
 $tickets = $wpdb->get_results(
     "SELECT t.*, c.name as client_name, w.name as worker_name

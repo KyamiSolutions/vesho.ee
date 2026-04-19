@@ -13,7 +13,17 @@ if ( $action === 'edit' && $worker_id ) {
 $where = '1=1';
 if ($search) { $where .= $wpdb->prepare(' AND (name LIKE %s OR email LIKE %s OR phone LIKE %s)', '%'.$wpdb->esc_like($search).'%', '%'.$wpdb->esc_like($search).'%', '%'.$wpdb->esc_like($search).'%'); }
 
-$workers = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}vesho_workers WHERE $where ORDER BY name ASC LIMIT 200");
+$workers = $wpdb->get_results(
+    "SELECT w.*, COALESCE(ao.cnt,0) as active_orders
+     FROM {$wpdb->prefix}vesho_workers w
+     LEFT JOIN (
+         SELECT worker_id, COUNT(*) as cnt
+         FROM {$wpdb->prefix}vesho_workorders
+         WHERE status IN ('assigned','in_progress','open')
+         GROUP BY worker_id
+     ) ao ON ao.worker_id = w.id
+     WHERE $where ORDER BY w.name ASC LIMIT 200"
+);
 $total   = count($workers);
 
 $roles = ['technician'=>'Tehnik','manager'=>'Juht','admin'=>'Admin','sales'=>'Müügijuht','other'=>'Muu'];
@@ -193,7 +203,7 @@ function vesho_worker_is_clocked_in($worker_id) {
         <?php else : ?>
         <table class="crm-table">
             <thead><tr>
-                <th>ID</th><th>Nimi</th><th>E-post</th><th>Telefon</th><th>Roll</th><th>QR</th><th>Staatus</th><th class="td-actions">Toimingud</th>
+                <th>ID</th><th>Nimi</th><th>E-post</th><th>Telefon</th><th>Roll</th><th>Aktiivsed töökäsud</th><th>QR</th><th>Staatus</th><th class="td-actions">Toimingud</th>
             </tr></thead>
             <tbody>
             <?php foreach ($workers as $w) : ?>
@@ -208,6 +218,14 @@ function vesho_worker_is_clocked_in($worker_id) {
                 <td><?php echo esc_html($w->email?:'–'); ?></td>
                 <td><?php echo esc_html($w->phone?:'–'); ?></td>
                 <td><?php echo esc_html($roles[$w->role]??$w->role); ?></td>
+                <td style="text-align:center">
+                    <?php if ((int)$w->active_orders > 0) : ?>
+                        <a href="<?php echo admin_url('admin.php?page=vesho-crm-workorders&worker_id='.$w->id); ?>"
+                           style="font-weight:600;color:#0284c7"><?php echo (int)$w->active_orders; ?></a>
+                    <?php else : ?>
+                        <span style="color:#94a3b8">–</span>
+                    <?php endif; ?>
+                </td>
                 <td>
                     <?php if (!empty($w->barcode_token)) : ?>
                         <button type="button" class="crm-btn crm-btn-icon crm-btn-sm" title="Näita QR koodi"

@@ -252,7 +252,7 @@ $counts = $wpdb->get_results(
 </div>
 
 <?php if ( isset($_GET['msg']) ) : ?>
-<div class="crm-alert crm-alert-success"><?php echo ['finalized'=>'Inventuur kinnitatud! Laosaldod uuendatud.'][$_GET['msg']] ?? 'Salvestatud!'; ?></div>
+<div class="crm-alert crm-alert-success"><?php echo ['finalized'=>'Inventuur kinnitatud! Laosaldod uuendatud.','deleted'=>'Inventuur kustutatud!'][$_GET['msg']] ?? 'Salvestatud!'; ?></div>
 <?php endif; ?>
 
 <div id="new-count-form" class="crm-card hidden" style="margin-bottom:20px">
@@ -318,6 +318,11 @@ $counts = $wpdb->get_results(
             <td><?php echo vesho_crm_format_date($c->created_at); ?></td>
             <td class="td-actions">
                 <a href="<?php echo admin_url('admin.php?page=vesho-crm-stockcount&action=view&count_id='.$c->id); ?>" class="crm-btn crm-btn-outline crm-btn-sm">Ava</a>
+                <?php if ($c->status !== 'finalized') : ?>
+                <a href="<?php echo wp_nonce_url(admin_url('admin-post.php?action=vesho_delete_stockcount&count_id='.$c->id), 'vesho_delete_stockcount_'.$c->id); ?>"
+                   class="crm-btn crm-btn-icon crm-btn-sm" title="Kustuta"
+                   onclick="return confirm('Kustutad inventuuri? Kõik loendused lähevad kaotsi.')">🗑️</a>
+                <?php endif; ?>
             </td>
         </tr>
         <?php endforeach; ?>

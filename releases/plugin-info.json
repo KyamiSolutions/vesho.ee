@@ -1,10 +1,10 @@
 {
   "name": "Vesho CRM",
   "slug": "vesho-crm",
-  "version": "2.7.5",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.7.5/vesho-crm.zip",
+  "version": "2.8.0",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.8.0/vesho-crm.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-19",
-  "changelog": "<h4>2.7.5</h4><ul><li>Feat: ülesannete haldus (tasks) — list, loo, muuda, tee valmis</li><li>Feat: tugipiletile töötaja määramine</li><li>Feat: inventuuri kinnitamisel saadetakse kokkuvõtte email</li><li>Feat: töölaud näitab avatud pileteid ja ülesandeid</li></ul><h4>2.7.0</h4><ul><li>Feat: foto tüüp (enne/pärast) töökäsu fotodel</li><li>Feat: portaali teated eraldi admin leht</li><li>Feat: inventuuri haldus (stockcount) admin leht</li><li>Feat: arve read automaatselt töökäsu materjalidest</li></ul><h4>2.6.1</h4><ul><li>Fix: WP Teenused CPT peidetud admin menüüst</li></ul>"
+  "changelog": "<h4>2.8.0</h4><ul><li>Feat: töölaud — kuu tulu trend, töötaja aktiivsus widget, laopuuduse fix</li><li>Feat: klientide list — maksmata summad veerus</li><li>Feat: töötajate list — aktiivsed töökäsud</li><li>Feat: töötajaportaal — töövalmis email kliendile</li><li>Feat: müügiraport — poe käive kuude kaupa</li><li>Feat: inventuur — mittekinnitatud inventuuri kustutamine</li><li>Fix: piletite otsing — ka e-posti järgi</li><li>Fix: poe aktiivsed tellimused — pending/processing staatused</li></ul><h4>2.7.5</h4><ul><li>Feat: ülesannete haldus (tasks)</li><li>Feat: tugipiletile töötaja määramine</li><li>Feat: inventuuri email kinnitamisel</li></ul>"
 }

@@ -14,6 +14,20 @@ $clients = Vesho_CRM_Database::get_clients($args);
 $total   = Vesho_CRM_Database::count_clients();
 $pages   = ceil($total / $per_page);
 
+// Unpaid invoice sum per client for list view
+$_client_ids = array_column((array)$clients, 'id');
+$_unpaid_map = [];
+if ( ! empty($_client_ids) ) {
+    $_ids_sql = implode(',', array_map('intval', $_client_ids));
+    $_rows = $wpdb->get_results(
+        "SELECT client_id, COUNT(*) as cnt, COALESCE(SUM(amount),0) as total
+         FROM {$wpdb->prefix}vesho_invoices
+         WHERE status IN ('unpaid','sent','overdue') AND client_id IN ({$_ids_sql})
+         GROUP BY client_id"
+    );
+    foreach ($_rows as $_r) $_unpaid_map[$_r->client_id] = $_r;
+}
+
 // Edit mode
 $edit_client = null;
 if ( $action === 'edit' && $client_id ) {
@@ -375,7 +389,7 @@ if ( $action === 'history-pdf' && $client_id ) {
         <?php else : ?>
         <table class="crm-table">
             <thead><tr>
-                <th>ID</th><th>Nimi</th><th>Ettevõte</th><th>E-post</th><th>Telefon</th><th>Tüüp</th><th>Portaal</th><th>Lisatud</th><th class="td-actions">Toimingud</th>
+                <th>ID</th><th>Nimi</th><th>Ettevõte</th><th>E-post</th><th>Telefon</th><th>Maksmata</th><th>Tüüp</th><th>Portaal</th><th>Lisatud</th><th class="td-actions">Toimingud</th>
             </tr></thead>
             <tbody>
             <?php foreach ($clients as $c) : ?>
@@ -385,6 +399,15 @@ if ( $action === 'history-pdf' && $client_id ) {
                 <td><?php echo esc_html($c->company ?? '–'); ?></td>
                 <td><a href="mailto:<?php echo esc_attr($c->email); ?>"><?php echo esc_html($c->email); ?></a></td>
                 <td><?php echo esc_html($c->phone ?: '–'); ?></td>
+                <td>
+                    <?php $_up = $_unpaid_map[$c->id] ?? null; ?>
+                    <?php if ($_up && (int)$_up->cnt > 0) : ?>
+                        <span style="color:#b91c1c;font-weight:600;font-size:12px"><?php echo (int)$_up->cnt; ?> arvet</span><br>
+                        <span style="color:#dc2626;font-size:11px"><?php echo number_format((float)$_up->total,0,',','&nbsp;'); ?> €</span>
+                    <?php else : ?>
+                        <span style="color:#6b8599;font-size:12px">–</span>
+                    <?php endif; ?>
+                </td>
                 <td><?php echo vesho_crm_status_badge($c->client_type); ?></td>
                 <td>
                     <?php if (!empty($c->user_id)) : ?>
