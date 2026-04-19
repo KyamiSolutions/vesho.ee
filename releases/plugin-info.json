@@ -1,10 +1,10 @@
 {
   "name": "Vesho CRM",
   "slug": "vesho-crm",
-  "version": "2.9.3",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.9.3/vesho-crm.zip",
+  "version": "2.9.4",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.9.4/vesho-crm.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-19",
-  "changelog": "<h4>2.9.3</h4><ul><li>Feat: arve ridadele '📦 Lisa laost' — laomaterjali otse arvele (koguse kontroll, laovaru hoiatus)</li></ul><h4>2.9.2</h4><ul><li>Feat: komponentide shortcode'id Elementori jaoks</li></ul><h4>2.9.1</h4><ul><li>Feat: avalehekülje shortcode'id + KM vaikemäär 24%</li></ul>"
+  "changelog": "<h4>2.9.4</h4><ul><li>Fix: arve KM vaikemäär 24% (sünk seadetega)</li><li>Fix: Lisa laost — sell_price veeru viga parandatud</li></ul><h4>2.9.3</h4><ul><li>Feat: arve ridadele '📦 Lisa laost' — laomaterjali otse arvele (koguse kontroll, laovaru hoiatus)</li></ul><h4>2.9.2</h4><ul><li>Feat: komponentide shortcode'id Elementori jaoks</li></ul><h4>2.9.1</h4><ul><li>Feat: avalehekülje shortcode'id + KM vaikemäär 24%</li></ul>"
 }
