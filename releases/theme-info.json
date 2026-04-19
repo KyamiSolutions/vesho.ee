@@ -1,10 +1,10 @@
 {
   "name": "Vesho",
   "slug": "vesho",
-  "version": "2.3.2",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.3.2/vesho-theme.zip",
+  "version": "2.3.3",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.3.3/vesho-theme.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-19",
-  "changelog": "<h4>2.3.2</h4><ul><li>Shop: Oomipood-inspired disain – Barlow font, Vesho värvid, tumeda sidebar, laoseis, 🛒 Lisa korvi</li></ul>"
+  "changelog": "<h4>2.3.3</h4><ul><li>Bugfix: tooted ei näidanud poes (show_in_shop → shop_enabled veergude parandus)</li></ul>"
 }

@@ -3120,7 +3120,7 @@ function setMsg(m){document.getElementById('vcp-pay-msg').textContent=m;}
         $products = $wpdb->get_results(
             "SELECT id, name, category, shop_price, shop_description, quantity, unit
              FROM {$wpdb->prefix}vesho_inventory
-             WHERE show_in_shop=1 AND shop_price>0 AND archived=0
+             WHERE shop_enabled=1 AND shop_price>0 AND archived=0
              ORDER BY category ASC, name ASC"
         );
 
@@ -4049,7 +4049,7 @@ if(CFG.initialView==='success'&&CFG.returnOrder){
                     COALESCE(c.color,'#00b4c8') as cat_color
              FROM {$wpdb->prefix}vesho_inventory i
              LEFT JOIN {$wpdb->prefix}vesho_inventory_categories c ON c.name = i.category
-             WHERE i.show_in_shop=1 AND i.shop_price>0 AND i.archived=0
+             WHERE i.shop_enabled=1 AND i.shop_price>0 AND i.archived=0
              ORDER BY i.category ASC, i.name ASC"
         );
 
@@ -4059,7 +4059,7 @@ if(CFG.initialView==='success'&&CFG.returnOrder){
                     COUNT(i.id) as cnt
              FROM {$wpdb->prefix}vesho_inventory_categories c
              LEFT JOIN {$wpdb->prefix}vesho_inventory i
-               ON i.category=c.name AND i.show_in_shop=1 AND i.shop_price>0 AND i.archived=0
+               ON i.category=c.name AND i.shop_enabled=1 AND i.shop_price>0 AND i.archived=0
              GROUP BY c.id, c.name, c.color
              ORDER BY c.sort_order ASC, c.name ASC"
         );
