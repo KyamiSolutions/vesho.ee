@@ -1612,7 +1612,7 @@ document.querySelectorAll('.vwp-hist-header').forEach(function(hdr){
             $ean_sel     = $has('ean')          ? "COALESCE(inv.ean,  sri.ean, '')"           : "COALESCE(inv.ean, '')";
             $actual_sel  = $has('actual_qty')   ? 'sri.actual_qty'   : 'NULL';
             $loc_sel     = $has('location')     ? 'sri.location'     : "''";
-            $sell_sel    = $has('selling_price') ? "COALESCE(inv.selling_price, sri.selling_price)" : 'inv.selling_price';
+            $sell_sel    = $has('selling_price') ? 'sri.selling_price' : 'NULL';
 
             $placeholders = implode(',', array_fill(0, count($pending_ids), '%d'));
             // Check inventory table columns too
@@ -1622,7 +1622,8 @@ document.querySelectorAll('.vwp-hist-header').forEach(function(hdr){
             $inv_sku    = $inv_has('sku')   ? 'inv.sku'   : 'NULL';
             $inv_unit   = $inv_has('unit')  ? 'inv.unit'  : 'NULL';
             $inv_ean    = $inv_has('ean')   ? 'inv.ean'   : 'NULL';
-            $inv_sell   = $inv_has('selling_price') ? 'inv.selling_price' : 'NULL';
+            // inv table uses sell_price, not selling_price
+            $inv_sell   = $inv_has('sell_price') ? 'inv.sell_price' : ( $inv_has('selling_price') ? 'inv.selling_price' : 'NULL' );
             $name_sel   = "COALESCE({$inv_name}, {$name_sel})";
             $sku_sel    = "COALESCE({$inv_sku},  {$sku_sel})";
             $unit_sel   = "COALESCE({$inv_unit}, {$unit_sel})";
@@ -1773,10 +1774,29 @@ document.querySelectorAll('.vwp-hist-header').forEach(function(hdr){
   </div>
 </div>
 
+<!-- Otsi laost modal -->
+<div id="vwp-inv-search-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:9999;align-items:flex-start;justify-content:center;padding-top:60px">
+  <div style="background:#fff;border-radius:16px;padding:24px;width:92%;max-width:440px;max-height:80vh;display:flex;flex-direction:column">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+      <div style="font-size:16px;font-weight:700;color:#0d1f2d">🔍 Otsi laost</div>
+      <button type="button" onclick="document.getElementById('vwp-inv-search-modal').style.display='none'" style="background:none;border:none;font-size:18px;color:#94a3b8;cursor:pointer;padding:0 4px">✕</button>
+    </div>
+    <div style="font-size:12px;color:#64748b;margin-bottom:12px">Arve: <span id="vwp-inv-search-bref"></span></div>
+    <input id="vwp-inv-search-q" type="search" placeholder="Otsi nime või SKU järgi..." autocomplete="off"
+      style="width:100%;padding:10px 12px;border:1.5px solid #00b4c8;border-radius:8px;font-size:14px;box-sizing:border-box;margin-bottom:10px;outline:none"
+      oninput="vwpInvFilter(this.value)">
+    <div id="vwp-inv-search-status" style="font-size:12px;color:#94a3b8;margin-bottom:6px;display:none"></div>
+    <div id="vwp-inv-search-results" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:6px">
+      <div style="text-align:center;color:#94a3b8;font-size:13px;padding:20px">Sisesta otsisõna...</div>
+    </div>
+  </div>
+</div>
+
 <script>
 (function(){
   var AJAX='<?php echo $ajax; ?>', NONCE='<?php echo $nonce; ?>';
   var loaded={}, itemData={}, currentRecvId=null;
+  var _invCache=null, _invLoading=false;
   // Preloaded items (3006 style – all loaded at page render, no lazy AJAX)
   var preloadedItems=<?php echo json_encode($preloaded_items); ?>;
   var receiptBref=<?php
@@ -1920,6 +1940,7 @@ document.querySelectorAll('.vwp-hist-header').forEach(function(hdr){
     // Footer buttons
     html+='<div style="border-top:1px solid #f1f5f9;padding:12px 16px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">';
     html+='<button type="button" onclick="vwpScanReceiptEan('+rid+',\''+escJ(bref)+'\')" style="padding:7px 14px;background:rgba(245,158,11,.1);color:#d97706;border:1px solid rgba(245,158,11,.3);border-radius:8px;font-size:12px;cursor:pointer">📷 Skänni EAN</button>';
+    html+='<button type="button" onclick="vwpOpenInvSearch('+rid+',\''+escJ(bref)+'\')" style="padding:7px 14px;background:rgba(16,185,129,.08);color:#10b981;border:1px solid rgba(16,185,129,.3);border-radius:8px;font-size:12px;cursor:pointer">🔍 Otsi laost</button>';
     html+='<button type="button" onclick="vwpOpenAddItem('+rid+',\''+escJ(bref)+'\')" style="padding:7px 14px;background:rgba(0,180,200,.08);color:#00b4c8;border:1px dashed rgba(0,180,200,.4);border-radius:8px;font-size:12px;cursor:pointer">+ Lisa tundmatu kaup</button>';
     html+='<button type="button" onclick="vwpSubmitBatch('+rid+')" id="recv-submit-'+rid+'" style="margin-left:auto;padding:7px 20px;background:rgba(16,185,129,.12);color:#10b981;border:1px solid rgba(16,185,129,.25);border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">✓ Saada adminile</button>';
     html+='</div>';
@@ -2073,6 +2094,104 @@ document.querySelectorAll('.vwp-hist-header').forEach(function(hdr){
     var ean=base+(10-sum%10)%10;
     if(itemData[rid]&&itemData[rid][itemId]) itemData[rid][itemId].ean=ean;
     vwpPrintEan(ean, name, price);
+  };
+
+  // ── Inventory search ─────────────────────────────────────────────────────
+  window.vwpOpenInvSearch = function(rid, bref){
+    currentRecvId=rid;
+    document.getElementById('vwp-inv-search-bref').textContent=bref;
+    document.getElementById('vwp-inv-search-q').value='';
+    document.getElementById('vwp-inv-search-status').style.display='none';
+    document.getElementById('vwp-inv-search-results').innerHTML='<div style="text-align:center;color:#94a3b8;font-size:13px;padding:20px">Sisesta otsisõna...</div>';
+    document.getElementById('vwp-inv-search-modal').style.display='flex';
+    setTimeout(function(){document.getElementById('vwp-inv-search-q').focus();},100);
+    // Pre-load inventory if not cached yet
+    if(!_invCache&&!_invLoading) _vwpLoadInventory();
+  };
+
+  function _vwpLoadInventory(){
+    _invLoading=true;
+    var status=document.getElementById('vwp-inv-search-status');
+    if(status){status.textContent='Laen laovaru...';status.style.display='';}
+    var fd=new FormData();
+    fd.append('action','vesho_worker_get_inventory');
+    fd.append('nonce',NONCE);
+    fetch(AJAX,{method:'POST',body:fd}).then(function(r){return r.json();}).then(function(d){
+      _invLoading=false;
+      if(d.success){
+        _invCache=d.data.items||[];
+        if(status){status.style.display='none';}
+        // If search box already has text, filter now
+        var q=document.getElementById('vwp-inv-search-q');
+        if(q&&q.value.trim()) vwpInvFilter(q.value);
+      } else {
+        if(status){status.textContent='Viga laovaru laadimisel';status.style.color='#dc2626';status.style.display='';}
+      }
+    }).catch(function(){
+      _invLoading=false;
+      if(status){status.textContent='Ühenduse viga';status.style.color='#dc2626';status.style.display='';}
+    });
+  }
+
+  window.vwpInvFilter = function(q){
+    var el=document.getElementById('vwp-inv-search-results');
+    if(!el) return;
+    q=q.trim().toLowerCase();
+    if(!q){
+      el.innerHTML='<div style="text-align:center;color:#94a3b8;font-size:13px;padding:20px">Sisesta otsisõna...</div>';
+      return;
+    }
+    if(!_invCache){
+      el.innerHTML='<div style="text-align:center;color:#94a3b8;font-size:13px;padding:20px">Laen laovaru...</div>';
+      if(!_invLoading) _vwpLoadInventory();
+      return;
+    }
+    var results=_invCache.filter(function(it){
+      return (it.name||'').toLowerCase().indexOf(q)!==-1||(it.sku||'').toLowerCase().indexOf(q)!==-1;
+    });
+    if(!results.length){
+      el.innerHTML='<div style="text-align:center;color:#94a3b8;font-size:13px;padding:20px">Ei leitud ühtegi vastet</div>';
+      return;
+    }
+    var html='';
+    results.slice(0,40).forEach(function(it){
+      html+='<div onclick="vwpSelectInvItem('+it.id+')" style="padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:8px;cursor:pointer;transition:background .15s" '+
+        'onmouseover="this.style.background=\'#f0fdf4\';this.style.borderColor=\'#10b981\'" onmouseout="this.style.background=\'\';this.style.borderColor=\'#e2e8f0\'">';
+      html+='<div style="font-size:13px;font-weight:600;color:#0d1f2d">'+escH(it.name||'?')+'</div>';
+      html+='<div style="display:flex;gap:10px;margin-top:2px;font-size:11px;color:#94a3b8">';
+      if(it.sku) html+='<span>SKU: '+escH(it.sku)+'</span>';
+      if(it.quantity!==undefined) html+='<span>Laos: '+parseFloat(it.quantity||0)+' '+(it.unit||'tk')+'</span>';
+      if(it.sell_price) html+='<span>'+parseFloat(it.sell_price).toFixed(2)+' €</span>';
+      html+='</div>';
+      html+='</div>';
+    });
+    if(results.length>40) html+='<div style="text-align:center;color:#94a3b8;font-size:12px;padding:8px">+'+(results.length-40)+' veel — täpsusta otsisõna</div>';
+    el.innerHTML=html;
+  };
+
+  window.vwpSelectInvItem = function(id){
+    if(!_invCache) return;
+    var it=_invCache.find(function(x){return String(x.id)===String(id);});
+    if(!it) return;
+    // Close search modal, open add-item modal pre-filled
+    document.getElementById('vwp-inv-search-modal').style.display='none';
+    var bref=receiptBref[currentRecvId]||'';
+    document.getElementById('vwp-add-item-bref').textContent=bref;
+    document.getElementById('vwp-ai-name').value=it.name||'';
+    document.getElementById('vwp-ai-ean-scan').value='';
+    document.getElementById('vwp-ai-ean').value=it.ean||'';
+    document.getElementById('vwp-ai-qty').value='';
+    document.getElementById('vwp-ai-price').value=it.sell_price?parseFloat(it.sell_price).toFixed(2):'';
+    document.getElementById('vwp-ai-loc').value='';
+    document.getElementById('vwp-ai-notes').value='';
+    document.getElementById('vwp-add-item-msg').style.display='none';
+    document.getElementById('vwp-ai-ean-msg').style.display='none';
+    var usel=document.getElementById('vwp-ai-unit');
+    if(usel&&it.unit) usel.value=it.unit;
+    // Store inventory_id for later use
+    document.getElementById('vwp-add-item-modal').dataset.invId=it.id;
+    document.getElementById('vwp-add-item-modal').style.display='flex';
+    setTimeout(function(){document.getElementById('vwp-ai-qty').focus();},100);
   };
 
   function escH(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
@@ -3183,9 +3302,18 @@ document.querySelectorAll('.vwp-hist-header').forEach(function(hdr){
         check_ajax_referer('vesho_portal_nonce', 'nonce');
         if (!self::get_current_worker()) wp_send_json_error(['message' => 'Pole sisse logitud']);
         global $wpdb;
-        $items = $wpdb->get_results(
-            "SELECT id, name, unit, quantity, sell_price FROM {$wpdb->prefix}vesho_inventory WHERE archived=0 AND quantity>0 ORDER BY name ASC LIMIT 200"
-        );
+        $search = isset($_POST['q']) ? sanitize_text_field($_POST['q']) : '';
+        if ($search) {
+            $like = '%' . $wpdb->esc_like($search) . '%';
+            $items = $wpdb->get_results($wpdb->prepare(
+                "SELECT id, name, sku, unit, quantity, sell_price FROM {$wpdb->prefix}vesho_inventory WHERE archived=0 AND (name LIKE %s OR sku LIKE %s) ORDER BY name ASC LIMIT 60",
+                $like, $like
+            ));
+        } else {
+            $items = $wpdb->get_results(
+                "SELECT id, name, sku, unit, quantity, sell_price FROM {$wpdb->prefix}vesho_inventory WHERE archived=0 ORDER BY name ASC LIMIT 200"
+            );
+        }
         wp_send_json_success(['items' => $items]);
     }
 
