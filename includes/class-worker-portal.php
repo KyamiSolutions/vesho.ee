@@ -1415,6 +1415,8 @@ document.querySelectorAll('.vwp-hist-header').forEach(function(hdr){
     <span>&#128247;</span>
     <input type="text" id="inv-ean-scan" placeholder="Skanni EAN toote leidmiseks..." autocomplete="off"
            style="flex:1;padding:8px 12px;border:1px solid #ddd;border-radius:6px;font-size:16px">
+    <button id="inv-camera-btn" type="button" title="Kaamera"
+            style="padding:8px 12px;border-radius:6px;border:1px solid #00b4c8;background:#e0f7fa;cursor:pointer;font-size:16px;flex-shrink:0">📷</button>
     <span id="inv-scan-feedback" style="font-size:20px"></span>
   </div>
 
@@ -1427,9 +1429,9 @@ document.querySelectorAll('.vwp-hist-header').forEach(function(hdr){
   var AJAX='<?php echo $ajax; ?>', NONCE='<?php echo $nonce; ?>';
 
   // EAN scan handler
-  document.getElementById('inv-ean-scan')?.addEventListener('change', function(){
-    var ean = this.value.trim();
-    this.value = '';
+  function handleInvEan(ean) {
+    ean = (ean||'').trim();
+    if (!ean) return;
     var row = document.querySelector('tr[data-ean="'+ean+'"]');
     if (!row) row = document.querySelector('[data-ean="'+ean+'"]');
     if(row){
@@ -1443,6 +1445,14 @@ document.querySelectorAll('.vwp-hist-header').forEach(function(hdr){
       document.getElementById('inv-scan-feedback').textContent = '❌';
     }
     setTimeout(function(){ document.getElementById('inv-scan-feedback').textContent=''; }, 2000);
+  }
+  document.getElementById('inv-ean-scan')?.addEventListener('change', function(){
+    handleInvEan(this.value);
+    this.value = '';
+  });
+  document.getElementById('inv-camera-btn')?.addEventListener('click', function(){
+    if(typeof window.VeshoScanner==='undefined'){alert('Scanner ei ole saadaval');return;}
+    window.VeshoScanner.open({title:'Skänni EAN',autoConfirm:true,manualInput:false,onResult:function(code){handleInvEan(code);}});
   });
 
   window.loadInvCount = function(id, name) {
@@ -2189,6 +2199,8 @@ document.querySelectorAll('.vwp-hist-header').forEach(function(hdr){
     <div style="display:flex;gap:6px;margin-bottom:10px">
       <input type="text" id="vw-ean-scan" placeholder="Skanni EAN..." autocomplete="off"
              style="flex:1;padding:8px 12px;border-radius:10px;border:2px solid #e2e8f0;background:#fff;font-size:14px;outline:none;font-family:monospace">
+      <button id="vw-ean-camera-btn" type="button"
+              style="padding:8px 14px;border-radius:10px;border:1px solid #e2e8f0;background:#f8fafc;cursor:pointer;font-size:18px;flex-shrink:0">📷</button>
     </div>
     <div id="vw-scan-feedback" style="font-size:12px;min-height:18px;margin-bottom:6px;font-weight:600"></div>
     <!-- Item list -->
@@ -2514,6 +2526,13 @@ document.querySelectorAll('.vwp-hist-header').forEach(function(hdr){
   if(eanInp){
     eanInp.addEventListener('keydown',function(e){if(e.key==='Enter'){handleEan(this.value);}});
     eanInp.addEventListener('change',function(){handleEan(this.value);});
+  }
+  var eanCameraBtn=document.getElementById('vw-ean-camera-btn');
+  if(eanCameraBtn){
+    eanCameraBtn.addEventListener('click',function(){
+      if(typeof window.VeshoScanner==='undefined'){alert('Scanner ei ole saadaval');return;}
+      window.VeshoScanner.open({title:'Skänni toote EAN',autoConfirm:true,manualInput:false,onResult:function(code){handleEan(code);}});
+    });
   }
 
   // ── Print invoice (3006-style) ────────────────────────────────────────────
