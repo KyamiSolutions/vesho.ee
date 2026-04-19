@@ -535,18 +535,11 @@ if ( $edit->status === 'returned' && $credit_email ):
     <div class="crm-toolbar" style="flex-wrap:wrap;gap:8px">
         <a href="<?php echo admin_url('admin.php?page=vesho-crm-orders&action=add'); ?>" class="crm-btn crm-btn-primary">+ Uus tellimus</a>
 
-        <!-- Barcode / package scan -->
-        <div style="display:flex;align-items:center;gap:6px">
-            <input type="text" id="order-barcode-scan"
-                   placeholder="📦 Pakikaart / jälgimisnumber..."
-                   autocomplete="off"
-                   style="padding:7px 10px;border:1px solid #dce3e9;border-radius:8px;font-size:13px;color:#1a2a38;min-width:200px"
-                   title="HID skänner või kirjuta käsitsi">
-            <button type="button" id="order-camera-scan-btn"
-                    style="background:#00b4c8;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:5px">
-                📷 Skänni
-            </button>
-        </div>
+        <!-- Pakikaart / package scan button (opens modal, like 3006) -->
+        <button type="button" id="order-paki-btn"
+                style="background:#00b4c8;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px">
+            🔍 Leia pakikaardiga
+        </button>
 
         <!-- Bulk send to workers -->
         <form method="POST" action="<?php echo admin_url('admin-post.php'); ?>" id="bulk-form" style="display:inline">
@@ -929,42 +922,71 @@ function openManualRefund(orderId) {
     });
 }
 
-// ── Package barcode / tracking number scanner ────────────────────────────────
+// ── Pakikaart modal (matches 3006 "Leia pakikaardiga") ───────────────────────
 var ORDERS_URL = '<?php echo admin_url('admin.php?page=vesho-crm-orders&s='); ?>';
 
 function doOrderSearch(val) {
     val = (val || '').trim();
     if (val.length > 0) {
+        pakiModalClose();
         window.location.href = ORDERS_URL + encodeURIComponent(val);
     }
 }
 
-// HID barcode scanner (text input — fires Enter / change)
-var barcodeInput = document.getElementById('order-barcode-scan');
-if (barcodeInput) {
-    barcodeInput.addEventListener('change', function() { doOrderSearch(this.value); });
-    barcodeInput.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') { e.preventDefault(); doOrderSearch(this.value); }
-    });
+// Build modal once
+var _pakiModal = null;
+function pakiModalOpen() {
+    if (!_pakiModal) {
+        var overlay = document.createElement('div');
+        overlay.id = 'paki-modal-overlay';
+        overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:99999;display:flex;align-items:center;justify-content:center';
+        overlay.innerHTML = '<div style="background:#fff;border-radius:16px;padding:32px 28px;min-width:360px;max-width:480px;width:90%;box-shadow:0 8px 40px rgba(0,0,0,.18);position:relative">'
+            + '<button id="paki-modal-close" style="position:absolute;top:14px;right:14px;background:none;border:1px solid #e2e8f0;border-radius:50%;width:30px;height:30px;font-size:14px;cursor:pointer;color:#64748b;display:flex;align-items:center;justify-content:center">✕</button>'
+            + '<div style="font-size:17px;font-weight:700;color:#1a2a38;margin-bottom:8px">🔍 Leia pakikaardiga</div>'
+            + '<div style="font-size:13px;color:#64748b;margin-bottom:20px">Skanni tellimuse pakikaardil olev ribakood.</div>'
+            + '<div style="display:flex;gap:8px">'
+            + '<input id="paki-modal-input" type="text" autocomplete="off" placeholder="Skanni või trüki tellimuse number..." autofocus'
+            + ' style="flex:1;padding:10px 12px;border:2px solid #dbeafe;border-radius:8px;font-size:14px;color:#1a2a38;outline:none" />'
+            + '<button id="paki-modal-cam" type="button" title="Kaameraga skänni"'
+            + ' style="background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;padding:0 14px;font-size:18px;cursor:pointer">📷</button>'
+            + '</div></div>';
+        document.body.appendChild(overlay);
+        _pakiModal = overlay;
+
+        // Close on overlay click
+        overlay.addEventListener('click', function(e){ if(e.target===overlay) pakiModalClose(); });
+        document.getElementById('paki-modal-close').addEventListener('click', pakiModalClose);
+
+        // Enter key
+        document.getElementById('paki-modal-input').addEventListener('keydown', function(e){
+            if (e.key === 'Enter') doOrderSearch(this.value);
+        });
+
+        // Camera button
+        document.getElementById('paki-modal-cam').addEventListener('click', function(){
+            if (typeof window.VeshoScanner === 'undefined') { alert('Skänner laadib...'); return; }
+            window.VeshoScanner.open({
+                title: '🔍 Leia pakikaardiga',
+                autoConfirm: true,
+                manualInput: true,
+                wide: true,
+                onScan: function(code){ doOrderSearch(code); }
+            });
+        });
+
+        // ESC key closes
+        document.addEventListener('keydown', function(e){ if(e.key==='Escape') pakiModalClose(); });
+    }
+    _pakiModal.style.display = 'flex';
+    setTimeout(function(){ var inp=document.getElementById('paki-modal-input'); if(inp){inp.value='';inp.focus();} }, 50);
+}
+function pakiModalClose() {
+    if (_pakiModal) _pakiModal.style.display = 'none';
 }
 
-// Camera scan button
-var camBtn = document.getElementById('order-camera-scan-btn');
-if (camBtn) {
-    camBtn.addEventListener('click', function() {
-        if (typeof window.VeshoScanner === 'undefined') {
-            alert('Skänner laadib... Proovi uuesti sekundi pärast.');
-            return;
-        }
-        window.VeshoScanner.open({
-            title: '📦 Skänni pakikaart / jälgimisnumber',
-            autoConfirm: true,
-            manualInput: true,
-            wide: true,
-            onScan: function(code) { doOrderSearch(code); }
-        });
-    });
-}
+// Open modal on button click
+var pakiBtn = document.getElementById('order-paki-btn');
+if (pakiBtn) { pakiBtn.addEventListener('click', pakiModalOpen); }
 
 })();
 
