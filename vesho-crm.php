@@ -3,7 +3,7 @@
  * Plugin Name: Vesho CRM
  * Plugin URI:  https://vesho.ee
  * Description: CRM ja klientide portaal Vesho OÜ-le. Haldab kliente, seadmeid, hooldusi, arveid ja teenuseid.
- * Version:     2.5.14
+ * Version:     2.6.0
  * Author:      Vesho OÜ
  * Author URI:  https://vesho.ee
  * Text Domain: vesho-crm
@@ -15,7 +15,7 @@
 defined( 'ABSPATH' ) || exit;
 
 // ── Constants ──────────────────────────────────────────────────────────────────
-define('VESHO_CRM_VERSION', '2.5.14');
+define('VESHO_CRM_VERSION', '2.6.0');
 define( 'VESHO_CRM_FILE',     __FILE__ );
 define( 'VESHO_CRM_PATH',     plugin_dir_path( __FILE__ ) );
 define( 'VESHO_CRM_URL',      plugin_dir_url( __FILE__ ) );
@@ -578,6 +578,26 @@ function vesho_mark_invoice_paid( int $invoice_id ): bool {
         "UPDATE {$wpdb->prefix}vesho_invoices SET status='paid' WHERE id=%d AND status!='paid'",
         $invoice_id
     ));
+    if ( $updated > 0 ) {
+        // Send payment confirmation email to client
+        $inv = $wpdb->get_row( $wpdb->prepare(
+            "SELECT i.*, c.name AS client_name, c.email AS client_email
+             FROM {$wpdb->prefix}vesho_invoices i
+             LEFT JOIN {$wpdb->prefix}vesho_clients c ON c.id=i.client_id
+             WHERE i.id=%d", $invoice_id
+        ));
+        if ( $inv && !empty($inv->client_email) ) {
+            $co      = get_option('vesho_company_name', 'Vesho OÜ');
+            $subject = $co . ' — Makse kinnitatud (Arve ' . $inv->invoice_number . ')';
+            $body    = "Tere, {$inv->client_name}!\n\n";
+            $body   .= "Teie makse on edukalt laekunud.\n\n";
+            $body   .= "Arve nr: {$inv->invoice_number}\n";
+            $body   .= "Summa: " . number_format((float)$inv->amount, 2, ',', ' ') . " €\n";
+            $body   .= "Kuupäev: " . date('d.m.Y') . "\n\n";
+            $body   .= "Aitäh!  Lugupidamisega,\n{$co}";
+            wp_mail( $inv->client_email, $subject, $body );
+        }
+    }
     return $updated > 0;
 }
 function vesho_validate_paid_amount( string $type, int $id, $paid_amount ): bool {
