@@ -1,10 +1,10 @@
 {
   "name": "Vesho CRM",
   "slug": "vesho-crm",
-  "version": "2.3.1",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.3.1/vesho-crm.zip",
+  "version": "2.3.2",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.3.2/vesho-crm.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-19",
-  "changelog": "<h4>2.3.1</h4><ul><li>Shop: max-width konteiner 1200px, parem hero padding, gap fix</li></ul>"
+  "changelog": "<h4>2.3.2</h4><ul><li>Shop: Oomipood-inspired disain – Barlow font, Vesho värvid, tumeda sidebar, laoseis, 🛒 Lisa korvi</li></ul>"
 }
