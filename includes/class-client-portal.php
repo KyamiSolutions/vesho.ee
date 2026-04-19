@@ -402,10 +402,24 @@ tbody tr:last-child td{border-bottom:none}
             return ob_get_clean();
         }
         // ── Email not verified — show blocked screen ──────────────────────────
+        // Localhost bypass: auto-verify so development doesn't need real email
+        $is_local = in_array($_SERVER['HTTP_HOST'] ?? '', ['localhost','127.0.0.1'], true)
+                    || str_ends_with($_SERVER['HTTP_HOST'] ?? '', '.local');
         if ( isset($client->email_verified) && (int)$client->email_verified === 0 ) {
-            ob_start();
-            self::render_verify_blocked($client);
-            return ob_get_clean();
+            if ( $is_local ) {
+                global $wpdb;
+                $wpdb->update(
+                    $wpdb->prefix.'vesho_clients',
+                    ['email_verified' => 1, 'email_verify_token' => ''],
+                    ['id' => $client->id]
+                );
+                $client->email_verified = 1;
+                // fall through to portal render below
+            } else {
+                ob_start();
+                self::render_verify_blocked($client);
+                return ob_get_clean();
+            }
         }
         ob_start();
         self::render_portal($client);
