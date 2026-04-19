@@ -1,10 +1,10 @@
 {
   "name": "Vesho",
   "slug": "vesho",
-  "version": "2.2.76",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.2.76/vesho-theme.zip",
+  "version": "2.2.77",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.2.77/vesho-theme.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-19",
-  "changelog": "<h4>2.2.76</h4><ul><li>Worker vastuvõtt: tooted kuvatakse korrektselt – DESCRIBE check inv+items tabelitel</li></ul><h4>2.2.75</h4><ul><li>Preload fix: items laetakse lehe renderdusel</li></ul><h4>2.2.73</h4><ul><li>DB fix: inventory_id NOT NULL → NULL</li></ul><h4>2.2.72</h4><ul><li>Admin vastuvõtt: 3006-stiil tabel + delete + prindi EAN</li></ul>"
+  "changelog": "<h4>2.2.77</h4><ul><li>Portaali teated töötaja portaalis; bcrypt PIN login; vastuvõtt: lisa tooted ka received-staatuses; admin: muuda drafti, pending loendur, kinnituse kaitse</li></ul><h4>2.2.76</h4><ul><li>Worker vastuvõtt: tooted kuvatakse korrektselt – DESCRIBE check inv+items tabelitel</li></ul><h4>2.2.75</h4><ul><li>Preload fix: items laetakse lehe renderdusel</li></ul><h4>2.2.73</h4><ul><li>DB fix: inventory_id NOT NULL → NULL</li></ul><h4>2.2.72</h4><ul><li>Admin vastuvõtt: 3006-stiil tabel + delete + prindi EAN</li></ul>"
 }

@@ -238,7 +238,7 @@ class Vesho_CRM_Database {
         // ── stock_receipts ───────────────────────────────────────────────────
         dbDelta( "CREATE TABLE {$wpdb->prefix}vesho_stock_receipts (
             id           INT UNSIGNED NOT NULL AUTO_INCREMENT,
-            receipt_num  VARCHAR(50)  NOT NULL,
+            receipt_num  VARCHAR(50)  NOT NULL DEFAULT '',
             supplier     VARCHAR(255) DEFAULT '',
             status       VARCHAR(20)  DEFAULT 'pending',
             total        DECIMAL(10,2) DEFAULT 0.00,
@@ -498,7 +498,7 @@ class Vesho_CRM_Database {
         self::maybe_add_column( "{$wpdb->prefix}vesho_workers",    'barcode_token',   "VARCHAR(64) DEFAULT ''" );
         self::maybe_add_column( "{$wpdb->prefix}vesho_workers",    'user_id',         'BIGINT(20) DEFAULT NULL' );
         self::maybe_add_column( "{$wpdb->prefix}vesho_workers",    'work_email',      "VARCHAR(255) DEFAULT ''" );
-        self::maybe_add_column( "{$wpdb->prefix}vesho_workers",    'pin',             "VARCHAR(10) DEFAULT ''" );
+        self::maybe_add_column( "{$wpdb->prefix}vesho_workers",    'pin',             "VARCHAR(255) DEFAULT ''" );
         self::maybe_add_column( "{$wpdb->prefix}vesho_workers",    'show_on_website', "TINYINT(1) DEFAULT 0" );
         self::maybe_add_column( "{$wpdb->prefix}vesho_workers",    'can_inventory',   "TINYINT(1) DEFAULT 0" );
         self::maybe_add_column( "{$wpdb->prefix}vesho_stock_receipt_items", 'actual_qty', "DECIMAL(10,3) DEFAULT NULL" );
@@ -591,6 +591,12 @@ class Vesho_CRM_Database {
         self::maybe_add_column( "{$wpdb->prefix}vesho_stock_receipt_items", 'product_unit',   "VARCHAR(20) DEFAULT 'tk'" );
         // Fix: inventory_id was originally NOT NULL — allow NULL for new products not yet in inventory
         self::maybe_modify_column_to_nullable( "{$wpdb->prefix}vesho_stock_receipt_items", 'inventory_id', "INT UNSIGNED DEFAULT NULL" );
+
+        // Fix: receipt_num was originally NOT NULL without default — give existing tables a default
+        $wpdb->query( "ALTER TABLE {$wpdb->prefix}vesho_stock_receipts MODIFY COLUMN receipt_num VARCHAR(50) NOT NULL DEFAULT ''" );
+
+        // Worker PIN: originally VARCHAR(10) — bcrypt hashes need 255 chars
+        $wpdb->query( "ALTER TABLE {$wpdb->prefix}vesho_workers MODIFY COLUMN pin VARCHAR(255) DEFAULT ''" );
 
         // Inventory product image
         self::maybe_add_column( "{$wpdb->prefix}vesho_inventory", 'image_url', "VARCHAR(500) DEFAULT ''" );

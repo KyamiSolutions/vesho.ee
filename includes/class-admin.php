@@ -72,6 +72,8 @@ class Vesho_CRM_Admin {
         add_action( 'wp_ajax_vesho_admin_get_receipt_items',  array( __CLASS__, 'ajax_admin_get_receipt_items' ) );
         add_action( 'wp_ajax_vesho_admin_add_receipt_item',   array( __CLASS__, 'ajax_admin_add_receipt_item' ) );
         add_action( 'wp_ajax_vesho_admin_create_receipt',     array( __CLASS__, 'ajax_admin_create_receipt' ) );
+        add_action( 'wp_ajax_vesho_admin_edit_receipt',       array( __CLASS__, 'ajax_admin_edit_receipt' ) );
+        add_action( 'wp_ajax_vesho_admin_pending_count',      array( __CLASS__, 'ajax_admin_pending_count' ) );
         add_action( 'wp_ajax_vesho_admin_delete_receipt_item', array( __CLASS__, 'ajax_admin_delete_receipt_item' ) );
         add_action( 'wp_ajax_vesho_search_wp_users',        array( __CLASS__, 'ajax_search_wp_users' ) );
         add_action( 'wp_ajax_vesho_add_maintenance_ajax',   array( __CLASS__, 'ajax_add_maintenance' ) );
@@ -716,8 +718,10 @@ private static function load_view( $name ) {
             'can_inventory'   => isset($_POST['can_inventory']) ? 1 : 0,
         );
         if ( ! empty($pin) ) {
-            $data['password'] = wp_hash_password($pin);
-            $data['pin']      = $pin;
+            // Security: store bcrypt hash only; never plaintext PIN
+            $hashed           = wp_hash_password($pin);
+            $data['password'] = $hashed;
+            $data['pin']      = $hashed;
         }
 
         if ( $id ) {
@@ -1283,6 +1287,15 @@ private static function load_view( $name ) {
         global $wpdb;
         $receipt_id = absint( $_POST['receipt_id'] ?? 0 );
         if ( ! $receipt_id ) wp_send_json_error( 'Puudub receipt_id' );
+        // Validate status: prevent double-approval & only accept received/pending
+        $current_status = $wpdb->get_var( $wpdb->prepare(
+            "SELECT status FROM {$wpdb->prefix}vesho_stock_receipts WHERE id=%d", $receipt_id
+        ) );
+        if ( $current_status === null ) wp_send_json_error( 'Saadetist ei leitud' );
+        if ( $current_status === 'approved' ) wp_send_json_error( 'Juba kinnitatud' );
+        if ( ! in_array( $current_status, [ 'received', 'pending' ], true ) ) {
+            wp_send_json_error( 'Ainult vastuvõetud või ootel saadetisi saab kinnitada (status: ' . $current_status . ')' );
+        }
         $items = $wpdb->get_results( $wpdb->prepare(
             "SELECT * FROM {$wpdb->prefix}vesho_stock_receipt_items WHERE receipt_id=%d", $receipt_id
         ) );
@@ -1608,7 +1621,9 @@ private static function load_view( $name ) {
             exit;
         }
         $new_pin = (string) rand(100000, 999999);
-        $update_data = ['password'=>wp_hash_password($new_pin),'pin'=>$new_pin];
+        // Security: store bcrypt hash only; plaintext PIN sent via email below
+        $hashed_pin  = wp_hash_password($new_pin);
+        $update_data = ['password'=>$hashed_pin,'pin'=>$hashed_pin];
         // Generate barcode token if missing (like Node.js send-pin behavior)
         $barcode_token = $worker->barcode_token;
         if ( empty( $barcode_token ) ) {
@@ -2125,6 +2140,7 @@ private static function load_view( $name ) {
         if ( empty( $valid ) ) wp_send_json_error( 'Lisa vähemalt üks kaup nimega ja kogusega' );
         // Insert receipt header
         $wpdb->insert( $wpdb->prefix . 'vesho_stock_receipts', [
+            'receipt_num'      => $batch_ref ?: ( 'REC-' . date('Ymd-His') ),
             'receipt_date'     => current_time('Y-m-d'),
             'reference_number' => $batch_ref,
             'batch_ref'        => $batch_ref,
@@ -2166,6 +2182,42 @@ private static function load_view( $name ) {
             ] );
         }
         wp_send_json_success( ['receipt_id' => $receipt_id, 'items' => count($valid)] );
+    }
+
+    // ── AJAX: admin edit draft receipt header ─────────────────────────────────
+    public static function ajax_admin_edit_receipt() {
+        check_ajax_referer( 'vesho_admin_nonce', 'nonce' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error( 'Pole lubatud' );
+        global $wpdb;
+        $receipt_id = absint( $_POST['receipt_id'] ?? 0 );
+        if ( ! $receipt_id ) wp_send_json_error( 'Puudub receipt_id' );
+        $current = $wpdb->get_row( $wpdb->prepare(
+            "SELECT status FROM {$wpdb->prefix}vesho_stock_receipts WHERE id=%d", $receipt_id
+        ) );
+        if ( ! $current ) wp_send_json_error( 'Saadetist ei leitud' );
+        if ( $current->status !== 'draft' ) {
+            wp_send_json_error( 'Redigeerida saab ainult mustandeid' );
+        }
+        $batch_ref = sanitize_text_field( $_POST['batch_ref'] ?? '' );
+        $supplier  = sanitize_text_field( $_POST['supplier'] ?? '' );
+        $notes     = sanitize_textarea_field( $_POST['notes'] ?? '' );
+        $wpdb->update( $wpdb->prefix . 'vesho_stock_receipts', [
+            'batch_ref'        => $batch_ref,
+            'reference_number' => $batch_ref,
+            'supplier'         => $supplier,
+            'notes'            => $notes,
+        ], [ 'id' => $receipt_id ] );
+        wp_send_json_success( [ 'message' => 'Salvestatud' ] );
+    }
+
+    // ── AJAX: pending receipt counts (badge) ─────────────────────────────────
+    public static function ajax_admin_pending_count() {
+        check_ajax_referer( 'vesho_admin_nonce', 'nonce' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error();
+        global $wpdb;
+        $pending  = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}vesho_stock_receipts WHERE status='pending'" );
+        $received = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}vesho_stock_receipts WHERE status='received'" );
+        wp_send_json_success( [ 'pending' => $pending, 'received' => $received ] );
     }
 
     // ── AJAX: admin add item to existing receipt ──────────────────────────────

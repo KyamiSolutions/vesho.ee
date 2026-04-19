@@ -115,6 +115,7 @@ endif; ?>
         <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">
             <?php if ($st === 'draft') : ?>
                 <input type="checkbox" class="bulk-cb" value="<?php echo $r->id; ?>" style="accent-color:#00b4c8;width:16px;height:16px">
+                <button class="crm-btn crm-btn-sm crm-btn-outline" onclick='openEditModal(<?php echo (int)$r->id; ?>, <?php echo json_encode([ "batch_ref"=>$r->batch_ref ?? "", "supplier"=>$r->supplier ?? "", "notes"=>$r->notes ?? "" ], JSON_HEX_APOS|JSON_HEX_QUOT); ?>)' title="Redigeeri">✏️</button>
                 <button class="crm-btn crm-btn-primary crm-btn-sm" onclick="openSendModal(<?php echo $r->id; ?>)">📤 Saada töötajale</button>
             <?php elseif ($st === 'pending') : ?>
                 <button class="crm-btn crm-btn-sm" style="background:#fef3c7;color:#d97706;border:1px solid #fcd34d" onclick="openSendModal(<?php echo $r->id; ?>)">🔄 Töötajat</button>
@@ -693,6 +694,66 @@ function doAdminAddItem() {
         } else {
             msg.textContent = d.data?.message || 'Viga'; msg.style.display='';
         }
+    });
+}
+</script>
+
+<!-- Edit draft modal -->
+<div id="modal-edit" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.5);align-items:center;justify-content:center">
+<div style="background:#fff;border-radius:14px;padding:24px;width:100%;max-width:480px;margin:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <strong style="font-size:16px">Muuda mustandit</strong>
+        <button onclick="closeModal('modal-edit')" style="background:none;border:none;font-size:20px;cursor:pointer;color:#94a3b8">✕</button>
+    </div>
+    <input type="hidden" id="edit-receipt-id">
+    <div style="margin-bottom:12px">
+        <label class="crm-form-label">Arve nr</label>
+        <input id="edit-batch-ref" class="crm-form-input" type="text">
+    </div>
+    <div style="margin-bottom:12px">
+        <label class="crm-form-label">Tarnija</label>
+        <input id="edit-supplier" class="crm-form-input" type="text">
+    </div>
+    <div style="margin-bottom:14px">
+        <label class="crm-form-label">Märkmed</label>
+        <textarea id="edit-notes" class="crm-form-textarea" rows="3"></textarea>
+    </div>
+    <div id="edit-msg" style="display:none;font-size:13px;margin-bottom:10px"></div>
+    <div style="display:flex;gap:8px">
+        <button onclick="closeModal('modal-edit')" class="crm-btn crm-btn-outline" style="flex:1">Tühista</button>
+        <button id="edit-btn" onclick="doEditReceipt()" class="crm-btn crm-btn-primary" style="flex:2">💾 Salvesta</button>
+    </div>
+</div>
+</div>
+<script>
+function openEditModal(rid, data) {
+    document.getElementById('edit-receipt-id').value = rid;
+    document.getElementById('edit-batch-ref').value = (data && data.batch_ref) || '';
+    document.getElementById('edit-supplier').value  = (data && data.supplier) || '';
+    document.getElementById('edit-notes').value     = (data && data.notes) || '';
+    document.getElementById('edit-msg').style.display = 'none';
+    openModal('modal-edit');
+}
+function doEditReceipt() {
+    var rid = document.getElementById('edit-receipt-id').value;
+    var br  = document.getElementById('edit-batch-ref').value;
+    var sup = document.getElementById('edit-supplier').value;
+    var nts = document.getElementById('edit-notes').value;
+    var msg = document.getElementById('edit-msg');
+    var btn = document.getElementById('edit-btn');
+    btn.disabled = true; btn.textContent = 'Salvestamine...';
+    fetch(ajaxUrl, {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body:'action=vesho_admin_edit_receipt&nonce='+veshoNonce+'&receipt_id='+rid
+            +'&batch_ref='+encodeURIComponent(br)
+            +'&supplier='+encodeURIComponent(sup)
+            +'&notes='+encodeURIComponent(nts)
+    }).then(r=>r.json()).then(function(d){
+        btn.disabled = false; btn.textContent = '💾 Salvesta';
+        if (d.success) { closeModal('modal-edit'); location.reload(); }
+        else { msg.textContent = d.data || 'Viga'; msg.style.color = '#dc2626'; msg.style.display = ''; }
+    }).catch(function(){
+        btn.disabled = false; btn.textContent = '💾 Salvesta';
+        msg.textContent = 'Ühenduse viga'; msg.style.color = '#dc2626'; msg.style.display = '';
     });
 }
 </script>

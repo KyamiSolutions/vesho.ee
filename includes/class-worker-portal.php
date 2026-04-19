@@ -2383,12 +2383,12 @@ $all_picked = !empty($my_items) && count(array_filter($my_items, fn($i) => $i->p
             wp_send_json_error(['message' => 'Sisesta nimi ja PIN-kood']);
         }
         global $wpdb;
-        // Match by name (case-insensitive) + PIN
+        // Match by name (case-insensitive) — verify hashed PIN with wp_check_password
         $worker = $wpdb->get_row($wpdb->prepare(
-            "SELECT * FROM {$wpdb->prefix}vesho_workers WHERE LOWER(name)=LOWER(%s) AND pin=%s AND active=1 LIMIT 1",
-            $name, $pin
+            "SELECT * FROM {$wpdb->prefix}vesho_workers WHERE LOWER(name)=LOWER(%s) AND active=1 LIMIT 1",
+            $name
         ));
-        if ( ! $worker ) {
+        if ( ! $worker || empty($worker->pin) || ! wp_check_password($pin, $worker->pin) ) {
             wp_send_json_error(['message' => 'Vale nimi või PIN-kood']);
         }
         // Log in via linked WordPress user
@@ -3031,11 +3031,12 @@ $all_picked = !empty($my_items) && count(array_filter($my_items, fn($i) => $i->p
         $actual_qty   = (float)($_POST['actual_qty']??0);
         if (!$receipt_id || !$product_name || $actual_qty <= 0)
             wp_send_json_error(['message'=>'Toote nimi ja kogus on kohustuslikud']);
-        // Verify receipt access
+        // Verify receipt access — allow both pending (worker still receiving)
+        // and received (worker can still add items after sending to admin, until approved)
         $receipt = $wpdb->get_row($wpdb->prepare(
-            "SELECT id FROM {$wpdb->prefix}vesho_stock_receipts WHERE id=%d AND status='pending'", $receipt_id
+            "SELECT id FROM {$wpdb->prefix}vesho_stock_receipts WHERE id=%d AND status IN ('pending','received')", $receipt_id
         ));
-        if (!$receipt) wp_send_json_error(['message'=>'Saadetist ei leitud']);
+        if (!$receipt) wp_send_json_error(['message'=>'Saadetist ei leitud või vale staatus']);
         $ean          = sanitize_text_field($_POST['product_ean']??'');
         $unit         = sanitize_text_field($_POST['product_unit']??'tk');
         $selling_price= (float)($_POST['selling_price']??0);
