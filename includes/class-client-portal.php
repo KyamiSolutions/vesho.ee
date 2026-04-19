@@ -12,6 +12,7 @@ class Vesho_CRM_Client_Portal {
         add_shortcode('vesho_client_login',  [__CLASS__, 'shortcode_login']);
         add_shortcode('vesho_price_list',    [__CLASS__, 'shortcode_price_list']);
         add_shortcode('vesho_shop',          [__CLASS__, 'shortcode_shop']);
+        add_shortcode('vesho_shop_grid',     [__CLASS__, 'shortcode_shop_grid']);
         // Invoice print — fires before WordPress outputs the theme, so no header appears
         add_action('template_redirect', [__CLASS__, 'maybe_print_invoice']);
 
@@ -4023,7 +4024,16 @@ if(CFG.initialView==='success'&&CFG.returnOrder){
     } // end shortcode_shop_OLD_REMOVED
 
     // ── [vesho_shop] shortcode — proper design ────────────────────────────────
+    // [vesho_shop_grid] — sama mis vesho_shop aga ilma hero sektsioonita (Elementor lehel kasuta)
+    public static function shortcode_shop_grid($atts) {
+        $atts = (array)($atts ?: []);
+        $atts['hero'] = '0';
+        return self::shortcode_shop($atts);
+    }
+
     public static function shortcode_shop($atts) {
+        $atts = shortcode_atts(['hero' => '1'], $atts, 'vesho_shop');
+        $show_hero = $atts['hero'] !== '0';
         global $wpdb;
 
         // Handle payment return URL params
@@ -4211,10 +4221,10 @@ if(CFG.initialView==='success'&&CFG.returnOrder){
 .vs-deliv-btn{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:12px;border:2px solid #e2e8f0;background:#f8fafc;cursor:pointer;text-align:left;transition:all .15s;width:100%}
 .vs-deliv-btn.sel{border-color:#00b4c8;background:rgba(0,180,200,.06)}
 /* ── Hero ── */
-.vs-hero{background:linear-gradient(160deg,#0b1c2b 0%,#0d2a3a 100%);padding:72px 24px 64px;text-align:center;margin:0 0 32px}
-.vs-hero-eyebrow{color:#00b4c8;font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;margin:0 0 16px}
-.vs-hero-title{color:#fff;font-size:46px;font-weight:800;margin:0 0 14px;line-height:1.1}
-.vs-hero-desc{color:#7a9eb0;font-size:15px;margin:0;line-height:1.6}
+.vs-hero{background:linear-gradient(160deg,#0b1c2b 0%,#0d2a3a 100%);padding:72px 24px 64px;text-align:center;margin:0 0 32px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
+.vs-hero-eyebrow{color:#00b4c8!important;font-size:11px!important;font-weight:800!important;letter-spacing:.18em!important;text-transform:uppercase!important;margin:0 0 16px!important;display:block!important;font-family:inherit!important}
+.vs-hero-title{color:#fff!important;font-size:46px!important;font-weight:800!important;margin:0 0 14px!important;line-height:1.1!important;display:block!important;font-family:inherit!important}
+.vs-hero-desc{color:#7a9eb0!important;font-size:15px!important;margin:0!important;line-height:1.6!important;display:block!important;font-family:inherit!important}
 /* ── Mobile ── */
 @media(max-width:700px){
   .vs-sidebar{display:none}
@@ -4228,11 +4238,13 @@ if(CFG.initialView==='success'&&CFG.returnOrder){
 
 <div id="vshop">
 
+<?php if ($show_hero) : ?>
 <div class="vs-hero">
-  <p class="vs-hero-eyebrow">VESHO OÜ</p>
-  <h1 class="vs-hero-title">Pood</h1>
-  <p class="vs-hero-desc">Veesüsteemide materjalid ja komponendid.</p>
+  <div class="vs-hero-eyebrow">VESHO OÜ</div>
+  <div class="vs-hero-title">Pood</div>
+  <div class="vs-hero-desc">Veesüsteemide materjalid ja komponendid.</div>
 </div>
+<?php endif; ?>
 
 <?php if ($campaign && in_array($campaign->target, ['epood','both'], true)) : ?>
 <div class="vs-camp">

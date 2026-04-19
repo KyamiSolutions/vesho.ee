@@ -1,10 +1,15 @@
 {
   "name": "Vesho CRM",
   "slug": "vesho-crm",
-  "version": "2.2.95",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.2.95/vesho-crm.zip",
+  "version": "2.2.97",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.2.97/vesho-crm.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-19",
+<<<<<<< HEAD
   "changelog": "<h4>2.2.95</h4><ul><li>Shop: hero sektsioon shortcode sisse – tume taust, VESHO OÜ pealkiri, alapealkiri</li></ul><h4>2.2.94</h4><ul><li>Shop: CSS taastatud – sidebar disain ilma muudatusteta</li></ul><h4>2.2.93</h4><ul><li>Shop: täielik disaini ümberkirjutus – sidebar kategooriate paneel colored dot-idega, sort A-Z/Z-A/hind, grid/list toggle, tootekaardid kategooria värviga, proper campaign bänner kuupäevaga</li></ul><h4>2.2.92</h4><ul><li>Shop frontend: [vesho_shop] shortcode – toodete grid, ostukorv, checkout, Stripe/MC/Montonio</li></ul><h4>2.2.91</h4><ul><li>Client portal: MC pangavaliku modal – 8 Eesti panka koos värvide ja \"Jätka ilma pangavalikuta\" nupuga</li></ul><h4>2.2.90</h4><ul><li>Worker portal: EAN kaamera skänner inventuur ja tellimused tabis</li></ul>"
 }
+=======
+  "changelog": "<h4>2.2.97</h4><ul><li>Shop: [vesho_shop_grid] shortcode – sama disain ilma hero sektsioonita, Elementor lehtedel kasutamiseks</li></ul><h4>2.2.96</h4><ul><li>Shop: hero font fix – div-id asendavad h1</li></ul><h4>2.2.95</h4><ul><li>Shop: hero sektsioon shortcode sisse</li></ul><h4>2.2.94</h4><ul><li>Shop: CSS taastatud</li></ul><h4>2.2.93</h4><ul><li>Shop: sidebar disain ümberkirjutus</li></ul>"
+}
+>>>>>>> b0757f6 (v2.2.97 — [vesho_shop_grid] shortcode ilma hero'ta Elementor lehtedel)
