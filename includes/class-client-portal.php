@@ -11,8 +11,9 @@ class Vesho_CRM_Client_Portal {
         add_shortcode('vesho_client_portal', [__CLASS__, 'shortcode_portal']);
         add_shortcode('vesho_client_login',  [__CLASS__, 'shortcode_login']);
         add_shortcode('vesho_price_list',    [__CLASS__, 'shortcode_price_list']);
-        add_shortcode('vesho_shop',          [__CLASS__, 'shortcode_shop']);
-        add_shortcode('vesho_shop_grid',     [__CLASS__, 'shortcode_shop_grid']);
+        // Moved to includes/shortcodes.php (server-side PHP rebuild)
+        // add_shortcode('vesho_shop',          [__CLASS__, 'shortcode_shop']);
+        // add_shortcode('vesho_shop_grid',     [__CLASS__, 'shortcode_shop_grid']);
         // Invoice print — fires before WordPress outputs the theme, so no header appears
         add_action('template_redirect', [__CLASS__, 'maybe_print_invoice']);
 
