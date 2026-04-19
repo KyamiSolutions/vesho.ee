@@ -1,10 +1,10 @@
 {
   "name": "Vesho CRM",
   "slug": "vesho-crm",
-  "version": "2.5.1",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.5.1/vesho-crm.zip",
+  "version": "2.5.2",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.5.2/vesho-crm.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-19",
-  "changelog": "<h4>2.5.1</h4><ul><li>DB migratsioon: vanad shop tellimuste staatused (new/picking/ready/fulfilled) konverteeritakse uuteks (pending/processing/confirmed/completed)</li></ul><h4>2.5.0</h4><ul><li>Tellimuste staatused sünkroonitud 3006-ga: pending_payment→pending→processing→confirmed→shipped→completed</li><li>Parandus: Töötaja portaalis näidatakse nüüd korrektselt tellimusi (oli 'Pole tellimusi' viga)</li></ul><h4>2.4.1</h4><ul><li>Pood: laost otsas toodete teavitussüsteem</li></ul>"
+  "changelog": "<h4>2.5.2</h4><ul><li>Fix: admin 'Saada töötajale' nupp eemaldatud — eemaldas tellimuse mõlemast vaatest</li></ul><h4>2.5.1</h4><ul><li>DB migratsioon: vanad staatused (new/picking/ready/fulfilled) → uued (pending/processing/confirmed/completed)</li></ul><h4>2.5.0</h4><ul><li>Tellimuste staatused sünkroonitud 3006-ga</li><li>Parandus: töötaja portaalis 'Pole tellimusi' viga</li></ul>"
 }
