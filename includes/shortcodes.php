@@ -167,7 +167,8 @@ function _vsho_cart( $wpdb ) {
         $sub += $line;
         $items[] = ['p'=>$r,'qty'=>$qty,'line'=>$line];
     }
-    $vat = round( $sub * 0.22, 2 );
+    $vr  = (float)get_option('vesho_vat_rate','22') / 100;
+    $vat = round( $sub * $vr, 2 );
     return ['items'=>$items,'count'=>(int)array_sum($raw),'subtotal'=>$sub,'vat'=>$vat,'total'=>round($sub+$vat,2)];
 }
 endif;
@@ -209,8 +210,15 @@ add_shortcode( 'vesho_shop', function( $atts ) {
             get_current_user_id()
         ) );
     }
-    $client_disc = $client ? (float)($client->loyalty_pct ?? 0) : 0;
+    // Global loyalty discount for all registered clients (from settings)
+    $global_loyalty = is_user_logged_in() ? (float)get_option('vesho_shop_loyalty_discount', 0) : 0;
+    // Per-client loyalty from DB (may override global)
+    $client_disc = $client ? max( (float)($client->loyalty_pct ?? 0), $global_loyalty ) : $global_loyalty;
     $eff_disc    = max( $camp_disc, $client_disc ); // effective discount %
+
+    // VAT rate from settings
+    $vat_rate = (float)get_option('vesho_vat_rate','22') / 100;
+    $vat_pct  = (int)round($vat_rate * 100); // e.g. 24
 
     // Payment settings
     $stripe_enabled   = get_option('vesho_stripe_enabled','0')==='1' && get_option('vesho_stripe_pub_key','');
@@ -236,7 +244,7 @@ add_shortcode( 'vesho_shop', function( $atts ) {
         $sub_chk += round( $dp * $ci['qty'], 2 );
     }
     $sub_chk = round($sub_chk,2);
-    $vat_chk = round($sub_chk*0.22,2);
+    $vat_chk = round($sub_chk*$vat_rate,2);
 
     ob_start(); ?>
 <style>
@@ -409,9 +417,6 @@ add_shortcode( 'vesho_shop', function( $atts ) {
 <!-- Cart bar -->
 <div class="vs-cartbar">
   <div class="vs-cartbar-inner">
-    <?php if ( $view !== 'grid' ) : ?>
-    <a href="<?php echo esc_url($shop_url); ?>" class="vs-back-top">← Tagasi poodi</a>
-    <?php endif; ?>
     <a href="<?php echo esc_url($cart_url); ?>" class="vs-cart-link">
       🛒 Ostukorv
       <span class="vs-cart-badge" id="vsCartBadge" <?php if(!$cart['count'])echo 'style="display:none"'; ?>>
@@ -426,6 +431,8 @@ add_shortcode( 'vesho_shop', function( $atts ) {
 <?php
 /* ═══════════════════════════════════════════════════════ GRID ═══ */
 if ( $view === 'grid' ) :
+    $init_cat = sanitize_text_field( $_GET['cat'] ?? '' );
+    $init_q   = sanitize_text_field( $_GET['q']   ?? '' );
     $products = $wpdb->get_results(
         "SELECT i.id,i.name,i.category,i.shop_price,i.shop_description,i.image_url,i.unit,
                 COALESCE(c.color,'#00b4c8') as cat_color
@@ -461,13 +468,13 @@ if ( $view === 'grid' ) :
   <!-- Sidebar -->
   <aside class="vs-sidebar">
     <p class="vs-sb-hdr">☰ Kategooriad</p>
-    <button class="vs-cat-btn active" data-cat="all">
+    <button class="vs-cat-btn <?php echo !$init_cat?'active':''; ?>" data-cat="all">
       <span class="vs-cat-dot" style="background:#0d1f2d"></span>
       Kõik tooted
       <span class="vs-cat-cnt"><?php echo (int)$total_count; ?></span>
     </button>
     <?php foreach ( $db_cats as $cat ) : if ( (int)$cat->cnt < 1 ) continue; ?>
-    <button class="vs-cat-btn" data-cat="<?php echo esc_attr($cat->name); ?>">
+    <button class="vs-cat-btn <?php echo $init_cat===$cat->name?'active':''; ?>" data-cat="<?php echo esc_attr($cat->name); ?>">
       <span class="vs-cat-dot" style="background:<?php echo esc_attr($cat->color ?: '#00b4c8'); ?>"></span>
       <?php echo esc_html($cat->name); ?>
       <span class="vs-cat-cnt"><?php echo (int)$cat->cnt; ?></span>
@@ -478,7 +485,7 @@ if ( $view === 'grid' ) :
   <!-- Main -->
   <div class="vs-main">
     <div class="vs-toolbar">
-      <input type="text" class="vs-search" id="vsSearch" placeholder="Otsi tooteid…" autocomplete="off">
+      <input type="text" class="vs-search" id="vsSearch" placeholder="Otsi tooteid…" autocomplete="off" value="<?php echo esc_attr($init_q); ?>">
       <span class="vs-result-txt" id="vsResultTxt"><?php echo (int)$total_count; ?> toodet</span>
       <select class="vs-sort" id="vsSort">
         <option value="name-asc">Nimi A–Z</option>
@@ -553,59 +560,124 @@ elseif ( $view === 'product' ) :
          WHERE i.id=%d AND i.shop_enabled=1 AND i.shop_price>0 AND i.archived=0 LIMIT 1",
         $pid
     ) ) : null;
+    // Load sidebar data for product view too
+    $db_cats_p = $wpdb->get_results(
+        "SELECT c.name,c.color,COUNT(i.id) as cnt
+         FROM {$wpdb->prefix}vesho_inventory_categories c
+         LEFT JOIN {$wpdb->prefix}vesho_inventory i
+           ON i.category=c.name AND i.shop_enabled=1 AND i.shop_price>0 AND i.archived=0
+         GROUP BY c.id,c.name,c.color ORDER BY c.sort_order ASC,c.name ASC"
+    );
+    $total_count_p = (int)$wpdb->get_var(
+        "SELECT COUNT(*) FROM {$wpdb->prefix}vesho_inventory WHERE shop_enabled=1 AND shop_price>0 AND archived=0"
+    );
     if ( ! $prod ) :
 ?>
-  <div class="vs-empty">
-    <div class="vs-empty-icon">🔍</div>
-    <div class="vs-empty-txt">Toodet ei leitud.</div>
-    <a href="<?php echo esc_url($shop_url); ?>" class="vs-btn-outline">← Tagasi poodi</a>
+<div class="vs-layout">
+  <aside class="vs-sidebar">
+    <p class="vs-sb-hdr">☰ Kategooriad</p>
+    <a href="<?php echo esc_url($shop_url); ?>" class="vs-cat-btn" style="text-decoration:none">
+      <span class="vs-cat-dot" style="background:#0d1f2d"></span>
+      Kõik tooted
+      <span class="vs-cat-cnt"><?php echo $total_count_p; ?></span>
+    </a>
+    <?php foreach ( $db_cats_p as $cat ) : if ( (int)$cat->cnt < 1 ) continue; ?>
+    <a href="<?php echo esc_url(add_query_arg('cat', urlencode($cat->name), $shop_url)); ?>" class="vs-cat-btn" style="text-decoration:none">
+      <span class="vs-cat-dot" style="background:<?php echo esc_attr($cat->color ?: '#00b4c8'); ?>"></span>
+      <?php echo esc_html($cat->name); ?>
+      <span class="vs-cat-cnt"><?php echo (int)$cat->cnt; ?></span>
+    </a>
+    <?php endforeach; ?>
+  </aside>
+  <div class="vs-main">
+    <div class="vs-empty">
+      <div class="vs-empty-icon">🔍</div>
+      <div class="vs-empty-txt">Toodet ei leitud.</div>
+      <a href="<?php echo esc_url($shop_url); ?>" class="vs-btn-outline">← Tagasi poodi</a>
+    </div>
   </div>
+</div>
 <?php else :
     $p_disc   = round( (float)$prod->shop_price * (1 - $eff_disc/100), 2 );
     $has_disc = $eff_disc > 0;
 ?>
-  <a href="<?php echo esc_url($shop_url); ?>" class="vs-back-link">← Tagasi poodi</a>
-  <div class="vs-detail">
-    <div class="vs-detail-grid">
-      <div class="vs-detail-img-wrap">
-        <?php if ( !empty($prod->image_url) ) : ?>
-        <img src="<?php echo esc_url($prod->image_url); ?>" alt="<?php echo esc_attr($prod->name); ?>">
-        <?php else : ?>
-        <div class="vs-no-img" style="font-size:1rem;height:100%;width:100%">Pilt puudub</div>
-        <?php endif; ?>
-      </div>
-      <div>
-        <span class="vs-detail-cat"><?php echo esc_html($prod->category); ?></span>
-        <h1 class="vs-detail-name"><?php echo esc_html($prod->name); ?></h1>
-        <div class="vs-detail-price">
-          <?php if ( $has_disc ) : ?>
-          <span class="vs-detail-price-orig"><?php echo number_format((float)$prod->shop_price,2,',',' '); ?> €</span>
-          <span class="vs-detail-price-disc"><?php echo number_format($p_disc,2,',',' '); ?> €</span>
+<div class="vs-layout">
+
+  <!-- Sidebar with categories + search -->
+  <aside class="vs-sidebar">
+    <p class="vs-sb-hdr">☰ Kategooriad</p>
+    <a href="<?php echo esc_url($shop_url); ?>" class="vs-cat-btn" style="text-decoration:none">
+      <span class="vs-cat-dot" style="background:#0d1f2d"></span>
+      Kõik tooted
+      <span class="vs-cat-cnt"><?php echo $total_count_p; ?></span>
+    </a>
+    <?php foreach ( $db_cats_p as $cat ) :
+      if ( (int)$cat->cnt < 1 ) continue;
+      $is_active = $prod->category === $cat->name;
+    ?>
+    <a href="<?php echo esc_url(add_query_arg('cat', urlencode($cat->name), $shop_url)); ?>"
+       class="vs-cat-btn <?php echo $is_active?'active':''; ?>" style="text-decoration:none">
+      <span class="vs-cat-dot" style="background:<?php echo esc_attr($cat->color ?: '#00b4c8'); ?>"></span>
+      <?php echo esc_html($cat->name); ?>
+      <span class="vs-cat-cnt"><?php echo (int)$cat->cnt; ?></span>
+    </a>
+    <?php endforeach; ?>
+    <!-- Search box in sidebar -->
+    <div style="padding:12px 16px;border-top:1px solid #dce8ef;background:#fff">
+      <form action="<?php echo esc_url($shop_url); ?>" method="get" style="display:flex;gap:6px">
+        <input type="text" name="q" placeholder="Otsi…"
+               style="flex:1;padding:8px 10px;border:1px solid #dce8ef;border-radius:4px;font-family:'Barlow',sans-serif;font-size:13px;outline:none;min-width:0">
+        <button type="submit"
+                style="padding:8px 12px;background:#00b4c8;color:#fff;border:none;border-radius:4px;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">🔍</button>
+      </form>
+    </div>
+  </aside>
+
+  <!-- Product detail -->
+  <div class="vs-main">
+    <div class="vs-detail">
+      <div class="vs-detail-grid">
+        <div class="vs-detail-img-wrap">
+          <?php if ( !empty($prod->image_url) ) : ?>
+          <img src="<?php echo esc_url($prod->image_url); ?>" alt="<?php echo esc_attr($prod->name); ?>">
           <?php else : ?>
-          <?php echo number_format((float)$prod->shop_price,2,',',' '); ?> €
-          <?php endif; ?>
-          <?php if ( !empty($prod->unit) ) : ?>
-          <span style="font-size:15px;font-weight:400;color:#5a7080">/ <?php echo esc_html($prod->unit); ?></span>
+          <div class="vs-no-img" style="font-size:1rem;height:100%;width:100%">Pilt puudub</div>
           <?php endif; ?>
         </div>
-        <?php if ( $has_disc ) : ?>
-        <div class="vs-disc-note">✓ Kampaaniahind (–<?php echo (int)$eff_disc; ?>%)</div>
-        <?php endif; ?>
-        <?php if ( !empty($prod->shop_description) ) : ?>
-        <p class="vs-detail-desc"><?php echo nl2br(esc_html($prod->shop_description)); ?></p>
-        <?php endif; ?>
-        <div class="vs-qty-row">
-          <div class="vs-qty">
-            <button class="vs-qty-btn" onclick="vsQtyAdj(-1)">−</button>
-            <input type="number" id="vsProdQty" value="1" min="1" max="99">
-            <button class="vs-qty-btn" onclick="vsQtyAdj(1)">+</button>
+        <div>
+          <span class="vs-detail-cat"><?php echo esc_html($prod->category); ?></span>
+          <h1 class="vs-detail-name"><?php echo esc_html($prod->name); ?></h1>
+          <div class="vs-detail-price">
+            <?php if ( $has_disc ) : ?>
+            <span class="vs-detail-price-orig"><?php echo number_format((float)$prod->shop_price,2,',',' '); ?> €</span>
+            <span class="vs-detail-price-disc"><?php echo number_format($p_disc,2,',',' '); ?> €</span>
+            <?php else : ?>
+            <?php echo number_format((float)$prod->shop_price,2,',',' '); ?> €
+            <?php endif; ?>
+            <?php if ( !empty($prod->unit) ) : ?>
+            <span style="font-size:15px;font-weight:400;color:#5a7080">/ <?php echo esc_html($prod->unit); ?></span>
+            <?php endif; ?>
           </div>
-          <button class="vs-add-big-btn" id="vsDetailAddBtn" data-pid="<?php echo (int)$prod->id; ?>">Lisa korvi</button>
+          <?php if ( $has_disc ) : ?>
+          <div class="vs-disc-note">✓ Kampaaniahind (–<?php echo (int)$eff_disc; ?>%)</div>
+          <?php endif; ?>
+          <?php if ( !empty($prod->shop_description) ) : ?>
+          <p class="vs-detail-desc"><?php echo nl2br(esc_html($prod->shop_description)); ?></p>
+          <?php endif; ?>
+          <div class="vs-qty-row">
+            <div class="vs-qty">
+              <button class="vs-qty-btn" onclick="vsQtyAdj(-1)">−</button>
+              <input type="number" id="vsProdQty" value="1" min="1" max="99">
+              <button class="vs-qty-btn" onclick="vsQtyAdj(1)">+</button>
+            </div>
+            <button class="vs-add-big-btn" id="vsDetailAddBtn" data-pid="<?php echo (int)$prod->id; ?>">Lisa korvi</button>
+          </div>
+          <a href="<?php echo esc_url($cart_url); ?>" class="vs-btn-outline">🛒 Vaata ostukorvi</a>
         </div>
-        <a href="<?php echo esc_url($cart_url); ?>" class="vs-btn-outline">🛒 Vaata ostukorvi</a>
       </div>
     </div>
-  </div>
+  </div><!-- .vs-main -->
+</div><!-- .vs-layout -->
 <?php endif; ?>
 
 <?php
@@ -685,7 +757,7 @@ elseif ( $view === 'cart' ) :
     </div>
     <?php endif; ?>
     <div class="vs-sum-row"><span>Vahesumma (km-ta)</span><span><?php echo number_format($sub_chk,2,',',' '); ?> €</span></div>
-    <div class="vs-sum-row"><span>KM 22%</span><span><?php echo number_format($vat_chk,2,',',' '); ?> €</span></div>
+    <div class="vs-sum-row"><span>KM <?php echo $vat_pct; ?>%</span><span><?php echo number_format($vat_chk,2,',',' '); ?> €</span></div>
     <div class="vs-sum-row vs-total"><span>Kokku (ilma tarneta)</span><span><?php echo number_format(round($sub_chk+$vat_chk,2),2,',',' '); ?> €</span></div>
     <div class="vs-cart-actions">
       <a href="<?php echo esc_url($shop_url); ?>" class="vs-btn-outline">← Jätka ostmist</a>
@@ -795,7 +867,7 @@ elseif ( $view === 'checkout' ) :
         </div>
         <?php endforeach; ?>
         <div class="vs-sum-row"><span>Vahesumma</span><span><?php echo number_format($sub_chk,2,',',' '); ?> €</span></div>
-        <div class="vs-sum-row"><span>KM 22%</span><span><?php echo number_format($vat_chk,2,',',' '); ?> €</span></div>
+        <div class="vs-sum-row"><span>KM <?php echo $vat_pct; ?>%</span><span><?php echo number_format($vat_chk,2,',',' '); ?> €</span></div>
         <div class="vs-sum-row"><span>Tarne</span><span id="vsDelPriceTxt"><?php echo $del_opts[0]['price']>0 ? number_format($del_opts[0]['price'],2,',',' ').' €' : 'Tasuta'; ?></span></div>
         <div class="vs-sum-row vs-total"><span>Kokku</span><span id="vsTotalTxt"><?php echo number_format(round($sub_chk+$vat_chk+($del_opts[0]['price']??0),2),2,',',' '); ?> €</span></div>
         <button class="vs-submit-btn" id="vsPlaceOrderBtn">Kinnita ja maksa</button>
@@ -858,7 +930,9 @@ var AJAX=<?php echo json_encode($ajax_url); ?>,
     SUB=<?php echo json_encode($sub_chk); ?>,
     VAT=<?php echo json_encode($vat_chk); ?>,
     STRIPE_ON=<?php echo json_encode((bool)$stripe_enabled); ?>,
-    STRIPE_KEY=<?php echo json_encode($stripe_pub_key); ?>;
+    STRIPE_KEY=<?php echo json_encode($stripe_pub_key); ?>,
+    INIT_CAT=<?php echo json_encode($init_cat ?? ''); ?>,
+    INIT_Q=<?php echo json_encode($init_q ?? ''); ?>;
 
 /* ─── Badge ─── */
 function setBadge(n){
@@ -904,7 +978,7 @@ if(grid){
   var resultTxt=document.getElementById('vsResultTxt');
   var searchEl=document.getElementById('vsSearch');
   var sortEl=document.getElementById('vsSort');
-  var activeCat='all';
+  var activeCat=INIT_CAT||'all';
 
   function filterCards(){
     var q=searchEl?searchEl.value.toLowerCase().trim():'';
@@ -939,6 +1013,9 @@ if(grid){
   });
   if(searchEl)searchEl.addEventListener('input',filterCards);
   if(sortEl)sortEl.addEventListener('change',sortAndFilter);
+
+  // Apply URL-passed initial category/search on load
+  if(INIT_CAT||INIT_Q)filterCards();
 
   grid.addEventListener('click',function(e){
     var btn=e.target.closest('.vs-add-btn');
