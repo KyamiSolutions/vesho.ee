@@ -267,9 +267,9 @@ class Vesho_CRM_Worker_Portal {
         $active_count = (int)$wpdb->get_var($wpdb->prepare(
             "SELECT COUNT(*) FROM {$wpdb->prefix}vesho_workorders WHERE worker_id=%d AND status IN ('pending','assigned','in_progress')", $wid
         ));
-        // Count pending shop orders (claimed by this worker)
+        // Count active (uncompleted) shop orders claimed by this worker
         $shop_count = (int)$wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(*) FROM {$wpdb->prefix}vesho_shop_orders WHERE worker_id=%d AND status IN ('processing','confirmed')", $wid
+            "SELECT COUNT(*) FROM {$wpdb->prefix}vesho_shop_orders WHERE worker_id=%d AND status='processing'", $wid
         ));
 
         $nav_items = [
@@ -307,7 +307,7 @@ class Vesho_CRM_Worker_Portal {
           <?php echo esc_html($item['label']); ?>
         </span>
         <?php if (!empty($item['badge'])): ?>
-          <span style="background:#f59e0b;color:#fff;font-size:10px;font-weight:700;border-radius:999px;min-width:18px;height:18px;display:flex;align-items:center;justify-content:center;padding:0 5px"><?php echo (int)$item['badge']; ?></span>
+          <span id="vwp-nav-badge-<?php echo esc_attr($tid); ?>" style="background:#f59e0b;color:#fff;font-size:10px;font-weight:700;border-radius:999px;min-width:18px;height:18px;display:flex;align-items:center;justify-content:center;padding:0 5px"><?php echo (int)$item['badge']; ?></span>
         <?php endif; ?>
       </a></li>
       <?php endforeach; ?>
@@ -2754,6 +2754,9 @@ document.querySelectorAll('.vwp-hist-header').forEach(function(hdr){
         if(done) done.style.display='block';
         var doneMsg=document.getElementById('vwp-done-msg');
         if(doneMsg) doneMsg.textContent=ORDER_NUM+' on komplekteeritud ja ootab saatmist.';
+        // Peida nav badge kohe — tellimus on komplekteeritud
+        var navBadge=document.getElementById('vwp-nav-badge-tellimused');
+        if(navBadge) navBadge.style.display='none';
         // Load next count
         loadShopCount(function(count){
           var nextBtn=document.getElementById('vwp-next-btn');
