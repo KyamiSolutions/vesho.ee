@@ -522,13 +522,7 @@ if ( $can_refund && in_array($edit->status, ['confirmed','shipped','completed','
                 <a href="<?php echo admin_url('admin.php?page=vesho-crm-orders&action=view&order_id='.$o->id); ?>" class="crm-btn crm-btn-icon crm-btn-sm" title="Vaata">👁️</a>
                 <a href="<?php echo admin_url('admin.php?page=vesho-crm-orders&action=edit&order_id='.$o->id); ?>" class="crm-btn crm-btn-icon crm-btn-sm" title="Muuda">✏️</a>
                 <?php if (in_array($o->status, ['pending','new'])): ?>
-                <form method="POST" action="<?php echo admin_url('admin-post.php'); ?>" style="display:inline">
-                    <?php wp_nonce_field('vesho_shop_order_status'); ?>
-                    <input type="hidden" name="action" value="vesho_shop_order_status">
-                    <input type="hidden" name="order_id" value="<?php echo $o->id; ?>">
-                    <input type="hidden" name="status" value="processing">
-                    <button type="submit" class="crm-btn crm-btn-sm" style="background:#fef9c3;color:#b45309;border:none;cursor:pointer" title="Saada töötajale komplekteerima">▶ Saada töötajale</button>
-                </form>
+                <span style="font-size:11px;color:#10b981;font-weight:600" title="Töötajad võtavad tellimuse ise järjekorrast">⏳ Järjekorras</span>
                 <?php endif; ?>
                 <?php if (in_array($o->status,['pending_payment','pending','new','processing','picking'])): ?>
                 <a href="<?php echo wp_nonce_url(admin_url('admin-post.php?action=vesho_delete_shop_order&order_id='.$o->id),'vesho_delete_shop_order'); ?>"
