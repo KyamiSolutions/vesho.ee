@@ -1923,10 +1923,10 @@ private static function load_view( $name ) {
                 ) );
             }
         }
-        // Deduct stock when moving to picking
-        if ( $status === 'picking' ) {
+        // Deduct stock when admin manually sends to processing (if not already deducted)
+        if ( $status === 'processing' ) {
             $order = $wpdb->get_row( $wpdb->prepare( "SELECT status FROM {$wpdb->prefix}vesho_shop_orders WHERE id=%d", $order_id ) );
-            if ( $order && $order->status === 'new' ) {
+            if ( $order && in_array($order->status, ['new', 'pending', 'pending_payment']) ) {
                 $items = $wpdb->get_results( $wpdb->prepare(
                     "SELECT inventory_id, quantity FROM {$wpdb->prefix}vesho_shop_order_items WHERE order_id=%d AND inventory_id IS NOT NULL",
                     $order_id
@@ -1941,7 +1941,7 @@ private static function load_view( $name ) {
         }
 
         // ── Partial picking: calculate refund_pending_amount ──────────────────
-        if ( $status === 'ready' ) {
+        if ( in_array($status, ['confirmed', 'ready']) ) {
             $items = $wpdb->get_results( $wpdb->prepare(
                 "SELECT quantity, COALESCE(picked_qty, quantity) as pq, unit_price
                  FROM {$wpdb->prefix}vesho_shop_order_items WHERE order_id=%d",
@@ -1958,7 +1958,7 @@ private static function load_view( $name ) {
             }
         }
         // Clear pending refund when order is completed or refunded
-        if ( in_array( $status, ['fulfilled', 'returned', 'cancelled'] ) ) {
+        if ( in_array( $status, ['completed', 'fulfilled', 'returned', 'cancelled'] ) ) {
             $upd['refund_pending_amount'] = 0.00;
         }
 
@@ -1983,19 +1983,8 @@ private static function load_view( $name ) {
         if ( $bulk_action === 'send_to_workers' && ! empty( $order_ids ) ) {
             foreach ( $order_ids as $oid ) {
                 $order = $wpdb->get_row( $wpdb->prepare( "SELECT status FROM {$wpdb->prefix}vesho_shop_orders WHERE id=%d", $oid ) );
-                if ( $order && $order->status === 'new' ) {
-                    $wpdb->update( $wpdb->prefix . 'vesho_shop_orders', array( 'status' => 'picking' ), array( 'id' => $oid ) );
-                    // Deduct stock
-                    $items = $wpdb->get_results( $wpdb->prepare(
-                        "SELECT inventory_id, quantity FROM {$wpdb->prefix}vesho_shop_order_items WHERE order_id=%d AND inventory_id IS NOT NULL",
-                        $oid
-                    ) );
-                    foreach ( $items as $it ) {
-                        $wpdb->query( $wpdb->prepare(
-                            "UPDATE {$wpdb->prefix}vesho_inventory SET quantity = GREATEST(0, quantity - %f) WHERE id = %d",
-                            $it->quantity, $it->inventory_id
-                        ) );
-                    }
+                if ( $order && in_array($order->status, ['pending', 'new']) ) {
+                    $wpdb->update( $wpdb->prefix . 'vesho_shop_orders', array( 'status' => 'processing' ), array( 'id' => $oid ) );
                 }
             }
         }
@@ -2518,9 +2507,9 @@ private static function load_view( $name ) {
             exit;
         }
 
-        // Revert to fulfilled (order was fulfilled before return request)
+        // Revert to completed (order was completed before return request)
         $wpdb->update( $wpdb->prefix . 'vesho_shop_orders',
-            ['status' => 'fulfilled', 'return_reason' => '', 'return_description' => ''],
+            ['status' => 'completed', 'return_reason' => '', 'return_description' => ''],
             ['id' => $order_id]
         );
 

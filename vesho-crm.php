@@ -3,7 +3,7 @@
  * Plugin Name: Vesho CRM
  * Plugin URI:  https://vesho.ee
  * Description: CRM ja klientide portaal Vesho OÜ-le. Haldab kliente, seadmeid, hooldusi, arveid ja teenuseid.
- * Version:     2.4.1
+ * Version:     2.5.0
  * Author:      Vesho OÜ
  * Author URI:  https://vesho.ee
  * Text Domain: vesho-crm
@@ -15,7 +15,7 @@
 defined( 'ABSPATH' ) || exit;
 
 // ── Constants ──────────────────────────────────────────────────────────────────
-define('VESHO_CRM_VERSION', '2.4.1');
+define('VESHO_CRM_VERSION', '2.5.0');
 define( 'VESHO_CRM_FILE',     __FILE__ );
 define( 'VESHO_CRM_PATH',     plugin_dir_path( __FILE__ ) );
 define( 'VESHO_CRM_URL',      plugin_dir_url( __FILE__ ) );
@@ -592,7 +592,7 @@ function vesho_validate_paid_amount( string $type, int $id, $paid_amount ): bool
 function vesho_confirm_shop_order( int $order_id ): bool {
     global $wpdb;
     $updated = $wpdb->query( $wpdb->prepare(
-        "UPDATE {$wpdb->prefix}vesho_shop_orders SET status='confirmed' WHERE id=%d AND status IN ('new','pending_payment')",
+        "UPDATE {$wpdb->prefix}vesho_shop_orders SET status='pending' WHERE id=%d AND status IN ('new','pending_payment')",
         $order_id
     ));
     if ( $updated > 0 ) {
@@ -2510,7 +2510,7 @@ function vesho_ajax_shop_place_order() {
         'discount_amount'  => $discount_amount,
         'total'            => $total,
         'notes'            => $campaign_name ? "Kampaania: $campaign_name" : '',
-        'status'           => 'new',
+        'status'           => 'pending_payment',
         'payment_method'   => $payment_method,
         'created_at'       => current_time('mysql'),
     ]);
@@ -2655,7 +2655,7 @@ function vesho_ajax_shop_stripe_confirm() {
         }
     }
 
-    $wpdb->update($wpdb->prefix . 'vesho_shop_orders', ['status' => 'confirmed'], ['id' => $order_id]);
+    $wpdb->update($wpdb->prefix . 'vesho_shop_orders', ['status' => 'pending'], ['id' => $order_id]);
 
     // Email client
     $email_row = $wpdb->get_row($wpdb->prepare(
