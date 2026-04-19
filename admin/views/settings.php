@@ -677,9 +677,12 @@ $services_page_subtitle = get_option('vesho_services_page_subtitle', '');
                         <th>Ettevõtte logo</th>
                         <td>
                             <?php $logo = get_option('vesho_company_logo',''); ?>
-                            <?php if($logo): ?><img src="<?php echo esc_url($logo); ?>" style="max-height:80px;display:block;margin-bottom:8px"><br><?php endif; ?>
-                            <input type="text" name="company_logo" id="vesho_company_logo" value="<?php echo esc_url($logo); ?>" class="regular-text">
-                            <button type="button" class="button" id="vesho_logo_upload_btn">Vali meediastt</button>
+                            <img id="vesho_logo_preview" src="<?php echo esc_url($logo); ?>" style="max-height:80px;display:<?php echo $logo ? 'block' : 'none'; ?>;margin-bottom:8px;border-radius:4px"><br>
+                            <input type="text" name="company_logo" id="vesho_company_logo" value="<?php echo esc_url($logo); ?>" class="regular-text" style="margin-right:6px">
+                            <button type="button" class="button" id="vesho_logo_upload_btn">📁 Vali meediast</button>
+                            <?php if($logo): ?>
+                            <button type="button" class="button" id="vesho_logo_remove_btn" style="color:#dc2626;border-color:#dc2626;margin-left:4px">✕ Eemalda</button>
+                            <?php endif; ?>
                             <p class="description">Logo kuvatakse arvetel ja kliendipordaalis.</p>
                         </td>
                     </tr>
@@ -843,13 +846,24 @@ $services_page_subtitle = get_option('vesho_services_page_subtitle', '');
 </div>
 <script>
 jQuery(function($){
-    $('#vesho_logo_upload_btn').on('click',function(){
-        var frame = wp.media({title:'Vali logo',multiple:false});
-        frame.on('select',function(){
+    $('#vesho_logo_upload_btn').on('click', function(){
+        if (typeof wp === 'undefined' || !wp.media) {
+            alert('Meediateek ei laadinud. Värskenda lehte ja proovi uuesti.');
+            return;
+        }
+        var frame = wp.media({ title: 'Vali logo', multiple: false, library: { type: 'image' } });
+        frame.on('select', function(){
             var att = frame.state().get('selection').first().toJSON();
             $('#vesho_company_logo').val(att.url);
+            var prev = document.getElementById('vesho_logo_preview');
+            if (prev) { prev.src = att.url; prev.style.display = 'block'; }
         });
         frame.open();
+    });
+    $('#vesho_logo_remove_btn').on('click', function(){
+        $('#vesho_company_logo').val('');
+        var prev = document.getElementById('vesho_logo_preview');
+        if (prev) { prev.src=''; prev.style.display='none'; }
     });
 });
 </script>
