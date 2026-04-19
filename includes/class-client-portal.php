@@ -734,8 +734,8 @@ function veshoResendVerify(){
 
         $nav_items = ['dashboard' => ['icon' => '&#9634;', 'label' => 'Ülevaade']];
         if ($show_devices)      $nav_items['devices']      = ['icon' => '&#128297;', 'label' => 'Seadmed'];
-        if ($show_maintenances) $nav_items['maintenances'] = ['icon' => '&#128295;', 'label' => 'Hooldused'];
-        if ($show_services)     $nav_items['services']     = ['icon' => '&#9881;',   'label' => 'Teenused'];
+        // Maintenance = unified tab (booking + list + photos), replaces old "maintenances" + "services"
+        if ($show_maintenances || $show_services) $nav_items['maintenances'] = ['icon' => '&#128295;', 'label' => 'Hooldus'];
         if ($show_invoices)     $nav_items['invoices']     = ['icon' => '&#128196;', 'label' => 'Arved'];
         if ($show_support)      $nav_items['support']      = ['icon' => '&#127881;', 'label' => 'Tugi'];
         $nav_items['orders']  = ['icon' => '&#128722;', 'label' => 'Tellimused'];
@@ -1091,68 +1091,339 @@ function veshoResendVerify(){
         global $wpdb;
         $nonce = wp_create_nonce('vesho_portal_nonce');
         $ajax  = esc_url(admin_url('admin-ajax.php'));
-        $items = $wpdb->get_results($wpdb->prepare(
-            "SELECT m.*, d.name as device_name,
+        $today = current_time('Y-m-d');
+
+        // All maintenances for this client
+        $all = $wpdb->get_results($wpdb->prepare(
+            "SELECT m.*, d.name as device_name, d.model as device_model,
                     w.name as worker_name
              FROM {$wpdb->prefix}vesho_maintenances m
              JOIN {$wpdb->prefix}vesho_devices d ON d.id=m.device_id
              LEFT JOIN {$wpdb->prefix}vesho_workers w ON w.id=m.worker_id
              WHERE d.client_id=%d
-             ORDER BY m.scheduled_date DESC LIMIT 50", $cid
+             ORDER BY m.scheduled_date DESC LIMIT 100", $cid
         ));
-        $cancellable = ['scheduled', 'pending'];
+
+        $pending   = array_filter($all, fn($m) => $m->status === 'pending');
+        $scheduled = array_filter($all, fn($m) => $m->status === 'scheduled' && $m->scheduled_date >= $today);
+        $completed = array_filter($all, fn($m) => $m->status === 'completed');
+
+        // Services for booking form
+        $services = $wpdb->get_results(
+            "SELECT id, name, description, price FROM {$wpdb->prefix}vesho_services WHERE active=1 ORDER BY name"
+        );
+        // Devices for booking form
+        $devices = $wpdb->get_results($wpdb->prepare(
+            "SELECT id, name FROM {$wpdb->prefix}vesho_devices WHERE client_id=%d ORDER BY name", $cid
+        ));
+        // Active campaign for maintenance
+        $campaign = $wpdb->get_row($wpdb->prepare(
+            "SELECT name, maintenance_discount_percent FROM {$wpdb->prefix}vesho_campaigns
+             WHERE paused=0 AND valid_from<=%s AND valid_until>=%s
+               AND (target='hooldus' OR target='both') AND maintenance_discount_percent>0
+             ORDER BY maintenance_discount_percent DESC LIMIT 1",
+            $today, $today
+        ));
+        $min_date = date('Y-m-d', strtotime('+1 day'));
         ?>
-<h2 class="vcp-section-title">Hooldused</h2>
-<div id="vcp-cancel-msg" class="vcp-msg" style="display:none;margin-bottom:12px"></div>
-<?php if (empty($items)): ?>
-  <div class="vcp-empty">Hooldusi pole.</div>
-<?php else: ?>
-  <table class="vcp-table">
-    <thead><tr><th>Kuupäev</th><th>Seade</th><th>Kirjeldus</th><th>Töötaja</th><th>Staatus</th><th></th></tr></thead>
-    <tbody>
-    <?php foreach ($items as $m): ?>
-    <tr id="maint-row-<?php echo $m->id; ?>">
-      <td><?php echo esc_html($m->scheduled_date ? date('d.m.Y', strtotime($m->scheduled_date)) : '—'); ?></td>
-      <td><?php echo esc_html($m->device_name); ?></td>
-      <td><?php echo esc_html($m->maintenance_type ?? $m->description ?? '—'); ?></td>
-      <td><?php echo esc_html($m->worker_name ?: '—'); ?></td>
-      <td><?php echo self::status_badge($m->status, 'maintenance'); ?></td>
-      <td>
-        <?php if (in_array($m->status, $cancellable, true)): ?>
-        <button class="vcp-btn-outline vcp-cancel-maint" style="font-size:12px;padding:4px 10px;color:#dc2626;border-color:#dc2626"
-                data-id="<?php echo $m->id; ?>"
-                data-nonce="<?php echo $nonce; ?>">✕ Tühista</button>
+
+<!-- Cancel modal -->
+<div id="vcp-cancel-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:16px;padding:24px;max-width:400px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.2)">
+    <div style="font-size:16px;font-weight:700;color:#1e293b;margin-bottom:4px">✕ Tühista hooldus</div>
+    <div style="font-size:12px;color:#64748b;margin-bottom:16px" id="vcp-cancel-modal-info"></div>
+    <div style="font-size:12px;color:#64748b;margin-bottom:8px">Palun lisa põhjus (valikuline)</div>
+    <textarea id="vcp-cancel-reason" rows="3" placeholder="Põhjus..."
+              style="width:100%;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;resize:vertical;box-sizing:border-box;font-family:inherit"></textarea>
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <button id="vcp-cancel-back" style="flex:1;padding:11px;border:1px solid #e2e8f0;border-radius:10px;background:#fff;cursor:pointer;font-size:13px;font-weight:600;color:#64748b">Tagasi</button>
+      <button id="vcp-cancel-confirm" style="flex:2;padding:11px;border:none;border-radius:10px;background:#dc2626;color:#fff;cursor:pointer;font-size:13px;font-weight:700">✕ Tühistan</button>
+    </div>
+  </div>
+</div>
+
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+  <h2 class="vcp-section-title" style="margin:0">Hooldus</h2>
+  <button id="vcp-maint-form-toggle"
+          style="background:rgba(0,180,200,0.12);color:#00b4c8;border:1px solid rgba(0,180,200,0.3);border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer">
+    + Uus taotlus
+  </button>
+</div>
+
+<div id="vcp-maint-msg" style="display:none;margin-bottom:12px"></div>
+
+<!-- Booking form (hidden by default) -->
+<div id="vcp-maint-form-wrap" style="display:none;margin-bottom:20px">
+  <div class="vcp-card" style="border:1px solid rgba(0,180,200,0.2)">
+    <div style="font-size:14px;font-weight:700;color:#1e293b;margin-bottom:16px">Telli uus hooldus</div>
+    <form id="vcp-maint-form" style="display:flex;flex-direction:column;gap:14px">
+      <?php if (!empty($devices)): ?>
+      <div>
+        <label style="font-size:12px;font-weight:600;color:#64748b;display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em">Seade</label>
+        <select name="device_id" id="vcp-maint-device" class="vcp-input">
+          <option value="">— Vali seade —</option>
+          <?php foreach ($devices as $d): ?>
+          <option value="<?php echo (int)$d->id; ?>"><?php echo esc_html($d->name); ?></option>
+          <?php endforeach; ?>
+        </select>
+      </div>
+      <?php endif; ?>
+      <div>
+        <label style="font-size:12px;font-weight:600;color:#64748b;display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em">Soovitud kuupäev *</label>
+        <input type="date" name="preferred_date" required min="<?php echo $min_date; ?>" class="vcp-input">
+      </div>
+      <?php if (!empty($services)): ?>
+      <div>
+        <label style="font-size:12px;font-weight:600;color:#64748b;display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em">Teenuse tüüp</label>
+        <?php if ($campaign): ?>
+        <div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:8px;padding:8px 12px;margin-bottom:8px;font-size:12px">
+          🎉 <strong><?php echo esc_html($campaign->name); ?></strong> — <?php echo (int)$campaign->maintenance_discount_percent; ?>% soodustust
+        </div>
         <?php endif; ?>
-      </td>
-    </tr>
-    <?php endforeach; ?>
-    </tbody>
-  </table>
+        <select name="service_id" class="vcp-input">
+          <option value="">— Vali teenus (valikuline) —</option>
+          <?php foreach ($services as $svc): ?>
+          <option value="<?php echo (int)$svc->id; ?>">
+            <?php echo esc_html($svc->name); ?>
+            <?php if ($svc->price): ?>
+              <?php if ($campaign && $campaign->maintenance_discount_percent > 0): ?>
+                — <?php echo number_format($svc->price * (1 - $campaign->maintenance_discount_percent / 100), 2, ',', ' '); ?> €
+                <span style="text-decoration:line-through;color:#94a3b8"><?php echo number_format((float)$svc->price, 2, ',', ' '); ?> €</span>
+              <?php else: ?>
+                — <?php echo number_format((float)$svc->price, 2, ',', ' '); ?> €
+              <?php endif; ?>
+            <?php endif; ?>
+          </option>
+          <?php endforeach; ?>
+        </select>
+      </div>
+      <?php endif; ?>
+      <div>
+        <label style="font-size:12px;font-weight:600;color:#64748b;display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em">Kirjeldus / märkused</label>
+        <textarea name="description" rows="3" class="vcp-input" placeholder="Kirjelda probleemi või soovi..."></textarea>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button type="submit" class="vcp-btn-primary" id="vcp-maint-submit">📤 Esita taotlus</button>
+        <button type="button" id="vcp-maint-cancel-form" class="vcp-btn-outline">Tühista</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Pending confirmations -->
+<?php if (!empty($pending)): ?>
+<div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.3);border-radius:12px;padding:14px 16px;margin-bottom:16px">
+  <div style="font-size:12px;font-weight:700;color:#d97706;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.06em">⏳ Ootab kinnitust</div>
+  <?php foreach ($pending as $m): ?>
+  <div id="maint-row-<?php echo $m->id; ?>" style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(245,158,11,0.15)">
+    <div style="flex:1">
+      <div style="font-weight:600;font-size:13px;color:#1e293b"><?php echo esc_html($m->device_name); ?><?php if ($m->device_model): ?> <span style="color:#64748b;font-size:12px">(<?php echo esc_html($m->device_model); ?>)</span><?php endif; ?></div>
+      <div style="font-size:12px;color:#64748b"><?php echo $m->scheduled_date ? date('d.m.Y', strtotime($m->scheduled_date)) : '—'; ?></div>
+    </div>
+    <span style="font-size:11px;font-weight:700;color:#d97706;background:rgba(245,158,11,0.15);padding:2px 8px;border-radius:999px">Ootel</span>
+    <button class="vcp-cancel-maint" data-id="<?php echo $m->id; ?>" data-device="<?php echo esc_attr($m->device_name); ?>" data-date="<?php echo esc_attr($m->scheduled_date ? date('d.m.Y', strtotime($m->scheduled_date)) : ''); ?>"
+            style="background:none;border:1px solid rgba(239,68,68,0.3);border-radius:6px;padding:4px 10px;color:#dc2626;font-size:12px;cursor:pointer;font-weight:600">✕ Tühista</button>
+  </div>
+  <?php endforeach; ?>
+</div>
 <?php endif; ?>
+
+<!-- Scheduled maintenances -->
+<?php if (!empty($scheduled)): ?>
+<div style="background:rgba(59,130,246,0.06);border:1px solid rgba(59,130,246,0.2);border-radius:12px;padding:14px 16px;margin-bottom:16px">
+  <div style="font-size:12px;font-weight:700;color:#2563eb;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.06em">📅 Planeeritud</div>
+  <?php foreach ($scheduled as $m):
+    $diff = $m->scheduled_date ? (int)ceil((strtotime($m->scheduled_date) - time()) / 86400) : null;
+    $diff_label = $diff === null ? '' : ($diff === 0 ? 'Täna' : ($diff === 1 ? 'Homme' : $diff . ' p'));
+    $diff_color = $diff === null ? '#64748b' : ($diff <= 1 ? '#dc2626' : ($diff <= 3 ? '#d97706' : '#2563eb'));
+  ?>
+  <div id="maint-row-<?php echo $m->id; ?>" style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(59,130,246,0.1)">
+    <div style="flex:1">
+      <div style="font-weight:600;font-size:13px;color:#1e293b"><?php echo esc_html($m->device_name); ?><?php if ($m->device_model): ?> <span style="color:#64748b;font-size:12px">(<?php echo esc_html($m->device_model); ?>)</span><?php endif; ?></div>
+      <div style="font-size:12px;color:#64748b"><?php echo $m->scheduled_date ? date('d.m.Y', strtotime($m->scheduled_date)) : '—'; ?></div>
+    </div>
+    <?php if ($diff_label): ?>
+    <span style="font-size:11px;font-weight:700;color:<?php echo $diff_color; ?>;background:<?php echo $diff_color; ?>20;padding:2px 8px;border-radius:999px"><?php echo $diff_label; ?></span>
+    <?php endif; ?>
+    <?php if ($m->worker_name): ?><span style="font-size:12px;color:#64748b">👷 <?php echo esc_html($m->worker_name); ?></span><?php endif; ?>
+    <button class="vcp-cancel-maint" data-id="<?php echo $m->id; ?>" data-device="<?php echo esc_attr($m->device_name); ?>" data-date="<?php echo esc_attr($m->scheduled_date ? date('d.m.Y', strtotime($m->scheduled_date)) : ''); ?>"
+            style="background:none;border:1px solid rgba(239,68,68,0.3);border-radius:6px;padding:4px 10px;color:#dc2626;font-size:12px;cursor:pointer;font-weight:600">✕ Tühista</button>
+  </div>
+  <?php endforeach; ?>
+</div>
+<?php endif; ?>
+
+<?php if (empty($pending) && empty($scheduled)): ?>
+<div style="font-size:13px;color:#94a3b8;margin-bottom:16px">Planeeritud hooldusi pole.</div>
+<?php endif; ?>
+
+<!-- Completed maintenances with photos -->
+<?php if (!empty($completed)): ?>
+<div style="margin-top:8px">
+  <div style="font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px">📸 Tehtud tööde ajalugu</div>
+  <div style="display:flex;flex-direction:column;gap:10px">
+  <?php foreach ($completed as $m):
+    $photos = $wpdb->get_results($wpdb->prepare(
+        "SELECT filename, photo_type FROM {$wpdb->prefix}vesho_workorder_photos WHERE maintenance_id=%d ORDER BY created_at ASC",
+        $m->id
+    ));
+    $photo_count = count($photos);
+    $before_photos = array_filter($photos, fn($p) => ($p->photo_type ?? '') === 'before');
+    $after_photos  = array_filter($photos, fn($p) => ($p->photo_type ?? '') !== 'before');
+  ?>
+  <div class="vcp-card" style="padding:0;overflow:hidden">
+    <div onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'"
+         style="display:flex;align-items:center;gap:10px;padding:12px 16px;cursor:pointer;justify-content:space-between">
+      <div>
+        <div style="font-weight:600;font-size:13px;color:#1e293b"><?php echo esc_html($m->device_name); ?><?php if ($m->device_model): ?> <span style="color:#64748b;font-size:12px">(<?php echo esc_html($m->device_model); ?>)</span><?php endif; ?></div>
+        <div style="font-size:12px;color:#64748b">✅ <?php echo $m->scheduled_date ? date('d.m.Y', strtotime($m->scheduled_date)) : '—'; ?><?php if ($m->worker_name): ?> · <?php echo esc_html($m->worker_name); ?><?php endif; ?></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <?php if ($photo_count > 0): ?><span style="font-size:11px;color:#64748b">📷 <?php echo $photo_count; ?></span><?php endif; ?>
+        <span style="color:#94a3b8;font-size:11px">▼</span>
+      </div>
+    </div>
+    <div style="display:none;border-top:1px solid #f1f5f9;padding:14px 16px">
+      <?php if (!empty($m->worker_notes)): ?>
+      <div style="background:#f0f9ff;border-left:3px solid #00b4c8;padding:10px 12px;border-radius:0 6px 6px 0;font-size:13px;color:#0d1f2d;margin-bottom:12px;line-height:1.5">
+        💬 <?php echo esc_html($m->worker_notes); ?>
+      </div>
+      <?php endif; ?>
+      <?php if ($photo_count > 0): ?>
+      <?php if (!empty($before_photos)): ?>
+      <div style="font-size:11px;font-weight:600;color:#64748b;margin-bottom:6px">📷 Enne</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
+        <?php foreach ($before_photos as $p): ?>
+        <a href="<?php echo esc_url($p->filename); ?>" target="_blank" style="display:block;width:72px;height:72px;border-radius:8px;overflow:hidden;border:1px solid #e2e8f0">
+          <img src="<?php echo esc_url($p->filename); ?>" style="width:100%;height:100%;object-fit:cover" alt="enne">
+        </a>
+        <?php endforeach; ?>
+      </div>
+      <?php endif; ?>
+      <?php if (!empty($after_photos)): ?>
+      <div style="font-size:11px;font-weight:600;color:#64748b;margin-bottom:6px">✅ Pärast</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        <?php foreach ($after_photos as $p): ?>
+        <a href="<?php echo esc_url($p->filename); ?>" target="_blank" style="display:block;width:72px;height:72px;border-radius:8px;overflow:hidden;border:1px solid #e2e8f0">
+          <img src="<?php echo esc_url($p->filename); ?>" style="width:100%;height:100%;object-fit:cover" alt="pärast">
+        </a>
+        <?php endforeach; ?>
+      </div>
+      <?php elseif (empty($before_photos)): ?>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        <?php foreach ($photos as $p): ?>
+        <a href="<?php echo esc_url($p->filename); ?>" target="_blank" style="display:block;width:72px;height:72px;border-radius:8px;overflow:hidden;border:1px solid #e2e8f0">
+          <img src="<?php echo esc_url($p->filename); ?>" style="width:100%;height:100%;object-fit:cover" alt="foto">
+        </a>
+        <?php endforeach; ?>
+      </div>
+      <?php endif; ?>
+      <?php elseif (!$m->worker_notes): ?>
+      <div style="font-size:13px;color:#94a3b8">Täiendavat infot pole.</div>
+      <?php endif; ?>
+      <?php if ($m->description): ?>
+      <div style="font-size:12px;color:#64748b;margin-top:8px"><?php echo esc_html($m->description); ?></div>
+      <?php endif; ?>
+    </div>
+  </div>
+  <?php endforeach; ?>
+  </div>
+</div>
+<?php endif; ?>
+
+<?php if (empty($all)): ?>
+<div class="vcp-empty">Hooldusi pole. Telli uus hooldus ülaloleva nupu abil.</div>
+<?php endif; ?>
+
 <script>
 (function(){
-  var AJAX='<?php echo $ajax; ?>';
+  var AJAX='<?php echo esc_js($ajax); ?>', NONCE='<?php echo esc_js($nonce); ?>';
+  var cancelId=null;
+
+  // Form toggle
+  var toggleBtn=document.getElementById('vcp-maint-form-toggle');
+  var formWrap=document.getElementById('vcp-maint-form-wrap');
+  if(toggleBtn&&formWrap){
+    toggleBtn.addEventListener('click',function(){
+      var open=formWrap.style.display!=='none';
+      formWrap.style.display=open?'none':'block';
+      toggleBtn.textContent=open?'+ Uus taotlus':'✕ Sulge';
+    });
+  }
+  var cancelFormBtn=document.getElementById('vcp-maint-cancel-form');
+  if(cancelFormBtn) cancelFormBtn.addEventListener('click',function(){
+    formWrap.style.display='none';
+    toggleBtn.textContent='+ Uus taotlus';
+  });
+
+  // Booking form submit
+  var form=document.getElementById('vcp-maint-form');
+  var msgEl=document.getElementById('vcp-maint-msg');
+  if(form) form.addEventListener('submit',function(e){
+    e.preventDefault();
+    var btn=document.getElementById('vcp-maint-submit');
+    btn.disabled=true;btn.textContent='⏳ Saadan...';
+    var fd=new FormData(form);
+    fd.append('action','vesho_client_book_service');
+    fd.append('nonce',NONCE);
+    fetch(AJAX,{method:'POST',body:fd}).then(r=>r.json()).then(function(d){
+      msgEl.style.display='block';
+      msgEl.className='vcp-msg '+(d.success?'success':'error');
+      msgEl.textContent=(d.data&&d.data.message)||(d.success?'Taotlus esitatud!':'Viga');
+      if(d.success){
+        form.reset();
+        formWrap.style.display='none';
+        toggleBtn.textContent='+ Uus taotlus';
+        setTimeout(function(){location.reload();},1800);
+      }
+      btn.disabled=false;btn.textContent='📤 Esita taotlus';
+    }).catch(function(){
+      msgEl.style.display='block';msgEl.className='vcp-msg error';msgEl.textContent='Ühenduse viga';
+      btn.disabled=false;btn.textContent='📤 Esita taotlus';
+    });
+  });
+
+  // Cancel modal
+  var modal=document.getElementById('vcp-cancel-modal');
+  var backBtn=document.getElementById('vcp-cancel-back');
+  var confirmBtn=document.getElementById('vcp-cancel-confirm');
+  var reasonInp=document.getElementById('vcp-cancel-reason');
+  var infoEl=document.getElementById('vcp-cancel-modal-info');
+
+  function openCancelModal(id, device, date){
+    cancelId=id;
+    if(infoEl) infoEl.textContent=device+(date?' · '+date:'');
+    if(reasonInp) reasonInp.value='';
+    modal.style.display='flex';
+  }
+  if(backBtn) backBtn.addEventListener('click',function(){modal.style.display='none';});
+  modal.addEventListener('click',function(e){if(e.target===modal)modal.style.display='none';});
+
+  if(confirmBtn) confirmBtn.addEventListener('click',function(){
+    if(!cancelId) return;
+    confirmBtn.disabled=true;confirmBtn.textContent='⏳...';
+    var fd=new FormData();
+    fd.append('action','vesho_client_cancel_booking');
+    fd.append('nonce',NONCE);
+    fd.append('maintenance_id',cancelId);
+    fd.append('reason',reasonInp?reasonInp.value:'');
+    fetch(AJAX,{method:'POST',body:fd}).then(r=>r.json()).then(function(d){
+      modal.style.display='none';
+      msgEl.style.display='block';
+      msgEl.className='vcp-msg '+(d.success?'success':'error');
+      msgEl.textContent=(d.data&&d.data.message)||(d.success?'Tühistatud!':'Viga');
+      if(d.success){
+        var row=document.getElementById('maint-row-'+cancelId);
+        if(row){row.style.opacity='.4';var btn=row.querySelector('.vcp-cancel-maint');if(btn)btn.remove();}
+        setTimeout(function(){location.reload();},1500);
+      }
+      confirmBtn.disabled=false;confirmBtn.textContent='✕ Tühistan';
+    }).catch(function(){confirmBtn.disabled=false;confirmBtn.textContent='✕ Tühistan';});
+  });
+
   document.querySelectorAll('.vcp-cancel-maint').forEach(function(btn){
     btn.addEventListener('click',function(){
-      var reason=prompt('Tühistamise põhjus (valikuline):','');
-      if(reason===null) return; // cancelled prompt
-      btn.disabled=true; btn.textContent='...';
-      var fd=new FormData();
-      fd.append('action','vesho_client_cancel_booking');
-      fd.append('nonce',btn.dataset.nonce);
-      fd.append('maintenance_id',btn.dataset.id);
-      fd.append('reason',reason);
-      fetch(AJAX,{method:'POST',body:fd}).then(function(r){return r.json();}).then(function(d){
-        var msg=document.getElementById('vcp-cancel-msg');
-        msg.style.display='block';
-        msg.className='vcp-msg '+(d.success?'success':'error');
-        msg.textContent=(d.data&&d.data.message)||(d.success?'Tühistatud!':'Viga');
-        if(d.success){
-          var row=document.getElementById('maint-row-'+btn.dataset.id);
-          if(row) row.style.opacity='.4';
-          btn.remove();
-        } else { btn.disabled=false; btn.textContent='✕ Tühista'; }
-      }).catch(function(){ btn.disabled=false; btn.textContent='✕ Tühista'; });
+      openCancelModal(btn.dataset.id,btn.dataset.device||'',btn.dataset.date||'');
     });
   });
 })();
