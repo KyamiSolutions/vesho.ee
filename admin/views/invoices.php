@@ -8,6 +8,7 @@ $filter_st  = isset($_GET['status'])     ? sanitize_text_field($_GET['status']) 
 
 $all_clients  = $wpdb->get_results("SELECT id, name FROM {$wpdb->prefix}vesho_clients ORDER BY name ASC");
 $price_list   = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}vesho_price_list WHERE active=1 ORDER BY category ASC, name ASC");
+$inventory    = $wpdb->get_results("SELECT id, name, unit, unit_price, quantity FROM {$wpdb->prefix}vesho_inventory WHERE archived=0 AND quantity > 0 ORDER BY name ASC");
 
 $edit = null;
 $edit_items = [];
@@ -357,9 +358,9 @@ if ( $action === 'print' && $invoice_id ) {
             <div style="margin-top:24px">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
                     <strong style="font-size:14px">Arve read</strong>
-                    <?php if (!empty($price_list)) : ?>
-                    <div style="display:flex;gap:8px;align-items:center">
-                        <select id="price-list-picker" class="crm-form-select" style="max-width:220px;font-size:12px;padding:5px 8px">
+                    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                        <?php if (!empty($price_list)) : ?>
+                        <select id="price-list-picker" class="crm-form-select" style="max-width:200px;font-size:12px;padding:5px 8px">
                             <option value="">+ Lisa hinnakirjast</option>
                             <?php
                             $cur_cat = '';
@@ -376,8 +377,19 @@ if ( $action === 'print' && $invoice_id ) {
                             <?php endforeach; if ($cur_cat) echo '</optgroup>'; ?>
                         </select>
                         <button type="button" class="crm-btn crm-btn-outline crm-btn-sm" onclick="addFromPriceList()">Lisa</button>
+                        <?php endif; ?>
+                        <?php if (!empty($inventory)) : ?>
+                        <select id="inventory-picker" class="crm-form-select" style="max-width:200px;font-size:12px;padding:5px 8px">
+                            <option value="">📦 Lisa laost</option>
+                            <?php foreach ($inventory as $inv) : ?>
+                                <option value="<?php echo esc_attr(json_encode(['desc'=>$inv->name,'price'=>(float)$inv->unit_price,'qty'=>1,'unit'=>$inv->unit,'stock'=>(float)$inv->quantity,'id'=>(int)$inv->id])); ?>">
+                                    <?php echo esc_html($inv->name.' ('.$inv->quantity.' '.$inv->unit.') — '.number_format($inv->unit_price,2,',','.').' €'); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <button type="button" class="crm-btn crm-btn-outline crm-btn-sm" onclick="addFromInventory()" style="background:#f0fdf4;border-color:#86efac;color:#166534">Lisa</button>
+                        <?php endif; ?>
                     </div>
-                    <?php endif; ?>
                 </div>
                 <table class="crm-table" id="items-table">
                     <thead><tr>
@@ -505,6 +517,26 @@ if ( $action === 'print' && $invoice_id ) {
         try {
             var d = JSON.parse(sel.value);
             addRow(d.desc, 1, d.price, d.vat);
+        } catch(e) {}
+        sel.value = '';
+    }
+
+    function addFromInventory() {
+        var sel = document.getElementById('inventory-picker');
+        if (!sel.value) return;
+        try {
+            var d = JSON.parse(sel.value);
+            // Näita hoiatus kui kogus madal
+            var qty = parseFloat(prompt('Kogus (' + d.unit + '): [laos: ' + d.stock + ']', '1'));
+            if (isNaN(qty) || qty <= 0) { sel.value = ''; return; }
+            if (qty > d.stock) {
+                if (!confirm('⚠️ Sisestatud kogus (' + qty + ') ületab laovaru (' + d.stock + '). Jätkata?')) {
+                    sel.value = '';
+                    return;
+                }
+            }
+            var vatDefault = <?php echo (int)get_option('vesho_vat_rate', '24'); ?>;
+            addRow('📦 ' + d.desc, qty, d.price, vatDefault);
         } catch(e) {}
         sel.value = '';
     }
