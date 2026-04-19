@@ -1,10 +1,10 @@
 {
   "name": "Vesho",
   "slug": "vesho",
-  "version": "2.2.85",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.2.85/vesho-theme.zip",
+  "version": "2.2.86",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.2.86/vesho-theme.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-19",
-  "changelog": "<h4>2.2.85</h4><ul><li>Hotfix: parse error worker-portal rida 342</li></ul><h4>2.2.84</h4><ul><li>EAN scanner vastuvõtul + tellimused localStorage + notices dismiss</li></ul><h4>2.2.83</h4><ul><li>Avaliku saidi teated otse PHP</li></ul>"
+  "changelog": "<h4>2.2.86</h4><ul><li>Worker tellimused: 3006-stiil - dünaamiline stepper, overlay modal, arve+kleeps kohustuslik enne pakki, done-ekraan järgmise tellimusega, parem arve+pakikaart</li></ul><h4>2.2.85</h4><ul><li>Hotfix: parse error worker-portal rida 342</li></ul><h4>2.2.84</h4><ul><li>EAN scanner vastuvõtul + tellimused localStorage + notices dismiss</li></ul>"
 }

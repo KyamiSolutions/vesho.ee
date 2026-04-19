@@ -32,6 +32,7 @@ class Vesho_CRM_Worker_Portal {
             'vesho_worker_release_order',
             'vesho_worker_pick_item',
             'vesho_worker_pack_order',
+            'vesho_worker_shop_count',
             // Location check
             'vesho_check_warehouse_location',
             // EAN lookup
@@ -1873,350 +1874,582 @@ class Vesho_CRM_Worker_Portal {
              WHERE so.worker_id=%d AND so.status IN ('processing','confirmed') LIMIT 1", $wid
         ));
         $my_items = $my_order ? $wpdb->get_results($wpdb->prepare(
-            "SELECT soi.*, COALESCE(inv.ean, '') AS ean
+            "SELECT soi.*, COALESCE(inv.ean, '') AS ean, COALESCE(inv.sku,'') AS sku
              FROM {$wpdb->prefix}vesho_shop_order_items soi
              LEFT JOIN {$wpdb->prefix}vesho_inventory inv ON inv.id = soi.inventory_id
              WHERE soi.order_id=%d ORDER BY soi.id ASC", $my_order->id
         )) : [];
+
+        $client_name = '';
+        $delivery_address = '';
+        $delivery_label = '';
+        if ($my_order) {
+            $client_name = $my_order->client_id
+                ? $wpdb->get_var($wpdb->prepare("SELECT name FROM {$wpdb->prefix}vesho_clients WHERE id=%d", $my_order->client_id))
+                : ($my_order->guest_name ?: '—');
+            $delivery_address = $my_order->shipping_address ?? $my_order->delivery_address ?? '';
+            $dm = $my_order->delivery_method ?? $my_order->shipping_method ?? '';
+            $delivery_labels = ['pickup' => '🏪 Kaupluses', 'courier' => '🚚 Kuller', 'parcel' => '📦 Pakiautomaat'];
+            $delivery_label = $delivery_labels[$dm] ?? ($my_order->shipping_name ?? $dm ?? '—');
+        }
+
+        // Company info for invoice
+        $co_name  = get_option('vesho_company_name', get_bloginfo('name'));
+        $co_email = get_option('vesho_company_email', get_bloginfo('admin_email'));
+        $co_phone = get_option('vesho_company_phone', '');
+
+        $items_json = json_encode(array_map(fn($i) => [
+            'id'    => (int)$i->id,
+            'name'  => $i->name,
+            'qty'   => (float)$i->quantity,
+            'price' => (float)($i->shop_price ?? $i->unit_price ?? 0),
+            'ean'   => $i->ean ?? '',
+            'sku'   => $i->sku ?? '',
+            'picked'=> (bool)$i->picked,
+        ], $my_items ?? []), JSON_UNESCAPED_UNICODE);
         ?>
-<h2 class="vwp-section-title">E-poe tellimused</h2>
+<h2 class="vwp-section-title">Tellimuste täitmine</h2>
 <div id="vwp-shop-msg" class="vwp-msg" style="display:none"></div>
 
+<!-- Queue / done screen -->
+<div id="vwp-queue-screen">
 <?php if (!$my_order): ?>
-<!-- Queue view -->
-<div class="vwp-card" style="text-align:center;padding:36px 24px">
-  <div style="font-size:42px;margin-bottom:12px">🛒</div>
-  <div style="font-size:22px;font-weight:700;color:#1e293b;margin-bottom:6px"><?php echo $pending_count; ?></div>
-  <div style="font-size:13px;color:#64748b;margin-bottom:24px">Tellimust ootab komplekteerimist</div>
+<div class="vwp-card" style="text-align:center;padding:40px 24px">
+  <div style="font-size:48px;margin-bottom:16px">🛒</div>
+  <div style="font-size:16px;font-weight:700;color:var(--vwp-text,#1e293b);margin-bottom:8px">Valmis komplekteerima?</div>
+  <div style="font-size:13px;color:#64748b;margin-bottom:24px" id="vwp-queue-count">
+    <?php echo $pending_count > 0 ? "Järjekorras: {$pending_count} tellimust." : 'Hetkel pole aktiivseid tellimusi.'; ?>
+  </div>
   <?php if ($pending_count > 0): ?>
-  <button id="vwp-claim-btn" data-nonce="<?php echo $nonce; ?>"
-          class="vwp-btn-primary" style="font-size:14px;padding:10px 28px">
-    &#9654; Võta tellimus
+  <button id="vwp-claim-btn"
+          style="background:rgba(16,185,129,0.15);color:#10b981;border:1px solid rgba(16,185,129,0.3);border-radius:10px;padding:12px 28px;font-size:15px;font-weight:700;cursor:pointer">
+    &#9654; Alusta
   </button>
   <?php else: ?>
-  <div style="font-size:13px;color:#94a3b8">Kõik tellimused on komplekteeritud.</div>
+  <div style="font-size:13px;color:#94a3b8">— Pole tellimusi</div>
   <?php endif; ?>
 </div>
+<?php endif; ?>
+</div>
 
-<?php else: ?>
-<!-- Active order -->
-<?php
-$client_name = $my_order->client_id
-    ? $wpdb->get_var($wpdb->prepare("SELECT name FROM {$wpdb->prefix}vesho_clients WHERE id=%d", $my_order->client_id))
-    : ($my_order->guest_name ?: '—');
-$all_picked = !empty($my_items) && count(array_filter($my_items, fn($i) => $i->picked)) === count($my_items);
-?>
-<div class="vwp-card">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+<!-- Done screen (shown after packing) -->
+<div id="vwp-done-screen" style="display:none">
+  <div class="vwp-card" style="text-align:center;padding:40px 24px;border-color:rgba(16,185,129,0.3)">
+    <div style="font-size:52px;margin-bottom:12px">✅</div>
+    <div style="font-size:18px;font-weight:800;color:#10b981;margin-bottom:6px">Tellimus pakitud!</div>
+    <div style="font-size:13px;color:#64748b;margin-bottom:28px" id="vwp-done-msg"></div>
+    <button id="vwp-next-btn"
+            style="background:rgba(99,102,241,0.15);color:#818cf8;border:1px solid rgba(99,102,241,0.35);border-radius:10px;padding:13px 32px;font-size:15px;font-weight:700;cursor:pointer">
+      ⏳ Laadin...
+    </button>
+  </div>
+</div>
+
+<?php if ($my_order): ?>
+<!-- Active order modal overlay -->
+<div id="vwp-shop-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.55);backdrop-filter:blur(6px);z-index:300;display:block"></div>
+<div id="vwp-shop-modal" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:301;background:#fff;border-radius:16px;border:1px solid #e2e8f0;box-shadow:0 20px 60px rgba(0,0,0,0.2);width:calc(100% - 32px);max-width:500px;max-height:90vh;overflow-y:auto;padding:24px">
+
+  <!-- Päis -->
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
     <div>
-      <div style="font-size:20px;font-weight:800;color:#00b4c8">#<?php echo esc_html($my_order->order_number); ?></div>
-      <div style="font-size:13px;color:#64748b"><?php echo esc_html($client_name); ?> · <?php echo date('d.m.Y',strtotime($my_order->created_at)); ?></div>
+      <div style="font-size:20px;font-weight:900;color:#00b4c8;letter-spacing:-0.02em"><?php echo esc_html($my_order->order_number); ?></div>
+      <div style="font-size:12px;color:#64748b;margin-top:2px">📅 <?php echo date('d.m.Y', strtotime($my_order->created_at)); ?></div>
     </div>
-    <button id="vwp-release-btn" data-nonce="<?php echo $nonce; ?>" data-id="<?php echo $my_order->id; ?>"
-            class="vwp-btn-outline" style="font-size:12px">&#8617; Vabasta</button>
+    <button id="vwp-release-btn" data-id="<?php echo (int)$my_order->id; ?>"
+            style="background:rgba(239,68,68,0.08);color:#ef4444;border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer">Loobu</button>
   </div>
 
-  <!-- Progress steps -->
-  <div style="display:flex;gap:0;margin-bottom:20px;background:#f8fafc;border-radius:8px;overflow:hidden">
-    <?php foreach (['Kogu','Arve','Kleeps','Valmis'] as $i => $step): ?>
-    <div style="flex:1;text-align:center;padding:8px 4px;font-size:11px;font-weight:600;color:<?php echo $i===0?'#fff':'#94a3b8'; ?>;background:<?php echo $i===0?'#00b4c8':'transparent'; ?>">
-      <?php echo $step; ?>
+  <!-- Dynamic stepper -->
+  <div id="vwp-stepper" style="display:flex;align-items:center;margin-bottom:20px;overflow-x:auto;padding-bottom:2px"></div>
+
+  <!-- Klient + Tarne -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+    <div style="background:#f8fafc;border-radius:10px;padding:10px 14px">
+      <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#94a3b8;margin-bottom:4px">Klient</div>
+      <div style="font-weight:600;color:#1e293b;font-size:14px"><?php echo esc_html($client_name); ?></div>
+      <?php if (!empty($my_order->phone)): ?><div style="font-size:12px;color:#64748b;margin-top:2px">📞 <?php echo esc_html($my_order->phone); ?></div><?php endif; ?>
+    </div>
+    <div style="background:#f8fafc;border-radius:10px;padding:10px 14px">
+      <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#94a3b8;margin-bottom:4px">Tarne</div>
+      <div style="font-weight:600;color:#1e293b;font-size:13px"><?php echo esc_html($delivery_label); ?></div>
+      <?php if ($delivery_address): ?><div style="font-size:11px;color:#64748b;margin-top:2px;line-height:1.4"><?php echo esc_html($delivery_address); ?></div><?php endif; ?>
+    </div>
+  </div>
+  <?php if (!empty($my_order->notes)): ?>
+  <div style="margin-bottom:14px;padding:8px 12px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:8px;font-size:12px;color:#1e293b">📋 <?php echo esc_html($my_order->notes); ?></div>
+  <?php endif; ?>
+
+  <!-- Tooted -->
+  <div style="background:#f8fafc;border-radius:14px;padding:14px 16px;margin-bottom:14px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#64748b;font-weight:700">Tooted</div>
+      <div style="font-size:12px;font-weight:600;color:#64748b" id="vwp-shop-progress">
+        0/<?php echo count($my_items); ?> kogutud
+      </div>
+    </div>
+    <!-- EAN scan -->
+    <div style="display:flex;gap:6px;margin-bottom:10px">
+      <input type="text" id="vw-ean-scan" placeholder="Skanni EAN..." autocomplete="off"
+             style="flex:1;padding:8px 12px;border-radius:10px;border:2px solid #e2e8f0;background:#fff;font-size:14px;outline:none;font-family:monospace">
+    </div>
+    <div id="vw-scan-feedback" style="font-size:12px;min-height:18px;margin-bottom:6px;font-weight:600"></div>
+    <!-- Item list -->
+    <div id="vwp-shop-items" style="display:flex;flex-direction:column;gap:6px">
+    <?php foreach ($my_items as $item): ?>
+    <div id="shop-row-<?php echo $item->id; ?>"
+         class="pick-item-row<?php echo $item->picked ? ' picked' : ''; ?>"
+         data-ean="<?php echo esc_attr($item->ean ?? ''); ?>"
+         data-orig-qty="<?php echo (float)$item->quantity; ?>"
+         data-unit-price="<?php echo (float)($item->shop_price ?? $item->unit_price ?? 0); ?>"
+         style="border-radius:10px;background:<?php echo $item->picked ? 'rgba(16,185,129,0.08)' : '#fff'; ?>;border:1px solid <?php echo $item->picked ? 'rgba(16,185,129,0.25)' : '#e2e8f0'; ?>;overflow:hidden;transition:all 0.15s">
+      <div onclick="togglePickRow(<?php echo $item->id; ?>)"
+           style="display:flex;align-items:center;gap:12px;padding:10px 12px;cursor:pointer">
+        <div id="shop-check-<?php echo $item->id; ?>"
+             style="width:22px;height:22px;border-radius:7px;border:2px solid <?php echo $item->picked ? '#10b981' : '#e2e8f0'; ?>;background:<?php echo $item->picked ? '#10b981' : 'transparent'; ?>;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;flex-shrink:0">
+          <?php echo $item->picked ? '✓' : ''; ?>
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600;color:#1e293b;font-size:14px;text-decoration:<?php echo $item->picked ? 'line-through' : 'none'; ?>;opacity:<?php echo $item->picked ? '0.6' : '1'; ?>"><?php echo esc_html($item->name); ?></div>
+          <?php if (!empty($item->ean)): ?><div style="font-size:11px;color:#94a3b8;font-family:monospace;margin-top:1px"><?php echo esc_html($item->ean); ?></div><?php endif; ?>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-weight:700;color:#1e293b;font-size:14px" id="qty-display-<?php echo $item->id; ?>"><?php echo (float)$item->quantity; ?> tk</div>
+          <div style="font-size:11px;color:#64748b"><?php echo number_format((float)($item->shop_price ?? $item->unit_price ?? 0),2,',','.'); ?> €</div>
+        </div>
+      </div>
+      <!-- Qty adjuster -->
+      <div style="display:flex;align-items:center;gap:6px;padding:6px 12px 10px;border-top:1px solid #f1f5f9" onclick="event.stopPropagation()">
+        <span style="font-size:11px;color:#94a3b8;flex-shrink:0">Kogus:</span>
+        <button type="button" onclick="adjQty(<?php echo $item->id; ?>,-1)"
+                style="width:26px;height:26px;border-radius:6px;border:1px solid #e2e8f0;background:#f8fafc;font-size:16px;cursor:pointer;line-height:1;padding:0">−</button>
+        <input type="number" id="qty-<?php echo $item->id; ?>"
+               value="<?php echo (float)$item->quantity; ?>"
+               min="0" max="<?php echo (float)$item->quantity; ?>" step="1"
+               onchange="onQtyChange(<?php echo $item->id; ?>)"
+               style="width:52px;text-align:center;padding:3px 6px;border-radius:6px;border:1px solid #e2e8f0;background:#f8fafc;font-size:13px;font-weight:700;outline:none">
+        <button type="button" onclick="adjQty(<?php echo $item->id; ?>,1)"
+                style="width:26px;height:26px;border-radius:6px;border:1px solid #e2e8f0;background:#f8fafc;font-size:16px;cursor:pointer;line-height:1;padding:0">+</button>
+      </div>
     </div>
     <?php endforeach; ?>
-  </div>
-
-  <?php if ($my_order->shipping_method && $my_order->shipping_method !== 'pickup'): ?>
-  <div style="background:#f8fafc;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px">
-    🚚 <strong>Tarne:</strong> <?php echo esc_html($my_order->shipping_name??''); ?> · <?php echo esc_html($my_order->shipping_address??''); ?>
-  </div>
-  <?php endif; ?>
-
-  <!-- EAN scan bar -->
-  <div class="scan-bar" style="display:flex;align-items:center;gap:10px;margin-bottom:14px;background:#f8fafc;border-radius:8px;padding:8px 12px">
-    <input type="text" id="vw-ean-scan" placeholder="Skanni EAN..." autofocus autocomplete="off"
-           class="scan-input" style="flex:1;border:1px solid #dce3e9;border-radius:6px;padding:8px 12px;font-size:14px;outline:none">
-    <span id="vw-scan-feedback" style="font-size:13px;min-width:160px"></span>
-  </div>
-
-  <!-- Items -->
-  <div id="vwp-shop-items">
-  <?php foreach ($my_items as $item): ?>
-  <div id="shop-row-<?php echo $item->id; ?>"
-       class="pick-item-row<?php echo $item->picked ? ' picked' : ''; ?>"
-       data-ean="<?php echo esc_attr($item->ean ?? ''); ?>"
-       data-orig-qty="<?php echo (float)$item->quantity; ?>"
-       data-unit-price="<?php echo (float)$item->unit_price; ?>"
-       style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f1f5f9;<?php echo $item->picked?'opacity:.4':''; ?>">
-    <input type="checkbox" id="shop-cb-<?php echo $item->id; ?>"
-           class="pick-item-btn"
-           <?php checked($item->picked, 1); ?>
-           onchange="togglePick(<?php echo $item->id; ?>, this.checked)"
-           style="width:18px;height:18px;accent-color:#00b4c8;cursor:pointer;flex-shrink:0">
-    <div style="flex:1;min-width:0">
-      <div style="font-size:13px;font-weight:600;<?php echo $item->picked?'text-decoration:line-through':''; ?>"><?php echo esc_html($item->name); ?></div>
-      <?php if ($item->sku): ?><div style="font-size:11px;color:#94a3b8;font-family:monospace"><?php echo esc_html($item->sku); ?></div><?php endif; ?>
     </div>
-    <!-- Quantity adjuster -->
-    <div style="display:flex;align-items:center;gap:4px">
-      <button type="button" onclick="adjQty(<?php echo $item->id; ?>,-1)"
-              style="width:26px;height:26px;border:1px solid #dce3e9;border-radius:6px;background:#f8fafc;font-size:16px;cursor:pointer;line-height:1;padding:0">−</button>
-      <input type="number" id="qty-<?php echo $item->id; ?>"
-             value="<?php echo (float)$item->quantity; ?>"
-             min="0" max="<?php echo (float)$item->quantity; ?>"
-             step="1"
-             onchange="onQtyChange(<?php echo $item->id; ?>)"
-             style="width:48px;text-align:center;border:1px solid #dce3e9;border-radius:6px;padding:4px;font-size:13px;font-weight:600">
-      <button type="button" onclick="adjQty(<?php echo $item->id; ?>,1)"
-              style="width:26px;height:26px;border:1px solid #dce3e9;border-radius:6px;background:#f8fafc;font-size:16px;cursor:pointer;line-height:1;padding:0">+</button>
+    <div style="display:flex;justify-content:space-between;padding-top:10px;margin-top:8px;border-top:1px solid #e2e8f0">
+      <span style="font-weight:700;color:#1e293b">Kokku</span>
+      <span style="font-size:16px;font-weight:800;color:#1e293b"><?php echo number_format((float)$my_order->total,2,',','.'); ?> €</span>
     </div>
-    <div style="font-size:12px;color:#64748b;white-space:nowrap"><?php echo number_format($item->unit_price,2,',','.'); ?> €</div>
-  </div>
-  <?php endforeach; ?>
   </div>
 
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:12px;border-top:2px solid #f1f5f9">
-    <div style="font-size:12px;color:#64748b" id="vwp-shop-progress">
-      <?php $picked_n = count(array_filter($my_items, fn($i) => $i->picked)); ?>
-      <?php echo $picked_n; ?>/<?php echo count($my_items); ?> komplekteeritud
-    </div>
-    <strong style="font-size:15px"><?php echo number_format($my_order->total,2,',','.'); ?> €</strong>
+  <!-- Print buttons -->
+  <div style="display:flex;gap:10px;margin-bottom:14px" id="vwp-print-row">
+    <button id="vwp-print-invoice-btn" disabled
+            style="flex:1;padding:10px;border-radius:10px;border:1px solid rgba(99,102,241,0.25);background:rgba(99,102,241,0.1);color:#818cf8;font-size:13px;font-weight:600;cursor:pointer;opacity:0.45">
+      🖨️ Arve (A4)
+    </button>
+    <button id="vwp-print-label-btn" disabled
+            style="flex:1;padding:10px;border-radius:10px;border:1px solid rgba(99,102,241,0.2);background:rgba(99,102,241,0.08);color:#818cf8;font-size:13px;font-weight:600;cursor:pointer;opacity:0.45">
+      🏷️ Pakikaart
+    </button>
   </div>
 
-  <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">
-    <button id="vwp-print-invoice-btn" class="vwp-btn-outline" style="flex:1" <?php echo !$all_picked?'disabled':''; ?>>🖨 Arve</button>
-    <button id="vwp-print-label-btn" class="vwp-btn-outline" style="flex:1" disabled>📦 Kleeps</button>
-    <button id="vwp-pack-btn" data-order-complete-id="<?php echo $my_order->id; ?>"
-            data-id="<?php echo $my_order->id; ?>" data-nonce="<?php echo $nonce; ?>"
-            class="vwp-btn-primary" style="flex:1" disabled>✓ Pakitud</button>
-  </div>
-  <p class="description" id="pick-gate-msg" style="color:#e74c3c;display:none;margin:8px 0 0;font-size:12px">Kõik tooted peavad olema komplekteeritud enne lõpetamist.</p>
-</div>
+  <!-- Pack button -->
+  <button id="vwp-pack-btn" data-id="<?php echo (int)$my_order->id; ?>" disabled
+          style="width:100%;padding:14px;font-size:15px;font-weight:800;border-radius:14px;border:1px solid #e2e8f0;background:#f8fafc;color:#94a3b8;cursor:not-allowed">
+    Kogu kõik tooted (0/<?php echo count($my_items); ?>)
+  </button>
+</div><!-- end modal -->
 <?php endif; ?>
 
 <script>
 (function(){
-  var AJAX='<?php echo $ajax; ?>', NONCE='<?php echo $nonce; ?>';
-  var allItems=<?php echo json_encode(array_map(fn($i)=>['id'=>$i->id,'name'=>$i->name,'qty'=>$i->quantity,'price'=>$i->unit_price,'picked'=>(bool)$i->picked], $my_items??[])); ?>;
-  var invoicePrinted=false, labelPrinted=false;
+  var AJAX='<?php echo esc_js($ajax); ?>', NONCE='<?php echo esc_js($nonce); ?>';
+  var allItems=<?php echo $items_json; ?>;
+  var CO_NAME=<?php echo json_encode($co_name); ?>;
+  var CO_EMAIL=<?php echo json_encode($co_email); ?>;
+  var CO_PHONE=<?php echo json_encode($co_phone); ?>;
+  var ORDER_NUM=<?php echo json_encode($my_order ? ($my_order->order_number ?? '') : ''); ?>;
+  var CLIENT_NAME=<?php echo json_encode($client_name); ?>;
+  var CLIENT_PHONE=<?php echo json_encode($my_order ? ($my_order->phone ?? '') : ''); ?>;
+  var CLIENT_EMAIL=<?php echo json_encode($my_order ? ($my_order->guest_email ?? $my_order->client_email ?? '') : ''); ?>;
+  var DELIVERY_ADDR=<?php echo json_encode($delivery_address); ?>;
+  var DELIVERY_LABEL=<?php echo json_encode($delivery_label); ?>;
+  var ORDER_NOTES=<?php echo json_encode($my_order ? ($my_order->notes ?? '') : ''); ?>;
+  var ORDER_DATE=<?php echo json_encode($my_order ? ($my_order->created_at ?? '') : ''); ?>;
   var CURRENT_ORDER_ID=<?php echo $my_order ? (int)$my_order->id : 'null'; ?>;
-  var LS_KEY='vesho_picking_state';
+  var PENDING_COUNT=<?php echo (int)$pending_count; ?>;
 
-  // ── localStorage helpers ─────────────────────────────────────────────────
-  function lsGet(){try{return JSON.parse(localStorage.getItem(LS_KEY)||'{}');}catch(e){return {};}}
-  function lsSet(s){try{localStorage.setItem(LS_KEY,JSON.stringify(s));}catch(e){}}
-  function lsSaveItem(orderId,itemId,picked){
-    var s=lsGet(); if(!s[orderId]) s[orderId]={};
-    s[orderId][itemId]=picked; lsSet(s);
-  }
-  function lsClearOrder(orderId){var s=lsGet();delete s[orderId];lsSet(s);}
+  var invoicePrinted=false, labelPrinted=false;
+  var pickedState={}; // itemId -> bool
+  var qtyState={};    // itemId -> number
 
-  // ── Restore picking state from localStorage on page load ─────────────────
+  // Init picked/qty state from PHP data
+  allItems.forEach(function(it){
+    pickedState[it.id]=it.picked;
+    qtyState[it.id]=it.qty;
+  });
+
+  // ── localStorage crash recovery ───────────────────────────────────────────
+  var LS_PICKED='workerPicked', LS_QTY='workerPickQty';
+  function lsGetPicked(){try{return JSON.parse(localStorage.getItem(LS_PICKED)||'{}')}catch(e){return {}}}
+  function lsGetQty(){try{return JSON.parse(localStorage.getItem(LS_QTY)||'{}')}catch(e){return {}}}
+  function lsSavePicked(){try{localStorage.setItem(LS_PICKED,JSON.stringify(pickedState));}catch(e){}}
+  function lsSaveQty(){try{localStorage.setItem(LS_QTY,JSON.stringify(qtyState));}catch(e){}}
+  function lsClear(){try{localStorage.removeItem(LS_PICKED);localStorage.removeItem(LS_QTY);}catch(e){}}
+
   if(CURRENT_ORDER_ID){
-    var saved=lsGet()[CURRENT_ORDER_ID]||{};
-    Object.keys(saved).forEach(function(itemId){
-      var picked=saved[itemId];
-      var cb=document.getElementById('shop-cb-'+itemId);
-      var row=document.getElementById('shop-row-'+itemId);
-      if(cb && !cb.checked && picked){
-        cb.checked=true;
-        if(row){row.style.opacity='.4';row.classList.add('picked');var nm=row.querySelector('div[style*="font-size:13px"]');if(nm)nm.style.textDecoration='line-through';}
-      } else if(cb && cb.checked && !picked){
-        cb.checked=false;
-        if(row){row.style.opacity='1';row.classList.remove('picked');var nm=row.querySelector('div[style*="font-size:13px"]');if(nm)nm.style.textDecoration='';}
-      }
+    // Restore from localStorage
+    var savedPicked=lsGetPicked(), savedQty=lsGetQty();
+    allItems.forEach(function(it){
+      if(savedPicked[it.id]!==undefined) pickedState[it.id]=savedPicked[it.id];
+      if(savedQty[it.id]!==undefined) qtyState[it.id]=savedQty[it.id];
     });
-    updateProgress();
-    checkPickGate();
+    // Apply to DOM
+    allItems.forEach(function(it){
+      setRowUI(it.id, pickedState[it.id], qtyState[it.id]);
+    });
   }
 
-  // Claim order
-  var claimBtn=document.getElementById('vwp-claim-btn');
-  if(claimBtn) claimBtn.addEventListener('click',()=>{
-    claimBtn.disabled=true; claimBtn.textContent='...';
-    var fd=new FormData(); fd.append('action','vesho_worker_claim_order'); fd.append('nonce',NONCE);
-    fetch(AJAX,{method:'POST',body:fd}).then(r=>r.json()).then(d=>{
-      if(d.success) location.reload(); else{showMsg(false,d.data?.message||'Viga');claimBtn.disabled=false;claimBtn.textContent='▶ Võta tellimus';}
+  // ── Stepper ───────────────────────────────────────────────────────────────
+  function renderStepper(){
+    var el=document.getElementById('vwp-stepper');
+    if(!el) return;
+    var allPicked=allItems.length===0||Object.values(pickedState).filter(Boolean).length===allItems.length;
+    var steps=[{k:'picking',l:'Kogu'},{k:'invoice',l:'Arve'},{k:'label',l:'Kleeps'},{k:'done',l:'Valmis'}];
+    var activeKey=!allPicked?'picking':!invoicePrinted?'invoice':!labelPrinted?'label':'done';
+    var order=['picking','invoice','label','done'];
+    var activeIdx=order.indexOf(activeKey);
+    var html='';
+    steps.forEach(function(step,i){
+      var done=i<activeIdx;
+      var active=step.k===activeKey;
+      var col=done?'#10b981':active?'#00b4c8':'#cbd5e1';
+      var bg=done?'rgba(16,185,129,0.15)':active?'rgba(0,180,200,0.15)':'#f8fafc';
+      var txt=active?'#00b4c8':done?'#10b981':'#94a3b8';
+      html+='<div style="display:flex;align-items:center;flex-shrink:0">';
+      html+='<div style="display:flex;flex-direction:column;align-items:center;gap:4px">';
+      html+='<div style="width:30px;height:30px;border-radius:50%;border:2px solid '+col+';background:'+bg+';display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:'+col+'">'+(done?'✓':(i+1))+'</div>';
+      html+='<div style="font-size:10px;color:'+txt+';font-weight:'+(active?700:400)+';white-space:nowrap">'+step.l+'</div>';
+      html+='</div>';
+      if(i<steps.length-1){
+        html+='<div style="width:32px;height:2px;background:'+(i<activeIdx?'#10b981':'#e2e8f0')+';margin:0 4px;margin-bottom:16px;flex-shrink:0"></div>';
+      }
+      html+='</div>';
     });
-  });
+    el.innerHTML=html;
+  }
 
-  // Release order
-  var relBtn=document.getElementById('vwp-release-btn');
-  if(relBtn) relBtn.addEventListener('click',()=>{
-    if(!confirm('Vabasta tellimus tagasi järjekorda?')) return;
-    var fd=new FormData(); fd.append('action','vesho_worker_release_order'); fd.append('nonce',NONCE); fd.append('order_id',relBtn.dataset.id);
-    fetch(AJAX,{method:'POST',body:fd}).then(r=>r.json()).then(d=>{if(d.success) location.reload();});
-  });
+  // ── Pack button state ─────────────────────────────────────────────────────
+  function updatePackBtn(){
+    var btn=document.getElementById('vwp-pack-btn');
+    if(!btn) return;
+    var total=allItems.length;
+    var picked=Object.values(pickedState).filter(Boolean).length;
+    var allPicked=total===0||picked===total;
+    var readyToPack=allPicked&&invoicePrinted&&labelPrinted;
 
-  // Toggle pick
-  window.togglePick = function(itemId, picked){
-    // Optimistic UI update + localStorage save immediately
-    var row=document.getElementById('shop-row-'+itemId);
-    if(row){
-      row.style.opacity=picked?'.4':'1';
-      var nameEl=row.querySelector('div[style*="font-size:13px"]');
-      if(nameEl)nameEl.style.textDecoration=picked?'line-through':'';
-      if(picked){ row.classList.add('picked'); } else { row.classList.remove('picked'); }
+    if(readyToPack){
+      btn.disabled=false;
+      btn.style.background='rgba(16,185,129,0.15)';
+      btn.style.color='#10b981';
+      btn.style.border='1px solid rgba(16,185,129,0.35)';
+      btn.style.cursor='pointer';
+      btn.textContent='✓ Komplekteeritud';
+    } else if(!allPicked){
+      btn.disabled=true;
+      btn.style.background='#f8fafc';
+      btn.style.color='#94a3b8';
+      btn.style.border='1px solid #e2e8f0';
+      btn.style.cursor='not-allowed';
+      btn.textContent='Kogu kõik tooted ('+picked+'/'+total+')';
+    } else if(!invoicePrinted){
+      btn.disabled=true;
+      btn.style.background='#f8fafc';
+      btn.style.color='#94a3b8';
+      btn.style.border='1px solid #e2e8f0';
+      btn.style.cursor='not-allowed';
+      btn.textContent='Prindi arve enne kinnitamist';
+    } else {
+      btn.disabled=true;
+      btn.style.background='#f8fafc';
+      btn.style.color='#94a3b8';
+      btn.style.border='1px solid #e2e8f0';
+      btn.style.cursor='not-allowed';
+      btn.textContent='Prindi pakikaart enne kinnitamist';
     }
-    if(CURRENT_ORDER_ID) lsSaveItem(CURRENT_ORDER_ID, itemId, picked);
+  }
+
+  // ── Print buttons state ───────────────────────────────────────────────────
+  function updatePrintBtns(){
+    var total=allItems.length;
+    var picked=Object.values(pickedState).filter(Boolean).length;
+    var allPicked=total===0||picked===total;
+    var inv=document.getElementById('vwp-print-invoice-btn');
+    var lbl=document.getElementById('vwp-print-label-btn');
+    var row=document.getElementById('vwp-print-row');
+    if(row) row.style.opacity=allPicked?'1':'0.45';
+    if(inv){
+      inv.disabled=!allPicked;
+      if(invoicePrinted){inv.style.background='rgba(16,185,129,0.12)';inv.style.color='#10b981';inv.style.border='1px solid rgba(16,185,129,0.3)';inv.textContent='✓ Arve';}
+      else{inv.style.background='rgba(99,102,241,0.1)';inv.style.color='#818cf8';inv.style.border='1px solid rgba(99,102,241,0.25)';inv.textContent='🖨️ Arve (A4)';}
+    }
+    if(lbl){
+      lbl.disabled=!allPicked;
+      if(labelPrinted){lbl.style.background='rgba(16,185,129,0.12)';lbl.style.color='#10b981';lbl.style.border='1px solid rgba(16,185,129,0.3)';lbl.textContent='✓ Kleeps';}
+      else{lbl.style.background='rgba(99,102,241,0.08)';lbl.style.color='#818cf8';lbl.style.border='1px solid rgba(99,102,241,0.2)';lbl.textContent='🏷️ Pakikaart';}
+    }
+  }
+
+  // ── Progress display ──────────────────────────────────────────────────────
+  function updateProgress(){
+    var total=allItems.length;
+    var picked=Object.values(pickedState).filter(Boolean).length;
+    var el=document.getElementById('vwp-shop-progress');
+    if(el){el.textContent=picked+'/'+total+' kogutud';el.style.color=picked===total?'#10b981':'#64748b';}
+    renderStepper();
+    updatePrintBtns();
+    updatePackBtn();
+  }
+
+  // ── Row UI update ─────────────────────────────────────────────────────────
+  function setRowUI(itemId, picked, qty){
+    var row=document.getElementById('shop-row-'+itemId);
+    var chk=document.getElementById('shop-check-'+itemId);
+    var qtyInp=document.getElementById('qty-'+itemId);
+    var qtyDisp=document.getElementById('qty-display-'+itemId);
+    if(row){
+      row.style.background=picked?'rgba(16,185,129,0.08)':'#fff';
+      row.style.border='1px solid '+(picked?'rgba(16,185,129,0.25)':'#e2e8f0');
+      var nameEl=row.querySelector('[style*="font-weight:600;color:#1e293b;font-size:14px"]');
+      if(nameEl){nameEl.style.textDecoration=picked?'line-through':'none';nameEl.style.opacity=picked?'0.6':'1';}
+    }
+    if(chk){
+      chk.style.background=picked?'#10b981':'transparent';
+      chk.style.borderColor=picked?'#10b981':'#e2e8f0';
+      chk.textContent=picked?'✓':'';
+    }
+    if(qtyInp){
+      var orig=parseFloat(row?row.dataset.origQty:qtyInp.max)||1;
+      var cur=qty!==undefined?qty:parseFloat(qtyInp.value);
+      qtyInp.value=cur;
+      var mod=cur<orig;
+      qtyInp.style.background=mod?'#fef9c3':'#f8fafc';
+      qtyInp.style.borderColor=mod?'#f59e0b':'#e2e8f0';
+      qtyInp.style.color=mod?'#d97706':'#1e293b';
+    }
+    if(qtyDisp&&qty!==undefined){
+      var orig2=parseFloat(row?row.dataset.origQty:qty)||qty;
+      var mod2=qty<orig2;
+      qtyDisp.textContent=qty+' tk'+(mod2?' ('+orig2+')':'');
+      qtyDisp.style.color=mod2?'#f59e0b':'#1e293b';
+    }
+  }
+
+  // ── Toggle pick ───────────────────────────────────────────────────────────
+  window.togglePickRow=function(itemId){
+    var newPicked=!pickedState[itemId];
+    pickedState[itemId]=newPicked;
+    setRowUI(itemId,newPicked,qtyState[itemId]);
+    lsSavePicked();
     updateProgress();
-    checkPickGate();
-    var fd=new FormData(); fd.append('action','vesho_worker_pick_item'); fd.append('nonce',NONCE);
-    fd.append('item_id',itemId); fd.append('picked',picked?1:0);
+    // Send to server
+    var fd=new FormData();fd.append('action','vesho_worker_pick_item');fd.append('nonce',NONCE);
+    fd.append('item_id',itemId);fd.append('picked',newPicked?1:0);
     fetch(AJAX,{method:'POST',body:fd}).then(r=>r.json()).then(d=>{
       if(!d.success){
-        // Revert on failure
-        if(row){
-          row.style.opacity=picked?'1':'.4';
-          var nameEl=row.querySelector('div[style*="font-size:13px"]');
-          if(nameEl)nameEl.style.textDecoration=picked?'':'line-through';
-          if(picked){ row.classList.remove('picked'); } else { row.classList.add('picked'); }
-        }
-        if(CURRENT_ORDER_ID) lsSaveItem(CURRENT_ORDER_ID, itemId, !picked);
+        pickedState[itemId]=!newPicked;
+        setRowUI(itemId,!newPicked,qtyState[itemId]);
+        lsSavePicked();
         updateProgress();
-        checkPickGate();
       }
     });
   };
 
-  // ── Quantity adjuster (partial fulfillment) ───────────────────────────────
-  window.adjQty = function(itemId, delta){
-    var inp = document.getElementById('qty-'+itemId);
-    if (!inp) return;
-    var row = document.getElementById('shop-row-'+itemId);
-    var orig = parseFloat(row ? row.dataset.origQty : inp.max) || 1;
-    var cur  = parseFloat(inp.value) || 0;
-    var next = Math.min(orig, Math.max(0, cur + delta));
-    inp.value = next;
-    onQtyChange(itemId);
-  };
-
-  window.onQtyChange = function(itemId){
-    var inp  = document.getElementById('qty-'+itemId);
-    var row  = document.getElementById('shop-row-'+itemId);
-    if (!inp || !row) return;
-    var orig = parseFloat(row.dataset.origQty) || parseFloat(inp.max) || 1;
-    var cur  = parseFloat(inp.value);
-    var isModified = cur < orig;
-    inp.style.background    = isModified ? '#fef9c3' : '';
-    inp.style.borderColor   = isModified ? '#f59e0b' : '';
-    row.dataset.pickedQty   = cur;
-    // Auto-check if qty > 0, uncheck if 0
-    var cb = document.getElementById('shop-cb-'+itemId);
-    if (cb) {
-      var shouldPick = cur > 0;
-      if (cb.checked !== shouldPick) {
-        cb.checked = shouldPick;
-        cb.dispatchEvent(new Event('change'));
-        return; // togglePick will call updateProgress/checkPickGate
-      }
-    }
+  // ── Quantity adjuster ─────────────────────────────────────────────────────
+  window.adjQty=function(itemId,delta){
+    var inp=document.getElementById('qty-'+itemId);
+    var row=document.getElementById('shop-row-'+itemId);
+    if(!inp) return;
+    var orig=parseFloat(row?row.dataset.origQty:inp.max)||1;
+    var cur=parseFloat(inp.value)||0;
+    var next=Math.min(orig,Math.max(0,cur+delta));
+    qtyState[itemId]=next;
+    setRowUI(itemId,pickedState[itemId],next);
+    lsSaveQty();
+    if(next>0&&!pickedState[itemId]){pickedState[itemId]=true;setRowUI(itemId,true,next);lsSavePicked();}
+    else if(next===0&&pickedState[itemId]){pickedState[itemId]=false;setRowUI(itemId,false,next);lsSavePicked();}
     updateProgress();
-    checkPickGate();
   };
 
-  // ── Pick gate: enable complete button only when all items processed ───────
-  function checkPickGate(){
-    var rows   = document.querySelectorAll('.pick-item-row');
-    var done   = 0;
-    rows.forEach(function(r){
-      var qtyInp = r.querySelector('input[type="number"]');
-      var cb     = r.querySelector('.pick-item-btn');
-      // Item is "done" if worker set qty (even 0) or checked
-      if (qtyInp && qtyInp.dataset && qtyInp.dataset.touched) { done++; }
-      else if (cb && cb.checked) { done++; }
-      else if (qtyInp && parseFloat(qtyInp.value) < parseFloat(r.dataset.origQty||qtyInp.max||1)) { done++; }
-      else if (cb && cb.checked) { done++; }
-    });
-    // Gate: all rows must be either picked or have qty adjusted
-    var allDone = document.querySelectorAll('.pick-item-row.picked').length === rows.length;
-    var btn    = document.getElementById('vwp-pack-btn');
-    var gateMsg= document.getElementById('pick-gate-msg');
-    if(btn){
-      if(rows.length > 0 && !allDone){
-        btn.disabled = true;
-        if(gateMsg) gateMsg.style.display='block';
-      } else {
-        if(gateMsg) gateMsg.style.display='none';
-      }
-    }
-  }
-  // Run on load
-  checkPickGate();
+  window.onQtyChange=function(itemId){
+    var inp=document.getElementById('qty-'+itemId);
+    var row=document.getElementById('shop-row-'+itemId);
+    if(!inp||!row) return;
+    var orig=parseFloat(row.dataset.origQty)||parseFloat(inp.max)||1;
+    var cur=parseFloat(inp.value)||0;
+    qtyState[itemId]=cur;
+    setRowUI(itemId,pickedState[itemId],cur);
+    lsSaveQty();
+    if(cur>0&&!pickedState[itemId]){pickedState[itemId]=true;setRowUI(itemId,true,cur);lsSavePicked();}
+    else if(cur===0&&pickedState[itemId]){pickedState[itemId]=false;setRowUI(itemId,false,cur);lsSavePicked();}
+    updateProgress();
+  };
 
-  // ── EAN scan input ────────────────────────────────────────────────────────
-  document.getElementById('vw-ean-scan')?.addEventListener('change', function(){
-    var ean = this.value.trim();
-    this.value = '';
-    var row = document.querySelector('[data-ean="'+ean+'"]');
-    if(row){
-      row.style.background='#d4edda';
-      var cb = row.querySelector('.pick-item-btn');
-      if(cb && !cb.disabled && !cb.checked){
-        cb.checked = true;
-        cb.dispatchEvent(new Event('change'));
-      }
-      var feedback = document.getElementById('vw-scan-feedback');
-      feedback.textContent = '\u2705 '+ean;
-      feedback.style.color = 'green';
+  // ── EAN scan ──────────────────────────────────────────────────────────────
+  var eanInp=document.getElementById('vw-ean-scan');
+  var feedback=document.getElementById('vw-scan-feedback');
+  function handleEan(ean){
+    ean=(ean||'').trim();
+    if(!ean) return;
+    var idx=allItems.findIndex(function(it){return it.ean&&it.ean.trim()===ean;});
+    if(eanInp) eanInp.value='';
+    if(idx>=0){
+      var it=allItems[idx];
+      pickedState[it.id]=true;
+      setRowUI(it.id,true,qtyState[it.id]);
+      lsSavePicked();
+      updateProgress();
+      if(feedback){feedback.textContent='✓ Toode märgitud kogutud';feedback.style.color='#10b981';}
     } else {
-      var feedback = document.getElementById('vw-scan-feedback');
-      feedback.textContent = '\u274c EAN ei leitud: '+ean;
-      feedback.style.color = 'red';
+      if(feedback){feedback.textContent='✗ EAN ei vasta ühelegi tootele';feedback.style.color='#ef4444';}
     }
-    setTimeout(function(){ var f=document.getElementById('vw-scan-feedback'); if(f) f.textContent=''; }, 2000);
-  });
-
-  function updateProgress(){
-    var total=document.querySelectorAll('[id^="shop-cb-"]').length;
-    var done=document.querySelectorAll('[id^="shop-cb-"]:checked').length;
-    var prog=document.getElementById('vwp-shop-progress');
-    if(prog) prog.textContent=done+'/'+total+' komplekteeritud';
-    var invoiceBtn=document.getElementById('vwp-print-invoice-btn');
-    if(invoiceBtn) invoiceBtn.disabled=(done<total);
+    setTimeout(function(){if(feedback)feedback.textContent='';if(eanInp)eanInp.focus();},1500);
+  }
+  if(eanInp){
+    eanInp.addEventListener('keydown',function(e){if(e.key==='Enter'){handleEan(this.value);}});
+    eanInp.addEventListener('change',function(){handleEan(this.value);});
   }
 
-  // Print invoice
-  var printInvBtn=document.getElementById('vwp-print-invoice-btn');
-  if(printInvBtn) printInvBtn.addEventListener('click',()=>{
-    var win=window.open('','_blank','width=700,height=900');
-    var rows=allItems.map(it=>'<tr><td>'+it.name+'</td><td style="text-align:center">'+it.qty+'</td><td style="text-align:right">'+parseFloat(it.price).toFixed(2)+'€</td><td style="text-align:right">'+(it.qty*it.price).toFixed(2)+'€</td></tr>').join('');
-    win.document.write('<html><head><title>Arve</title><style>body{font-family:Arial,sans-serif;padding:32px}table{width:100%;border-collapse:collapse}th,td{padding:8px;border-bottom:1px solid #e5e7eb}th{background:#f9fafb;font-size:12px}</style></head><body><h2>Arve #<?php echo esc_js($my_order->order_number??''); ?></h2><table><thead><tr><th>Nimetus</th><th>Kogus</th><th>Hind</th><th>Kokku</th></tr></thead><tbody>'+rows+'</tbody></table><script>window.print();<\/script></body></html>');
-    win.document.close();
+  // ── Print invoice (3006-style) ────────────────────────────────────────────
+  function printInvoice(){
+    var items=allItems.map(function(it,idx){
+      return Object.assign({},it,{quantity:qtyState[it.id]!==undefined?qtyState[it.id]:it.qty});
+    });
+    var name=CLIENT_NAME||'—';
+    var total=items.reduce(function(s,it){return s+it.quantity*it.price;},0);
+    var rows=items.map(function(it){
+      return '<tr><td>'+it.name+'</td><td style="text-align:center">'+it.quantity+'</td><td style="text-align:right">'+Number(it.price).toFixed(2)+' €</td><td style="text-align:right;font-weight:600">'+(it.quantity*it.price).toFixed(2)+' €</td></tr>';
+    }).join('');
+    var w=window.open('','_blank','width=760,height=960');
+    w.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:"Helvetica Neue",Arial,sans-serif;background:#fff;color:#111;font-size:13px}.page{max-width:740px;margin:0 auto;padding:48px 48px 40px}.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:40px}.co-name{font-size:26px;font-weight:900;letter-spacing:-0.04em;color:#111}.co-meta{font-size:11px;color:#888;line-height:1.8;margin-top:2px}.doc-info{text-align:right}.doc-label{font-size:10px;text-transform:uppercase;letter-spacing:0.12em;color:#aaa;font-weight:600;margin-bottom:6px}.doc-num{font-size:28px;font-weight:900;color:#00b4c8;letter-spacing:-0.03em}.doc-date{font-size:11px;color:#888;margin-top:4px}.two-col{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:36px}.info-block{background:#f8f8f8;border-radius:10px;padding:16px 18px}.info-label{font-size:9px;text-transform:uppercase;letter-spacing:0.14em;color:#aaa;font-weight:700;margin-bottom:8px}.info-name{font-size:15px;font-weight:800;margin-bottom:4px}.info-meta{font-size:12px;color:#555;line-height:1.8}table{width:100%;border-collapse:collapse;margin-bottom:0}.thead tr{border-bottom:2px solid #111}th{padding:10px 12px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:0.1em;font-weight:700;color:#555}tbody tr{border-bottom:1px solid #ececec}td{padding:11px 12px;font-size:13px}.totals{margin-top:20px;display:flex;justify-content:flex-end}.totals-box{min-width:200px}.total-final{display:flex;justify-content:space-between;padding:12px 16px;background:#111;color:#fff;border-radius:8px;margin-top:8px;font-size:15px;font-weight:800}.footer{margin-top:40px;padding-top:14px;border-top:1px solid #e5e5e5;display:flex;justify-content:space-between;font-size:10px;color:#bbb}@media print{.page{padding:28px 32px}}</style></head><body><div class="page"><div class="header"><div><div class="co-name">'+CO_NAME+'</div><div class="co-meta">'+CO_EMAIL+(CO_PHONE?'<br>'+CO_PHONE:'')+'</div></div><div class="doc-info"><div class="doc-label">Tellimus</div><div class="doc-num">'+ORDER_NUM+'</div><div class="doc-date">'+new Date(ORDER_DATE||Date.now()).toLocaleDateString("et-EE",{day:"2-digit",month:"long",year:"numeric"})+'</div></div></div><div class="two-col"><div class="info-block"><div class="info-label">Klient</div><div class="info-name">'+name+'</div><div class="info-meta">'+CLIENT_EMAIL+(CLIENT_PHONE?'<br>📞 '+CLIENT_PHONE:'')+'</div></div>'+(DELIVERY_ADDR?'<div class="info-block"><div class="info-label">Tarneaadress</div><div class="info-meta" style="font-size:13px;color:#333;line-height:1.7">'+DELIVERY_ADDR+'</div></div>':'<div></div>')+'</div><table><thead class="thead"><tr><th>Toode</th><th style="text-align:center;width:80px">Kogus</th><th style="text-align:right;width:100px">Ühikuhind</th><th style="text-align:right;width:100px">Kokku</th></tr></thead><tbody>'+rows+'</tbody></table><div class="totals"><div class="totals-box"><div class="total-final"><span>Kokku</span><span>'+total.toFixed(2)+' €</span></div></div></div>'+(ORDER_NOTES?'<div style="margin-top:24px;padding:12px 16px;background:#fffbeb;border-radius:8px;border-left:3px solid #f59e0b;font-size:12px;color:#555"><b>Märkused:</b> '+ORDER_NOTES+'</div>':'')+'<div class="footer"><span>'+CO_NAME+'</span><span>'+ORDER_NUM+'</span></div></div><script>window.onload=()=>setTimeout(()=>window.print(),200)<\/script></body></html>');
+    w.document.close();
     invoicePrinted=true;
-    var labelBtn=document.getElementById('vwp-print-label-btn');
-    if(labelBtn) labelBtn.disabled=false;
-  });
+    updatePrintBtns();
+    renderStepper();
+    updatePackBtn();
+  }
 
-  // Print label
-  var printLblBtn=document.getElementById('vwp-print-label-btn');
-  if(printLblBtn) printLblBtn.addEventListener('click',()=>{
-    var win=window.open('','_blank','width=400,height=300');
-    win.document.write('<html><head><title>Kleeps</title><script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"><\/script></head><body style="padding:20px;font-family:Arial,sans-serif;text-align:center"><p style="font-weight:700;font-size:18px">#<?php echo esc_js($my_order->order_number??''); ?></p><p><?php echo esc_js($client_name??''); ?></p><?php if(!empty($my_order->shipping_address)): ?><p style="font-size:12px"><?php echo esc_js($my_order->shipping_address); ?></p><?php endif; ?><svg id="bc"></svg><script>JsBarcode("#bc","<?php echo esc_js($my_order->order_number??'ORD000'); ?>",{format:"CODE128",width:2,height:50,displayValue:true});<\/script><script>window.print();<\/script></body></html>');
-    win.document.close();
+  // ── Print label ───────────────────────────────────────────────────────────
+  function printLabel(){
+    var name=CLIENT_NAME||'—';
+    var w=window.open('','_blank','width=520,height=440');
+    w.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:"Helvetica Neue",Arial,sans-serif;background:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh}.label{display:inline-block;border:2px solid #111;border-radius:8px;padding:14px 16px;text-align:center}.from-name{font-size:11px;font-weight:700;color:#555;margin-bottom:2px}.divider{border:none;border-top:1px dashed #ccc;margin:10px 0}.to-name{font-size:20px;font-weight:900;margin:6px 0 4px}.to-addr{font-size:12px;color:#333;line-height:1.5}.to-phone{font-size:11px;color:#555;margin-top:4px}.ref-num{font-weight:800;font-size:13px;color:#111;margin-bottom:8px}@media print{body{min-height:auto}}</style></head><body><div class="label"><div class="from-name">'+CO_NAME+'</div><hr class="divider"><div class="to-name">'+name+'</div><div class="to-addr">'+DELIVERY_ADDR+'</div>'+(CLIENT_PHONE?'<div class="to-phone">📞 '+CLIENT_PHONE+'</div>':'')+'<hr class="divider"><div class="ref-num">'+ORDER_NUM+'</div><svg id="b"></svg></div><script src="https://cdn.jsdelivr.net/npm/jsbarcode@3/dist/JsBarcode.all.min.js"><\/script><script>window.onload=()=>{JsBarcode("#b","'+ORDER_NUM+'",{format:"CODE39",width:2,height:55,displayValue:true,fontSize:13,margin:4});setTimeout(()=>window.print(),300)}<\/script></body></html>');
+    w.document.close();
     labelPrinted=true;
-    var packBtn=document.getElementById('vwp-pack-btn');
-    if(packBtn) packBtn.disabled=false;
-  });
+    updatePrintBtns();
+    renderStepper();
+    updatePackBtn();
+  }
 
-  // Pack / complete
-  var packBtn=document.getElementById('vwp-pack-btn');
-  if(packBtn) packBtn.addEventListener('click',()=>{
-    if(!confirm('Märgi tellimus pakituks ja lõpetatuks?')) return;
-    var fd=new FormData(); fd.append('action','vesho_worker_pack_order'); fd.append('nonce',NONCE); fd.append('order_id',packBtn.dataset.id);
-    // Send picked quantities for partial fulfillment
-    document.querySelectorAll('.pick-item-row').forEach(function(row){
-      var id  = row.id.replace('shop-row-','');
-      var inp = document.getElementById('qty-'+id);
-      if (inp) fd.append('picked_qtys['+id+']', inp.value);
-    });
-    packBtn.disabled=true;
+  var invBtn=document.getElementById('vwp-print-invoice-btn');
+  var lblBtn=document.getElementById('vwp-print-label-btn');
+  if(invBtn) invBtn.addEventListener('click',function(){if(!this.disabled) printInvoice();});
+  if(lblBtn) lblBtn.addEventListener('click',function(){if(!this.disabled) printLabel();});
+
+  // ── Claim order ───────────────────────────────────────────────────────────
+  var claimBtn=document.getElementById('vwp-claim-btn');
+  if(claimBtn) claimBtn.addEventListener('click',function(){
+    this.disabled=true;this.textContent='⏳ Laadin...';
+    var fd=new FormData();fd.append('action','vesho_worker_claim_order');fd.append('nonce',NONCE);
     fetch(AJAX,{method:'POST',body:fd}).then(r=>r.json()).then(d=>{
-      if(d.success){if(CURRENT_ORDER_ID) lsClearOrder(CURRENT_ORDER_ID); location.reload();}
-      else{showMsg(false,d.data?.message||'Viga');packBtn.disabled=false;}
+      if(d.success) location.reload();
+      else{showMsg(false,d.data?.message||'Viga');claimBtn.disabled=false;claimBtn.textContent='▶ Alusta';}
     });
   });
 
-  function showMsg(ok,txt){var m=document.getElementById('vwp-shop-msg');if(!m)return;m.style.display='block';m.className='vwp-msg '+(ok?'success':'error');m.textContent=txt;}
+  // ── Release order ─────────────────────────────────────────────────────────
+  var relBtn=document.getElementById('vwp-release-btn');
+  if(relBtn) relBtn.addEventListener('click',function(){
+    if(!confirm('Loobud tellimusest? See läheb teise töötaja järjekorda.')) return;
+    var fd=new FormData();fd.append('action','vesho_worker_release_order');fd.append('nonce',NONCE);fd.append('order_id',this.dataset.id);
+    fetch(AJAX,{method:'POST',body:fd}).then(r=>r.json()).then(d=>{
+      if(d.success){lsClear();location.reload();}
+    });
+  });
+
+  // ── Pack order ────────────────────────────────────────────────────────────
+  var packBtn=document.getElementById('vwp-pack-btn');
+  if(packBtn) packBtn.addEventListener('click',function(){
+    if(this.disabled) return;
+    this.disabled=true;this.textContent='⏳ Töötlen...';
+    var fd=new FormData();fd.append('action','vesho_worker_pack_order');fd.append('nonce',NONCE);fd.append('order_id',this.dataset.id);
+    allItems.forEach(function(it){
+      fd.append('picked_qtys['+it.id+']',qtyState[it.id]!==undefined?qtyState[it.id]:it.qty);
+    });
+    fetch(AJAX,{method:'POST',body:fd}).then(r=>r.json()).then(function(d){
+      if(d.success){
+        lsClear();
+        // Show done screen
+        var overlay=document.getElementById('vwp-shop-overlay');
+        var modal=document.getElementById('vwp-shop-modal');
+        if(overlay) overlay.style.display='none';
+        if(modal) modal.style.display='none';
+        var queue=document.getElementById('vwp-queue-screen');
+        if(queue) queue.style.display='none';
+        var done=document.getElementById('vwp-done-screen');
+        if(done) done.style.display='block';
+        var doneMsg=document.getElementById('vwp-done-msg');
+        if(doneMsg) doneMsg.textContent=ORDER_NUM+' on komplekteeritud ja ootab saatmist.';
+        // Load next count
+        loadShopCount(function(count){
+          var nextBtn=document.getElementById('vwp-next-btn');
+          if(!nextBtn) return;
+          if(count>0){
+            nextBtn.disabled=false;
+            nextBtn.style.background='rgba(99,102,241,0.15)';
+            nextBtn.style.color='#818cf8';
+            nextBtn.style.border='1px solid rgba(99,102,241,0.35)';
+            nextBtn.textContent='▶ Järgmine tellimus ('+count+')';
+            nextBtn.addEventListener('click',function(){this.disabled=true;this.textContent='⏳ Laadin...';
+              var fd2=new FormData();fd2.append('action','vesho_worker_claim_order');fd2.append('nonce',NONCE);
+              fetch(AJAX,{method:'POST',body:fd2}).then(r=>r.json()).then(d2=>{if(d2.success)location.reload();});
+            });
+          } else {
+            nextBtn.disabled=true;
+            nextBtn.style.background='#f8fafc';
+            nextBtn.style.color='#94a3b8';
+            nextBtn.style.border='1px solid #e2e8f0';
+            nextBtn.textContent='— Pole rohkem tellimusi';
+          }
+        });
+      } else {
+        packBtn.disabled=false;
+        updatePackBtn();
+        showMsg(false,d.data?.message||'Viga');
+      }
+    });
+  });
+
+  // ── Load shop count via AJAX ──────────────────────────────────────────────
+  function loadShopCount(cb){
+    var fd=new FormData();fd.append('action','vesho_worker_shop_count');fd.append('nonce',NONCE);
+    fetch(AJAX,{method:'POST',body:fd}).then(r=>r.json()).then(function(d){
+      if(d.success&&cb) cb(d.data.count);
+    }).catch(function(){if(cb) cb(0);});
+  }
+
+  function showMsg(ok,txt){
+    var m=document.getElementById('vwp-shop-msg');
+    if(!m) return;
+    m.style.display='block';
+    m.className='vwp-msg '+(ok?'success':'error');
+    m.textContent=txt;
+    setTimeout(function(){m.style.display='none';},4000);
+  }
+
+  // ── Init ──────────────────────────────────────────────────────────────────
+  if(CURRENT_ORDER_ID){
+    updateProgress();
+  }
 })();
 </script>
         <?php
@@ -3161,6 +3394,16 @@ $all_picked = !empty($my_items) && count(array_filter($my_items, fn($i) => $i->p
     }
 
     // ── AJAX: Tellimused ──────────────────────────────────────────────────────
+
+    public static function ajax_shop_count() {
+        check_ajax_referer('vesho_portal_nonce','nonce');
+        if (!self::get_current_worker()) wp_send_json_error(['message'=>'Pole sisse logitud']);
+        global $wpdb;
+        $count = (int)$wpdb->get_var(
+            "SELECT COUNT(*) FROM {$wpdb->prefix}vesho_shop_orders WHERE status='pending' AND (worker_id IS NULL OR worker_id=0)"
+        );
+        wp_send_json_success(['count' => $count]);
+    }
 
     public static function ajax_claim_order() {
         check_ajax_referer('vesho_portal_nonce','nonce');
