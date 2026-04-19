@@ -1,10 +1,10 @@
 {
   "name": "Vesho",
   "slug": "vesho",
-  "version": "2.2.74",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.2.74/vesho-theme.zip",
+  "version": "2.2.75",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.2.75/vesho-theme.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-19",
-  "changelog": "<h4>2.2.74</h4><ul><li>Uus versioon</li></ul>"
+  "changelog": "<h4>2.2.75</h4><ul><li>Worker vastuvõtt: tooted laetakse lehe renderdusel (pole AJAX lazy-load), kuvab alati korrektselt</li></ul><h4>2.2.74</h4><ul><li>DB fix: inventory_id NOT NULL → NULL + robust veergude kontroll</li></ul><h4>2.2.72</h4><ul><li>Admin vastuvõtt: 3006-stiil tabel + delete + prindi EAN</li></ul>"
 }
