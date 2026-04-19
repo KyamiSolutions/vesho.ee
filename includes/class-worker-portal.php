@@ -1360,6 +1360,45 @@ foreach ($notices as $notice) : ?>
              WHERE sr.worker_id=%d AND sr.status IN ('approved','rejected','received')
              GROUP BY sr.id ORDER BY sr.created_at DESC LIMIT 20", $wid
         ));
+
+        // ── Load ALL items for pending receipts upfront (3006 style – no lazy AJAX) ──
+        $pending_ids = array_map(fn($r) => (int)$r->id, $pending ?: []);
+        $preloaded_items = [];
+        if (!empty($pending_ids)) {
+            $placeholders = implode(',', array_fill(0, count($pending_ids), '%d'));
+            $rows = $wpdb->get_results($wpdb->prepare(
+                "SELECT sri.id, sri.receipt_id,
+                        sri.quantity, sri.actual_qty, sri.location,
+                        sri.purchase_price, sri.selling_price,
+                        COALESCE(inv.name, sri.product_name, '') AS name,
+                        COALESCE(inv.sku,  sri.product_sku,  '') AS sku,
+                        COALESCE(inv.unit, sri.product_unit, 'tk') AS unit,
+                        COALESCE(inv.ean,  sri.ean, '')           AS ean,
+                        COALESCE(inv.selling_price, sri.selling_price) AS sell_price,
+                        sri.inventory_id
+                 FROM {$wpdb->prefix}vesho_stock_receipt_items sri
+                 LEFT JOIN {$wpdb->prefix}vesho_inventory inv ON inv.id = sri.inventory_id
+                 WHERE sri.receipt_id IN ($placeholders)
+                 ORDER BY sri.receipt_id ASC, sri.id ASC",
+                ...$pending_ids
+            ) ?: []);
+            foreach ($rows as $row) {
+                $rid = (int)$row->receipt_id;
+                $preloaded_items[$rid][] = [
+                    'id'           => (int)$row->id,
+                    'receipt_id'   => $rid,
+                    'name'         => $row->name ?: '',
+                    'sku'          => $row->sku ?: '',
+                    'unit'         => $row->unit ?: 'tk',
+                    'ean'          => $row->ean ?: '',
+                    'quantity'     => (float)$row->quantity,
+                    'actual_qty'   => $row->actual_qty !== null ? (float)$row->actual_qty : null,
+                    'location'     => $row->location ?: '',
+                    'selling_price'=> $row->sell_price !== null ? (float)$row->sell_price : null,
+                    'inventory_id' => $row->inventory_id ? (int)$row->inventory_id : null,
+                ];
+            }
+        }
         $status_label = ['pending'=>'Ootel kinnitamist','received'=>'Vastuvõetud','approved'=>'✓ Kinnitatud','rejected'=>'✗ Tagasi lükatud'];
         $status_color = ['pending'=>'#d97706','received'=>'#2563eb','approved'=>'#16a34a','rejected'=>'#dc2626'];
         $status_bg    = ['pending'=>'#fef9c3','received'=>'#dbeafe','approved'=>'#dcfce7','rejected'=>'#fee2e2'];
@@ -1464,6 +1503,15 @@ foreach ($notices as $notice) : ?>
 (function(){
   var AJAX='<?php echo $ajax; ?>', NONCE='<?php echo $nonce; ?>';
   var loaded={}, itemData={}, currentRecvId=null;
+  // Preloaded items (3006 style – all loaded at page render, no lazy AJAX)
+  var preloadedItems=<?php echo json_encode($preloaded_items); ?>;
+  var receiptBref=<?php
+    $bref_map = [];
+    foreach ( $pending ?: [] as $r ) {
+        $bref_map[(int)$r->id] = $r->batch_ref ?: $r->receipt_num;
+    }
+    echo json_encode($bref_map);
+  ?>;
 
   // Location ↔ EAN encoding (matches 3006 InventoryList.jsx)
   function eanToLocation(code){
@@ -1543,18 +1591,12 @@ foreach ($notices as $notice) : ?>
       if(loaded[id]) return;
       loaded[id]=true;
       itemData[id]={};
-      var fd=new FormData();
-      fd.append('action','vesho_worker_get_receipt_items');
-      fd.append('nonce',NONCE);
-      fd.append('receipt_id',id);
-      fetch(AJAX,{method:'POST',body:fd}).then(r=>r.json()).then(function(d){
-        if(!d.success){el.innerHTML='<div style="padding:12px;color:#ef4444">'+(d.data?.message||'Viga')+'</div>';return;}
-        var items=d.data.items;
-        items.forEach(function(it){
-          itemData[id][it.id]={actual_qty:it.actual_qty!==null?it.actual_qty:it.expected_qty,location:it.location||'',ean:it.ean||''};
-        });
-        renderItems(id,items,bref);
+      // Use preloaded items (3006 style) — no AJAX needed
+      var items=preloadedItems[id]||[];
+      items.forEach(function(it){
+        itemData[id][it.id]={actual_qty:it.actual_qty!==null?it.actual_qty:it.quantity,location:it.location||'',ean:it.ean||''};
       });
+      renderItems(id,items,bref);
     } else {
       el.style.display='none';
       arrow.textContent='▼';
@@ -1695,16 +1737,8 @@ foreach ($notices as $notice) : ?>
       btn.disabled=false; btn.textContent='Lisa kaup';
       if(d.success){
         document.getElementById('vwp-add-item-modal').style.display='none';
-        loaded[currentRecvId]=false;
-        var el=document.getElementById('recv-items-'+currentRecvId);
-        if(el){el.innerHTML='<div style="padding:16px;text-align:center;color:#94a3b8">Laen...</div>';}
-        var fd2=new FormData();
-        fd2.append('action','vesho_worker_get_receipt_items');
-        fd2.append('nonce',NONCE);
-        fd2.append('receipt_id',currentRecvId);
-        fetch(AJAX,{method:'POST',body:fd2}).then(r=>r.json()).then(function(d2){
-          if(d2.success){loaded[currentRecvId]=true;itemData[currentRecvId]={};d2.data.items.forEach(function(it){itemData[currentRecvId][it.id]={actual_qty:it.actual_qty!==null?it.actual_qty:it.expected_qty,location:it.location||'',ean:it.ean||''};});renderItems(currentRecvId,d2.data.items,'');}
-        });
+        // Reload page to refresh preloaded items (simplest, ensures data consistency)
+        location.reload();
       } else {
         var m=document.getElementById('vwp-add-item-msg');
         m.textContent=d.data?.message||'Viga';m.style.display='';
@@ -2868,9 +2902,8 @@ $all_picked = !empty($my_items) && count(array_filter($my_items, fn($i) => $i->p
              ORDER BY sri.id ASC", $receipt_id
         ));
 
-        if ($wpdb->last_error) {
-            error_log('vesho_worker_get_receipt_items SQL error: ' . $wpdb->last_error . ' | receipt_id=' . $receipt_id);
-        }
+        $debug_error = $wpdb->last_error;
+        $debug_cols  = $existing_cols;
 
         // Fallback: if no items in detail table, read from main receipts row (legacy format)
         if (empty($items)) {
@@ -2910,7 +2943,7 @@ $all_picked = !empty($my_items) && count(array_filter($my_items, fn($i) => $i->p
             $item->expected_qty   = $item->quantity ?? 0;
             $item->selling_price  = $item->selling_price ?? $item->inv_selling_price ?? null;
         }
-        wp_send_json_success(['items'=>$items]);
+        wp_send_json_success(['items'=>$items, '_debug'=>['receipt_id'=>$receipt_id,'cols'=>$debug_cols,'sql_error'=>$debug_error,'count'=>count($items)]]);
     }
 
     public static function ajax_confirm_receipt() {
