@@ -6,6 +6,8 @@ $ticket_id = isset($_GET['ticket_id']) ? absint($_GET['ticket_id'])            :
 $filter_st = isset($_GET['status'])    ? sanitize_text_field($_GET['status'])  : '';
 $search    = isset($_GET['s'])         ? sanitize_text_field($_GET['s'])       : '';
 
+$all_workers = $wpdb->get_results("SELECT id, name FROM {$wpdb->prefix}vesho_workers WHERE active=1 ORDER BY name ASC");
+
 $edit = null;
 $edit_client = null;
 $ticket_replies = [];
@@ -30,9 +32,10 @@ if ($filter_st) { $where .= $wpdb->prepare(' AND t.status=%s', $filter_st); }
 if ($search)    { $where .= $wpdb->prepare(' AND (t.subject LIKE %s OR c.name LIKE %s)', '%'.$wpdb->esc_like($search).'%', '%'.$wpdb->esc_like($search).'%'); }
 
 $tickets = $wpdb->get_results(
-    "SELECT t.*, c.name as client_name
+    "SELECT t.*, c.name as client_name, w.name as worker_name
      FROM {$wpdb->prefix}vesho_support_tickets t
      LEFT JOIN {$wpdb->prefix}vesho_clients c ON t.client_id=c.id
+     LEFT JOIN {$wpdb->prefix}vesho_workers w ON w.id=t.assigned_worker_id
      WHERE $where ORDER BY t.created_at DESC LIMIT 200"
 );
 $total    = count($tickets);
@@ -139,6 +142,23 @@ $pcls       = ['low'=>'badge-gray','normal'=>'badge-info','high'=>'badge-warning
                 <?php endforeach; ?>
             </div>
 
+            <!-- Worker assignment -->
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+                <span style="font-size:13px;font-weight:600;color:#475569">👷 Vastutav töötaja:</span>
+                <form method="POST" action="<?php echo admin_url('admin-post.php'); ?>" style="display:flex;align-items:center;gap:8px">
+                    <?php wp_nonce_field('vesho_ticket_action'); ?>
+                    <input type="hidden" name="action" value="vesho_assign_ticket">
+                    <input type="hidden" name="ticket_id" value="<?php echo $edit->id; ?>">
+                    <select name="assigned_worker_id" class="crm-form-select" style="font-size:13px;padding:5px 10px;min-width:180px">
+                        <option value="0">— Määramata —</option>
+                        <?php foreach ($all_workers as $w): ?>
+                        <option value="<?php echo $w->id; ?>" <?php selected((int)($edit->assigned_worker_id??0), (int)$w->id); ?>><?php echo esc_html($w->name); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    <button type="submit" class="crm-btn crm-btn-outline crm-btn-sm">Salvesta</button>
+                </form>
+            </div>
+
             <form method="POST" action="<?php echo admin_url('admin-post.php'); ?>">
                 <?php wp_nonce_field('vesho_ticket_action'); ?>
                 <input type="hidden" name="action" value="vesho_reply_ticket">
@@ -175,14 +195,15 @@ $pcls       = ['low'=>'badge-gray','normal'=>'badge-info','high'=>'badge-warning
         <?php else : ?>
         <table class="crm-table">
             <thead><tr>
-                <th>ID</th><th>Klient</th><th>Teema</th><th>Prioriteet</th><th>Saadetud</th><th>Staatus</th><th class="td-actions">Toimingud</th>
+                <th>ID</th><th>Klient</th><th>Teema</th><th>Töötaja</th><th>Prioriteet</th><th>Saadetud</th><th>Staatus</th><th class="td-actions">Toimingud</th>
             </tr></thead>
             <tbody>
             <?php foreach ($tickets as $t) : ?>
             <tr <?php if ($t->status==='open') echo 'style="font-weight:600;background:#fef9e7"'; ?>>
                 <td style="color:#6b8599">#<?php echo $t->id; ?></td>
                 <td><?php echo esc_html($t->client_name ?? '–'); ?></td>
-                <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><?php echo esc_html($t->subject); ?></td>
+                <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><?php echo esc_html($t->subject); ?></td>
+                <td style="font-size:12px;color:#64748b"><?php echo $t->worker_name ? '👷 '.esc_html($t->worker_name) : '—'; ?></td>
                 <td><span class="crm-badge <?php echo esc_attr($pcls[$t->priority]??'badge-gray'); ?>"><?php echo esc_html($priorities[$t->priority]??$t->priority); ?></span></td>
                 <td><?php echo vesho_crm_format_date($t->created_at, 'd.m H:i'); ?></td>
                 <td><?php echo vesho_crm_status_badge($t->status); ?></td>

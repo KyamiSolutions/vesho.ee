@@ -20,6 +20,41 @@ if ( $action === 'finalize' && $count_id ) {
         }
     }
     $wpdb->update( $wpdb->prefix . 'vesho_stock_counts', ['status' => 'finalized'], ['id' => $count_id] );
+
+    // ── Send finalize summary email to admin ───────────────────────────────
+    $count_row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}vesho_stock_counts WHERE id=%d", $count_id ) );
+    $diff_items = array_filter( $items, fn($i) => $i->counted_qty !== null && (float)$i->counted_qty !== (float)$i->expected_qty );
+    $admin_email = get_option('admin_email');
+    $site_name   = get_bloginfo('name');
+    $subject     = '[' . $site_name . '] Inventuur kinnitatud: ' . ( $count_row->name ?? '#' . $count_id );
+    $rows = '';
+    foreach ( $diff_items as $di ) {
+        $diff = round( (float)$di->counted_qty - (float)$di->expected_qty, 2 );
+        $sign = $diff >= 0 ? '+' : '';
+        $rows .= '<tr>'
+            . '<td style="padding:6px 10px;border-bottom:1px solid #e2e8f0">' . esc_html($di->name) . '</td>'
+            . '<td style="padding:6px 10px;border-bottom:1px solid #e2e8f0;text-align:right">' . number_format((float)$di->expected_qty, 2, ',', ' ') . '</td>'
+            . '<td style="padding:6px 10px;border-bottom:1px solid #e2e8f0;text-align:right">' . number_format((float)$di->counted_qty, 2, ',', ' ') . '</td>'
+            . '<td style="padding:6px 10px;border-bottom:1px solid #e2e8f0;text-align:right;color:' . ($diff >= 0 ? '#0284c7' : '#dc2626') . ';font-weight:600">' . $sign . number_format($diff, 2, ',', ' ') . '</td>'
+            . '</tr>';
+    }
+    if ( $rows === '' ) $rows = '<tr><td colspan="4" style="padding:10px;text-align:center;color:#16a34a">Kõik saldod vastavad — erinevusi pole! ✅</td></tr>';
+    $body = '<html><body style="font-family:sans-serif;font-size:14px;color:#1a2a38">'
+        . '<h2 style="color:#00b4c8">Inventuur kinnitatud</h2>'
+        . '<p><strong>' . esc_html($count_row->name ?? '') . '</strong> — kinnitatud ' . current_time('d.m.Y H:i') . '</p>'
+        . '<table style="width:100%;border-collapse:collapse;margin-top:12px">'
+        . '<thead><tr style="background:#f1f5f9">'
+        . '<th style="padding:8px 10px;text-align:left">Nimetus</th>'
+        . '<th style="padding:8px 10px;text-align:right">Oodatud</th>'
+        . '<th style="padding:8px 10px;text-align:right">Loendatud</th>'
+        . '<th style="padding:8px 10px;text-align:right">Vahe</th>'
+        . '</tr></thead>'
+        . '<tbody>' . $rows . '</tbody>'
+        . '</table>'
+        . '<p style="margin-top:16px;color:#64748b;font-size:12px">Laosaldod on uuendatud.</p>'
+        . '</body></html>';
+    wp_mail( $admin_email, $subject, $body, ['Content-Type: text/html; charset=UTF-8'] );
+
     wp_redirect( add_query_arg( ['page' => 'vesho-crm-stockcount', 'msg' => 'finalized'], admin_url('admin.php') ) );
     exit;
 }

@@ -42,6 +42,10 @@ class Vesho_CRM_Admin {
         add_action( 'admin_post_vesho_update_request_notes',  array( __CLASS__, 'handle_update_request_notes' ) );
         add_action( 'admin_post_vesho_reply_ticket',          array( __CLASS__, 'handle_reply_ticket' ) );
         add_action( 'admin_post_vesho_update_ticket_status',  array( __CLASS__, 'handle_update_ticket_status' ) );
+        add_action( 'admin_post_vesho_assign_ticket',         array( __CLASS__, 'handle_assign_ticket' ) );
+        add_action( 'admin_post_vesho_save_task',             array( __CLASS__, 'handle_save_task' ) );
+        add_action( 'admin_post_vesho_delete_task',           array( __CLASS__, 'handle_delete_task' ) );
+        add_action( 'admin_post_vesho_complete_task',         array( __CLASS__, 'handle_complete_task' ) );
         add_action( 'admin_post_vesho_invoice_mark_paid',     array( __CLASS__, 'handle_invoice_mark_paid' ) );
         add_action( 'admin_post_vesho_save_workhours',   array( __CLASS__, 'handle_save_workhours' ) );
         add_action( 'admin_post_vesho_delete_workhours', array( __CLASS__, 'handle_delete_workhours' ) );
@@ -193,6 +197,9 @@ class Vesho_CRM_Admin {
         add_submenu_page( 'vesho-crm', 'Tarnijad', 'Tarnijad', $cap, 'vesho-crm-suppliers', array( __CLASS__, 'page_suppliers' ) );
         add_submenu_page( 'vesho-crm', 'Ostutellimused', 'Ostutellimused', $cap, 'vesho-crm-purchase-orders', array( __CLASS__, 'page_purchase_orders' ) );
         add_submenu_page( 'vesho-crm', 'Hinnakiri', 'Hinnakiri', $cap, 'vesho-crm-pricelist', array( __CLASS__, 'page_pricelist' ) );
+
+        // ── ÜLESANDED ──
+        add_submenu_page( 'vesho-crm', 'Ülesanded', 'Ülesanded', $cap, 'vesho-crm-tasks', array( __CLASS__, 'page_tasks' ) );
 
         // ── MUU ──
         add_submenu_page( 'vesho-crm', 'Portaali teated', 'Portaali teated', $cap, 'vesho-crm-notices', array( __CLASS__, 'page_notices' ) );
@@ -367,6 +374,7 @@ class Vesho_CRM_Admin {
     public static function page_calendar()     { self::load_view('calendar'); }
     public static function page_route()        { self::load_view('route'); }
     public static function page_stockcount()   { self::load_view('stockcount'); }
+    public static function page_tasks()        { self::load_view('tasks'); }
     public static function page_notices()     { self::load_view('notices'); }
     public static function page_warehouseloc() { self::load_view('warehouseloc'); }
 
@@ -1400,6 +1408,89 @@ private static function load_view( $name ) {
             $wpdb->update( $wpdb->prefix.'vesho_support_tickets', ['status'=>$status,'updated_at'=>current_time('mysql')], ['id'=>$id] );
         }
         wp_redirect( add_query_arg( ['page'=>'vesho-crm-tickets','action'=>'view','ticket_id'=>$id,'msg'=>'updated'], admin_url('admin.php') ) );
+        exit;
+    }
+
+    public static function handle_assign_ticket() {
+        check_admin_referer( 'vesho_ticket_action' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorized' );
+        global $wpdb;
+        $id        = absint( $_POST['ticket_id'] ?? 0 );
+        $worker_id = absint( $_POST['assigned_worker_id'] ?? 0 ) ?: null;
+        if ( $id ) {
+            $wpdb->update( $wpdb->prefix.'vesho_support_tickets',
+                ['assigned_worker_id' => $worker_id, 'updated_at' => current_time('mysql')],
+                ['id' => $id]
+            );
+            // Notify worker by email if assigned
+            if ( $worker_id ) {
+                $worker = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}vesho_workers WHERE id=%d", $worker_id));
+                $ticket = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}vesho_support_tickets WHERE id=%d", $id));
+                $email  = !empty($worker->work_email) ? $worker->work_email : ($worker->email ?? '');
+                if ( $email && $ticket ) {
+                    $co = get_option('vesho_company_name', 'Vesho OÜ');
+                    wp_mail( $email, $co . ' — Tugipilet määratud: ' . $ticket->subject,
+                        "Tere, {$worker->name}!\n\nSulle on määratud tugipilet #{$id}: {$ticket->subject}\n\nVaata: " . admin_url('admin.php?page=vesho-crm-tickets&action=view&ticket_id='.$id) . "\n\n{$co}"
+                    );
+                }
+            }
+        }
+        wp_redirect( add_query_arg( ['page'=>'vesho-crm-tickets','action'=>'view','ticket_id'=>$id,'msg'=>'updated'], admin_url('admin.php') ) );
+        exit;
+    }
+
+    // ── Tasks ─────────────────────────────────────────────────────────────────
+    public static function handle_save_task() {
+        check_admin_referer( 'vesho_save_task' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorized' );
+        global $wpdb;
+        $id   = absint( $_POST['task_id'] ?? 0 );
+        $data = [
+            'title'              => sanitize_text_field( $_POST['title'] ?? '' ),
+            'description'        => sanitize_textarea_field( $_POST['description'] ?? '' ),
+            'priority'           => sanitize_text_field( $_POST['priority'] ?? 'normal' ),
+            'status'             => sanitize_text_field( $_POST['status'] ?? 'open' ),
+            'assigned_worker_id' => absint( $_POST['assigned_worker_id'] ?? 0 ) ?: null,
+            'client_id'          => absint( $_POST['client_id'] ?? 0 ) ?: null,
+            'due_date'           => sanitize_text_field( $_POST['due_date'] ?? '' ) ?: null,
+        ];
+        if ( ! $data['title'] ) {
+            wp_redirect( admin_url('admin.php?page=vesho-crm-tasks&msg=error') );
+            exit;
+        }
+        if ( $id ) {
+            $wpdb->update( $wpdb->prefix.'vesho_tasks', $data, ['id' => $id] );
+        } else {
+            $data['created_by'] = wp_get_current_user()->display_name ?: 'Admin';
+            $data['created_at'] = current_time('mysql');
+            $wpdb->insert( $wpdb->prefix.'vesho_tasks', $data );
+        }
+        wp_redirect( add_query_arg( ['page'=>'vesho-crm-tasks','msg'=>'saved'], admin_url('admin.php') ) );
+        exit;
+    }
+
+    public static function handle_delete_task() {
+        $id = absint( $_GET['task_id'] ?? 0 );
+        check_admin_referer( 'vesho_delete_task_' . $id );
+        if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorized' );
+        global $wpdb;
+        if ( $id ) $wpdb->delete( $wpdb->prefix.'vesho_tasks', ['id' => $id] );
+        wp_redirect( add_query_arg( ['page'=>'vesho-crm-tasks','msg'=>'deleted'], admin_url('admin.php') ) );
+        exit;
+    }
+
+    public static function handle_complete_task() {
+        $id = absint( $_GET['task_id'] ?? 0 );
+        check_admin_referer( 'vesho_complete_task_' . $id );
+        if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorized' );
+        global $wpdb;
+        if ( $id ) {
+            $wpdb->update( $wpdb->prefix.'vesho_tasks',
+                ['status' => 'done', 'completed_at' => current_time('mysql')],
+                ['id' => $id]
+            );
+        }
+        wp_redirect( add_query_arg( ['page'=>'vesho-crm-tasks','msg'=>'done'], admin_url('admin.php') ) );
         exit;
     }
 

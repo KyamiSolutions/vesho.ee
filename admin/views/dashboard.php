@@ -81,13 +81,17 @@ $top_clients = $wpdb->get_results($wpdb->prepare(
      GROUP BY i.client_id ORDER BY total DESC LIMIT 5", $six_months_ago
 ));
 
-// ── Row 2 extras (shop, requests, stock) ─────────────────────────────────────
+// ── Row 2 extras (shop, requests, stock, tickets) ─────────────────────────────
 $shop_orders    = (int) $wpdb->get_var(
     "SELECT COUNT(*) FROM {$wpdb->prefix}vesho_shop_orders WHERE status IN ('new','picking')");
 $new_requests   = (int) $wpdb->get_var(
     "SELECT COUNT(*) FROM {$wpdb->prefix}vesho_guest_requests WHERE status='new'");
 $low_stock      = (int) $wpdb->get_var(
     "SELECT COUNT(*) FROM {$wpdb->prefix}vesho_inventory WHERE min_quantity IS NOT NULL AND quantity <= min_quantity AND archived=0");
+$open_tickets   = (int) $wpdb->get_var(
+    "SELECT COUNT(*) FROM {$wpdb->prefix}vesho_support_tickets WHERE status IN ('open','in_progress')");
+$open_tasks     = (int) $wpdb->get_var(
+    "SELECT COUNT(*) FROM {$wpdb->prefix}vesho_tasks WHERE status NOT IN ('done','cancelled')" );
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 $status_colors = [
@@ -207,6 +211,23 @@ $status_labels = [
         </div>
     </div>
 
+</div>
+<!-- ── Row 3: tickets + tasks ─────────────────────────────────────────────── -->
+<div class="crm-stat-grid crm-stat-grid--4" style="padding:0 2px;margin-bottom:28px">
+    <a href="<?php echo admin_url('admin.php?page=vesho-crm-tickets&status=open'); ?>" class="crm-stat" data-accent="<?php echo $open_tickets > 0 ? 'warning' : 'navy'; ?>" style="text-decoration:none">
+        <div class="crm-stat__icon" style="background:<?php echo $open_tickets > 0 ? '#fef9c3' : 'rgba(0,180,200,.1)'; ?>;color:<?php echo $open_tickets > 0 ? '#b45309' : 'var(--crm-teal)'; ?>">🎫</div>
+        <div>
+            <span class="crm-stat__num" style="<?php echo $open_tickets > 0 ? 'color:#b45309' : ''; ?>"><?php echo $open_tickets; ?></span>
+            <span class="crm-stat__label">Avatud piletid</span>
+        </div>
+    </a>
+    <a href="<?php echo admin_url('admin.php?page=vesho-crm-tasks'); ?>" class="crm-stat" data-accent="<?php echo $open_tasks > 0 ? 'warning' : 'navy'; ?>" style="text-decoration:none">
+        <div class="crm-stat__icon" style="background:<?php echo $open_tasks > 0 ? '#fef9c3' : 'rgba(0,180,200,.1)'; ?>;color:<?php echo $open_tasks > 0 ? '#b45309' : 'var(--crm-teal)'; ?>">✅</div>
+        <div>
+            <span class="crm-stat__num" style="<?php echo $open_tasks > 0 ? 'color:#b45309' : ''; ?>"><?php echo $open_tasks; ?></span>
+            <span class="crm-stat__label">Avatud ülesanded</span>
+        </div>
+    </a>
 </div>
 
 <!-- ── Tähtaja ületanud arved ──────────────────────────────────────────────── -->

@@ -725,6 +725,28 @@ class Vesho_CRM_Database {
         self::maybe_add_column( "{$wpdb->prefix}vesho_stock_receipts", 'purchase_order_id', 'INT UNSIGNED DEFAULT NULL' );
         self::maybe_add_column( "{$wpdb->prefix}vesho_stock_receipts", 'supplier_id',       'INT UNSIGNED DEFAULT NULL' );
 
+        // ── tasks ─────────────────────────────────────────────────────────────
+        dbDelta( "CREATE TABLE {$wpdb->prefix}vesho_tasks (
+            id                 INT UNSIGNED NOT NULL AUTO_INCREMENT,
+            title              VARCHAR(255) NOT NULL,
+            description        TEXT         DEFAULT '',
+            status             VARCHAR(20)  DEFAULT 'open',
+            priority           VARCHAR(20)  DEFAULT 'normal',
+            assigned_worker_id INT UNSIGNED DEFAULT NULL,
+            client_id          INT UNSIGNED DEFAULT NULL,
+            due_date           DATE         DEFAULT NULL,
+            created_by         VARCHAR(100) DEFAULT '',
+            created_at         DATETIME     DEFAULT CURRENT_TIMESTAMP,
+            completed_at       DATETIME     DEFAULT NULL,
+            PRIMARY KEY (id),
+            KEY idx_task_status (status),
+            KEY idx_task_worker (assigned_worker_id),
+            KEY idx_task_due    (due_date)
+        ) $charset;" );
+
+        // Ticket worker assignment
+        self::maybe_add_column( "{$wpdb->prefix}vesho_support_tickets", 'assigned_worker_id', 'INT UNSIGNED DEFAULT NULL' );
+
         // ── Insert default settings if empty ─────────────────────────────────
         self::seed_default_settings();
     }
