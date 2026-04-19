@@ -27,6 +27,7 @@ class Vesho_CRM_Client_Portal {
             'vesho_client_cancel_booking',
             'vesho_client_upgrade_to_firma',
             'vesho_client_delete_account',
+            'vesho_client_cancel_order',
         ];
         add_action('wp_ajax_vesho_client_return_request', [__CLASS__, 'ajax_client_return_request']);
 
@@ -858,16 +859,22 @@ function veshoResendVerify(){
             "SELECT COUNT(*) FROM {$wpdb->prefix}vesho_invoices WHERE client_id=%d AND status IN ('sent','overdue')", $cid
         ));
         $next_maint = $wpdb->get_row($wpdb->prepare(
-            "SELECT m.scheduled_date, d.name as device_name
+            "SELECT m.id, m.scheduled_date, d.name as device_name, d.model as device_model
              FROM {$wpdb->prefix}vesho_maintenances m
              JOIN {$wpdb->prefix}vesho_devices d ON d.id=m.device_id
              WHERE d.client_id=%d AND m.status='scheduled' AND m.scheduled_date>=CURDATE()
              ORDER BY m.scheduled_date ASC LIMIT 1", $cid
         ));
-        $system_type = $client->system_type ?? ($client->client_type ?? '—');
+        $last_maint = $wpdb->get_row($wpdb->prepare(
+            "SELECT m.completed_date, d.name as device_name, d.model as device_model
+             FROM {$wpdb->prefix}vesho_maintenances m
+             JOIN {$wpdb->prefix}vesho_devices d ON d.id=m.device_id
+             WHERE d.client_id=%d AND m.status='completed'
+             ORDER BY m.completed_date DESC LIMIT 1", $cid
+        ));
 
         $recent_invoices = $wpdb->get_results($wpdb->prepare(
-            "SELECT invoice_number, invoice_date, amount, status FROM {$wpdb->prefix}vesho_invoices
+            "SELECT id, invoice_number, invoice_date, amount, status FROM {$wpdb->prefix}vesho_invoices
              WHERE client_id=%d ORDER BY invoice_date DESC LIMIT 5", $cid
         ));
         $upcoming_maints = $wpdb->get_results($wpdb->prepare(
@@ -878,21 +885,47 @@ function veshoResendVerify(){
              ORDER BY m.scheduled_date ASC LIMIT 5", $cid
         ));
 
-        $services_url   = esc_url(add_query_arg('ptab', 'services', $base));
-        $invoices_url   = esc_url(add_query_arg('ptab', 'invoices', $base));
+        // Company contact info
+        $co_name    = get_option('vesho_company_name', get_bloginfo('name'));
+        $co_phone   = get_option('vesho_company_phone', '');
+        $co_email   = get_option('vesho_company_email', '');
+        $co_address = get_option('vesho_company_address', '');
+
+        // Loyalty discount
+        $loyalty_pct = (float) get_option('vesho_shop_loyalty_discount', 0);
+
+        $maints_url  = esc_url(add_query_arg('ptab', 'maintenances', $base));
+        $invoices_url = esc_url(add_query_arg('ptab', 'invoices', $base));
+
         $next_date = $next_maint ? esc_html(date_i18n('d.m.Y', strtotime($next_maint->scheduled_date))) : '—';
+        $days_until = '';
+        if ($next_maint) {
+            $diff = (strtotime($next_maint->scheduled_date) - time()) / 86400;
+            $days_until = $diff <= 1 ? 'Homme' : (int)ceil($diff) . ' päeva';
+        }
         ?>
 <div class="vcp-page-header">
   <h1>Tere tulemast, <?php echo esc_html(explode(' ', $client->name)[0]); ?>!</h1>
   <?php if (!empty($client->company)) echo '<p>' . esc_html($client->company) . '</p>'; ?>
 </div>
 
-<div class="vcp-stat-grid">
-  <div class="vcp-stat-card vcp-stat-blue">
-    <div class="vcp-stat-label">Järgmine hooldus</div>
-    <div class="vcp-stat-value"><?php echo $next_date; ?></div>
+<?php if ($loyalty_pct > 0): ?>
+<div style="display:flex;align-items:center;gap:10px;padding:10px 16px;background:rgba(16,185,129,0.07);border:1px solid rgba(16,185,129,0.2);border-radius:12px;margin-bottom:16px">
+  <span style="font-size:20px">⭐</span>
+  <div>
+    <div style="font-size:13px;font-weight:700;color:#059669">Kliendi lojaalsussoodustus: <?php echo (int)$loyalty_pct; ?>%</div>
+    <div style="font-size:12px;color:#6b7280">Soodustus rakendub automaatselt e-poe tellimustele</div>
   </div>
-  <div class="vcp-stat-card vcp-stat-orange">
+</div>
+<?php endif; ?>
+
+<div class="vcp-stat-grid">
+  <div class="vcp-stat-card vcp-stat-blue" style="cursor:pointer" onclick="location.href='<?php echo $maints_url; ?>'">
+    <div class="vcp-stat-label">Järgmine hooldus</div>
+    <div class="vcp-stat-value" style="font-size:<?php echo $next_maint ? '1rem' : '1.5rem'; ?>"><?php echo $next_date; ?></div>
+    <?php if ($days_until): ?><div style="font-size:11px;color:#60a5fa;margin-top:4px;font-weight:600"><?php echo esc_html($days_until); ?></div><?php endif; ?>
+  </div>
+  <div class="vcp-stat-card vcp-stat-orange" style="cursor:pointer" onclick="location.href='<?php echo $invoices_url; ?>'">
     <div class="vcp-stat-label">Tasumata arved</div>
     <div class="vcp-stat-value"><?php echo $unpaid_count; ?></div>
   </div>
@@ -900,10 +933,18 @@ function veshoResendVerify(){
     <div class="vcp-stat-label">Aktiivseid seadmeid</div>
     <div class="vcp-stat-value"><?php echo $devices_count; ?></div>
   </div>
+  <?php if ($last_maint): ?>
   <div class="vcp-stat-card vcp-stat-teal">
-    <div class="vcp-stat-label">Süsteemi tüüp</div>
-    <div class="vcp-stat-value" style="font-size:1rem"><?php echo esc_html($system_type); ?></div>
+    <div class="vcp-stat-label">Viimane hooldus</div>
+    <div class="vcp-stat-value" style="font-size:1rem"><?php echo esc_html(date_i18n('d.m.Y', strtotime($last_maint->completed_date))); ?></div>
+    <div style="font-size:11px;color:#2dd4bf;margin-top:4px"><?php echo esc_html($last_maint->device_name); ?></div>
   </div>
+  <?php else: ?>
+  <div class="vcp-stat-card vcp-stat-teal">
+    <div class="vcp-stat-label">Hooldusi tehtud</div>
+    <div class="vcp-stat-value">—</div>
+  </div>
+  <?php endif; ?>
 </div>
 
 <div class="vcp-two-col">
@@ -922,7 +963,7 @@ function veshoResendVerify(){
           <td><?php echo number_format((float)$inv->amount, 2, ',', ' '); ?> €</td>
           <td><?php echo self::status_badge($inv->status, 'invoice'); ?></td>
           <td><?php if ($inv->status !== 'paid'): ?>
-            <button onclick="vwpOpenPayment(<?php echo $inv->id; ?>,<?php echo $inv->amount; ?>)"
+            <button onclick="vwpOpenPayment(<?php echo (int)$inv->id; ?>,<?php echo (float)$inv->amount; ?>)"
                     style="padding:4px 12px;background:#f59e0b;border:none;border-radius:6px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">
                 💳 Maksa
             </button>
@@ -956,9 +997,41 @@ function veshoResendVerify(){
 </div>
 
 <div class="vcp-quick-actions">
-  <a href="<?php echo $services_url; ?>" class="vcp-btn-primary">+ Broneeri teenus</a>
-  <a href="<?php echo $invoices_url; ?>" class="vcp-btn-outline">Vaata arveid</a>
+  <a href="<?php echo $maints_url; ?>" class="vcp-btn-primary">🔧 Broneeri hooldus</a>
+  <a href="<?php echo $invoices_url; ?>" class="vcp-btn-outline">📋 Vaata arveid</a>
 </div>
+
+<?php if ($co_phone || $co_email || $co_address): ?>
+<div class="vcp-card" style="margin-top:16px">
+  <h2 class="vcp-section-title" style="margin-bottom:12px">📞 Kontakt</h2>
+  <div style="display:flex;flex-wrap:wrap;gap:16px">
+    <?php if ($co_name): ?>
+    <div style="min-width:140px">
+      <div style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px">Ettevõte</div>
+      <div style="font-size:14px;font-weight:600"><?php echo esc_html($co_name); ?></div>
+    </div>
+    <?php endif; ?>
+    <?php if ($co_phone): ?>
+    <div style="min-width:140px">
+      <div style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px">Telefon</div>
+      <a href="tel:<?php echo esc_attr(preg_replace('/\s+/', '', $co_phone)); ?>" style="font-size:14px;font-weight:600;color:inherit;text-decoration:none">📞 <?php echo esc_html($co_phone); ?></a>
+    </div>
+    <?php endif; ?>
+    <?php if ($co_email): ?>
+    <div style="min-width:140px">
+      <div style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px">E-post</div>
+      <a href="mailto:<?php echo esc_attr($co_email); ?>" style="font-size:14px;font-weight:600;color:inherit;text-decoration:none">✉️ <?php echo esc_html($co_email); ?></a>
+    </div>
+    <?php endif; ?>
+    <?php if ($co_address): ?>
+    <div style="min-width:140px">
+      <div style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px">Aadress</div>
+      <div style="font-size:14px;font-weight:600">📍 <?php echo esc_html($co_address); ?></div>
+    </div>
+    <?php endif; ?>
+  </div>
+</div>
+<?php endif; ?>
         <?php
     }
 
@@ -1707,7 +1780,6 @@ function setMsg(m){document.getElementById('vcp-pay-msg').textContent=m;}
         $nonce = wp_create_nonce('vesho_portal_nonce');
         $ajax  = esc_url(admin_url('admin-ajax.php'));
 
-        // Fetch orders: logged-in client orders + same-email guest orders
         $orders = $wpdb->get_results($wpdb->prepare(
             "SELECT * FROM {$wpdb->prefix}vesho_shop_orders
              WHERE client_id=%d OR guest_email=%s
@@ -1715,195 +1787,248 @@ function setMsg(m){document.getElementById('vcp-pay-msg').textContent=m;}
             $cid, $email
         ));
 
+        $delivery_label = [
+            'pickup'  => '🏪 Kaupluses',
+            'courier' => '🚚 Kuller',
+            'parcel'  => '📦 Pakiautomaat',
+        ];
         $status_map = [
-            'new'              => ['Uus',             '#fee2e2', '#dc2626'],
-            'picking'          => ['Komplekteerimisel','#fef9c3', '#b45309'],
-            'ready'            => ['Valmis',          '#dbeafe', '#1d4ed8'],
-            'shipped'          => ['Saadetud',        '#ede9fe', '#7c3aed'],
-            'fulfilled'        => ['Täidetud',        '#dcfce7', '#16a34a'],
-            'cancelled'        => ['Tühistatud',      '#f3f4f6', '#6b7280'],
-            'returned'         => ['Tagastatud',      '#f3f4f6', '#6b7280'],
-            'return_requested' => ['Tagastus ootel',  '#fef9c3', '#b45309'],
+            'new'              => ['Uus',              '#fee2e2', '#dc2626'],
+            'pending_payment'  => ['Makse ootel',      '#fef9c3', '#b45309'],
+            'picking'          => ['Komplekteerimisel', '#fef9c3', '#b45309'],
+            'ready'            => ['Valmis',            '#dbeafe', '#1d4ed8'],
+            'shipped'          => ['Saadetud',          '#ede9fe', '#7c3aed'],
+            'fulfilled'        => ['Täidetud',          '#dcfce7', '#16a34a'],
+            'cancelled'        => ['Tühistatud',        '#f3f4f6', '#6b7280'],
+            'returned'         => ['Tagastatud',        '#f3f4f6', '#6b7280'],
+            'return_requested' => ['Tagastus ootel',    '#fef9c3', '#b45309'],
         ];
         ?>
 <div class="vcp-page-header"><h1>Tellimused</h1></div>
-<div id="vcp-return-msg" class="vcp-msg" style="display:none;margin-bottom:12px"></div>
+<div id="vcp-order-msg" class="vcp-msg" style="display:none;margin-bottom:12px"></div>
 <?php if (empty($orders)): ?>
   <div class="vcp-empty">Teil ei ole ühtegi tellimust.</div>
 <?php else: ?>
-<div class="vcp-card" style="overflow:auto">
-  <table class="vcp-table">
-    <thead>
-      <tr>
-        <th>Nr</th>
-        <th>Kuupäev</th>
-        <th>Tooted</th>
-        <th>Summa</th>
-        <th>Makse</th>
-        <th>Staatus</th>
-        <th>Jälgida</th>
-        <th></th>
-      </tr>
-    </thead>
-    <tbody>
-    <?php foreach ($orders as $o):
-        $status_info = $status_map[$o->status] ?? [$o->status, '#f3f4f6', '#6b7280'];
-        $items = $wpdb->get_results($wpdb->prepare(
-            "SELECT name, quantity FROM {$wpdb->prefix}vesho_shop_order_items WHERE order_id=%d", $o->id
-        ));
-        $items_str = implode(', ', array_map(fn($i) => esc_html($i->name) . ' ×' . (int)$i->quantity, $items));
-        $is_return = $o->status === 'returned';
-        $total_display = ($is_return ? '−' : '') . number_format(abs((float)$o->total), 2, ',', ' ') . ' €';
-        $total_color   = $is_return ? '#dc2626' : 'inherit';
-        // 14-day return eligibility
-        $days_old        = $o->created_at ? (time() - strtotime($o->created_at)) / 86400 : 99;
-        $return_eligible = in_array($o->status, ['fulfilled', 'shipped'], true) && $days_old <= 14;
-    ?>
-    <tr>
-      <td><strong><?php echo esc_html($o->order_number); ?></strong></td>
-      <td style="white-space:nowrap"><?php echo esc_html($o->created_at ? date('d.m.Y', strtotime($o->created_at)) : '—'); ?></td>
-      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="<?php echo esc_attr($items_str); ?>"><?php echo $items_str ?: '—'; ?></td>
-      <td style="white-space:nowrap;color:<?php echo $total_color; ?>"><strong><?php echo $total_display; ?></strong></td>
-      <td><?php echo esc_html($o->payment_method ?: '—'); ?></td>
-      <td>
-        <span style="display:inline-block;padding:2px 10px;border-radius:999px;font-size:11px;font-weight:600;background:<?php echo esc_attr($status_info[1]); ?>;color:<?php echo esc_attr($status_info[2]); ?>">
-          <?php echo esc_html($status_info[0]); ?>
-        </span>
-      </td>
-      <td>
-        <?php if ($o->tracking_number): ?>
-          <a href="https://www.omniva.ee/private/track?barcode=<?php echo esc_attr($o->tracking_number); ?>"
-             target="_blank" rel="noopener noreferrer"
-             style="font-family:monospace;font-size:12px">
-            <?php echo esc_html($o->tracking_number); ?> ↗
-          </a>
-        <?php else: ?>
-          —
-        <?php endif; ?>
-      </td>
-      <td>
-        <?php if ($return_eligible): ?>
-        <button type="button"
-                class="vcp-btn-outline vcp-return-btn"
-                style="font-size:12px;padding:4px 10px;white-space:nowrap"
-                data-order-id="<?php echo (int)$o->id; ?>"
-                data-order-nr="<?php echo esc_attr($o->order_number); ?>">
-          ↩️ Taotle tagastust
-        </button>
-        <?php endif; ?>
-      </td>
-    </tr>
-    <?php if ($return_eligible): ?>
-    <tr class="vcp-return-form-row" id="vcp-return-form-<?php echo (int)$o->id; ?>" style="display:none">
-      <td colspan="8" style="padding:0">
-        <div style="padding:12px 16px;background:#fefce8;border-top:1px solid #fde047">
-          <p style="margin:0 0 12px;font-size:13px;font-weight:600">Tagastustaotlus — tellimus <?php echo esc_html($o->order_number); ?></p>
-          <form class="vcp-return-form-inner" enctype="multipart/form-data" data-order-id="<?php echo (int)$o->id; ?>" style="display:flex;flex-direction:column;gap:10px">
-            <div>
-              <label style="display:block;font-size:12px;font-weight:500;margin-bottom:4px;color:#374151">Tagastuse põhjus *</label>
-              <select class="vcp-return-reason-select vcp-input" data-order-id="<?php echo (int)$o->id; ?>" style="font-size:13px;width:100%">
-                <option value="">— Vali põhjus —</option>
-                <option value="Toode ei vasta kirjeldusele">Toode ei vasta kirjeldusele</option>
-                <option value="Defektne toode">Defektne toode</option>
-                <option value="Muutsin meelt">Muutsin meelt</option>
-                <option value="Vale toode saadetud">Vale toode saadetud</option>
-                <option value="Muu">Muu</option>
-              </select>
-            </div>
-            <div>
-              <label style="display:block;font-size:12px;font-weight:500;margin-bottom:4px;color:#374151">Kirjelda lähemalt</label>
-              <textarea class="vcp-return-description vcp-input"
-                        data-order-id="<?php echo (int)$o->id; ?>"
-                        rows="3"
-                        style="width:100%;font-size:13px"
-                        placeholder="Kirjelda lähemalt..."></textarea>
-            </div>
-            <div>
-              <label style="display:block;font-size:12px;font-weight:500;margin-bottom:4px;color:#374151">Lisa foto (valikuline)</label>
-              <input type="file" class="vcp-return-photo" data-order-id="<?php echo (int)$o->id; ?>" accept="image/*" style="font-size:13px">
-            </div>
-            <div style="display:flex;gap:8px">
-              <button type="button"
-                      class="vcp-btn-primary vcp-return-submit"
-                      style="font-size:13px"
-                      data-order-id="<?php echo (int)$o->id; ?>"
-                      data-nonce="<?php echo $nonce; ?>">
-                Esita taotlus
-              </button>
-              <button type="button"
-                      class="vcp-btn-outline vcp-return-cancel"
-                      style="font-size:13px"
-                      data-order-id="<?php echo (int)$o->id; ?>">
-                Tühista
-              </button>
-            </div>
-          </form>
+<div style="display:flex;flex-direction:column;gap:10px">
+<?php foreach ($orders as $o):
+    $status_info = $status_map[$o->status] ?? [$o->status, '#f3f4f6', '#6b7280'];
+    $items = $wpdb->get_results($wpdb->prepare(
+        "SELECT name, quantity, shop_price, unit_price FROM {$wpdb->prefix}vesho_shop_order_items WHERE order_id=%d", $o->id
+    ));
+    $items_summary = implode(', ', array_map(fn($i) => esc_html($i->name) . ' ×' . (int)$i->quantity, $items));
+    $is_return   = $o->status === 'returned';
+    $total_color = $is_return ? '#dc2626' : 'inherit';
+    $total_str   = ($is_return ? '−' : '') . number_format(abs((float)$o->total), 2, ',', ' ') . ' €';
+    $days_old    = $o->created_at ? (time() - strtotime($o->created_at)) / 86400 : 99;
+    $return_eligible  = in_array($o->status, ['fulfilled', 'shipped'], true) && $days_old <= 14;
+    $cancel_eligible  = in_array($o->status, ['new', 'pending_payment'], true);
+    $dl_label = $delivery_label[$o->delivery_method ?? ''] ?? esc_html($o->delivery_method ?? '—');
+    $card_id  = 'vcp-order-card-' . (int)$o->id;
+?>
+<div class="vcp-card" style="padding:0;overflow:hidden">
+  <!-- Header row — always visible, clickable to expand -->
+  <div class="vcp-order-header" data-card="<?php echo $card_id; ?>"
+       style="display:flex;align-items:center;gap:12px;padding:14px 18px;cursor:pointer;user-select:none">
+    <div style="flex:1;min-width:0">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <strong style="font-size:14px"><?php echo esc_html($o->order_number); ?></strong>
+        <span style="display:inline-block;padding:2px 10px;border-radius:999px;font-size:11px;font-weight:600;background:<?php echo esc_attr($status_info[1]); ?>;color:<?php echo esc_attr($status_info[2]); ?>"><?php echo esc_html($status_info[0]); ?></span>
+      </div>
+      <div style="font-size:12px;color:#6b7280;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><?php echo $items_summary ?: '—'; ?></div>
+    </div>
+    <div style="text-align:right;flex-shrink:0">
+      <div style="font-weight:700;color:<?php echo $total_color; ?>"><?php echo $total_str; ?></div>
+      <div style="font-size:11px;color:#94a3b8;margin-top:2px"><?php echo esc_html($o->created_at ? date('d.m.Y', strtotime($o->created_at)) : '—'); ?></div>
+    </div>
+    <div class="vcp-order-chevron" style="font-size:12px;color:#94a3b8;transition:transform 0.2s;flex-shrink:0">▼</div>
+  </div>
+
+  <!-- Expanded body -->
+  <div class="vcp-order-body" id="<?php echo $card_id; ?>" style="display:none;border-top:1px solid #e5e7eb;padding:16px 18px">
+
+    <!-- Items list -->
+    <?php if ($items): ?>
+    <div style="margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px">Tooted</div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <?php foreach ($items as $it):
+            $price = (float)($it->shop_price ?: $it->unit_price);
+            $line_total = $price * (int)$it->quantity;
+        ?>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:#f9fafb;border-radius:8px;font-size:13px">
+          <span><?php echo esc_html($it->name); ?> <span style="color:#94a3b8">×<?php echo (int)$it->quantity; ?></span></span>
+          <span style="font-weight:600;white-space:nowrap"><?php echo number_format($line_total, 2, ',', ' '); ?> €</span>
         </div>
-      </td>
-    </tr>
+        <?php endforeach; ?>
+        <div style="display:flex;justify-content:space-between;padding:6px 10px;font-size:13px;font-weight:700;border-top:1px solid #e5e7eb;margin-top:4px">
+          <span>Kokku</span>
+          <span style="color:<?php echo $total_color; ?>"><?php echo $total_str; ?></span>
+        </div>
+      </div>
+    </div>
     <?php endif; ?>
-    <?php endforeach; ?>
-    </tbody>
-  </table>
-</div>
+
+    <!-- Delivery + tracking -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+      <div style="padding:10px 12px;background:#f9fafb;border-radius:8px">
+        <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px">Tarne</div>
+        <div style="font-size:13px;font-weight:600"><?php echo $dl_label; ?></div>
+        <?php if ($o->delivery_address): ?>
+        <div style="font-size:12px;color:#6b7280;margin-top:2px;line-height:1.4"><?php echo esc_html($o->delivery_address); ?></div>
+        <?php endif; ?>
+      </div>
+      <div style="padding:10px 12px;background:#f9fafb;border-radius:8px">
+        <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px">Jälgimine</div>
+        <?php if ($o->tracking_number): ?>
+        <a href="https://www.omniva.ee/private/track?barcode=<?php echo esc_attr($o->tracking_number); ?>"
+           target="_blank" rel="noopener noreferrer"
+           style="font-size:12px;font-family:monospace;color:#2563eb"><?php echo esc_html($o->tracking_number); ?> ↗</a>
+        <?php else: ?>
+        <div style="font-size:13px;color:#94a3b8">—</div>
+        <?php endif; ?>
+      </div>
+    </div>
+
+    <?php if ($o->notes): ?>
+    <div style="margin-bottom:14px;padding:8px 12px;background:#fffbeb;border-radius:8px;border-left:3px solid #f59e0b;font-size:12px;color:#555">📋 <?php echo esc_html($o->notes); ?></div>
+    <?php endif; ?>
+
+    <!-- Actions -->
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <?php if ($cancel_eligible): ?>
+      <button type="button" class="vcp-order-cancel-btn"
+              style="font-size:12px;padding:6px 14px;border-radius:8px;border:1px solid rgba(239,68,68,0.3);background:rgba(239,68,68,0.07);color:#dc2626;cursor:pointer;font-weight:600"
+              data-order-id="<?php echo (int)$o->id; ?>"
+              data-order-nr="<?php echo esc_attr($o->order_number); ?>"
+              data-nonce="<?php echo esc_attr($nonce); ?>">
+        ✕ Tühista tellimus
+      </button>
+      <?php endif; ?>
+
+      <?php if ($return_eligible): ?>
+      <button type="button" class="vcp-return-toggle-btn"
+              style="font-size:12px;padding:6px 14px;border-radius:8px;border:1px solid #e5e7eb;background:#f9fafb;cursor:pointer;font-weight:600"
+              data-order-id="<?php echo (int)$o->id; ?>">
+        ↩️ Taotle tagastust
+      </button>
+      <?php endif; ?>
+    </div>
+
+    <!-- Return form -->
+    <?php if ($return_eligible): ?>
+    <div class="vcp-return-form-wrap" id="vcp-return-form-<?php echo (int)$o->id; ?>"
+         style="display:none;margin-top:14px;padding:14px;background:#fefce8;border-radius:10px;border:1px solid #fde047">
+      <div style="font-size:13px;font-weight:600;margin-bottom:10px">Tagastustaotlus — <?php echo esc_html($o->order_number); ?></div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div>
+          <label style="display:block;font-size:12px;font-weight:500;margin-bottom:4px;color:#374151">Tagastuse põhjus *</label>
+          <select class="vcp-return-reason-select vcp-input" data-order-id="<?php echo (int)$o->id; ?>" style="font-size:13px;width:100%">
+            <option value="">— Vali põhjus —</option>
+            <option value="Toode ei vasta kirjeldusele">Toode ei vasta kirjeldusele</option>
+            <option value="Defektne toode">Defektne toode</option>
+            <option value="Muutsin meelt">Muutsin meelt</option>
+            <option value="Vale toode saadetud">Vale toode saadetud</option>
+            <option value="Muu">Muu</option>
+          </select>
+        </div>
+        <div>
+          <label style="display:block;font-size:12px;font-weight:500;margin-bottom:4px;color:#374151">Kirjelda lähemalt</label>
+          <textarea class="vcp-return-description vcp-input" data-order-id="<?php echo (int)$o->id; ?>" rows="3" style="width:100%;font-size:13px" placeholder="Kirjelda lähemalt..."></textarea>
+        </div>
+        <div>
+          <label style="display:block;font-size:12px;font-weight:500;margin-bottom:4px;color:#374151">Lisa foto (valikuline)</label>
+          <input type="file" class="vcp-return-photo" data-order-id="<?php echo (int)$o->id; ?>" accept="image/*" style="font-size:13px">
+        </div>
+        <div style="display:flex;gap:8px">
+          <button type="button" class="vcp-btn-primary vcp-return-submit" style="font-size:13px"
+                  data-order-id="<?php echo (int)$o->id; ?>" data-nonce="<?php echo esc_attr($nonce); ?>">Esita taotlus</button>
+          <button type="button" class="vcp-return-toggle-btn vcp-btn-outline" style="font-size:13px"
+                  data-order-id="<?php echo (int)$o->id; ?>">Tühista</button>
+        </div>
+      </div>
+    </div>
+    <?php endif; ?>
+
+  </div><!-- /.vcp-order-body -->
+</div><!-- /.vcp-card -->
+<?php endforeach; ?>
+</div><!-- orders list -->
+
 <script>
 (function(){
   var AJAX='<?php echo $ajax; ?>';
+  var msgEl = document.getElementById('vcp-order-msg');
+  function showMsg(txt, ok) {
+    if (!msgEl) return;
+    msgEl.style.display='block';
+    msgEl.className='vcp-msg '+(ok?'success':'error');
+    msgEl.textContent=txt;
+    setTimeout(function(){ msgEl.style.display='none'; }, 4000);
+  }
 
-  // Toggle return form
-  document.querySelectorAll('.vcp-return-btn').forEach(function(btn){
-    btn.addEventListener('click', function(){
-      var oid = btn.dataset.orderId;
-      var row = document.getElementById('vcp-return-form-' + oid);
-      if (row) row.style.display = row.style.display === 'none' ? 'table-row' : 'none';
+  // Expand/collapse cards
+  document.querySelectorAll('.vcp-order-header').forEach(function(hdr){
+    hdr.addEventListener('click', function(){
+      var id = hdr.dataset.card;
+      var body = document.getElementById(id);
+      var ch = hdr.querySelector('.vcp-order-chevron');
+      if (!body) return;
+      var open = body.style.display !== 'none';
+      body.style.display = open ? 'none' : 'block';
+      if (ch) ch.style.transform = open ? '' : 'rotate(180deg)';
     });
   });
 
-  // Cancel return form
-  document.querySelectorAll('.vcp-return-cancel').forEach(function(btn){
-    btn.addEventListener('click', function(){
-      var row = document.getElementById('vcp-return-form-' + btn.dataset.orderId);
-      if (row) row.style.display = 'none';
+  // Cancel order
+  document.querySelectorAll('.vcp-order-cancel-btn').forEach(function(btn){
+    btn.addEventListener('click', function(e){
+      e.stopPropagation();
+      if (!confirm('Oled kindel, et soovid tellimuse ' + btn.dataset.orderNr + ' tühistada?')) return;
+      btn.disabled=true; btn.textContent='...';
+      var fd=new FormData();
+      fd.append('action','vesho_client_cancel_order');
+      fd.append('nonce',btn.dataset.nonce);
+      fd.append('order_id',btn.dataset.orderId);
+      fetch(AJAX,{method:'POST',body:fd}).then(function(r){return r.json();}).then(function(d){
+        showMsg((d.data&&d.data.message)||(d.success?'Tühistatud!':'Viga'), d.success);
+        if (d.success) setTimeout(function(){ window.location.reload(); }, 1000);
+        else { btn.disabled=false; btn.textContent='✕ Tühista tellimus'; }
+      }).catch(function(){ btn.disabled=false; btn.textContent='✕ Tühista tellimus'; showMsg('Ühenduse viga',false); });
+    });
+  });
+
+  // Toggle return form
+  document.querySelectorAll('.vcp-return-toggle-btn').forEach(function(btn){
+    btn.addEventListener('click', function(e){
+      e.stopPropagation();
+      var wrap = document.getElementById('vcp-return-form-'+btn.dataset.orderId);
+      if (wrap) wrap.style.display = wrap.style.display==='none' ? 'block' : 'none';
     });
   });
 
   // Submit return request
   document.querySelectorAll('.vcp-return-submit').forEach(function(btn){
-    btn.addEventListener('click', function(){
-      var oid         = btn.dataset.orderId;
-      var nonce       = btn.dataset.nonce;
-      var reasonSel   = document.querySelector('.vcp-return-reason-select[data-order-id="' + oid + '"]');
-      var descTa      = document.querySelector('.vcp-return-description[data-order-id="' + oid + '"]');
-      var photoInp    = document.querySelector('.vcp-return-photo[data-order-id="' + oid + '"]');
-      var reason      = reasonSel ? reasonSel.value.trim() : '';
-      var description = descTa   ? descTa.value.trim()    : '';
-      var msg         = document.getElementById('vcp-return-msg');
+    btn.addEventListener('click', function(e){
+      e.stopPropagation();
+      var oid=btn.dataset.orderId, nonce=btn.dataset.nonce;
+      var reasonSel = document.querySelector('.vcp-return-reason-select[data-order-id="'+oid+'"]');
+      var descTa    = document.querySelector('.vcp-return-description[data-order-id="'+oid+'"]');
+      var photoInp  = document.querySelector('.vcp-return-photo[data-order-id="'+oid+'"]');
+      var reason    = reasonSel ? reasonSel.value.trim() : '';
       if (!reason) { alert('Palun vali tagastuse põhjus'); return; }
-      btn.disabled = true; btn.textContent = '...';
-      var fd = new FormData();
-      fd.append('action',      'vesho_client_return_request');
-      fd.append('nonce',       nonce);
-      fd.append('order_id',    oid);
-      fd.append('reason',      reason);
-      fd.append('description', description);
-      if (photoInp && photoInp.files && photoInp.files[0]) {
-        fd.append('return_photo', photoInp.files[0]);
-      }
-      fetch(AJAX, {method:'POST', body:fd})
-        .then(function(r){ return r.json(); })
-        .then(function(d){
-          if (msg) {
-            msg.style.display = 'block';
-            msg.className = 'vcp-msg ' + (d.success ? 'success' : 'error');
-            msg.textContent = (d.data && d.data.message) || (d.success ? 'Esitatud!' : 'Viga');
-          }
-          if (d.success) { setTimeout(function(){ window.location.reload(); }, 1200); }
-          else { btn.disabled = false; btn.textContent = 'Esita taotlus'; }
-        })
-        .catch(function(){
-          btn.disabled = false; btn.textContent = 'Esita taotlus';
-          if (msg) { msg.style.display='block'; msg.className='vcp-msg error'; msg.textContent='Ühenduse viga'; }
-        });
+      btn.disabled=true; btn.textContent='...';
+      var fd=new FormData();
+      fd.append('action','vesho_client_return_request');
+      fd.append('nonce',nonce);
+      fd.append('order_id',oid);
+      fd.append('reason',reason);
+      fd.append('description',descTa?descTa.value.trim():'');
+      if (photoInp&&photoInp.files&&photoInp.files[0]) fd.append('return_photo',photoInp.files[0]);
+      fetch(AJAX,{method:'POST',body:fd}).then(function(r){return r.json();}).then(function(d){
+        showMsg((d.data&&d.data.message)||(d.success?'Esitatud!':'Viga'), d.success);
+        if (d.success) setTimeout(function(){ window.location.reload(); }, 1200);
+        else { btn.disabled=false; btn.textContent='Esita taotlus'; }
+      }).catch(function(){ btn.disabled=false; btn.textContent='Esita taotlus'; showMsg('Ühenduse viga',false); });
     });
   });
 })();
@@ -2892,6 +3017,47 @@ function setMsg(m){document.getElementById('vcp-pay-msg').textContent=m;}
             ['id' => $order_id]
         );
         wp_send_json_success(['message' => 'Tagastustaotlus esitatud']);
+    }
+
+    // ── Cancel order ──────────────────────────────────────────────────────────
+
+    public static function ajax_cancel_order() {
+        check_ajax_referer('vesho_portal_nonce', 'nonce');
+        $client = self::get_current_client();
+        if (!$client) wp_send_json_error(['message' => 'Pole sisse logitud']);
+
+        global $wpdb;
+        $order_id = absint($_POST['order_id'] ?? 0);
+
+        $order = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM {$wpdb->prefix}vesho_shop_orders WHERE id=%d AND (client_id=%d OR guest_email=%s)",
+            $order_id, $client->id, $client->email
+        ));
+
+        if (!$order) wp_send_json_error(['message' => 'Tellimust ei leitud']);
+
+        if (!in_array($order->status, ['new', 'pending_payment'], true)) {
+            wp_send_json_error(['message' => 'Seda tellimust ei saa enam tühistada (komplekteerimine on alanud)']);
+        }
+
+        $wpdb->update(
+            $wpdb->prefix . 'vesho_shop_orders',
+            ['status' => 'cancelled'],
+            ['id' => $order_id]
+        );
+
+        // Notify admin
+        $co    = get_option('vesho_company_name', get_bloginfo('name'));
+        $admin = get_option('vesho_notify_email', get_option('admin_email'));
+        if ($admin) {
+            wp_mail(
+                $admin,
+                "[{$co}] Tellimus tühistatud kliendi poolt",
+                "Klient {$client->name} tühistas tellimuse #{$order->order_number}."
+            );
+        }
+
+        wp_send_json_success(['message' => 'Tellimus tühistatud']);
     }
 
     // ── Fix: hide firma fields on register form load ──────────────────────────

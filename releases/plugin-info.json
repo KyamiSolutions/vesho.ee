@@ -1,10 +1,10 @@
 {
   "name": "Vesho CRM",
   "slug": "vesho-crm",
-  "version": "2.2.87",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.2.87/vesho-crm.zip",
+  "version": "2.2.88",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.2.88/vesho-crm.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-19",
-  "changelog": "<h4>2.2.87</h4><ul><li>Client portal: Hooldus tab rewrite – cancel modal, broneerimise vorm kampaania allahindlusega, pending/scheduled/completed sektsioonid, before/after fotod, töötaja märkused</li></ul><h4>2.2.86</h4><ul><li>Worker tellimused: 3006-stiil - dünaamiline stepper, overlay modal, arve+kleeps kohustuslik enne pakki, done-ekraan järgmise tellimusega, parem arve+pakikaart</li></ul><h4>2.2.85</h4><ul><li>Hotfix: parse error worker-portal rida 342</li></ul>"
+  "changelog": "<h4>2.2.88</h4><ul><li>Client portal: tellimused laiendatavad kaardid (items, tarne, tracking), tellimuse tühistamine portaalist, dashboard kontaktinfo kaart + loyalty badge</li></ul><h4>2.2.87</h4><ul><li>Client portal: Hooldus tab rewrite – cancel modal, broneerimise vorm kampaania allahindlusega, pending/scheduled/completed sektsioonid, before/after fotod, töötaja märkused</li></ul><h4>2.2.86</h4><ul><li>Worker tellimused: 3006-stiil - dünaamiline stepper, overlay modal, arve+kleeps kohustuslik enne pakki, done-ekraan järgmise tellimusega, parem arve+pakikaart</li></ul>"
 }
