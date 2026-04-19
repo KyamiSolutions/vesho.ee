@@ -409,38 +409,6 @@ tbody tr:last-child td{border-bottom:none}
         }
         ob_start();
         self::render_portal($client);
-        // Cookie consent
-        if (get_option('vesho_cookie_banner_enabled','1') === '1') {
-            $title   = esc_html(get_option('vesho_cookie_banner_title','Kasutame küpsiseid'));
-            $text    = esc_html(get_option('vesho_cookie_banner_text','Kasutame küpsiseid, et parandada kasutajakogemust.'));
-            $accept  = esc_html(get_option('vesho_cookie_accept_text','Nõustun kõigiga'));
-            $reject  = esc_html(get_option('vesho_cookie_reject_text','Ainult vajalikud'));
-            echo <<<HTML
-<div id="vesho-cookie-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#1a2535;color:#fff;padding:16px 24px;z-index:99999;box-shadow:0 -2px 12px rgba(0,0,0,.3);justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap">
-  <div>
-    <strong>$title</strong><br>
-    <span style="font-size:13px;opacity:.85">$text</span>
-  </div>
-  <div style="display:flex;gap:8px;flex-shrink:0">
-    <button onclick="veshoCookieConsent('reject')" style="padding:8px 16px;background:transparent;color:#fff;border:1px solid rgba(255,255,255,.4);border-radius:6px;cursor:pointer">$reject</button>
-    <button onclick="veshoCookieConsent('accept')" style="padding:8px 16px;background:#00b4c8;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600">$accept</button>
-  </div>
-</div>
-<script>
-(function(){
-  var b = document.getElementById('vesho-cookie-banner');
-  if(!b) return;
-  var consent = localStorage.getItem('vesho_cookie_consent');
-  if(!consent) b.style.display='flex';
-  window.veshoCookieConsent = function(choice){
-    localStorage.setItem('vesho_cookie_consent', choice);
-    localStorage.setItem('vesho_cookie_consent_date', new Date().toISOString());
-    b.style.display='none';
-  };
-})();
-</script>
-HTML;
-        }
         return ob_get_clean();
     }
 

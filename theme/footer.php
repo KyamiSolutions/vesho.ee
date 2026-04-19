@@ -137,6 +137,44 @@
 </footer><!-- .site-footer -->
 
 <?php wp_footer(); ?>
+
+<?php
+// ── Küpsiste bänner — ainult avalikul lehel, mitte portaalides ───────────────
+$_ck_enabled = get_option('vesho_cookie_banner_enabled','1') === '1';
+$_ck_ga      = get_option('vesho_ga_id','');
+$_ck_show    = $_ck_enabled && $_ck_ga && !is_user_logged_in();
+if ($_ck_show):
+    $_ck_title  = esc_html(get_option('vesho_cookie_banner_title','Kasutame küpsiseid'));
+    $_ck_text   = esc_html(get_option('vesho_cookie_banner_text','Kasutame küpsiseid, et parandada kasutajakogemust ja analüüsida liiklust.'));
+    $_ck_accept = esc_html(get_option('vesho_cookie_accept_text','Nõustun kõigiga'));
+    $_ck_reject = esc_html(get_option('vesho_cookie_reject_text','Ainult vajalikud'));
+?>
+<div id="vesho-cookie-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#1a2535;color:#fff;padding:16px 24px;z-index:99998;box-shadow:0 -2px 12px rgba(0,0,0,.3);justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap">
+    <div>
+        <strong><?php echo $_ck_title; ?></strong><br>
+        <span style="font-size:13px;opacity:.85"><?php echo $_ck_text; ?></span>
+    </div>
+    <div style="display:flex;gap:8px;flex-shrink:0">
+        <button onclick="veshoCookieConsent('reject')" style="padding:8px 16px;background:transparent;color:#fff;border:1px solid rgba(255,255,255,.4);border-radius:6px;cursor:pointer;font-size:13px"><?php echo $_ck_reject; ?></button>
+        <button onclick="veshoCookieConsent('accept')" style="padding:8px 16px;background:#00b4c8;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600;font-size:13px"><?php echo $_ck_accept; ?></button>
+    </div>
+</div>
+<script>
+(function(){
+    var b = document.getElementById('vesho-cookie-banner');
+    if (!b) return;
+    if (!localStorage.getItem('vesho_cookie_consent')) b.style.display = 'flex';
+    window.veshoCookieConsent = function(choice) {
+        localStorage.setItem('vesho_cookie_consent', choice);
+        localStorage.setItem('vesho_cookie_consent_date', new Date().toISOString());
+        b.style.display = 'none';
+        if (choice === 'accept' && typeof gtag !== 'undefined') {
+            gtag('consent', 'update', { analytics_storage: 'granted' });
+        }
+    };
+})();
+</script>
+<?php endif; ?>
 </body>
 </html>
 
