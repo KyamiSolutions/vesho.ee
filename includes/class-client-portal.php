@@ -4210,16 +4210,29 @@ if(CFG.initialView==='success'&&CFG.returnOrder){
 /* ── Delivery buttons ── */
 .vs-deliv-btn{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:12px;border:2px solid #e2e8f0;background:#f8fafc;cursor:pointer;text-align:left;transition:all .15s;width:100%}
 .vs-deliv-btn.sel{border-color:#00b4c8;background:rgba(0,180,200,.06)}
+/* ── Hero ── */
+.vs-hero{background:linear-gradient(160deg,#0b1c2b 0%,#0d2a3a 100%);padding:72px 24px 64px;text-align:center;margin:0 0 32px}
+.vs-hero-eyebrow{color:#00b4c8;font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;margin:0 0 16px}
+.vs-hero-title{color:#fff;font-size:46px;font-weight:800;margin:0 0 14px;line-height:1.1}
+.vs-hero-desc{color:#7a9eb0;font-size:15px;margin:0;line-height:1.6}
 /* ── Mobile ── */
 @media(max-width:700px){
   .vs-sidebar{display:none}
   .vs-layout{display:block}
   .vs-grid{grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:12px}
   .vs-overlay{padding:16px 8px}
+  .vs-hero{padding:48px 16px 40px}
+  .vs-hero-title{font-size:32px}
 }
 </style>
 
 <div id="vshop">
+
+<div class="vs-hero">
+  <p class="vs-hero-eyebrow">VESHO OÜ</p>
+  <h1 class="vs-hero-title">Pood</h1>
+  <p class="vs-hero-desc">Veesüsteemide materjalid ja komponendid.</p>
+</div>
 
 <?php if ($campaign && in_array($campaign->target, ['epood','both'], true)) : ?>
 <div class="vs-camp">
