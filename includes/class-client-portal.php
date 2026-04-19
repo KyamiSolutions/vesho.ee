@@ -4131,112 +4131,131 @@ if(CFG.initialView==='success'&&CFG.returnOrder){
         ob_start();
         ?>
 <style>
-#vshop{all:revert;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#1a2a38;line-height:1.5;box-sizing:border-box}
+#vshop{all:revert;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#1a2a38;line-height:1.5}
 #vshop *{box-sizing:border-box;font-family:inherit}
-/* ── Hero ── */
-#vshop .vs-hero{background:linear-gradient(160deg,#0b1c2b 0%,#0d2a3a 100%);padding:80px 24px 72px;text-align:center;margin-bottom:32px}
-#vshop .vs-hero-eye{color:#00b4c8;font-size:11px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;margin:0 0 18px;display:block}
-#vshop .vs-hero-ttl{color:#ffffff;font-size:48px;font-weight:900;margin:0 0 16px;line-height:1;display:block}
-#vshop .vs-hero-sub{color:#7a9eb0;font-size:16px;margin:0;display:block}
-/* ── Campaign banner ── */
-#vshop .vs-camp{background:linear-gradient(135deg,#e0f7fa,#b2ebf2);border:1px solid rgba(0,180,200,.25);border-radius:14px;padding:14px 20px;display:flex;align-items:center;gap:14px;margin-bottom:24px}
-#vshop .vs-camp-badge{background:#00b4c8;color:#fff;font-size:12px;font-weight:800;padding:4px 10px;border-radius:8px;white-space:nowrap;flex-shrink:0}
-#vshop .vs-camp-name{font-weight:700;font-size:14px;color:#0d3d4f;margin:0}
-#vshop .vs-camp-date{font-size:12px;color:#5a8090;margin:2px 0 0}
-/* ── Layout ── */
-#vshop .vs-layout{display:flex;gap:24px;align-items:flex-start}
-/* ── Sidebar ── */
-#vshop .vs-sidebar{flex:0 0 210px;background:#fff;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden;position:sticky;top:80px}
-#vshop .vs-sidebar-hdr{padding:14px 16px 10px;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#94a3b8;border-bottom:1px solid #f1f5f9;margin:0}
-#vshop .vs-cat{display:flex;align-items:center;gap:10px;padding:11px 16px;cursor:pointer;border:none;border-bottom:1px solid #f8fafc;background:none;width:100%;text-align:left;font-size:13px;color:#475569;font-weight:500;transition:background .13s}
+
+/* Hero */
+#vshop .vs-hero{background:linear-gradient(135deg,#0b1c2b 0%,#0d3347 100%);padding:80px 32px 72px;text-align:center;margin-bottom:0}
+#vshop .vs-hero-eye{display:block;color:#00b4c8;font-size:11px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;margin-bottom:20px}
+#vshop .vs-hero-ttl{display:block;color:#fff;font-size:52px;font-weight:900;line-height:1;margin-bottom:16px}
+#vshop .vs-hero-sub{display:block;color:#7a9eb0;font-size:16px}
+
+/* Shop body */
+#vshop .vs-body{background:#f4f6f9;padding:32px 24px;min-height:400px}
+
+/* Campaign banner */
+#vshop .vs-camp{display:flex;align-items:center;gap:16px;background:#fff;border-left:4px solid #00b4c8;border-radius:12px;padding:16px 20px;margin-bottom:24px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+#vshop .vs-camp-badge{background:#00b4c8;color:#fff;font-size:13px;font-weight:800;padding:6px 12px;border-radius:8px;white-space:nowrap;flex-shrink:0}
+#vshop .vs-camp-name{font-weight:700;font-size:15px;color:#0d3347;margin:0}
+#vshop .vs-camp-date{font-size:12px;color:#64748b;margin:3px 0 0}
+
+/* Layout */
+#vshop .vs-layout{display:flex;gap:20px;align-items:flex-start}
+
+/* Sidebar */
+#vshop .vs-sidebar{flex:0 0 220px;background:#fff;border-radius:14px;overflow:hidden;position:sticky;top:80px;box-shadow:0 2px 12px rgba(0,0,0,.06)}
+#vshop .vs-sidebar-hdr{padding:16px 18px 12px;font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#94a3b8;border-bottom:1px solid #f1f5f9;margin:0}
+#vshop .vs-cat{display:flex;align-items:center;gap:10px;padding:11px 18px;cursor:pointer;border:none;border-bottom:1px solid #f8fafc;background:none;width:100%;text-align:left;font-size:13px;color:#475569;font-weight:500;transition:background .13s}
 #vshop .vs-cat:hover{background:#f8fafc;color:#1a2a38}
-#vshop .vs-cat.active{background:#e0f7fa;color:#007a8c;font-weight:700}
-#vshop .vs-cat.active .vs-dot{box-shadow:0 0 0 3px rgba(0,180,200,.22)}
+#vshop .vs-cat.active{background:#e0f7fa;color:#0369a1;font-weight:700}
+#vshop .vs-cat.active .vs-dot{box-shadow:0 0 0 3px rgba(0,180,200,.25)}
 #vshop .vs-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;display:inline-block}
-#vshop .vs-cnt{margin-left:auto;font-size:11px;color:#94a3b8;font-weight:600}
-/* ── Main ── */
+#vshop .vs-cnt{margin-left:auto;background:#f1f5f9;color:#64748b;font-size:11px;font-weight:700;padding:2px 7px;border-radius:20px}
+#vshop .vs-cat.active .vs-cnt{background:#00b4c8;color:#fff}
+
+/* Main */
 #vshop .vs-main{flex:1;min-width:0}
-#vshop .vs-toolbar{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
-#vshop .vs-search-wrap{position:relative;flex:1;min-width:180px}
-#vshop .vs-search-wrap input{width:100%;padding:9px 12px 9px 36px;border:1px solid #e2e8f0;border-radius:10px;font-size:13px;color:#1a2a38;outline:none;background:#f8fafc;transition:border .15s;font-family:inherit}
+#vshop .vs-toolbar{display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap;background:#fff;border-radius:12px;padding:12px 16px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+#vshop .vs-search-wrap{position:relative;flex:1;min-width:200px}
+#vshop .vs-search-wrap input{width:100%;padding:10px 14px 10px 38px;border:1.5px solid #e8ecf0;border-radius:10px;font-size:13px;color:#1a2a38;outline:none;background:#f8fafc;transition:border .15s}
 #vshop .vs-search-wrap input:focus{border-color:#00b4c8;background:#fff}
-#vshop .vs-search-ico{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:14px;pointer-events:none}
-#vshop .vs-search-btn{background:#00b4c8;color:#fff;border:none;border-radius:10px;padding:9px 16px;font-size:13px;font-weight:700;cursor:pointer}
-#vshop .vs-search-btn:hover{background:#009ab2}
-#vshop .vs-sort{border:1px solid #e2e8f0;border-radius:10px;padding:9px 12px;font-size:13px;color:#475569;background:#f8fafc;cursor:pointer;outline:none;font-family:inherit}
-#vshop .vs-views{display:flex;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden}
-#vshop .vs-view-btn{background:#f8fafc;border:none;padding:9px 12px;cursor:pointer;color:#94a3b8;font-size:15px;line-height:1;transition:all .13s}
+#vshop .vs-search-ico{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:15px;pointer-events:none}
+#vshop .vs-search-btn{background:#00b4c8;color:#fff;border:none;border-radius:10px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;transition:background .15s}
+#vshop .vs-search-btn:hover{background:#0099b0}
+#vshop .vs-sort{border:1.5px solid #e8ecf0;border-radius:10px;padding:10px 12px;font-size:13px;color:#475569;background:#f8fafc;cursor:pointer;outline:none}
+#vshop .vs-views{display:flex;border:1.5px solid #e8ecf0;border-radius:10px;overflow:hidden}
+#vshop .vs-view-btn{background:#f8fafc;border:none;padding:10px 13px;cursor:pointer;color:#94a3b8;font-size:16px;line-height:1;transition:all .13s}
 #vshop .vs-view-btn.active,#vshop .vs-view-btn:hover{background:#00b4c8;color:#fff}
-#vshop .vs-tcount{font-size:13px;color:#94a3b8;margin-bottom:12px}
-#vshop .vs-tcount strong{color:#1a2a38}
-/* ── Product grid ── */
-#vshop .vs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px}
-#vshop .vs-list{display:flex;flex-direction:column;gap:10px}
-/* ── Product card (grid) ── */
-#vshop .vs-card{background:#fff;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden;display:flex;flex-direction:column;transition:all .2s}
-#vshop .vs-card:hover{transform:translateY(-3px);box-shadow:0 10px 28px rgba(0,0,0,.09);border-color:#c7d6e0}
-#vshop .vs-card-img{height:120px;display:flex;align-items:center;justify-content:center;font-size:52px;background:linear-gradient(135deg,#f0f7ff,#e0f7fa)}
-#vshop .vs-card-body{padding:12px 14px;flex:1;display:flex;flex-direction:column;gap:4px}
-#vshop .vs-card-cat{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#00b4c8;margin:0}
-#vshop .vs-card-name{font-weight:700;font-size:13px;color:#1a2a38;line-height:1.3;margin:0}
-#vshop .vs-card-desc{font-size:11px;color:#6b7280;flex:1;line-height:1.4;margin:0}
-#vshop .vs-card-price{font-size:18px;font-weight:800;color:#0d3d4f;margin:4px 0 0}
-#vshop .vs-card-foot{padding:0 14px 14px;display:flex;align-items:center;gap:8px}
-/* ── Product card (list) ── */
-#vshop .vs-list-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;display:flex;align-items:center;gap:14px;padding:12px 16px;transition:all .15s}
-#vshop .vs-list-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.07);border-color:#c7d6e0}
-#vshop .vs-list-ico{width:52px;height:52px;border-radius:10px;background:linear-gradient(135deg,#f0f7ff,#e0f7fa);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0}
+#vshop .vs-tcount{font-size:13px;color:#64748b;margin-bottom:16px;padding-left:2px}
+#vshop .vs-tcount strong{color:#1a2a38;font-weight:700}
+
+/* Grid */
+#vshop .vs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:16px}
+#vshop .vs-list{display:flex;flex-direction:column;gap:12px}
+
+/* Grid card */
+#vshop .vs-card{background:#fff;border-radius:16px;overflow:hidden;display:flex;flex-direction:column;transition:all .22s;box-shadow:0 2px 8px rgba(0,0,0,.05);border:1.5px solid transparent}
+#vshop .vs-card:hover{transform:translateY(-4px);box-shadow:0 12px 32px rgba(0,0,0,.11);border-color:#e0f7fa}
+#vshop .vs-card-img{height:140px;display:flex;align-items:center;justify-content:center;font-size:58px;background:linear-gradient(135deg,#f0f9ff,#e0f7fa)}
+#vshop .vs-card-body{padding:14px 16px;flex:1;display:flex;flex-direction:column;gap:5px}
+#vshop .vs-card-cat{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;margin:0}
+#vshop .vs-card-name{font-weight:700;font-size:14px;color:#1a2a38;line-height:1.3;margin:0}
+#vshop .vs-card-desc{font-size:11px;color:#64748b;flex:1;line-height:1.5;margin:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+#vshop .vs-card-price{font-size:20px;font-weight:900;color:#0d3347;margin:6px 0 0;letter-spacing:-.5px}
+#vshop .vs-card-foot{padding:0 16px 16px;display:flex;align-items:center;gap:8px}
+
+/* List card */
+#vshop .vs-list-card{background:#fff;border-radius:14px;display:flex;align-items:center;gap:16px;padding:14px 18px;box-shadow:0 2px 8px rgba(0,0,0,.05);transition:all .15s;border:1.5px solid transparent}
+#vshop .vs-list-card:hover{box-shadow:0 6px 20px rgba(0,0,0,.09);border-color:#e0f7fa}
+#vshop .vs-list-ico{width:58px;height:58px;border-radius:12px;background:linear-gradient(135deg,#f0f9ff,#e0f7fa);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0}
 #vshop .vs-list-info{flex:1;min-width:0}
 #vshop .vs-list-name{font-weight:700;font-size:14px;color:#1a2a38;margin:0}
-#vshop .vs-list-desc{font-size:12px;color:#6b7280;margin:2px 0 0}
-#vshop .vs-list-price{font-size:17px;font-weight:800;color:#0d3d4f;flex-shrink:0}
-/* ── Buttons ── */
-#vshop .vs-add-btn{background:#00b4c8;color:#fff;border:none;border-radius:9px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;transition:background .15s;font-family:inherit}
-#vshop .vs-add-btn:hover{background:#009ab2}
-#vshop .vs-add-btn:disabled{background:#cbd5e1;cursor:not-allowed}
+#vshop .vs-list-desc{font-size:12px;color:#64748b;margin:2px 0 0}
+#vshop .vs-list-price{font-size:18px;font-weight:900;color:#0d3347;flex-shrink:0;margin:0 8px}
+
+/* Buttons */
+#vshop .vs-add-btn{background:#00b4c8;color:#fff;border:none;border-radius:10px;padding:9px 16px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all .15s}
+#vshop .vs-add-btn:hover{background:#0099b0;transform:scale(1.03)}
+#vshop .vs-add-btn:disabled{background:#cbd5e1;cursor:not-allowed;transform:none}
 #vshop .vs-qty{display:flex;align-items:center;gap:6px}
-#vshop .vs-qty button{width:28px;height:28px;border:1px solid #e2e8f0;border-radius:7px;background:#f8fafc;cursor:pointer;font-size:15px;font-weight:700;color:#475569;transition:all .13s;display:flex;align-items:center;justify-content:center;padding:0;font-family:inherit}
+#vshop .vs-qty button{width:30px;height:30px;border:1.5px solid #e8ecf0;border-radius:8px;background:#f8fafc;cursor:pointer;font-size:16px;font-weight:700;color:#475569;transition:all .13s;display:flex;align-items:center;justify-content:center;padding:0}
 #vshop .vs-qty button:hover{background:#00b4c8;color:#fff;border-color:#00b4c8}
-#vshop .vs-qty span{font-size:14px;font-weight:700;color:#1a2a38;min-width:22px;text-align:center}
-/* ── Empty state ── */
-#vshop .vs-empty{text-align:center;padding:60px 20px;color:#94a3b8}
-#vshop .vs-empty-ico{font-size:48px;margin-bottom:12px}
-#vshop .vs-empty-txt{font-size:15px;font-weight:600;margin:0}
-/* ── FAB cart ── */
-#vshop .vs-fab{position:fixed;bottom:28px;right:28px;width:58px;height:58px;border-radius:50%;background:#00b4c8;color:#fff;border:none;cursor:pointer;font-size:22px;box-shadow:0 4px 20px rgba(0,180,200,.4);z-index:9990;display:none;align-items:center;justify-content:center;transition:transform .15s}
-#vshop .vs-fab:hover{transform:scale(1.08)}
-#vshop .vs-fab-badge{position:absolute;top:-4px;right:-4px;background:#ef4444;color:#fff;border-radius:50%;width:20px;height:20px;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;border:2px solid #fff}
-/* ── Overlays ── */
-#vshop .vs-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9991;opacity:0;pointer-events:none;transition:opacity .25s}
-#vshop .vs-drawer{position:fixed;top:0;right:0;bottom:0;width:min(400px,100vw);background:#fff;z-index:9992;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);box-shadow:-4px 0 40px rgba(0,0,0,.15)}
-#vshop .vs-ov{position:fixed;inset:0;background:#f8fafc;z-index:9993;overflow-y:auto;display:flex;align-items:flex-start;justify-content:center;padding:32px 16px}
-#vshop .vs-ov-inner{width:100%;max-width:480px}
-/* ── Form elements ── */
-#vshop .vs-inp{width:100%;padding:10px 14px;border:1px solid #e2e8f0;border-radius:10px;font-size:14px;color:#1a2a38;outline:none;background:#f8fafc;transition:border .15s;display:block;font-family:inherit}
+#vshop .vs-qty span{font-size:14px;font-weight:700;color:#1a2a38;min-width:24px;text-align:center}
+
+/* Empty state */
+#vshop .vs-empty{text-align:center;padding:64px 20px;color:#94a3b8;background:#fff;border-radius:16px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+#vshop .vs-empty-ico{font-size:52px;margin-bottom:14px;display:block}
+#vshop .vs-empty-txt{font-size:15px;font-weight:600;margin:0;color:#64748b}
+
+/* FAB */
+#vshop .vs-fab{position:fixed;bottom:32px;right:32px;width:60px;height:60px;border-radius:50%;background:#00b4c8;color:#fff;border:none;cursor:pointer;font-size:24px;box-shadow:0 6px 24px rgba(0,180,200,.45);z-index:9990;display:none;align-items:center;justify-content:center;transition:transform .15s}
+#vshop .vs-fab:hover{transform:scale(1.1)}
+#vshop .vs-fab-badge{position:absolute;top:-5px;right:-5px;background:#ef4444;color:#fff;border-radius:50%;width:22px;height:22px;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;border:2px solid #fff}
+
+/* Overlays */
+#vshop .vs-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9991;opacity:0;pointer-events:none;transition:opacity .25s}
+#vshop .vs-drawer{position:fixed;top:0;right:0;bottom:0;width:min(420px,100vw);background:#fff;z-index:9992;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);box-shadow:-8px 0 48px rgba(0,0,0,.15)}
+#vshop .vs-ov{position:fixed;inset:0;background:#f4f6f9;z-index:9993;overflow-y:auto;display:flex;align-items:flex-start;justify-content:center;padding:32px 16px}
+#vshop .vs-ov-inner{width:100%;max-width:500px}
+
+/* Form */
+#vshop .vs-inp{width:100%;padding:11px 14px;border:1.5px solid #e8ecf0;border-radius:10px;font-size:14px;color:#1a2a38;outline:none;background:#f8fafc;transition:border .15s;display:block}
 #vshop .vs-inp:focus{border-color:#00b4c8;background:#fff}
-#vshop .vs-btn-teal{background:#00b4c8;color:#fff;border:none;border-radius:12px;padding:13px 20px;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:background .15s;font-family:inherit;width:100%}
-#vshop .vs-btn-teal:hover:not(:disabled){background:#009ab2}
+#vshop .vs-btn-teal{background:#00b4c8;color:#fff;border:none;border-radius:12px;padding:14px 20px;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:background .15s;width:100%}
+#vshop .vs-btn-teal:hover:not(:disabled){background:#0099b0}
 #vshop .vs-btn-teal:disabled{opacity:.6;cursor:not-allowed}
-#vshop .vs-btn-gray{background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;border-radius:12px;padding:13px 18px;font-size:14px;font-weight:600;cursor:pointer;transition:all .15s;font-family:inherit}
+#vshop .vs-btn-gray{background:#f1f5f9;color:#475569;border:1.5px solid #e8ecf0;border-radius:12px;padding:13px 18px;font-size:14px;font-weight:600;cursor:pointer;transition:all .15s}
 #vshop .vs-btn-gray:hover{background:#e2e8f0}
-#vshop .vs-err{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:10px;padding:10px 14px;color:#dc2626;font-size:13px;margin-bottom:14px}
+#vshop .vs-err{background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:11px 14px;color:#dc2626;font-size:13px;margin-bottom:14px}
 #vshop .vs-steps{display:flex;align-items:center;justify-content:center;gap:0;margin-bottom:28px}
-/* ── Delivery buttons ── */
-#vshop .vs-deliv-btn{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:12px;border:2px solid #e2e8f0;background:#f8fafc;cursor:pointer;text-align:left;transition:all .15s;width:100%;font-family:inherit}
+#vshop .vs-deliv-btn{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:12px;border:2px solid #e8ecf0;background:#f8fafc;cursor:pointer;text-align:left;transition:all .15s;width:100%}
 #vshop .vs-deliv-btn.sel{border-color:#00b4c8;background:rgba(0,180,200,.06)}
-/* ── Mobile ── */
-@media(max-width:700px){
+
+/* Mobile */
+@media(max-width:768px){
   #vshop .vs-sidebar{display:none}
   #vshop .vs-layout{display:block}
-  #vshop .vs-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+  #vshop .vs-grid{grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:12px}
   #vshop .vs-ov{padding:16px 8px}
-  #vshop .vs-hero .vs-hero-ttl{font-size:32px}
+  #vshop .vs-hero-ttl{font-size:36px}
+  #vshop .vs-body{padding:20px 16px}
+  #vshop .vs-fab{bottom:20px;right:20px}
 }
 </style>
 
 <div id="vshop">
 
-<?php if ($show_hero): ?>
+<?php if($show_hero): ?>
 <div class="vs-hero">
   <span class="vs-hero-eye">VESHO OÜ</span>
   <span class="vs-hero-ttl">Pood</span>
@@ -4244,14 +4263,20 @@ if(CFG.initialView==='success'&&CFG.returnOrder){
 </div>
 <?php endif; ?>
 
-<?php if ($campaign && in_array($campaign->target, ['epood','both'], true)): ?>
+<div class="vs-body">
+
+<?php if($campaign && in_array($campaign->target,['epood','both'],true)): ?>
 <div class="vs-camp">
-  <?php if ($campaign->discount_percent > 0): ?><span class="vs-camp-badge">-<?php echo (float)$campaign->discount_percent; ?>%</span>
-  <?php elseif ($campaign->free_shipping): ?><span class="vs-camp-badge" style="background:#10b981">Tasuta tarne</span>
-  <?php else: ?><span style="font-size:20px">🎉</span><?php endif; ?>
+  <?php if($campaign->discount_percent>0): ?>
+  <span class="vs-camp-badge">-<?=(float)$campaign->discount_percent?>%</span>
+  <?php elseif($campaign->free_shipping): ?>
+  <span class="vs-camp-badge" style="background:#10b981">Tasuta tarne</span>
+  <?php else: ?>
+  <span style="font-size:22px">🎉</span>
+  <?php endif; ?>
   <div>
-    <p class="vs-camp-name"><?php echo esc_html($campaign->name); ?><?php if ($campaign->description): ?> <span style="font-weight:400;color:#5a8090"> — <?php echo esc_html($campaign->description); ?></span><?php endif; ?></p>
-    <?php if ($campaign->valid_until): ?><p class="vs-camp-date">Kehtib kuni <?php echo date('d.m.Y', strtotime($campaign->valid_until)); ?></p><?php endif; ?>
+    <p class="vs-camp-name"><?=esc_html($campaign->name)?><?php if($campaign->description): ?> <span style="font-weight:400;color:#64748b"> — <?=esc_html($campaign->description)?></span><?php endif; ?></p>
+    <?php if($campaign->valid_until): ?><p class="vs-camp-date">Kehtib kuni <?=date('d.m.Y',strtotime($campaign->valid_until))?></p><?php endif; ?>
   </div>
 </div>
 <?php endif; ?>
@@ -4260,13 +4285,15 @@ if(CFG.initialView==='success'&&CFG.returnOrder){
   <aside class="vs-sidebar">
     <p class="vs-sidebar-hdr">Kategooriad</p>
     <button class="vs-cat active" id="vscat-all" onclick="vsShop.setCat('',this)">
-      <span class="vs-dot" style="background:#00b4c8"></span>Kõik tooted
-      <span class="vs-cnt" id="vscat-n-all"><?php echo $total_count; ?></span>
+      <span class="vs-dot" style="background:#00b4c8"></span>
+      Kõik tooted
+      <span class="vs-cnt" id="vscat-n-all"><?=$total_count?></span>
     </button>
-    <?php foreach ($db_cats as $c): ?>
-    <button class="vs-cat" id="vscat-<?php echo esc_attr(sanitize_title($c->name)); ?>" onclick="vsShop.setCat('<?php echo esc_js($c->name); ?>',this)" data-cat="<?php echo esc_attr($c->name); ?>">
-      <span class="vs-dot" style="background:<?php echo esc_attr($c->color ?: '#00b4c8'); ?>"></span><?php echo esc_html($c->name); ?>
-      <span class="vs-cnt" id="vscat-n-<?php echo esc_attr(sanitize_title($c->name)); ?>"><?php echo (int)$c->cnt; ?></span>
+    <?php foreach($db_cats as $c): ?>
+    <button class="vs-cat" id="vscat-<?=esc_attr(sanitize_title($c->name))?>" onclick="vsShop.setCat('<?=esc_js($c->name)?>',this)" data-cat="<?=esc_attr($c->name)?>">
+      <span class="vs-dot" style="background:<?=esc_attr($c->color?:'#00b4c8')?>"></span>
+      <?=esc_html($c->name)?>
+      <span class="vs-cnt" id="vscat-n-<?=esc_attr(sanitize_title($c->name))?>"><?=(int)$c->cnt?></span>
     </button>
     <?php endforeach; ?>
   </aside>
@@ -4289,10 +4316,12 @@ if(CFG.initialView==='success'&&CFG.returnOrder){
         <button class="vs-view-btn" id="vshop-vl" onclick="vsShop.setView('list')" title="Nimekiri">☰</button>
       </div>
     </div>
-    <p class="vs-tcount" id="vshop-count"><strong><?php echo $total_count; ?></strong> toodet</p>
+    <p class="vs-tcount" id="vshop-count"><strong><?=$total_count?></strong> toodet</p>
     <div id="vshop-products"></div>
   </div>
 </div>
+
+</div><!-- .vs-body -->
 
 <button class="vs-fab" id="vs-fab" onclick="vsShop.openCart()">🛒<span class="vs-fab-badge" id="vs-fab-badge">0</span></button>
 <div id="vs-overlays"></div>
