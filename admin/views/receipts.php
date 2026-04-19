@@ -140,43 +140,39 @@ endif; ?>
 <?php endif; ?>
 </div>
 
-<!-- Create modal -->
+<!-- Create modal (AJAX-based, like 3006) -->
 <div id="modal-create" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.5);align-items:center;justify-content:center;overflow-y:auto;padding:20px">
 <div style="background:#fff;border-radius:14px;padding:24px;width:100%;max-width:680px;max-height:90vh;overflow-y:auto;margin:auto">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
         <strong style="font-size:16px">Uus tarnimine</strong>
         <button onclick="closeModal('modal-create')" style="background:none;border:none;font-size:20px;cursor:pointer;color:#94a3b8">✕</button>
     </div>
-    <form method="POST" action="<?php echo admin_url('admin-post.php'); ?>" id="form-create-receipt">
-        <?php wp_nonce_field('vesho_save_receipt'); ?>
-        <input type="hidden" name="action" value="vesho_save_receipt">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
-            <div>
-                <label class="crm-form-label">Arve nr</label>
-                <input class="crm-form-input" type="text" name="batch_ref" placeholder="nt INV-2024-001">
-            </div>
-            <div>
-                <label class="crm-form-label">Tarnija</label>
-                <input class="crm-form-input" type="text" name="supplier" placeholder="Firma nimi">
-            </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+        <div>
+            <label class="crm-form-label">Arve nr</label>
+            <input class="crm-form-input" type="text" id="new-batch-ref" placeholder="nt INV-2024-001">
         </div>
-        <div style="margin-bottom:16px">
-            <label class="crm-form-label">Märkmed töötajale</label>
-            <textarea class="crm-form-textarea" name="notes" rows="2"></textarea>
+        <div>
+            <label class="crm-form-label">Tarnija</label>
+            <input class="crm-form-input" type="text" id="new-supplier" placeholder="Firma nimi">
         </div>
-
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-            <strong style="font-size:13px">Kaubad</strong>
-            <div style="display:flex;gap:6px">
-                <button type="button" onclick="scanReceiptEan()" style="padding:4px 12px;font-size:12px;background:#e0f7fa;border:1px solid #00b4c8;color:#007a8a;border-radius:6px;cursor:pointer">📷 EAN</button>
-                <button type="button" id="btn-add-line" style="padding:4px 12px;font-size:12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer">+ Lisa kaup</button>
-            </div>
+    </div>
+    <div style="margin-bottom:16px">
+        <label class="crm-form-label">Märkmed töötajale</label>
+        <textarea class="crm-form-textarea" id="new-notes" rows="2"></textarea>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <strong style="font-size:13px">Kaubad</strong>
+        <div style="display:flex;gap:6px">
+            <button type="button" onclick="scanReceiptEan()" style="padding:4px 12px;font-size:12px;background:#e0f7fa;border:1px solid #00b4c8;color:#007a8a;border-radius:6px;cursor:pointer">📷 EAN</button>
+            <button type="button" onclick="addNewLine()" style="padding:4px 12px;font-size:12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer">+ Lisa kaup</button>
         </div>
-        <div id="receipt-lines" style="display:flex;flex-direction:column;gap:8px"></div>
-    </form>
+    </div>
+    <div id="new-receipt-lines" style="display:flex;flex-direction:column;gap:8px"></div>
+    <div id="new-receipt-msg" style="display:none;margin-top:10px;font-size:13px;color:#ef4444"></div>
     <div style="display:flex;gap:8px;margin-top:20px">
         <button type="button" onclick="closeModal('modal-create')" class="crm-btn crm-btn-outline" style="flex:1">Tühista</button>
-        <button type="submit" form="form-create-receipt" class="crm-btn crm-btn-primary" style="flex:2">💾 Salvesta mustrand</button>
+        <button type="button" id="btn-save-receipt" onclick="saveNewReceipt()" class="crm-btn crm-btn-primary" style="flex:2">💾 Salvesta mustrand</button>
     </div>
 </div>
 </div>
@@ -242,73 +238,180 @@ var adminAddItemRid = 0;
 function closeModal(id) { document.getElementById(id).style.display='none'; }
 function openModal(id)  { document.getElementById(id).style.display='flex'; }
 
-/* ---- Create modal ---- */
+/* ---- Create modal (AJAX, 3006 stiil) ---- */
+var newLines = [];  // [{inventory_id, product_name, product_sku, product_ean, product_unit, quantity, unit_price, selling_price}]
+var newLineIdx = 0;
+
 function openCreateModal() {
-    lineIdx = 0;
-    document.getElementById('receipt-lines').innerHTML = '';
-    addLine();
+    newLines = [];
+    newLineIdx = 0;
+    document.getElementById('new-batch-ref').value = '';
+    document.getElementById('new-supplier').value = '';
+    document.getElementById('new-notes').value = '';
+    document.getElementById('new-receipt-lines').innerHTML = '';
+    document.getElementById('new-receipt-msg').style.display = 'none';
+    document.getElementById('btn-save-receipt').disabled = false;
+    document.getElementById('btn-save-receipt').textContent = '💾 Salvesta mustrand';
+    addNewLine();
     openModal('modal-create');
 }
 
-function buildLineHtml(i) {
-    var opts = invData.map(function(inv) {
-        return '<option value="'+inv.id+'" data-ean="'+inv.ean+'" data-sku="'+inv.sku+'" data-unit="'+inv.unit+'" data-price="'+inv.price+'" data-sell="'+inv.sell+'">'+inv.name+'</option>';
-    }).join('');
-    return '<div class="receipt-line" id="line-'+i+'" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px">'
-        +'<div style="display:grid;grid-template-columns:1fr auto;gap:8px;margin-bottom:8px">'
-        +'<select class="crm-form-select line-inv" name="lines['+i+'][inventory_id]" onchange="onInvChange(this,'+i+')" style="font-size:13px"><option value="">— Uus toode (sisesta alla) —</option>'+opts+'</select>'
-        +'<button type="button" onclick="removeLine('+i+')" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:18px;padding:0 4px">✕</button>'
-        +'</div>'
-        +'<div style="display:grid;grid-template-columns:1fr 1fr 80px;gap:8px;margin-bottom:8px">'
-        +'<input class="crm-form-input" type="text" name="lines['+i+'][product_name]" id="pname-'+i+'" placeholder="Toote nimi" style="font-size:13px">'
-        +'<div style="display:flex;gap:4px"><input class="crm-form-input" type="text" name="lines['+i+'][product_ean]" id="pean-'+i+'" placeholder="EAN" style="font-size:12px;font-family:monospace;flex:1"><input class="crm-form-input" type="text" name="lines['+i+'][product_sku]" id="psku-'+i+'" placeholder="SKU" style="font-size:12px;font-family:monospace;flex:1"></div>'
-        +'<select class="crm-form-select" name="lines['+i+'][product_unit]" id="punit-'+i+'" style="font-size:12px"><option>tk</option><option>kg</option><option>l</option><option>m</option><option>pk</option><option>kast</option></select>'
-        +'</div>'
-        +'<div style="display:grid;grid-template-columns:90px 1fr 1fr;gap:8px">'
-        +'<input class="crm-form-input" type="number" step="0.01" min="0.01" name="lines['+i+'][quantity]" placeholder="Kogus *" required style="font-size:13px;text-align:right">'
-        +'<input class="crm-form-input" type="number" step="0.01" min="0" name="lines['+i+'][unit_price]" id="uprice-'+i+'" placeholder="Sisseostuhind €" style="font-size:13px;text-align:right">'
-        +'<input class="crm-form-input" type="number" step="0.01" min="0" name="lines['+i+'][selling_price]" id="sprice-'+i+'" placeholder="Müügihind €" style="font-size:13px;text-align:right">'
-        +'</div>'
-        +'</div>';
-}
-
-function addLine(eanPreselect) {
-    var container = document.getElementById('receipt-lines');
-    container.insertAdjacentHTML('beforeend', buildLineHtml(lineIdx));
+function addNewLine(eanPreselect) {
+    var i = newLineIdx++;
+    newLines[i] = { inventory_id: '', product_name: '', product_sku: '', product_ean: '', product_unit: 'tk', quantity: '', unit_price: '', selling_price: '' };
+    var container = document.getElementById('new-receipt-lines');
+    var div = document.createElement('div');
+    div.id = 'nl-'+i;
+    div.style.cssText = 'background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px;position:relative';
+    div.innerHTML = '<div style="display:grid;grid-template-columns:1fr auto;gap:8px;margin-bottom:8px;position:relative">'
+        + '<div style="position:relative">'
+        + '<input id="nlq-'+i+'" type="text" class="crm-form-input" placeholder="Toote nimi, SKU või EAN *" style="font-size:13px;margin:0;width:100%" oninput="nlSearch('+i+',this.value)" autocomplete="off">'
+        + '<div id="nlsugg-'+i+'" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #e2e8f0;border-radius:8px;z-index:10000;box-shadow:0 4px 20px rgba(0,0,0,.12);overflow:hidden;max-height:200px;overflow-y:auto"></div>'
+        + '</div>'
+        + (i > 0 ? '<button type="button" onclick="removeNewLine('+i+')" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:18px;padding:0 6px;align-self:center">✕</button>' : '<div></div>')
+        + '</div>'
+        + '<div style="display:grid;grid-template-columns:1fr 1fr 70px;gap:8px;margin-bottom:8px">'
+        + '<input id="nlean-'+i+'" type="text" class="crm-form-input" placeholder="EAN" style="font-size:12px;font-family:monospace;margin:0" oninput="newLines['+i+'].product_ean=this.value">'
+        + '<input id="nlsku-'+i+'" type="text" class="crm-form-input" placeholder="SKU" style="font-size:12px;font-family:monospace;margin:0" oninput="newLines['+i+'].product_sku=this.value">'
+        + '<select id="nlunit-'+i+'" class="crm-form-input" style="font-size:12px;margin:0;padding:6px 4px" onchange="newLines['+i+'].product_unit=this.value"><option>tk</option><option>kg</option><option>l</option><option>m</option><option>pk</option><option>kast</option></select>'
+        + '</div>'
+        + '<div style="display:grid;grid-template-columns:90px 1fr 1fr;gap:8px">'
+        + '<input id="nlqty-'+i+'" type="number" step="0.01" min="0.01" class="crm-form-input" placeholder="Kogus *" style="font-size:13px;text-align:right;margin:0" oninput="newLines['+i+'].quantity=this.value">'
+        + '<input id="nlbuy-'+i+'" type="number" step="0.01" min="0" class="crm-form-input" placeholder="Sisseostuhind €" style="font-size:13px;text-align:right;margin:0" oninput="newLines['+i+'].unit_price=this.value">'
+        + '<input id="nlsell-'+i+'" type="number" step="0.01" min="0" class="crm-form-input" placeholder="Müügihind €" style="font-size:13px;text-align:right;margin:0" oninput="newLines['+i+'].selling_price=this.value">'
+        + '</div>';
+    container.appendChild(div);
     if (eanPreselect) {
-        var match = invData.find(function(i){ return i.ean===eanPreselect || i.sku===eanPreselect; });
-        if (match) {
-            var sel = container.querySelector('#line-'+lineIdx+' .line-inv');
-            sel.value = match.id; onInvChange(sel, lineIdx);
-        } else {
-            document.getElementById('pean-'+lineIdx).value = eanPreselect;
-        }
+        var match = invData.find(function(inv){ return inv.ean===eanPreselect || inv.sku===eanPreselect; });
+        if (match) { nlSelectInv(i, match); }
+        else { document.getElementById('nlean-'+i).value = eanPreselect; newLines[i].product_ean = eanPreselect; }
     }
-    lineIdx++;
+    // Close suggestion dropdowns on outside click
+    document.addEventListener('click', function nlClose(e){
+        var s = document.getElementById('nlsugg-'+i);
+        var q = document.getElementById('nlq-'+i);
+        if (s && q && !q.contains(e.target) && !s.contains(e.target)) s.style.display='none';
+    });
 }
 
-function removeLine(i) {
-    var el = document.getElementById('line-'+i);
-    if (el && document.querySelectorAll('.receipt-line').length > 1) el.remove();
+function nlSearch(i, q) {
+    newLines[i].product_name = q;
+    newLines[i].inventory_id = '';
+    var sugg = document.getElementById('nlsugg-'+i);
+    if (!q.trim()) { sugg.style.display='none'; return; }
+    var ql = q.toLowerCase();
+    var matches = invData.filter(function(inv){
+        return inv.name.toLowerCase().includes(ql) || (inv.sku||'').toLowerCase().includes(ql) || (inv.ean||'').includes(q);
+    }).slice(0, 7);
+    if (!matches.length) { sugg.style.display='none'; return; }
+    sugg.innerHTML = matches.map(function(inv){
+        return '<div onmousedown="nlSelectInv('+i+',{id:'+inv.id+',name:\''+inv.name.replace(/'/g,"\\'")
+            +'\',ean:\''+(inv.ean||'')+'\',sku:\''+(inv.sku||'')+'\',unit:\''+(inv.unit||'tk')
+            +'\',price:'+inv.price+',sell:'+inv.sell+'})" '
+            +'style="padding:8px 12px;cursor:pointer;border-bottom:1px solid #f1f5f9;font-size:13px" '
+            +'onmouseover="this.style.background=\'#f0f9ff\'" onmouseout="this.style.background=\'\'">'
+            +'<div style="font-weight:600;color:#0d1f2d">'+inv.name+'</div>'
+            +'<div style="font-size:11px;color:#94a3b8">'+[inv.sku?'SKU:'+inv.sku:'',inv.ean?'EAN:'+inv.ean:''].filter(Boolean).join(' · ')+'</div>'
+            +'</div>';
+    }).join('')
+    + '<div onmousedown="nlKeepNew('+i+')" style="padding:8px 12px;cursor:pointer;font-size:13px;font-weight:600;color:#00b4c8" onmouseover="this.style.background=\'#f0f9ff\'" onmouseout="this.style.background=\'\'">+ Uus toode: „'+q+'"</div>';
+    sugg.style.display='block';
 }
 
-function onInvChange(sel, i) {
-    var opt = sel.options[sel.selectedIndex];
-    if (!opt || !opt.value) return;
-    document.getElementById('pname-'+i).value = opt.textContent.trim();
-    document.getElementById('pean-'+i).value  = opt.dataset.ean || '';
-    document.getElementById('psku-'+i).value  = opt.dataset.sku || '';
-    document.getElementById('punit-'+i).value = opt.dataset.unit || 'tk';
-    document.getElementById('uprice-'+i).value = opt.dataset.price || '';
-    document.getElementById('sprice-'+i).value = opt.dataset.sell || '';
+function nlSelectInv(i, inv) {
+    document.getElementById('nlq-'+i).value = inv.name;
+    document.getElementById('nlean-'+i).value = inv.ean || '';
+    document.getElementById('nlsku-'+i).value = inv.sku || '';
+    document.getElementById('nlunit-'+i).value = inv.unit || 'tk';
+    document.getElementById('nlbuy-'+i).value = inv.price || '';
+    document.getElementById('nlsell-'+i).value = inv.sell || '';
+    var sugg = document.getElementById('nlsugg-'+i);
+    if (sugg) sugg.style.display='none';
+    newLines[i].inventory_id = inv.id;
+    newLines[i].product_name = inv.name;
+    newLines[i].product_ean  = inv.ean || '';
+    newLines[i].product_sku  = inv.sku || '';
+    newLines[i].product_unit = inv.unit || 'tk';
+    newLines[i].unit_price   = inv.price || '';
+    newLines[i].selling_price = inv.sell || '';
 }
 
-document.getElementById('btn-add-line').addEventListener('click', function(){ addLine(); });
+function nlKeepNew(i) {
+    var sugg = document.getElementById('nlsugg-'+i);
+    if (sugg) sugg.style.display='none';
+}
+
+function removeNewLine(i) {
+    var el = document.getElementById('nl-'+i);
+    if (el) el.remove();
+}
+
+function saveNewReceipt() {
+    var batchRef = document.getElementById('new-batch-ref').value.trim();
+    var supplier = document.getElementById('new-supplier').value.trim();
+    var notes    = document.getElementById('new-notes').value.trim();
+    var msg      = document.getElementById('new-receipt-msg');
+    // Collect valid lines from DOM
+    var validLines = [];
+    document.querySelectorAll('#new-receipt-lines [id^="nl-"]').forEach(function(div){
+        var i = div.id.replace('nl-','');
+        var name  = (document.getElementById('nlq-'+i)||{}).value||'';
+        var qty   = parseFloat((document.getElementById('nlqty-'+i)||{}).value||0);
+        var ean   = (document.getElementById('nlean-'+i)||{}).value||'';
+        var sku   = (document.getElementById('nlsku-'+i)||{}).value||'';
+        var unit  = (document.getElementById('nlunit-'+i)||{}).value||'tk';
+        var buy   = (document.getElementById('nlbuy-'+i)||{}).value||'';
+        var sell  = (document.getElementById('nlsell-'+i)||{}).value||'';
+        if (name.trim() && qty > 0) {
+            validLines.push({
+                inventory_id:  newLines[i] ? (newLines[i].inventory_id||'') : '',
+                product_name:  name.trim(),
+                product_ean:   ean,
+                product_sku:   sku,
+                product_unit:  unit,
+                quantity:      qty,
+                unit_price:    buy || null,
+                selling_price: sell || null,
+            });
+        }
+    });
+    if (!validLines.length) {
+        msg.textContent = 'Lisa vähemalt üks kaup (nimi + kogus)!';
+        msg.style.display = '';
+        return;
+    }
+    var btn = document.getElementById('btn-save-receipt');
+    btn.disabled = true; btn.textContent = 'Salvestamine...';
+    msg.style.display = 'none';
+    fetch(ajaxUrl, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'action=vesho_admin_create_receipt&nonce='+veshoNonce
+            + '&batch_ref='+encodeURIComponent(batchRef)
+            + '&supplier='+encodeURIComponent(supplier)
+            + '&notes='+encodeURIComponent(notes)
+            + '&items='+encodeURIComponent(JSON.stringify(validLines))
+    }).then(function(r){ return r.json(); }).then(function(d){
+        btn.disabled = false; btn.textContent = '💾 Salvesta mustrand';
+        if (d.success) {
+            closeModal('modal-create');
+            location.reload();
+        } else {
+            msg.textContent = d.data || 'Viga salvestamisel';
+            msg.style.display = '';
+        }
+    }).catch(function(){
+        btn.disabled = false; btn.textContent = '💾 Salvesta mustrand';
+        msg.textContent = 'Ühenduse viga'; msg.style.display='';
+    });
+}
 
 window.scanReceiptEan = function(){
     if (!window.VeshoScanner) return;
-    window.VeshoScanner.open({ title:'Skänni kaup', autoConfirm:true, onScan:function(code){ addLine(code); } });
+    window.VeshoScanner.open({ title:'Skänni kaup', autoConfirm:true, onScan:function(code){ addNewLine(code); } });
 };
+
+window.addNewLine = addNewLine;
 
 /* ---- Send to worker ---- */
 function openSendModal(receiptId) {
@@ -516,10 +619,33 @@ function doAdminAddItem() {
         btn.disabled=false; btn.textContent='Lisa kaup';
         if (d.success) {
             closeModal('modal-add-item');
-            loadedItems[adminAddItemRid] = false;
             var el = document.getElementById('recv-items-'+adminAddItemRid);
-            if (el) { el.innerHTML='<div style="color:#94a3b8;font-size:13px;padding:8px">Laen...</div>'; }
-            toggleReceiptItems(adminAddItemRid);
+            if (el) { el.style.display='block'; el.innerHTML='<div style="color:#94a3b8;font-size:13px;padding:8px">Laen...</div>'; }
+            fetch(ajaxUrl, {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
+                body:'action=vesho_admin_get_receipt_items&nonce='+veshoNonce+'&receipt_id='+adminAddItemRid})
+            .then(function(r){ return r.json(); }).then(function(d2){
+                loadedItems[adminAddItemRid] = true;
+                if (!d2.success || !d2.data) { if(el) el.innerHTML='<div style="color:#ef4444;padding:8px">Viga</div>'; return; }
+                var items = d2.data.items || d2.data;
+                var status = receiptStatuses[adminAddItemRid] || 'draft';
+                var canEdit = status === 'draft' || status === 'pending';
+                var html = '';
+                if (!items.length) { html += '<div style="padding:20px;text-align:center;color:#94a3b8;font-size:13px">Tooteid pole lisatud</div>'; }
+                else {
+                    html += '<table class="crm-table"><thead><tr><th>Toode</th><th>SKU/EAN</th><th>Oodatav</th><th>Tegelik</th><th>Asukoht</th></tr></thead><tbody>';
+                    items.forEach(function(item){
+                        html += '<tr><td><strong>'+(item.name||'–')+'</strong></td>'
+                            +'<td style="font-family:monospace;font-size:12px">'+(item.sku||'–')+'</td>'
+                            +'<td>'+(item.expected_qty||item.quantity||'–')+' '+(item.unit||'tk')+'</td>'
+                            +'<td style="color:'+(item.actual_qty!=null?'#16a34a':'#94a3b8')+';font-weight:600">'+(item.actual_qty!=null?item.actual_qty+' '+(item.unit||'tk'):'–')+'</td>'
+                            +'<td style="font-family:monospace;font-size:12px">'+(item.location||'–')+'</td></tr>';
+                    });
+                    html += '</tbody></table>';
+                }
+                if (canEdit) html += '<div style="padding:10px 0 4px;display:flex;gap:8px"><button onclick="openAdminAddItem('+adminAddItemRid+')" style="padding:6px 14px;font-size:12px;background:#e0f7fa;border:1px solid #00b4c8;color:#007a8a;border-radius:6px;cursor:pointer">+ Lisa kaup</button></div>';
+                if (el) el.innerHTML = html;
+            });
+            return;
         } else {
             msg.textContent = d.data?.message || 'Viga'; msg.style.display='';
         }

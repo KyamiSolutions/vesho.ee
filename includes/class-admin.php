@@ -71,6 +71,7 @@ class Vesho_CRM_Admin {
         add_action( 'wp_ajax_vesho_admin_delete_maint_photo', array( __CLASS__, 'ajax_admin_delete_maint_photo' ) );
         add_action( 'wp_ajax_vesho_admin_get_receipt_items',  array( __CLASS__, 'ajax_admin_get_receipt_items' ) );
         add_action( 'wp_ajax_vesho_admin_add_receipt_item',   array( __CLASS__, 'ajax_admin_add_receipt_item' ) );
+        add_action( 'wp_ajax_vesho_admin_create_receipt',     array( __CLASS__, 'ajax_admin_create_receipt' ) );
         add_action( 'wp_ajax_vesho_search_wp_users',        array( __CLASS__, 'ajax_search_wp_users' ) );
         add_action( 'wp_ajax_vesho_add_maintenance_ajax',   array( __CLASS__, 'ajax_add_maintenance' ) );
         add_action( 'wp_ajax_vesho_get_client_devices',     array( __CLASS__, 'ajax_get_client_devices' ) );
@@ -2092,6 +2093,67 @@ private static function load_view( $name ) {
             $item->expected_qty = $item->quantity ?? 0;
         }
         wp_send_json_success( ['items' => $items] );
+    }
+
+    // ── AJAX: admin create new receipt (AJAX, like 3006) ─────────────────────
+    public static function ajax_admin_create_receipt() {
+        check_ajax_referer( 'vesho_admin_nonce', 'nonce' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error( 'Pole lubatud' );
+        global $wpdb;
+        $batch_ref = sanitize_text_field( $_POST['batch_ref'] ?? '' );
+        $supplier  = sanitize_text_field( $_POST['supplier'] ?? '' );
+        $notes     = sanitize_textarea_field( $_POST['notes'] ?? '' );
+        $items_raw = $_POST['items'] ?? '';
+        $items     = json_decode( wp_unslash( $items_raw ), true );
+        if ( ! is_array( $items ) || empty( $items ) ) {
+            wp_send_json_error( 'Kaubad puuduvad' );
+        }
+        // Validate: at least one item with name + quantity
+        $valid = array_filter( $items, fn($i) => ! empty( $i['product_name'] ) && (float)($i['quantity']??0) > 0 );
+        if ( empty( $valid ) ) wp_send_json_error( 'Lisa vähemalt üks kaup nimega ja kogusega' );
+        // Insert receipt header
+        $wpdb->insert( $wpdb->prefix . 'vesho_stock_receipts', [
+            'receipt_date'     => current_time('Y-m-d'),
+            'reference_number' => $batch_ref,
+            'batch_ref'        => $batch_ref,
+            'supplier'         => $supplier,
+            'notes'            => $notes,
+            'status'           => 'draft',
+            'created_at'       => current_time('mysql'),
+        ] );
+        $receipt_id = $wpdb->insert_id;
+        if ( ! $receipt_id ) wp_send_json_error( 'Arve salvestamine ebaõnnestus' );
+        // Insert items
+        foreach ( $valid as $item ) {
+            $inv_id = absint( $item['inventory_id'] ?? 0 );
+            $pname  = sanitize_text_field( $item['product_name'] ?? '' );
+            $pean   = sanitize_text_field( $item['product_ean'] ?? '' );
+            $psku   = sanitize_text_field( $item['product_sku'] ?? '' );
+            $punit  = sanitize_text_field( $item['product_unit'] ?? 'tk' );
+            $qty    = (float)( $item['quantity'] ?? 0 );
+            $buy    = $item['unit_price'] !== null && $item['unit_price'] !== '' ? (float)$item['unit_price'] : null;
+            $sell   = $item['selling_price'] !== null && $item['selling_price'] !== '' ? (float)$item['selling_price'] : null;
+            // Resolve inventory_id from EAN/SKU if not provided
+            if ( ! $inv_id && $pean ) {
+                $inv_id = (int)$wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$wpdb->prefix}vesho_inventory WHERE ean=%s LIMIT 1", $pean ) );
+            }
+            if ( ! $inv_id && $psku ) {
+                $inv_id = (int)$wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$wpdb->prefix}vesho_inventory WHERE sku=%s LIMIT 1", $psku ) );
+            }
+            $wpdb->insert( $wpdb->prefix . 'vesho_stock_receipt_items', [
+                'receipt_id'    => $receipt_id,
+                'inventory_id'  => $inv_id ?: null,
+                'quantity'      => $qty,
+                'purchase_price'=> $buy,
+                'unit_price'    => $buy,
+                'selling_price' => $sell,
+                'product_name'  => $pname,
+                'product_sku'   => $psku,
+                'product_unit'  => $punit,
+                'ean'           => $pean,
+            ] );
+        }
+        wp_send_json_success( ['receipt_id' => $receipt_id, 'items' => count($valid)] );
     }
 
     // ── AJAX: admin add item to existing receipt ──────────────────────────────

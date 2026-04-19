@@ -1,10 +1,10 @@
 {
   "name": "Vesho",
   "slug": "vesho",
-  "version": "2.2.70",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.2.70/vesho-theme.zip",
+  "version": "2.2.71",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.2.71/vesho-theme.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-19",
-  "changelog": "<h4>2.2.70</h4><ul><li>Uus versioon</li></ul>"
+  "changelog": "<h4>2.2.71</h4><ul><li>Uus tarnimine: AJAX + autocomplete otsing nagu 3006 — kaubad salvestatakse nüüd korrektselt</li><li>Parandus: Lisa kaup modal uuendab nimekirja õigesti</li></ul><h4>2.2.70</h4><ul><li>Valideerimine: ei saa saata töötajale arvet ilma kaubata</li></ul>"
 }
