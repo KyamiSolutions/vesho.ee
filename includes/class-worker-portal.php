@@ -327,7 +327,6 @@ class Vesho_CRM_Worker_Portal {
     </header>
     <div class="vwp-content">
       <?php
-      <?php
       // ── Portal notices (layout-tasemel, igas tab-is, 3006 stiil) ─────────────
       $today_wn = current_time('Y-m-d');
       $worker_notices = $wpdb->get_results($wpdb->prepare(
