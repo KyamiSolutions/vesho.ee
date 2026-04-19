@@ -1,10 +1,10 @@
 {
   "name": "Vesho CRM",
   "slug": "vesho-crm",
-  "version": "2.5.10",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.5.10/vesho-crm.zip",
+  "version": "2.5.11",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.5.11/vesho-crm.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-19",
-  "changelog": "<h4>2.5.10</h4><ul><li>Fix: logo valimine seadetes — wp_enqueue_media + live preview + eemalda nupp</li></ul><h4>2.5.9</h4><ul><li>Fix: küpsiste bänner eemaldatud portaalist, lisatud avalikule lehele</li></ul><h4>2.5.8</h4><ul><li>Fix: globaalne teadaanne banner admin bar offset</li></ul>"
+  "changelog": "<h4>2.5.11</h4><ul><li>Fix: header logo loeb vesho_company_logo seadete optsiooni</li></ul><h4>2.5.10</h4><ul><li>Fix: logo valimine seadetes — wp_enqueue_media + live preview</li></ul><h4>2.5.9</h4><ul><li>Fix: küpsiste bänner eemaldatud portaalist, lisatud avalikule lehele</li></ul>"
 }
