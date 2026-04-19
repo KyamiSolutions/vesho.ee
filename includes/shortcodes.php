@@ -168,7 +168,9 @@ function vesho_get_cart_items() {
     return $result;
 }
 
-add_shortcode( 'vesho_shop_grid', function () {
+add_shortcode( 'vesho_shop_grid', function ( $atts ) {
+    $atts = shortcode_atts( [ 'hero' => '0' ], $atts );
+    $show_hero = $atts['hero'] !== '0';
     global $wpdb;
 
     // ── Session bootstrap ──────────────────────────────────────────────────
@@ -251,6 +253,27 @@ add_shortcode( 'vesho_shop_grid', function () {
     }
 
     ob_start();
+    ?>
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800;900&display=swap');
+    .vsho-root{font-family:'Barlow',system-ui,sans-serif;color:#1a2a38;line-height:1.5}
+    .vsho-root *{box-sizing:border-box;font-family:inherit}
+    <?php if($show_hero): ?>
+    .vsho-hero{background:linear-gradient(135deg,#0b1c2b 0%,#0d3347 100%);padding:80px 32px 72px;text-align:center;margin-top:-1px}
+    .vsho-hero-eyebrow{color:#00b4c8;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;margin-bottom:14px}
+    .vsho-hero-title{color:#fff;font-size:52px;font-weight:900;line-height:1.05;margin:0 0 14px}
+    .vsho-hero-sub{color:#7a9eb0;font-size:16px}
+    <?php endif; ?>
+    </style>
+    <div class="vsho-root">
+    <?php if($show_hero): ?>
+    <div class="vsho-hero">
+      <div class="vsho-hero-eyebrow">VESHO OÜ</div>
+      <div class="vsho-hero-title">Pood</div>
+      <div class="vsho-hero-sub">Veesüsteemide seadmed ja tarvikud</div>
+    </div>
+    <?php endif; ?>
+    <?php
 
     // ══════════════════════════════════════════════════════════════════════
     // VIEW: SUCCESS
@@ -1271,29 +1294,16 @@ add_shortcode( 'vesho_shop_grid', function () {
         });
     }
     </script>
+    </div><!-- .vsho-root -->
     <?php
     return ob_get_clean();
 } );
 
-// ── [vesho_shop] = hero + grid (live saidil) ─────────────────────────────────
-// Overrides the class-client-portal.php version — shortcodes.php on laetud pärast
+// ── [vesho_shop] = peamine shortcode (hero=1 vaikimisi) ──────────────────────
+// [vesho_shop]        → hero + pood (live sait)
+// [vesho_shop hero=0] → ainult pood (Elementor kus hero on eraldi)
+// [vesho_shop_grid]   → alias hero=0 jaoks (backward compat)
 add_shortcode( 'vesho_shop', function ( $atts ) {
-    $atts = shortcode_atts( [ 'hero' => '1' ], $atts );
-    ob_start();
-    if ( $atts['hero'] !== '0' ) : ?>
-    <style>
-    @import url('https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800;900&display=swap');
-    .vsho-hero{background:linear-gradient(135deg,#0b1c2b 0%,#0d3347 100%);padding:80px 32px 72px;text-align:center;margin-top:-1px;font-family:'Barlow',system-ui,sans-serif}
-    .vsho-hero-eyebrow{color:#00b4c8;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;margin-bottom:14px}
-    .vsho-hero-title{color:#fff;font-size:52px;font-weight:900;line-height:1.05;margin:0 0 14px}
-    .vsho-hero-sub{color:#7a9eb0;font-size:16px}
-    </style>
-    <div class="vsho-hero">
-      <div class="vsho-hero-eyebrow">VESHO OÜ</div>
-      <div class="vsho-hero-title">Pood</div>
-      <div class="vsho-hero-sub">Veesüsteemide seadmed ja tarvikud</div>
-    </div>
-    <?php endif;
-    echo do_shortcode( '[vesho_shop_grid]' );
-    return ob_get_clean();
+    if ( ! isset( $atts['hero'] ) ) $atts['hero'] = '1';
+    return do_shortcode( '[vesho_shop_grid hero="' . ( $atts['hero'] === '0' ? '0' : '1' ) . '"]' );
 } );
