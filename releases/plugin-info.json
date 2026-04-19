@@ -1,10 +1,10 @@
 {
   "name": "Vesho CRM",
   "slug": "vesho-crm",
-  "version": "2.9.8",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.9.8/vesho-crm.zip",
+  "version": "2.9.9",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.9.9/vesho-crm.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-19",
-  "changelog": "<h4>2.9.8</h4><ul><li>Fix: worker tellimuste nav badge kaob pärast komplekteerimist</li></ul><h4>2.9.7</h4><ul><li>Fix: worker tellimuste modal ei kao pärast komplekteerimist</li></ul><h4>2.9.6</h4><ul><li>Fix: worker vastuvõtt — tooted ilmuvad nüüd (sell_price veeru viga parandatud)</li><li>Feat: worker vastuvõtt — 🔍 Otsi laost nupp laoinventuurist otsimiseks</li></ul><h4>2.9.5</h4><ul><li>Feat: sotsiaalmeedia (FB/IG/LI) + tööajad CRM seadetesse</li><li>Fix: header/footer loevad sotsiaalmeedia konsistentselt</li></ul><h4>2.9.4</h4><ul><li>Fix: arve KM vaikemäär 24% (sünk seadetega)</li><li>Fix: Lisa laost — sell_price veeru viga parandatud</li></ul><h4>2.9.3</h4><ul><li>Feat: arve ridadele '📦 Lisa laost' — laomaterjali otse arvele (koguse kontroll, laovaru hoiatus)</li></ul>"
+  "changelog": "<h4>2.9.9</h4><ul><li>Feat: admin tellimused — 'Leia pakikaardiga' nupp avab modaali (nagu 3006)</li></ul><h4>2.9.8</h4><ul><li>Fix: worker tellimuste nav badge kaob pärast komplekteerimist</li></ul><h4>2.9.7</h4><ul><li>Fix: worker tellimuste modal ei kao pärast komplekteerimist</li></ul><h4>2.9.6</h4><ul><li>Fix: worker vastuvõtt — tooted ilmuvad nüüd (sell_price veeru viga parandatud)</li><li>Feat: worker vastuvõtt — 🔍 Otsi laost nupp laoinventuurist otsimiseks</li></ul><h4>2.9.5</h4><ul><li>Feat: sotsiaalmeedia (FB/IG/LI) + tööajad CRM seadetesse</li><li>Fix: header/footer loevad sotsiaalmeedia konsistentselt</li></ul><h4>2.9.4</h4><ul><li>Fix: arve KM vaikemäär 24% (sünk seadetega)</li><li>Fix: Lisa laost — sell_price veeru viga parandatud</li></ul><h4>2.9.3</h4><ul><li>Feat: arve ridadele '📦 Lisa laost' — laomaterjali otse arvele (koguse kontroll, laovaru hoiatus)</li></ul>"
 }
