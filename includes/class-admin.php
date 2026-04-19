@@ -1733,12 +1733,19 @@ private static function load_view( $name ) {
     public static function handle_save_global_announcement() {
         check_admin_referer( 'vesho_save_global_announcement' );
         if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorized' );
-        $text = sanitize_text_field( $_POST['announcement_text'] ?? '' );
-        $type = sanitize_text_field( $_POST['announcement_type'] ?? 'info' );
+        $text  = sanitize_text_field( $_POST['announcement_text']  ?? '' );
+        $type  = sanitize_text_field( $_POST['announcement_type']  ?? 'info' );
+        $start = sanitize_text_field( $_POST['announcement_start'] ?? '' );
+        $end   = sanitize_text_field( $_POST['announcement_end']   ?? '' );
         if ( ! in_array( $type, ['info','warning','success'] ) ) $type = 'info';
-        update_option( 'vesho_global_announcement',      $text );
-        update_option( 'vesho_global_announcement_type', $type );
-        wp_redirect( add_query_arg( ['page'=>'vesho-crm-settings','msg'=>'saved','_tab'=>'notices'], admin_url('admin.php') ) );
+        // Validate dates
+        if ( $start && ! preg_match('/^\d{4}-\d{2}-\d{2}$/', $start) ) $start = '';
+        if ( $end   && ! preg_match('/^\d{4}-\d{2}-\d{2}$/', $end)   ) $end   = '';
+        update_option( 'vesho_global_announcement',       $text  );
+        update_option( 'vesho_global_announcement_type',  $type  );
+        update_option( 'vesho_global_announcement_start', $start );
+        update_option( 'vesho_global_announcement_end',   $end   );
+        wp_redirect( add_query_arg( ['page'=>'vesho-crm-settings','msg'=>'saved'], admin_url('admin.php') ) );
         exit;
     }
 

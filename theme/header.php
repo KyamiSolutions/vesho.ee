@@ -541,13 +541,19 @@
 
 <!-- ── Global Announcement Banner — visible to ALL visitors ──────────────── -->
 <?php
-$_g_ann_h  = get_option('vesho_global_announcement', '');
-$_g_type_h = get_option('vesho_global_announcement_type', 'info');
-if ($_g_ann_h):
-    $_g_bg_h   = $_g_type_h==='warning' ? '#fff7ed' : ($_g_type_h==='success' ? '#f0fdf4' : '#eef2ff');
-    $_g_brd_h  = $_g_type_h==='warning' ? '#fcd34d' : ($_g_type_h==='success' ? '#86efac' : '#c7d2fe');
-    $_g_col_h  = $_g_type_h==='warning' ? '#92400e' : ($_g_type_h==='success' ? '#166534' : '#3730a3');
-    $_g_icon_h = $_g_type_h==='warning' ? '⚠️'      : ($_g_type_h==='success' ? '✅'       : '📣');
+$_g_ann_h   = get_option('vesho_global_announcement', '');
+$_g_type_h  = get_option('vesho_global_announcement_type', 'info');
+$_g_start_h = get_option('vesho_global_announcement_start', '');
+$_g_end_h   = get_option('vesho_global_announcement_end', '');
+$_g_today_h = date('Y-m-d');
+$_g_show_h  = $_g_ann_h &&
+    (!$_g_start_h || $_g_start_h <= $_g_today_h) &&
+    (!$_g_end_h   || $_g_end_h   >= $_g_today_h);
+if ($_g_show_h):
+    $_g_bg_h   = $_g_type_h==='warning' ? '#fff7ed'  : ($_g_type_h==='success' ? '#f0fdf4' : '#eef2ff');
+    $_g_brd_h  = $_g_type_h==='warning' ? '#fcd34d'  : ($_g_type_h==='success' ? '#86efac' : '#c7d2fe');
+    $_g_col_h  = $_g_type_h==='warning' ? '#92400e'  : ($_g_type_h==='success' ? '#166534' : '#3730a3');
+    $_g_icon_h = $_g_type_h==='warning' ? '⚠️'       : ($_g_type_h==='success' ? '✅'      : '📣');
 ?>
 <div id="global-announcement-bar" style="background:<?php echo $_g_bg_h; ?>;border-bottom:2px solid <?php echo $_g_brd_h; ?>;padding:10px 24px;display:flex;align-items:center;justify-content:center;gap:10px;font-size:13px;font-weight:600;color:<?php echo $_g_col_h; ?>">
     <span><?php echo $_g_icon_h; ?></span>

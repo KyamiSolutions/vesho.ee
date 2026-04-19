@@ -701,18 +701,27 @@ $services_page_subtitle = get_option('vesho_services_page_subtitle', '');
     <?php /* ── Global announcement — quick one-click banner for all portals ── */ ?>
     <?php
     global $wpdb;
-    $global_ann = get_option('vesho_global_announcement', '');
-    $global_ann_type = get_option('vesho_global_announcement_type', 'info');
+    $global_ann       = get_option('vesho_global_announcement', '');
+    $global_ann_type  = get_option('vesho_global_announcement_type', 'info');
+    $global_ann_start = get_option('vesho_global_announcement_start', '');
+    $global_ann_end   = get_option('vesho_global_announcement_end', '');
+    $today_ga = current_time('Y-m-d');
+    $ga_active = $global_ann &&
+        ( !$global_ann_start || $global_ann_start <= $today_ga ) &&
+        ( !$global_ann_end   || $global_ann_end   >= $today_ga );
     ?>
-    <div class="crm-card" style="margin-top:20px;border:2px solid <?php echo $global_ann ? '#f59e0b' : '#e2e8f0'; ?>">
-        <div class="crm-card-header" style="background:<?php echo $global_ann ? '#fff7ed' : ''; ?>">
-            <span class="crm-card-title">📣 Globaalne teadaanne <?php if ($global_ann): ?><span style="font-size:12px;color:#ea580c;font-weight:600">● AKTIIVNE</span><?php endif; ?></span>
+    <div class="crm-card" style="margin-top:20px;border:2px solid <?php echo $ga_active ? '#f59e0b' : '#e2e8f0'; ?>">
+        <div class="crm-card-header" style="background:<?php echo $ga_active ? '#fff7ed' : ''; ?>">
+            <span class="crm-card-title">📣 Globaalne teadaanne <?php if ($ga_active): ?><span style="font-size:12px;color:#ea580c;font-weight:600">● AKTIIVNE</span><?php elseif($global_ann): ?><span style="font-size:12px;color:#94a3b8;font-weight:600">○ AJASTATUD</span><?php endif; ?></span>
         </div>
         <div style="padding:16px 20px">
-            <p style="font-size:13px;color:#64748b;margin:0 0 12px">Kohe nähtav banner KÕIGIS portaalides (klient + töötaja). Tühjenda väli et eemaldada.</p>
+            <p style="font-size:13px;color:#64748b;margin:0 0 12px">Banner KÕIGIL lehtedel — nähtav kõigile külastajatele (ka külalised). Tühjenda tekst et eemaldada.</p>
             <?php if ($global_ann): ?>
-            <div style="background:<?php echo $global_ann_type==='warning'?'#fff7ed':($global_ann_type==='success'?'#f0fdf4':'#eef2ff'); ?>;border:1px solid <?php echo $global_ann_type==='warning'?'#fcd34d':($global_ann_type==='success'?'#86efac':'#c7d2fe'); ?>;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13px">
+            <div style="background:<?php echo $global_ann_type==='warning'?'#fff7ed':($global_ann_type==='success'?'#f0fdf4':'#eef2ff'); ?>;border:1px solid <?php echo $global_ann_type==='warning'?'#fcd34d':($global_ann_type==='success'?'#86efac':'#c7d2fe'); ?>;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13px;display:flex;gap:8px;align-items:center">
                 <strong><?php echo esc_html($global_ann); ?></strong>
+                <?php if ($global_ann_start || $global_ann_end): ?>
+                <span style="font-size:11px;color:#94a3b8;margin-left:auto"><?php echo ($global_ann_start?date('d.m.Y',strtotime($global_ann_start)):'—'); ?> → <?php echo ($global_ann_end?date('d.m.Y',strtotime($global_ann_end)):'∞'); ?></span>
+                <?php endif; ?>
             </div>
             <?php endif; ?>
             <form method="POST" action="<?php echo admin_url('admin-post.php'); ?>" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
@@ -731,6 +740,16 @@ $services_page_subtitle = get_option('vesho_services_page_subtitle', '');
                         <option value="warning" <?php selected($global_ann_type,'warning'); ?>>⚠️ Hoiatus</option>
                         <option value="success" <?php selected($global_ann_type,'success'); ?>>✅ Positiivne</option>
                     </select>
+                </div>
+                <div>
+                    <label style="font-size:12px;color:#64748b;display:block;margin-bottom:4px">Alguskuupäev</label>
+                    <input type="date" name="announcement_start" value="<?php echo esc_attr($global_ann_start); ?>"
+                           style="padding:8px 10px;border:1.5px solid #dce3e9;border-radius:8px;font-size:13px">
+                </div>
+                <div>
+                    <label style="font-size:12px;color:#64748b;display:block;margin-bottom:4px">Lõppkuupäev</label>
+                    <input type="date" name="announcement_end" value="<?php echo esc_attr($global_ann_end); ?>"
+                           style="padding:8px 10px;border:1.5px solid #dce3e9;border-radius:8px;font-size:13px">
                 </div>
                 <button type="submit" class="crm-btn crm-btn-primary" style="white-space:nowrap">
                     <?php echo $global_ann ? '💾 Uuenda' : '📣 Avalda'; ?>
