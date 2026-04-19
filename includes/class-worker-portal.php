@@ -37,6 +37,8 @@ class Vesho_CRM_Worker_Portal {
             'vesho_check_warehouse_location',
             // EAN lookup
             'vesho_worker_lookup_ean',
+            // Photo delete
+            'vesho_worker_delete_photo',
         ];
         foreach ($nopriv as $a) {
             add_action('wp_ajax_nopriv_' . $a, [__CLASS__, 'ajax_' . str_replace('vesho_worker_', '', $a)]);
@@ -437,11 +439,57 @@ class Vesho_CRM_Worker_Portal {
 
         $barcode_token = esc_js($worker->barcode_token ?? '');
         $has_qr = !empty($worker->barcode_token);
+
+        // Work time stats from vesho_work_hours
+        $today_start = current_time('Y-m-d') . ' 00:00:00';
+        $today_end   = current_time('Y-m-d') . ' 23:59:59';
+        $week_start  = date('Y-m-d', strtotime('monday this week', current_time('timestamp'))) . ' 00:00:00';
+        $month_start = date('Y-m-01', current_time('timestamp')) . ' 00:00:00';
+
+        $today_mins = (int)$wpdb->get_var($wpdb->prepare(
+            "SELECT COALESCE(SUM(TIMESTAMPDIFF(MINUTE, start_time, IFNULL(end_time, NOW()))), 0)
+             FROM {$wpdb->prefix}vesho_work_hours
+             WHERE worker_id=%d AND start_time >= %s AND start_time <= %s",
+            $wid, $today_start, $today_end
+        ));
+        $week_mins = (int)$wpdb->get_var($wpdb->prepare(
+            "SELECT COALESCE(SUM(TIMESTAMPDIFF(MINUTE, start_time, IFNULL(end_time, NOW()))), 0)
+             FROM {$wpdb->prefix}vesho_work_hours
+             WHERE worker_id=%d AND start_time >= %s",
+            $wid, $week_start
+        ));
+        $month_mins = (int)$wpdb->get_var($wpdb->prepare(
+            "SELECT COALESCE(SUM(TIMESTAMPDIFF(MINUTE, start_time, IFNULL(end_time, NOW()))), 0)
+             FROM {$wpdb->prefix}vesho_work_hours
+             WHERE worker_id=%d AND start_time >= %s",
+            $wid, $month_start
+        ));
+
+        // In-progress highlight
+        $active_order = $wpdb->get_row($wpdb->prepare(
+            "SELECT wo.*, c.name as client_name FROM {$wpdb->prefix}vesho_workorders wo
+             LEFT JOIN {$wpdb->prefix}vesho_clients c ON c.id=wo.client_id
+             WHERE wo.worker_id=%d AND wo.status='in_progress' ORDER BY wo.created_at DESC LIMIT 1", $wid
+        ));
+
+        $fmt_mins = function(int $m): string {
+            if ($m < 60) return "{$m} min";
+            $h = intdiv($m, 60); $rem = $m % 60;
+            return $rem ? "{$h}h {$rem}min" : "{$h}h";
+        };
         ?>
 
 <div class="vwp-page-header">
   <h1>Tere, <?php echo esc_html(explode(' ', $worker->name)[0]); ?>!</h1>
 </div>
+
+<?php if ($active_order): ?>
+<div class="vwp-card" style="margin-bottom:16px;border-left:4px solid #10b981;background:rgba(16,185,129,0.05)">
+  <div style="font-size:11px;font-weight:700;color:#10b981;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px">🟢 Hetkel töös</div>
+  <div style="font-weight:700;font-size:15px;color:#1e293b"><?php echo esc_html($active_order->title); ?></div>
+  <div style="font-size:13px;color:#64748b;margin-top:2px"><?php echo esc_html($active_order->client_name ?? '—'); ?></div>
+</div>
+<?php endif; ?>
 
 <div class="vwp-stat-grid">
   <div class="vwp-stat-card vwp-stat-orange">
@@ -455,6 +503,22 @@ class Vesho_CRM_Worker_Portal {
   <div class="vwp-stat-card vwp-stat-green">
     <div class="vwp-stat-label">Tehtud täna</div>
     <div class="vwp-stat-value"><?php echo $completed_today; ?></div>
+  </div>
+</div>
+
+<!-- Time stats -->
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px">
+  <div class="vwp-card" style="padding:14px;text-align:center">
+    <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:6px">Täna</div>
+    <div style="font-size:20px;font-weight:800;color:#1e293b"><?php echo $fmt_mins($today_mins); ?></div>
+  </div>
+  <div class="vwp-card" style="padding:14px;text-align:center">
+    <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:6px">Nädal</div>
+    <div style="font-size:20px;font-weight:800;color:#1e293b"><?php echo $fmt_mins($week_mins); ?></div>
+  </div>
+  <div class="vwp-card" style="padding:14px;text-align:center">
+    <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:6px">Kuu</div>
+    <div style="font-size:20px;font-weight:800;color:#1e293b"><?php echo $fmt_mins($month_mins); ?></div>
   </div>
 </div>
 
@@ -896,13 +960,14 @@ class Vesho_CRM_Worker_Portal {
     private static function tab_active($wid, $nonce, $ajax) {
         global $wpdb;
         $orders = $wpdb->get_results($wpdb->prepare(
-            "SELECT wo.*, c.name as client_name, d.name as device_name
+            "SELECT wo.*, c.name as client_name, c.address as client_address, d.name as device_name
              FROM {$wpdb->prefix}vesho_workorders wo
              LEFT JOIN {$wpdb->prefix}vesho_clients c ON c.id=wo.client_id
              LEFT JOIN {$wpdb->prefix}vesho_devices d ON d.id=wo.device_id
              WHERE wo.worker_id=%d AND wo.status IN ('open','assigned','in_progress')
              ORDER BY wo.scheduled_date ASC, wo.created_at DESC LIMIT 50", $wid
         ));
+        $upload_nonce = wp_create_nonce('vesho_worker_nonce');
         ?>
 <h2 class="vwp-section-title">Aktiivsed töökäsud</h2>
 <?php if (empty($orders)): ?>
@@ -912,6 +977,10 @@ class Vesho_CRM_Worker_Portal {
 <?php foreach ($orders as $wo):
   $pc = ['urgent'=>'#ef4444','high'=>'#f59e0b','normal'=>'#00b4c8','low'=>'#94a3b8'][$wo->priority??'normal']??'#94a3b8';
   $mats = $wo->materials_used ? json_decode($wo->materials_used, true) : [];
+  $photos = $wpdb->get_results($wpdb->prepare(
+      "SELECT * FROM {$wpdb->prefix}vesho_workorder_photos WHERE workorder_id=%d ORDER BY created_at ASC", $wo->id
+  ));
+  $photo_count = count($photos);
 ?>
 <div class="vwp-order-card" style="border-left:4px solid <?php echo $pc; ?>">
   <div class="vwp-order-header">
@@ -921,24 +990,22 @@ class Vesho_CRM_Worker_Portal {
     </div>
     <div style="display:flex;align-items:center;gap:8px">
       <span class="vwp-order-meta"><?php echo esc_html($wo->scheduled_date ? date('d.m.Y',strtotime($wo->scheduled_date)) : '—'); ?></span>
-      <button class="vwp-btn-outline vwp-detail-btn" style="padding:4px 10px;font-size:12px"
-        data-id="<?php echo $wo->id; ?>" data-title="<?php echo esc_attr($wo->title); ?>"
-        data-client="<?php echo esc_attr($wo->client_name??'—'); ?>"
-        data-device="<?php echo esc_attr($wo->device_name??'—'); ?>"
-        data-service="<?php echo esc_attr($wo->service_type??'—'); ?>"
-        data-status="<?php echo esc_attr($wo->status); ?>"
-        data-date="<?php echo esc_attr($wo->scheduled_date ? date('d.m.Y',strtotime($wo->scheduled_date)) : '—'); ?>"
-        data-priority="<?php echo esc_attr($wo->priority??'—'); ?>"
-        data-desc="<?php echo esc_attr($wo->description??''); ?>"
-        data-notes="<?php echo esc_attr($wo->notes??''); ?>">&#128065;</button>
+      <?php if (!empty($wo->client_address)): ?>
+      <a href="https://waze.com/ul?q=<?php echo urlencode($wo->client_address); ?>&navigate=yes"
+         target="_blank" rel="noopener"
+         class="vwp-btn-outline" style="font-size:12px;padding:4px 10px;text-decoration:none">🗺</a>
+      <?php endif; ?>
     </div>
   </div>
   <div class="vwp-order-body">
     <div style="font-size:13px;color:#64748b;margin-bottom:6px">
       <strong style="color:#1e293b">Klient:</strong> <?php echo esc_html($wo->client_name??'—'); ?>
       <?php if ($wo->device_name): ?> &nbsp;·&nbsp; <strong style="color:#1e293b">Seade:</strong> <?php echo esc_html($wo->device_name); ?><?php endif; ?>
+      <?php if (!empty($wo->client_address)): ?><br><span style="font-size:12px">📍 <?php echo esc_html($wo->client_address); ?></span><?php endif; ?>
     </div>
     <?php if ($wo->description): ?><p class="vwp-desc"><?php echo esc_html($wo->description); ?></p><?php endif; ?>
+
+    <!-- Materials panel -->
     <?php if ($wo->status==='in_progress'): ?>
     <div style="margin-top:8px;padding:10px 0 4px;border-top:1px solid #f1f5f9">
       <div style="font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;margin-bottom:8px">Kasutatud materjalid</div>
@@ -957,55 +1024,143 @@ class Vesho_CRM_Worker_Portal {
       </div>
     </div>
     <?php endif; ?>
+
+    <!-- Actions -->
     <div class="vwp-order-actions" style="margin-top:10px">
       <?php if (in_array($wo->status,['open','assigned'])): ?>
       <button class="vwp-btn-outline vwp-start-btn2" data-id="<?php echo $wo->id; ?>" data-nonce="<?php echo $nonce; ?>">&#9654; Alusta</button>
       <?php endif; ?>
-      <button class="vwp-btn-primary vwp-complete-btn2" data-id="<?php echo $wo->id; ?>" data-nonce="<?php echo $nonce; ?>">&#10003; Lõpeta</button>
+      <button class="vwp-btn-primary vwp-complete-toggle" data-id="<?php echo $wo->id; ?>">&#10003; Lõpeta</button>
     </div>
-    <?php
-    // Photos
-    $photos = $wpdb->get_results($wpdb->prepare(
-        "SELECT * FROM {$wpdb->prefix}vesho_workorder_photos WHERE workorder_id=%d ORDER BY created_at ASC",
-        $wo->id
-    ));
-    $photo_count = count($photos);
-    ?>
+
+    <!-- Inline completion form -->
+    <div id="vwp-complete-form-<?php echo $wo->id; ?>" style="display:none;margin-top:12px;padding:12px;background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0">
+      <div style="font-size:12px;font-weight:600;color:#475569;margin-bottom:6px">Märkused (valikuline)</div>
+      <textarea id="vwp-notes-<?php echo $wo->id; ?>" class="vwp-input" rows="3" placeholder="Töö märkused..." style="width:100%;font-size:13px;margin-bottom:8px"></textarea>
+      <div style="display:flex;gap:8px">
+        <button class="vwp-btn-primary vwp-complete-btn2" data-id="<?php echo $wo->id; ?>" data-nonce="<?php echo $nonce; ?>" style="font-size:13px">✓ Kinnita lõpetamine</button>
+        <button class="vwp-btn-outline vwp-complete-cancel" data-id="<?php echo $wo->id; ?>" style="font-size:13px">Tühista</button>
+      </div>
+    </div>
+
+    <!-- Photos -->
     <div class="vwp-photos-wrap" style="margin-top:12px">
-        <?php if ($photos) : ?>
-        <div class="vwp-photos-grid" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
-            <?php foreach ($photos as $p) : ?>
-            <a href="<?php echo esc_url($p->filename); ?>" target="_blank">
-                <img src="<?php echo esc_url($p->filename); ?>" style="width:60px;height:60px;object-fit:cover;border-radius:6px;border:1px solid #e2e8f0">
-            </a>
-            <?php endforeach; ?>
+      <?php if ($photos): ?>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px" id="vwp-photos-<?php echo $wo->id; ?>">
+        <?php foreach ($photos as $p): ?>
+        <div style="position:relative" data-photo-wrap="<?php echo $p->id; ?>">
+          <a href="<?php echo esc_url($p->filename); ?>" target="_blank">
+            <img src="<?php echo esc_url($p->filename); ?>" style="width:60px;height:60px;object-fit:cover;border-radius:6px;border:1px solid #e2e8f0">
+          </a>
+          <button class="vwp-photo-delete" data-photo-id="<?php echo $p->id; ?>" data-nonce="<?php echo $nonce; ?>"
+                  style="position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;background:#ef4444;border:none;color:#fff;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1">✕</button>
         </div>
-        <?php endif; ?>
-        <?php if ($photo_count < 5) : ?>
-        <label class="vwp-btn-outline" style="cursor:pointer;font-size:12px;padding:6px 12px">
-            📷 Lisa foto (<?php echo $photo_count; ?>/5)
-            <input type="file" accept="image/*" capture="environment" style="display:none"
-                   onchange="vwpUploadPhoto(this, <?php echo $wo->id; ?>)">
-        </label>
-        <?php endif; ?>
+        <?php endforeach; ?>
+      </div>
+      <?php endif; ?>
+      <?php if ($photo_count < 5): ?>
+      <label class="vwp-btn-outline" style="cursor:pointer;font-size:12px;padding:6px 12px;display:inline-flex;align-items:center;gap:6px">
+        📷 Lisa foto (<?php echo $photo_count; ?>/5)
+        <input type="file" accept="image/*" capture="environment" style="display:none"
+               onchange="vwpUploadPhoto(this, <?php echo $wo->id; ?>)">
+      </label>
+      <?php endif; ?>
     </div>
   </div>
 </div>
 <?php endforeach; ?>
 </div>
 <?php endif; ?>
-<?php echo self::orders_detail_modal(); ?>
 <script>
 (function(){
   var AJAX='<?php echo $ajax; ?>',NONCE='<?php echo $nonce; ?>';
-  window.vwpUploadPhoto=function(input,woid){if(!input.files[0])return;var fd=new FormData();fd.append('action','vesho_upload_workorder_photo');fd.append('nonce','<?php echo wp_create_nonce('vesho_worker_nonce'); ?>');fd.append('workorder_id',woid);fd.append('photo',input.files[0]);fetch('<?php echo esc_js(admin_url('admin-ajax.php')); ?>',{method:'POST',body:fd}).then(r=>r.json()).then(d=>{if(d.success){location.reload();}else{alert(d.data.message||'Viga foto üleslaadimisel');}});}
+  var UPLOAD_NONCE='<?php echo $upload_nonce; ?>';
+
+  window.vwpUploadPhoto=function(input,woid){
+    if(!input.files[0])return;
+    var fd=new FormData();
+    fd.append('action','vesho_upload_workorder_photo');
+    fd.append('nonce',UPLOAD_NONCE);
+    fd.append('workorder_id',woid);
+    fd.append('photo',input.files[0]);
+    fetch('<?php echo esc_js(admin_url('admin-ajax.php')); ?>',{method:'POST',body:fd})
+      .then(r=>r.json()).then(d=>{if(d.success){location.reload();}else{alert(d.data.message||'Viga foto üleslaadimisel');}});
+  };
+
+  // Photo delete
+  document.querySelectorAll('.vwp-photo-delete').forEach(function(btn){
+    btn.addEventListener('click', function(e){
+      e.preventDefault(); e.stopPropagation();
+      if(!confirm('Kustuta foto?'))return;
+      var fd=new FormData();
+      fd.append('action','vesho_worker_delete_photo');
+      fd.append('nonce',btn.dataset.nonce);
+      fd.append('photo_id',btn.dataset.photoId);
+      fetch(AJAX,{method:'POST',body:fd}).then(r=>r.json()).then(d=>{
+        if(d.success){
+          var wrap=btn.closest('[data-photo-wrap]');
+          if(wrap) wrap.remove();
+        } else alert(d.data?.message||'Viga');
+      });
+    });
+  });
+
+  // Inventory loader
   var invCache=null;
   function loadInv(cb){if(invCache){cb(invCache);return;}var fd=new FormData();fd.append('action','vesho_worker_get_inventory');fd.append('nonce',NONCE);fetch(AJAX,{method:'POST',body:fd}).then(r=>r.json()).then(d=>{invCache=(d.success&&d.data.items)||[];cb(invCache);});}
   document.querySelectorAll('[id^="mat-inv-a-"]').forEach(sel=>{loadInv(items=>{items.forEach(item=>{var o=document.createElement('option');o.value=JSON.stringify({id:item.id,name:item.name,unit:item.unit,price:item.sell_price});o.textContent=item.name+' ('+item.quantity+' '+item.unit+')';sel.appendChild(o);});});});
-  window.addMat=function(oid,pfx,nonce){var sel=document.getElementById('mat-inv-'+pfx+'-'+oid);var qEl=document.getElementById('mat-qty-'+pfx+'-'+oid);if(!sel||!sel.value)return;var mat=JSON.parse(sel.value),qty=parseFloat(qEl.value)||1;var fd=new FormData();fd.append('action','vesho_worker_save_materials');fd.append('nonce',nonce);fd.append('order_id',oid);fd.append('material_id',mat.id);fd.append('material_name',mat.name);fd.append('material_unit',mat.unit);fd.append('material_price',mat.price);fd.append('qty',qty);fetch(AJAX,{method:'POST',body:fd}).then(r=>r.json()).then(d=>{if(d.success){var div=document.getElementById('mats-'+pfx+'-'+oid);if(div){var row=document.createElement('div');row.style='display:flex;gap:8px;align-items:center;margin-bottom:5px;font-size:13px';row.innerHTML='<span style="flex:1">'+mat.name+'</span><span style="color:#64748b">'+qty+' '+mat.unit+'</span>';div.appendChild(row);}qEl.value=1;sel.value='';}else alert(d.data?.message||'Viga');});};
-  document.querySelectorAll('.vwp-start-btn2').forEach(btn=>{btn.addEventListener('click',()=>{if(!confirm('Alusta töökäsku?'))return;var fd=new FormData();fd.append('action','vesho_worker_start_order');fd.append('nonce',btn.dataset.nonce);fd.append('order_id',btn.dataset.id);btn.disabled=true;fetch(AJAX,{method:'POST',body:fd}).then(r=>r.json()).then(d=>{if(d.success)location.reload();else{alert(d.data?.message||'Viga');btn.disabled=false;}});});});
-  document.querySelectorAll('.vwp-complete-btn2').forEach(btn=>{btn.addEventListener('click',()=>{if(!confirm('Märgi lõpetatuks?'))return;var fd=new FormData();fd.append('action','vesho_worker_complete_order');fd.append('nonce',btn.dataset.nonce);fd.append('order_id',btn.dataset.id);fd.append('auto_invoice','1');btn.disabled=true;fetch(AJAX,{method:'POST',body:fd}).then(r=>r.json()).then(d=>{if(d.success){btn.closest('.vwp-order-card').style.opacity='.4';btn.textContent='✓ Lõpetatud';}else{alert(d.data?.message||'Viga');btn.disabled=false;}});});});
-  <?php echo self::detail_modal_js(); ?>
+
+  window.addMat=function(oid,pfx,nonce){
+    var sel=document.getElementById('mat-inv-'+pfx+'-'+oid);
+    var qEl=document.getElementById('mat-qty-'+pfx+'-'+oid);
+    if(!sel||!sel.value)return;
+    var mat=JSON.parse(sel.value),qty=parseFloat(qEl.value)||1;
+    var fd=new FormData();
+    fd.append('action','vesho_worker_save_materials');fd.append('nonce',nonce);fd.append('order_id',oid);
+    fd.append('material_id',mat.id);fd.append('material_name',mat.name);fd.append('material_unit',mat.unit);
+    fd.append('material_price',mat.price);fd.append('qty',qty);
+    fetch(AJAX,{method:'POST',body:fd}).then(r=>r.json()).then(d=>{
+      if(d.success){
+        var div=document.getElementById('mats-'+pfx+'-'+oid);
+        if(div){var row=document.createElement('div');row.style='display:flex;gap:8px;align-items:center;margin-bottom:5px;font-size:13px';row.innerHTML='<span style="flex:1">'+mat.name+'</span><span style="color:#64748b">'+qty+' '+mat.unit+'</span>';div.appendChild(row);}
+        qEl.value=1;sel.value='';
+      }else alert(d.data?.message||'Viga');
+    });
+  };
+
+  // Start order
+  document.querySelectorAll('.vwp-start-btn2').forEach(btn=>{btn.addEventListener('click',()=>{
+    if(!confirm('Alusta töökäsku?'))return;
+    var fd=new FormData();fd.append('action','vesho_worker_start_order');fd.append('nonce',btn.dataset.nonce);fd.append('order_id',btn.dataset.id);
+    btn.disabled=true;
+    fetch(AJAX,{method:'POST',body:fd}).then(r=>r.json()).then(d=>{if(d.success)location.reload();else{alert(d.data?.message||'Viga');btn.disabled=false;}});
+  });});
+
+  // Toggle completion form
+  document.querySelectorAll('.vwp-complete-toggle').forEach(btn=>{btn.addEventListener('click',function(){
+    var form=document.getElementById('vwp-complete-form-'+btn.dataset.id);
+    if(form) form.style.display = form.style.display==='none'?'block':'none';
+  });});
+
+  document.querySelectorAll('.vwp-complete-cancel').forEach(btn=>{btn.addEventListener('click',function(){
+    var form=document.getElementById('vwp-complete-form-'+btn.dataset.id);
+    if(form) form.style.display='none';
+  });});
+
+  // Complete order with inline notes
+  document.querySelectorAll('.vwp-complete-btn2').forEach(btn=>{btn.addEventListener('click',()=>{
+    var notesEl=document.getElementById('vwp-notes-'+btn.dataset.id);
+    var notes=notesEl?notesEl.value.trim():'';
+    var fd=new FormData();
+    fd.append('action','vesho_worker_complete_order');fd.append('nonce',btn.dataset.nonce);
+    fd.append('order_id',btn.dataset.id);fd.append('auto_invoice','1');
+    if(notes) fd.append('notes',notes);
+    btn.disabled=true;
+    fetch(AJAX,{method:'POST',body:fd}).then(r=>r.json()).then(d=>{
+      if(d.success){btn.closest('.vwp-order-card').style.opacity='.4';btn.textContent='✓ Lõpetatud';}
+      else{alert(d.data?.message||'Viga');btn.disabled=false;}
+    });
+  });});
 })();
 </script>
         <?php
@@ -1016,32 +1171,74 @@ class Vesho_CRM_Worker_Portal {
     private static function tab_history($wid) {
         global $wpdb;
         $rows = $wpdb->get_results($wpdb->prepare(
-            "SELECT wo.*, c.name as client_name, d.name as device_name
+            "SELECT wo.*, c.name as client_name, d.name as device_name,
+                    COALESCE(SUM(TIMESTAMPDIFF(MINUTE, wh.start_time, IFNULL(wh.end_time, wh.start_time))), 0) as duration_mins
              FROM {$wpdb->prefix}vesho_workorders wo
              LEFT JOIN {$wpdb->prefix}vesho_clients c ON c.id=wo.client_id
              LEFT JOIN {$wpdb->prefix}vesho_devices d ON d.id=wo.device_id
+             LEFT JOIN {$wpdb->prefix}vesho_work_hours wh ON wh.workorder_id=wo.id AND wh.worker_id=%d
              WHERE wo.worker_id=%d AND wo.status='completed'
-             ORDER BY wo.completed_date DESC, wo.created_at DESC LIMIT 60", $wid
+             GROUP BY wo.id
+             ORDER BY wo.completed_date DESC, wo.created_at DESC LIMIT 60", $wid, $wid
         ));
         ?>
 <h2 class="vwp-section-title">Lõpetatud töökäsud</h2>
 <?php if (empty($rows)): ?>
   <div class="vwp-empty">Lõpetatud töökäske pole.</div>
 <?php else: ?>
-<table class="vwp-table">
-  <thead><tr><th>Töökäsk</th><th>Klient</th><th>Seade</th><th>Töö liik</th><th>Lõpetatud</th></tr></thead>
-  <tbody>
-  <?php foreach ($rows as $wo): ?>
-  <tr>
-    <td><strong><?php echo esc_html($wo->title); ?></strong></td>
-    <td><?php echo esc_html($wo->client_name??'—'); ?></td>
-    <td style="color:#64748b;font-size:12px"><?php echo esc_html($wo->device_name??'—'); ?></td>
-    <td style="color:#64748b;font-size:12px"><?php echo esc_html($wo->service_type??'—'); ?></td>
-    <td style="color:#64748b;font-size:12px"><?php echo esc_html($wo->completed_date ? date('d.m.Y',strtotime($wo->completed_date)) : '—'); ?></td>
-  </tr>
-  <?php endforeach; ?>
-  </tbody>
-</table>
+<div style="display:flex;flex-direction:column;gap:8px">
+<?php foreach ($rows as $wo):
+  $dur = (int)$wo->duration_mins;
+  $dur_str = $dur > 0 ? ($dur < 60 ? "{$dur} min" : intdiv($dur,60).'h '.($dur%60?($dur%60).'min':'')) : '—';
+?>
+<div class="vwp-card" style="padding:0;overflow:hidden">
+  <div class="vwp-hist-header" data-id="<?php echo $wo->id; ?>"
+       style="display:flex;align-items:center;gap:12px;padding:12px 16px;cursor:pointer;user-select:none">
+    <div style="flex:1;min-width:0">
+      <div style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><?php echo esc_html($wo->title); ?></div>
+      <div style="font-size:12px;color:#64748b;margin-top:2px"><?php echo esc_html($wo->client_name??'—'); ?>
+        <?php if ($wo->device_name): ?> · <?php echo esc_html($wo->device_name); ?><?php endif; ?>
+      </div>
+    </div>
+    <div style="text-align:right;flex-shrink:0">
+      <div style="font-size:12px;color:#64748b"><?php echo esc_html($wo->completed_date ? date('d.m.Y',strtotime($wo->completed_date)) : '—'); ?></div>
+      <?php if ($dur > 0): ?><div style="font-size:11px;font-weight:600;color:#00b4c8;margin-top:2px">⏱ <?php echo $dur_str; ?></div><?php endif; ?>
+    </div>
+    <div class="vwp-hist-chevron" style="font-size:11px;color:#94a3b8;transition:transform 0.2s;flex-shrink:0">▼</div>
+  </div>
+  <div class="vwp-hist-body" id="vwp-hist-<?php echo $wo->id; ?>" style="display:none;border-top:1px solid #f1f5f9;padding:12px 16px">
+    <?php if ($wo->service_type): ?><div style="font-size:12px;color:#64748b;margin-bottom:6px">🔧 <?php echo esc_html($wo->service_type); ?></div><?php endif; ?>
+    <?php if ($wo->description): ?><p class="vwp-desc" style="margin-bottom:8px"><?php echo esc_html($wo->description); ?></p><?php endif; ?>
+    <?php if ($wo->notes): ?><div style="padding:8px 12px;background:#f8fafc;border-radius:8px;font-size:12px;color:#475569;border-left:3px solid #00b4c8">💬 <?php echo esc_html($wo->notes); ?></div><?php endif; ?>
+    <?php
+    $photos = $wpdb->get_results($wpdb->prepare(
+        "SELECT * FROM {$wpdb->prefix}vesho_workorder_photos WHERE workorder_id=%d ORDER BY created_at ASC", $wo->id
+    ));
+    if ($photos): ?>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+      <?php foreach ($photos as $p): ?>
+      <a href="<?php echo esc_url($p->filename); ?>" target="_blank">
+        <img src="<?php echo esc_url($p->filename); ?>" style="width:56px;height:56px;object-fit:cover;border-radius:6px;border:1px solid #e2e8f0">
+      </a>
+      <?php endforeach; ?>
+    </div>
+    <?php endif; ?>
+  </div>
+</div>
+<?php endforeach; ?>
+</div>
+<script>
+document.querySelectorAll('.vwp-hist-header').forEach(function(hdr){
+  hdr.addEventListener('click',function(){
+    var body=document.getElementById('vwp-hist-'+hdr.dataset.id);
+    var ch=hdr.querySelector('.vwp-hist-chevron');
+    if(!body)return;
+    var open=body.style.display!=='none';
+    body.style.display=open?'none':'block';
+    if(ch) ch.style.transform=open?'':'rotate(180deg)';
+  });
+});
+</script>
 <?php endif; ?>
         <?php
     }
@@ -3033,6 +3230,26 @@ class Vesho_CRM_Worker_Portal {
             'created_at'     => current_time('mysql'),
         ]);
         wp_send_json_success(['message' => 'Foto lisatud', 'url' => $url]);
+    }
+
+    // ── AJAX: Delete photo ────────────────────────────────────────────────────
+
+    public static function ajax_delete_photo() {
+        check_ajax_referer('vesho_portal_nonce', 'nonce');
+        $worker = self::get_current_worker();
+        if (!$worker) wp_send_json_error(['message' => 'Pole sisse logitud']);
+        global $wpdb;
+        $photo_id = absint($_POST['photo_id'] ?? 0);
+        $photo = $wpdb->get_row($wpdb->prepare(
+            "SELECT * FROM {$wpdb->prefix}vesho_workorder_photos WHERE id=%d", $photo_id
+        ));
+        if (!$photo) wp_send_json_error(['message' => 'Fotot ei leitud']);
+        // Only own photos or admin
+        if ((int)$photo->worker_id !== (int)$worker->id && !$worker->isAdmin) {
+            wp_send_json_error(['message' => 'Puudub õigus']);
+        }
+        $wpdb->delete($wpdb->prefix . 'vesho_workorder_photos', ['id' => $photo_id]);
+        wp_send_json_success(['message' => 'Foto kustutatud']);
     }
 
     // ── AJAX: Log hours ───────────────────────────────────────────────────────
