@@ -306,6 +306,11 @@ add_shortcode( 'vesho_shop', function( $atts ) {
 #vshop .vs-add-btn--oos{background:#94a3b8!important;cursor:not-allowed!important;opacity:.8}
 #vshop .vs-stock-ok{font-size:13px;font-weight:600;color:#16a34a;margin:4px 0}
 #vshop .vs-stock-out{font-size:13px;font-weight:600;color:#dc2626;margin:4px 0}
+#vshop .vs-notify-wrap{margin-top:6px}
+#vshop .vs-notify-btn{width:100%;padding:7px;background:transparent;border:1px solid #00b4c8;color:#00b4c8;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer}
+#vshop .vs-notify-form{display:flex;gap:6px;margin-top:6px}
+#vshop .vs-notify-email{flex:1;padding:7px 10px;border:1px solid #dce8ef;border-radius:6px;font-size:13px;min-width:0}
+#vshop .vs-notify-submit{padding:7px 12px;background:#00b4c8;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
 #vshop .vs-card-body{padding:14px 16px;flex:1;display:flex;flex-direction:column;gap:5px}
 #vshop .vs-card-cat{font-size:11px;font-weight:600;color:#00b4c8;text-transform:uppercase;letter-spacing:.05em}
 #vshop .vs-card-name{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:#0d1f2d;line-height:1.25}
@@ -558,6 +563,13 @@ if ( $view === 'grid' ) :
           <button class="vs-add-btn" data-pid="<?php echo (int)$p->id; ?>">Lisa korvi</button>
           <?php else : ?>
           <button class="vs-add-btn vs-add-btn--oos" disabled>Laos otsas</button>
+          <div class="vs-notify-wrap" data-pid="<?php echo (int)$p->id; ?>">
+            <button class="vs-notify-btn" onclick="vsNotifyOpen(this)">🔔 Teavita mind</button>
+            <div class="vs-notify-form" style="display:none">
+              <input type="email" class="vs-notify-email" placeholder="Sinu e-post">
+              <button class="vs-notify-submit" onclick="vsNotifySubmit(this)">OK</button>
+            </div>
+          </div>
           <?php endif; ?>
         </div>
       </div>
@@ -699,6 +711,14 @@ elseif ( $view === 'product' ) :
             <button class="vs-add-big-btn" id="vsDetailAddBtn" data-pid="<?php echo (int)$prod->id; ?>">Lisa korvi</button>
             <?php else : ?>
             <button class="vs-add-big-btn vs-add-btn--oos" disabled>Laos otsas</button>
+            <div class="vs-notify-detail" data-pid="<?php echo (int)$prod->id; ?>">
+              <p style="font-size:13px;color:#64748b;margin:8px 0 6px">Soovid teavitust kui toode taas saadaval?</p>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <input type="email" id="vsDetailNotifyEmail" placeholder="Sinu e-post" style="flex:1;min-width:180px;padding:9px 12px;border:1px solid #dce8ef;border-radius:6px;font-size:14px">
+                <button onclick="vsDetailNotify()" style="padding:9px 16px;background:#00b4c8;color:#fff;border:none;border-radius:6px;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap">🔔 Teavita mind</button>
+              </div>
+              <div id="vsDetailNotifyMsg" style="font-size:13px;margin-top:6px"></div>
+            </div>
             <?php endif; ?>
           </div>
           <a href="<?php echo esc_url($cart_url); ?>" class="vs-btn-outline">🛒 Vaata ostukorvi</a>
@@ -1063,6 +1083,39 @@ if(detBtn){
 window.vsQtyAdj=function(d){
   var el=document.getElementById('vsProdQty');if(!el)return;
   el.value=Math.max(1,Math.min(99,(parseInt(el.value)||1)+d));
+};
+
+/* ─── Back-in-stock notifications ─── */
+window.vsNotifyOpen=function(btn){
+  var wrap=btn.closest('.vs-notify-wrap');
+  btn.style.display='none';
+  wrap.querySelector('.vs-notify-form').style.display='flex';
+  wrap.querySelector('.vs-notify-email').focus();
+};
+window.vsNotifySubmit=function(btn){
+  var wrap=btn.closest('.vs-notify-wrap');
+  var email=wrap.querySelector('.vs-notify-email').value.trim();
+  var pid=wrap.closest('[data-pid]').dataset.pid;
+  if(!email){return;}
+  btn.disabled=true;btn.textContent='…';
+  fetch('<?php echo $ajax_url; ?>',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},
+    body:'action=vesho_stock_notify&nonce=<?php echo $nonce; ?>&pid='+pid+'&email='+encodeURIComponent(email)})
+  .then(r=>r.json()).then(d=>{
+    wrap.innerHTML='<span style="color:#16a34a;font-size:13px">✓ '+(d.data||'Teavitame sind!')+'</span>';
+  }).catch(()=>{btn.disabled=false;btn.textContent='OK';});
+};
+window.vsDetailNotify=function(){
+  var el=document.getElementById('vsDetailNotifyEmail');
+  var msg=document.getElementById('vsDetailNotifyMsg');
+  var wrap=document.querySelector('.vs-notify-detail');
+  var pid=wrap?wrap.dataset.pid:0;
+  if(!el||!el.value.trim())return;
+  fetch('<?php echo $ajax_url; ?>',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},
+    body:'action=vesho_stock_notify&nonce=<?php echo $nonce; ?>&pid='+pid+'&email='+encodeURIComponent(el.value.trim())})
+  .then(r=>r.json()).then(d=>{
+    if(msg)msg.innerHTML='<span style="color:'+(d.success?'#16a34a':'#dc2626')+'">'+( d.data||'Viga')+'</span>';
+    if(d.success&&el)el.value='';
+  });
 };
 
 /* ─── Cart controls ─── */

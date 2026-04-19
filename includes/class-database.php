@@ -358,6 +358,19 @@ class Vesho_CRM_Database {
             KEY idx_al_date   (created_at)
         ) $charset;" );
 
+        // ── stock_notifications ───────────────────────────────────────────────
+        dbDelta( "CREATE TABLE {$wpdb->prefix}vesho_stock_notifications (
+            id           INT UNSIGNED NOT NULL AUTO_INCREMENT,
+            inventory_id INT UNSIGNED NOT NULL,
+            email        VARCHAR(255) NOT NULL DEFAULT '',
+            sent         TINYINT(1)   NOT NULL DEFAULT 0,
+            created_at   DATETIME     DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            UNIQUE KEY uq_notif (inventory_id, email),
+            KEY idx_notif_inv  (inventory_id),
+            KEY idx_notif_sent (sent)
+        ) $charset;" );
+
         // ── shop_orders ───────────────────────────────────────────────────────
         dbDelta( "CREATE TABLE {$wpdb->prefix}vesho_shop_orders (
             id               INT UNSIGNED NOT NULL AUTO_INCREMENT,

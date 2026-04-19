@@ -1,10 +1,10 @@
 {
   "name": "Vesho CRM",
   "slug": "vesho-crm",
-  "version": "2.4.0",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.4.0/vesho-crm.zip",
+  "version": "2.4.1",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.4.1/vesho-crm.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-19",
-  "changelog": "<h4>2.4.0</h4><ul><li>Maksed: Stripe/MC/Montonio webhookid kinnitavad nüüd ka poe tellimusi automaatselt</li><li>Seadmed: hoolduse intervall (kuudes) — automaatne järgmise hoolduse ajastamine töökäsu lõpetamisel</li><li>Admin: tegevuslogi AJAX-paginatsioon</li><li>Maksed: MC merchant_data ja Montonio merchantReference korrigeeritud tellimuste jaoks</li></ul><h4>2.3.13</h4><ul><li>Pood: laoseisu haldus laost — Laos otsas märgis ja keelatud Lisa korvi nupp</li></ul><h4>2.3.12</h4><ul><li>Pood: täielik uusehitus PHP serveripoolse shortcode'ina</li></ul>"
+  "changelog": "<h4>2.4.1</h4><ul><li>Pood: laost otsas toodete teavitussüsteem — klient saab e-posti teel teate kui toode taas saadaval</li><li>DB: vesho_stock_notifications tabel</li><li>Admin: laovaru uuendamisel saadetakse automaatselt teavitused tellijatele</li></ul><h4>2.4.0</h4><ul><li>Maksed: Stripe/MC/Montonio webhookid kinnitavad poe tellimusi automaatselt</li><li>Seadmed: automaatne järgmise hoolduse ajastamine</li><li>Admin: tegevuslogi AJAX-paginatsioon</li></ul>"
 }

@@ -3,7 +3,7 @@
  * Plugin Name: Vesho CRM
  * Plugin URI:  https://vesho.ee
  * Description: CRM ja klientide portaal Vesho OÜ-le. Haldab kliente, seadmeid, hooldusi, arveid ja teenuseid.
- * Version:     2.4.0
+ * Version:     2.4.1
  * Author:      Vesho OÜ
  * Author URI:  https://vesho.ee
  * Text Domain: vesho-crm
@@ -15,7 +15,7 @@
 defined( 'ABSPATH' ) || exit;
 
 // ── Constants ──────────────────────────────────────────────────────────────────
-define('VESHO_CRM_VERSION', '2.4.0');
+define('VESHO_CRM_VERSION', '2.4.1');
 define( 'VESHO_CRM_FILE',     __FILE__ );
 define( 'VESHO_CRM_PATH',     plugin_dir_path( __FILE__ ) );
 define( 'VESHO_CRM_URL',      plugin_dir_url( __FILE__ ) );
@@ -1590,13 +1590,73 @@ function vesho_ajax_save_inventory_inline() {
     $table = $wpdb->prefix . 'vesho_inventory';
 
     if ( $id ) {
+        // Check if product going from out-of-stock to in-stock → trigger notifications
+        $old_qty = (float) $wpdb->get_var( $wpdb->prepare(
+            "SELECT quantity FROM {$wpdb->prefix}vesho_inventory WHERE id=%d", $id
+        ));
         $wpdb->update( $table, $data, [ 'id' => $id ] );
+        if ( $old_qty <= 0 && $data['quantity'] > 0 ) {
+            vesho_send_stock_notifications( $id, $data['name'] );
+        }
         wp_send_json_success( [ 'message' => 'Uuendatud: ' . $data['name'], 'id' => $id, 'image_url' => $image_url ] );
     } else {
         $data['archived'] = 0;
         $wpdb->insert( $table, $data );
         wp_send_json_success( [ 'message' => 'Lisatud: ' . $data['name'], 'id' => $wpdb->insert_id, 'image_url' => $image_url ] );
     }
+}
+
+// ── Stock notification: send emails when product back in stock ────────────────
+function vesho_send_stock_notifications( int $inventory_id, string $product_name ): void {
+    global $wpdb;
+    $emails = $wpdb->get_col( $wpdb->prepare(
+        "SELECT email FROM {$wpdb->prefix}vesho_stock_notifications WHERE inventory_id=%d AND sent=0",
+        $inventory_id
+    ));
+    if ( empty($emails) ) return;
+    $co       = get_option( 'vesho_company_name', get_bloginfo('name') );
+    $shop_url = get_permalink( get_page_by_path('pood') ) ?: home_url('/pood/');
+    $prod_url = add_query_arg(['shop_view'=>'product','pid'=>$inventory_id], $shop_url);
+    foreach ( $emails as $email ) {
+        wp_mail(
+            $email,
+            "[{$co}] Toode on taas laos saadaval",
+            "Tere!\n\nToode \"{$product_name}\" on taas laos saadaval.\n\nVaata toodet: {$prod_url}\n\nLugupidamisega,\n{$co}"
+        );
+    }
+    $wpdb->query( $wpdb->prepare(
+        "UPDATE {$wpdb->prefix}vesho_stock_notifications SET sent=1 WHERE inventory_id=%d AND sent=0",
+        $inventory_id
+    ));
+}
+
+// ── AJAX: Subscribe to back-in-stock notification ────────────────────────────
+add_action( 'wp_ajax_vesho_stock_notify',        'vesho_ajax_stock_notify' );
+add_action( 'wp_ajax_nopriv_vesho_stock_notify', 'vesho_ajax_stock_notify' );
+function vesho_ajax_stock_notify() {
+    check_ajax_referer( 'vesho_cart_nonce', 'nonce' );
+    global $wpdb;
+    $pid   = absint( $_POST['pid'] ?? 0 );
+    $email = sanitize_email( $_POST['email'] ?? '' );
+    if ( !$pid || !is_email($email) ) wp_send_json_error( 'Vigane sisend' );
+    // Verify product exists and is out of stock
+    $qty = $wpdb->get_var( $wpdb->prepare(
+        "SELECT quantity FROM {$wpdb->prefix}vesho_inventory WHERE id=%d AND shop_enabled=1 AND archived=0",
+        $pid
+    ));
+    if ( $qty === null ) wp_send_json_error( 'Toodet ei leitud' );
+    if ( (float)$qty > 0 ) wp_send_json_error( 'Toode on juba laos saadaval' );
+    // Max 500 subscribers per product (spam prevention)
+    $count = (int)$wpdb->get_var( $wpdb->prepare(
+        "SELECT COUNT(*) FROM {$wpdb->prefix}vesho_stock_notifications WHERE inventory_id=%d",
+        $pid
+    ));
+    if ( $count >= 500 ) wp_send_json_error( 'Teavitusnimekiri on täis' );
+    $wpdb->query( $wpdb->prepare(
+        "INSERT IGNORE INTO {$wpdb->prefix}vesho_stock_notifications (inventory_id, email) VALUES (%d, %s)",
+        $pid, $email
+    ));
+    wp_send_json_success( 'Teavitame teid kui toode on taas saadaval!' );
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
