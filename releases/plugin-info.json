@@ -1,10 +1,10 @@
 {
   "name": "Vesho CRM",
   "slug": "vesho-crm",
-  "version": "2.6.1",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.6.1/vesho-crm.zip",
+  "version": "2.7.0",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.7.0/vesho-crm.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-19",
-  "changelog": "<h4>2.6.1</h4><ul><li>Fix: WP Teenused CPT peidetud admin menüüst — CRM teenused kasutatakse</li></ul><h4>2.6.0</h4><ul><li>Feat: broneeringu emailid, makse email, foto upload, tarnijad, ostutellimused</li></ul>"
+  "changelog": "<h4>2.7.0</h4><ul><li>Feat: foto tüüp (enne/pärast) töökäsu fotodel</li><li>Feat: portaali teated eraldi admin leht</li><li>Feat: inventuuri haldus (stockcount) admin leht</li><li>Feat: arve read automaatselt töökäsu materjalidest</li></ul><h4>2.6.1</h4><ul><li>Fix: WP Teenused CPT peidetud admin menüüst — CRM teenused kasutatakse</li></ul><h4>2.6.0</h4><ul><li>Feat: broneeringu emailid, makse email, foto upload, tarnijad, ostutellimused</li></ul>"
 }

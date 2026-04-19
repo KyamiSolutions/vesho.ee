@@ -255,23 +255,37 @@ if ( $action === 'print' && $workorder_id ) {
         <div style="padding:0 20px 20px">
             <div class="crm-form-label" style="margin-bottom:10px">📷 Fotod <?php if ($photos): ?><span style="color:#6b8599">(<?php echo count($photos); ?>)</span><?php endif; ?></div>
             <?php if ($photos) : ?>
-            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">
-                <?php foreach ($photos as $p) : ?>
-                <div style="position:relative">
-                    <a href="<?php echo esc_url($p->filename); ?>" target="_blank">
-                        <img src="<?php echo esc_url($p->filename); ?>" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid #e2e8f0">
-                    </a>
-                    <a href="<?php echo wp_nonce_url(admin_url('admin-post.php?action=vesho_delete_workorder_photo&photo_id='.$p->id.'&workorder_id='.$edit->id), 'vesho_delete_photo_'.$p->id); ?>"
-                       style="position:absolute;top:-6px;right:-6px;width:18px;height:18px;background:#ef4444;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;text-decoration:none;font-weight:700"
-                       onclick="return confirm('Kustuta foto?')" title="Kustuta">✕</a>
+            <?php
+            $pt_labels = ['before'=>'🔴 Enne','after'=>'🟢 Pärast','other'=>'📷 Muu'];
+            $pt_groups = ['before'=>[],'after'=>[],'other'=>[]];
+            foreach ($photos as $p) { $pt_groups[$p->photo_type ?? 'other'][] = $p; }
+            foreach ($pt_groups as $pt => $group) : if (empty($group)) continue; ?>
+            <div style="margin-bottom:12px">
+                <div style="font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;margin-bottom:6px"><?php echo $pt_labels[$pt] ?? $pt; ?></div>
+                <div style="display:flex;gap:10px;flex-wrap:wrap">
+                    <?php foreach ($group as $p) : ?>
+                    <div style="position:relative">
+                        <a href="<?php echo esc_url($p->filename); ?>" target="_blank">
+                            <img src="<?php echo esc_url($p->filename); ?>" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid #e2e8f0">
+                        </a>
+                        <a href="<?php echo wp_nonce_url(admin_url('admin-post.php?action=vesho_delete_workorder_photo&photo_id='.$p->id.'&workorder_id='.$edit->id), 'vesho_delete_photo_'.$p->id); ?>"
+                           style="position:absolute;top:-6px;right:-6px;width:18px;height:18px;background:#ef4444;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;text-decoration:none;font-weight:700"
+                           onclick="return confirm('Kustuta foto?')" title="Kustuta">✕</a>
+                    </div>
+                    <?php endforeach; ?>
                 </div>
-                <?php endforeach; ?>
             </div>
+            <?php endforeach; ?>
             <?php endif; ?>
             <form method="POST" action="<?php echo admin_url('admin-post.php'); ?>" enctype="multipart/form-data" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
                 <?php wp_nonce_field('vesho_upload_workorder_photo'); ?>
                 <input type="hidden" name="action" value="vesho_upload_workorder_photo">
                 <input type="hidden" name="workorder_id" value="<?php echo $edit->id; ?>">
+                <select name="photo_type" style="font-size:12px;padding:4px 8px;border:1px solid #cbd5e1;border-radius:6px">
+                    <option value="other">📷 Muu</option>
+                    <option value="before">🔴 Enne</option>
+                    <option value="after">🟢 Pärast</option>
+                </select>
                 <input type="file" name="workorder_photos[]" accept="image/*" multiple style="font-size:12px">
                 <button type="submit" class="crm-btn crm-btn-outline crm-btn-sm">📎 Lae üles</button>
             </form>
