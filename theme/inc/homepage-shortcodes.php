@@ -4,21 +4,31 @@
  *
  * Kasutus Elementoris: lisa "Shortcode" widget ja kirjuta nt [vesho_hero]
  *
- * Saadaval:
- *   [vesho_hero]      – hero sektsioon (pealkiri, alapealkiri, nupp, SVG)
- *   [vesho_stats]     – statistika riba (4 arvu + silti)
- *   [vesho_services]  – teenuste eelvaade (kaardid + "Vaata kõiki" nupp)
- *   [vesho_why_us]    – "Miks valida Vesho?" sektsioon
- *   [vesho_cta]       – CTA sektsioon (nupp + telefon)
+ * TÄISSEKTSIOONID (sisaldavad päist + sisu + sektsiooni CSS):
+ *   [vesho_hero]           – hero sektsioon (pealkiri, alapealkiri, nupp, SVG)
+ *   [vesho_stats]          – statistika riba (4 arvu + silti)
+ *   [vesho_services]       – teenuste eelvaade (kaardid + "Vaata kõiki" nupp)
+ *   [vesho_why_us]         – "Miks valida Vesho?" sektsioon
+ *   [vesho_cta]            – CTA sektsioon (nupp + telefon)
+ *
+ * OSAD / KOMPONENDID (Elementori tekstiwidgetitega kombineerimisel):
+ *   [vesho_services_cards] – ainult teenuste kaardid (ilma sektsioonipäiseta)
+ *                            Parameeter: count=3 (mitu kaarti näidata)
+ *   [vesho_stats_grid]     – ainult 4 statistikanumbrit (ilma sektsiooniümbriseta)
+ *   [vesho_why_items]      – ainult "Miks valida" punktide nimekiri (ilma ümbritseta)
  */
 defined( 'ABSPATH' ) || exit;
 
 // ── Registreeri kõik shortcode'id ─────────────────────────────────────────────
-add_shortcode( 'vesho_hero',     'vesho_sc_hero' );
-add_shortcode( 'vesho_stats',    'vesho_sc_stats' );
-add_shortcode( 'vesho_services', 'vesho_sc_services' );
-add_shortcode( 'vesho_why_us',   'vesho_sc_why_us' );
-add_shortcode( 'vesho_cta',      'vesho_sc_cta' );
+add_shortcode( 'vesho_hero',           'vesho_sc_hero' );
+add_shortcode( 'vesho_stats',          'vesho_sc_stats' );
+add_shortcode( 'vesho_services',       'vesho_sc_services' );
+add_shortcode( 'vesho_why_us',         'vesho_sc_why_us' );
+add_shortcode( 'vesho_cta',            'vesho_sc_cta' );
+// Komponendid Elementori kombineerimisel:
+add_shortcode( 'vesho_services_cards', 'vesho_sc_services_cards' );
+add_shortcode( 'vesho_stats_grid',     'vesho_sc_stats_grid' );
+add_shortcode( 'vesho_why_items',      'vesho_sc_why_items' );
 
 // ── [vesho_hero] ──────────────────────────────────────────────────────────────
 function vesho_sc_hero( $atts = [] ) {
@@ -308,6 +318,116 @@ function vesho_sc_cta( $atts = [] ) {
             </div>
         </div>
     </section>
+    <?php
+    return ob_get_clean();
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// KOMPONENDID — kombineeritavad Elementori Text/Heading widgetitega
+// ════════════════════════════════════════════════════════════════════════════
+
+// ── [vesho_services_cards] ────────────────────────────────────────────────────
+// Ainult teenuste kaardid — sektsioonipäis ja nupp Elementoris.
+// Parameeter: count=3 (mitu kaarti näidata)
+// Näide Elementoris:
+//   [Heading] "Mida me pakume"
+//   [Text]    "Professionaalsed teenused..."
+//   [Shortcode] [vesho_services_cards count="3"]
+//   [Button]  "Vaata kõiki teenuseid"
+function vesho_sc_services_cards( $atts = [] ) {
+    $atts     = shortcode_atts( [ 'count' => 3 ], $atts );
+    $services = vesho_get_services( (int) $atts['count'] );
+    ob_start();
+    ?>
+    <div class="services-grid">
+        <?php if ( ! empty( $services ) ) : ?>
+            <?php foreach ( $services as $svc ) : ?>
+            <div class="service-card">
+                <div class="service-card__icon" aria-hidden="true"><?php echo esc_html( $svc->icon ?? '💧' ); ?></div>
+                <h3 class="service-card__name"><?php echo esc_html( $svc->name ); ?></h3>
+                <p class="service-card__desc"><?php echo esc_html( $svc->description ?? '' ); ?></p>
+                <?php if ( ! empty( $svc->price ) ) : ?>
+                    <span class="service-card__price"><?php printf( __( 'alates %s €', 'vesho' ), number_format( (float) $svc->price, 2, ',', ' ' ) ); ?></span>
+                <?php endif; ?>
+                <button class="btn btn-primary btn-sm service-card__cta"
+                        data-service="<?php echo esc_attr( $svc->name ); ?>"
+                        aria-haspopup="dialog" aria-controls="service-modal">
+                    <?php _e( 'Küsi Pakkumist', 'vesho' ); ?>
+                </button>
+            </div>
+            <?php endforeach; ?>
+        <?php else : ?>
+            <div class="service-card">
+                <div class="service-card__icon">🔧</div>
+                <h3 class="service-card__name"><?php _e( 'Hooldus & Remont', 'vesho' ); ?></h3>
+                <p class="service-card__desc"><?php _e( 'Regulaarne veesüsteemide hooldus ja kiirete rikete kõrvaldamine.', 'vesho' ); ?></p>
+                <button class="btn btn-primary btn-sm service-card__cta" data-service="Hooldus" aria-haspopup="dialog" aria-controls="service-modal"><?php _e( 'Küsi Pakkumist', 'vesho' ); ?></button>
+            </div>
+            <div class="service-card">
+                <div class="service-card__icon">💧</div>
+                <h3 class="service-card__name"><?php _e( 'Filtreerimine', 'vesho' ); ?></h3>
+                <p class="service-card__desc"><?php _e( 'Vee puhastus ja filtreerislahendused kodudele ning äridele.', 'vesho' ); ?></p>
+                <button class="btn btn-primary btn-sm service-card__cta" data-service="Filtreerimine" aria-haspopup="dialog" aria-controls="service-modal"><?php _e( 'Küsi Pakkumist', 'vesho' ); ?></button>
+            </div>
+            <div class="service-card">
+                <div class="service-card__icon">⚙️</div>
+                <h3 class="service-card__name"><?php _e( 'Paigaldus', 'vesho' ); ?></h3>
+                <p class="service-card__desc"><?php _e( 'Uute veesüsteemide ja seadmete professionaalne paigaldus.', 'vesho' ); ?></p>
+                <button class="btn btn-primary btn-sm service-card__cta" data-service="Paigaldus" aria-haspopup="dialog" aria-controls="service-modal"><?php _e( 'Küsi Pakkumist', 'vesho' ); ?></button>
+            </div>
+        <?php endif; ?>
+    </div>
+    <?php
+    return ob_get_clean();
+}
+
+// ── [vesho_stats_grid] ────────────────────────────────────────────────────────
+// Ainult 4 statistikaplokki — kustuta vana HTML-widget, asenda sellega.
+// Sektsiooni taust ja padding Elementori sektsioonist.
+function vesho_sc_stats_grid( $atts = [] ) {
+    $s = [
+        [ get_theme_mod( 'vesho_stat1_num',   '500+' ), get_theme_mod( 'vesho_stat1_label', 'Rahulolev klient' ) ],
+        [ get_theme_mod( 'vesho_stat2_num',   '10+'  ), get_theme_mod( 'vesho_stat2_label', 'Aastat kogemust'  ) ],
+        [ get_theme_mod( 'vesho_stat3_num',   '24h'  ), get_theme_mod( 'vesho_stat3_label', 'Reaktsiooniaeg'   ) ],
+        [ get_theme_mod( 'vesho_stat4_num',   '99%'  ), get_theme_mod( 'vesho_stat4_label', 'Rahulolu'         ) ],
+    ];
+    ob_start();
+    ?>
+    <div class="stats-grid">
+        <?php foreach ( $s as $item ) : ?>
+        <div class="stat-item">
+            <span class="stat-item__num"><?php echo esc_html( $item[0] ); ?></span>
+            <span class="stat-item__label"><?php echo esc_html( $item[1] ); ?></span>
+        </div>
+        <?php endforeach; ?>
+    </div>
+    <?php
+    return ob_get_clean();
+}
+
+// ── [vesho_why_items] ─────────────────────────────────────────────────────────
+// Ainult checkmark-punktide nimekiri (Customizerist).
+// Näide Elementoris:
+//   [Heading] "Miks valida Vesho?"
+//   [Shortcode] [vesho_why_items]
+function vesho_sc_why_items( $atts = [] ) {
+    $items = [
+        get_theme_mod( 'vesho_why_item1', 'Sertifitseeritud ja kogenud tehnikud' ),
+        get_theme_mod( 'vesho_why_item2', 'Läbipaistev hinnastamine ilma peidetud tasudeta' ),
+        get_theme_mod( 'vesho_why_item3', '24-tunnine reageering hädaolukordades' ),
+        get_theme_mod( 'vesho_why_item4', 'Garantii kõikidele töödele ja materjalidele' ),
+        get_theme_mod( 'vesho_why_item5', 'Üle 500 rahuloleva kliendi üle Eesti' ),
+    ];
+    ob_start();
+    ?>
+    <ul class="why-us__list">
+        <?php foreach ( $items as $item ) : ?>
+        <li class="why-us__item">
+            <span class="why-us__check" aria-hidden="true"></span>
+            <?php echo esc_html( $item ); ?>
+        </li>
+        <?php endforeach; ?>
+    </ul>
     <?php
     return ob_get_clean();
 }
