@@ -1,10 +1,10 @@
 {
   "name": "Vesho",
   "slug": "vesho",
-  "version": "2.2.79",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.2.79/vesho-theme.zip",
+  "version": "2.2.80",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.2.80/vesho-theme.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-19",
-  "changelog": "<h4>2.2.79</h4><ul><li>Hotfix: parse error class-worker-portal.php rida 330</li></ul><h4>2.2.78</h4><ul><li>Portaali teated: avalik sait + kõik portaali tab-id + 3006 stiil</li></ul><h4>2.2.77</h4><ul><li>Portaali teated töötaja portaalis; bcrypt PIN; audit bugifixid</li></ul><h4>2.2.76</h4><ul><li>Worker vastuvõtt: tooted kuvatakse korrektselt</li></ul>"
+  "changelog": "<h4>2.2.80</h4><ul><li>Teated kogu saidil: banner pärast navbar-i (vesho_after_header hook)</li></ul><h4>2.2.79</h4><ul><li>Hotfix: parse error worker-portal rida 330</li></ul><h4>2.2.78</h4><ul><li>Portaali teated: 3006 stiil, kõik tab-id, dismiss, tüübid</li></ul><h4>2.2.77</h4><ul><li>Portaali teated töötaja portaalis; bcrypt PIN; audit bugifixid</li></ul><h4>2.2.76</h4><ul><li>Worker vastuvõtt: tooted kuvatakse korrektselt</li></ul>"
 }

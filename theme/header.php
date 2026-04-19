@@ -169,6 +169,7 @@
 </header><!-- .site-header -->
 
 </div><!-- .site-top-wrapper -->
+<?php do_action('vesho_after_header'); ?>
 
 <!-- ── Service Request Modal ──────────────────────────────────────────────── -->
 <div class="modal-backdrop" id="modal-backdrop" role="presentation" aria-hidden="true"></div>

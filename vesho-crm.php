@@ -3,7 +3,7 @@
  * Plugin Name: Vesho CRM
  * Plugin URI:  https://vesho.ee
  * Description: CRM ja klientide portaal Vesho OÜ-le. Haldab kliente, seadmeid, hooldusi, arveid ja teenuseid.
- * Version:     2.2.79
+ * Version:     2.2.80
  * Author:      Vesho OÜ
  * Author URI:  https://vesho.ee
  * Text Domain: vesho-crm
@@ -15,7 +15,7 @@
 defined( 'ABSPATH' ) || exit;
 
 // ── Constants ──────────────────────────────────────────────────────────────────
-define('VESHO_CRM_VERSION', '2.2.79');
+define('VESHO_CRM_VERSION', '2.2.80');
 define( 'VESHO_CRM_FILE',     __FILE__ );
 define( 'VESHO_CRM_PATH',     plugin_dir_path( __FILE__ ) );
 define( 'VESHO_CRM_URL',      plugin_dir_url( __FILE__ ) );
@@ -311,7 +311,7 @@ add_action( 'wp_ajax_vesho_save_update_server', function() {
 } );
 
 // ── Public site notices (3006 stiil: banner kogu saidil) ─────────────────────
-add_action( 'wp_body_open', 'vesho_public_notices' );
+add_action( 'vesho_after_header', 'vesho_public_notices' );
 function vesho_public_notices() {
     if ( is_admin() ) return;
     global $wpdb;
