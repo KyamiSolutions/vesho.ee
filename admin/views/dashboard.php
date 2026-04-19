@@ -52,6 +52,35 @@ $recent_workorders = $wpdb->get_results(
      LEFT JOIN {$wpdb->prefix}vesho_clients c ON c.id = wo.client_id
      ORDER BY wo.created_at DESC LIMIT 5");
 
+// ── Overdue invoices ──────────────────────────────────────────────────────────
+$overdue_count  = (int) $wpdb->get_var($wpdb->prepare(
+    "SELECT COUNT(*) FROM {$wpdb->prefix}vesho_invoices WHERE status IN ('unpaid','sent') AND due_date < %s", $today));
+$overdue_total  = (float) $wpdb->get_var($wpdb->prepare(
+    "SELECT COALESCE(SUM(amount),0) FROM {$wpdb->prefix}vesho_invoices WHERE status IN ('unpaid','sent') AND due_date < %s", $today));
+
+// ── 6-month revenue trend ─────────────────────────────────────────────────────
+$revenue_trend = [];
+for ( $i = 5; $i >= 0; $i-- ) {
+    $m_start = date('Y-m-01', strtotime("-{$i} months"));
+    $m_end   = date('Y-m-t',  strtotime("-{$i} months"));
+    $m_label = date_i18n('M', strtotime($m_start));
+    $m_rev   = (float) $wpdb->get_var($wpdb->prepare(
+        "SELECT COALESCE(SUM(amount),0) FROM {$wpdb->prefix}vesho_invoices WHERE status='paid' AND invoice_date BETWEEN %s AND %s",
+        $m_start, $m_end
+    ));
+    $revenue_trend[] = ['label' => $m_label, 'value' => $m_rev];
+}
+
+// ── Top clients by revenue (6 months) ─────────────────────────────────────────
+$six_months_ago = date('Y-m-01', strtotime('-5 months'));
+$top_clients = $wpdb->get_results($wpdb->prepare(
+    "SELECT c.name, COALESCE(SUM(i.amount),0) AS total
+     FROM {$wpdb->prefix}vesho_invoices i
+     LEFT JOIN {$wpdb->prefix}vesho_clients c ON c.id=i.client_id
+     WHERE i.status='paid' AND i.invoice_date >= %s
+     GROUP BY i.client_id ORDER BY total DESC LIMIT 5", $six_months_ago
+));
+
 // ── Row 2 extras (shop, requests, stock) ─────────────────────────────────────
 $shop_orders    = (int) $wpdb->get_var(
     "SELECT COUNT(*) FROM {$wpdb->prefix}vesho_shop_orders WHERE status IN ('new','picking')");
@@ -137,7 +166,7 @@ $status_labels = [
         <div class="crm-stat__icon" style="background:<?php echo $unpaid_count > 0 ? '#fef9c3' : '#d1fae5'; ?>;color:<?php echo $unpaid_count > 0 ? '#b45309' : '#10b981'; ?>">📬</div>
         <div>
             <span class="crm-stat__num" style="<?php echo $unpaid_count > 0 ? 'color:#b45309' : ''; ?>"><?php echo $unpaid_count; ?></span>
-            <span class="crm-stat__label">Arveid ootel</span>
+            <span class="crm-stat__label">Arveid ootel<?php if ($unpaid_total > 0): ?> <span style="font-size:12px;font-weight:500">(<?php echo number_format($unpaid_total,0,',','&nbsp;'); ?> €)</span><?php endif; ?></span>
         </div>
     </div>
 
@@ -179,6 +208,24 @@ $status_labels = [
     </div>
 
 </div>
+
+<!-- ── Tähtaja ületanud arved ──────────────────────────────────────────────── -->
+<?php if ($overdue_count > 0): ?>
+<div style="padding:0 2px;margin-bottom:16px">
+    <div class="crm-card" style="margin:0;border-left:4px solid #ef4444;background:#fff5f5">
+        <div style="padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px">
+            <div style="display:flex;align-items:center;gap:12px">
+                <span style="font-size:22px">⚠️</span>
+                <div>
+                    <div style="font-size:14px;font-weight:600;color:#b91c1c">Tähtaja ületanud arved</div>
+                    <div style="font-size:12px;color:#dc2626"><?php echo $overdue_count; ?> arvet — kokku <?php echo number_format($overdue_total,2,',','&nbsp;'); ?> €</div>
+                </div>
+            </div>
+            <a href="<?php echo admin_url('admin.php?page=vesho-crm-invoices&status=overdue'); ?>" class="crm-btn crm-btn-sm" style="background:#ef4444;color:#fff;border:none;white-space:nowrap">→ Vaata arveid</a>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
 
 <!-- ── Kinnitust ootavad broneeringud ─────────────────────────────────────── -->
 <?php if ($pending_bookings_count > 0): ?>
@@ -325,6 +372,72 @@ $status_labels = [
         </table>
         <?php endif; ?>
     </div>
+</div>
+
+<!-- ── 6-kuu käibegraafik + Top kliendid ───────────────────────────────────── -->
+<div style="padding:0 2px;margin-bottom:20px;display:grid;grid-template-columns:1fr 1fr;gap:20px">
+
+    <!-- 6-kuu graafik (canvas) -->
+    <div class="crm-card" style="margin:0">
+        <div class="crm-card-header">
+            <span class="crm-card-title">📈 Käive (6 kuud)</span>
+        </div>
+        <div style="padding:16px 20px 20px">
+            <?php
+            $trend_max = max(array_column($revenue_trend,'value') ?: [1]);
+            $trend_max = $trend_max ?: 1;
+            ?>
+            <div style="display:flex;align-items:flex-end;gap:8px;height:100px;border-bottom:1px solid #e5e7eb;padding-bottom:4px">
+            <?php foreach ($revenue_trend as $tm):
+                $pct = $trend_max > 0 ? round(($tm['value'] / $trend_max) * 100) : 0;
+                $pct = max($pct, 2); // min visible bar
+            ?>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%">
+                    <div style="margin-top:auto;width:100%;background:var(--crm-teal,#00b4c8);border-radius:4px 4px 0 0;height:<?php echo $pct; ?>%;min-height:3px;transition:height .3s"></div>
+                </div>
+            <?php endforeach; ?>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:6px">
+            <?php foreach ($revenue_trend as $tm): ?>
+                <div style="flex:1;text-align:center;font-size:10px;color:#6b8599"><?php echo esc_html($tm['label']); ?></div>
+            <?php endforeach; ?>
+            </div>
+            <div style="margin-top:12px;display:flex;gap:16px;flex-wrap:wrap">
+            <?php foreach ($revenue_trend as $tm): ?>
+                <div style="font-size:11px;color:#6b8599"><?php echo esc_html($tm['label']); ?>: <strong style="color:#1a2a38"><?php echo number_format($tm['value'],0,',','&nbsp;'); ?> €</strong></div>
+            <?php endforeach; ?>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top kliendid -->
+    <div class="crm-card" style="margin:0">
+        <div class="crm-card-header">
+            <span class="crm-card-title">🏆 Top kliendid (6 kuud)</span>
+        </div>
+        <?php if (empty($top_clients)): ?>
+            <div class="crm-empty" style="padding:32px">Andmed puuduvad</div>
+        <?php else: ?>
+        <div style="padding:8px 0">
+        <?php
+        $tc_max = (float)($top_clients[0]->total ?? 1) ?: 1;
+        foreach ($top_clients as $i => $tc):
+            $pct = $tc_max > 0 ? round(($tc->total / $tc_max) * 100) : 0;
+        ?>
+            <div style="padding:10px 20px;display:flex;flex-direction:column;gap:4px">
+                <div style="display:flex;justify-content:space-between;font-size:13px">
+                    <span style="font-weight:500;color:#1a2a38"><?php echo esc_html($tc->name ?? '—'); ?></span>
+                    <span style="color:#10b981;font-weight:600"><?php echo number_format((float)$tc->total,0,',','&nbsp;'); ?> €</span>
+                </div>
+                <div style="height:4px;background:#f0f4f7;border-radius:2px">
+                    <div style="height:4px;background:var(--crm-teal,#00b4c8);border-radius:2px;width:<?php echo $pct; ?>%"></div>
+                </div>
+            </div>
+        <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
+    </div>
+
 </div>
 
 </div><!-- .crm-wrap -->

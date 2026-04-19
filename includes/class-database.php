@@ -203,6 +203,17 @@ class Vesho_CRM_Database {
             KEY idx_ticket_status (status)
         ) $charset;" );
 
+        // ── ticket_replies ───────────────────────────────────────────────────
+        dbDelta( "CREATE TABLE {$wpdb->prefix}vesho_ticket_replies (
+            id          INT UNSIGNED NOT NULL AUTO_INCREMENT,
+            ticket_id   INT UNSIGNED NOT NULL,
+            author      VARCHAR(100) DEFAULT 'admin',
+            message     TEXT         NOT NULL,
+            created_at  DATETIME     DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY idx_tr_ticket (ticket_id)
+        ) $charset;" );
+
         // ── campaigns ────────────────────────────────────────────────────────
         dbDelta( "CREATE TABLE {$wpdb->prefix}vesho_campaigns (
             id         INT UNSIGNED NOT NULL AUTO_INCREMENT,

@@ -8,6 +8,7 @@ $search    = isset($_GET['s'])         ? sanitize_text_field($_GET['s'])       :
 
 $edit = null;
 $edit_client = null;
+$ticket_replies = [];
 if ( $action === 'view' && $ticket_id ) {
     $edit = $wpdb->get_row($wpdb->prepare(
         "SELECT t.*, c.name as client_name, c.email as client_email
@@ -16,9 +17,11 @@ if ( $action === 'view' && $ticket_id ) {
          WHERE t.id=%d LIMIT 1",
         $ticket_id
     ));
-    if ($edit && $edit->status === 'open') {
-        // Mark as in-progress when viewed
-        // (leave as open - just display it)
+    if ( $edit ) {
+        $ticket_replies = $wpdb->get_results($wpdb->prepare(
+            "SELECT * FROM {$wpdb->prefix}vesho_ticket_replies WHERE ticket_id=%d ORDER BY created_at ASC",
+            $ticket_id
+        ));
     }
 }
 
@@ -83,13 +86,49 @@ $pcls       = ['low'=>'badge-gray','normal'=>'badge-info','high'=>'badge-warning
                 </div>
             </div>
 
-            <div class="crm-form-label" style="margin-bottom:6px">Sõnum</div>
-            <div style="background:#f4f7f9;border-radius:8px;padding:16px;font-size:14px;line-height:1.6;white-space:pre-wrap;margin-bottom:20px"><?php echo esc_html($edit->message ?? ''); ?></div>
+            <!-- ── Sõnumite ahel ──────────────────────────────────────────── -->
+            <div class="crm-form-label" style="margin-bottom:8px">💬 Sõnumid</div>
+            <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:24px">
 
-            <?php if (!empty($edit->reply)) : ?>
-            <div class="crm-form-label" style="margin-bottom:6px">Eelmine vastus</div>
-            <div style="background:#f0f9f0;border:1px solid #b8e6b8;border-radius:8px;padding:16px;font-size:14px;line-height:1.6;white-space:pre-wrap;margin-bottom:20px"><?php echo esc_html($edit->reply); ?></div>
-            <?php endif; ?>
+                <!-- Kliendi algne sõnum -->
+                <div style="display:flex;gap:12px;align-items:flex-start">
+                    <div style="width:32px;height:32px;border-radius:50%;background:#e0f2fe;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">👤</div>
+                    <div style="flex:1">
+                        <div style="font-size:11px;color:#6b8599;margin-bottom:4px">
+                            <strong style="color:#1a2a38"><?php echo esc_html($edit->client_name ?? 'Klient'); ?></strong>
+                            &nbsp;·&nbsp;<?php echo vesho_crm_format_date($edit->created_at,'d.m.Y H:i'); ?>
+                        </div>
+                        <div style="background:#f4f7f9;border-radius:0 8px 8px 8px;padding:12px 16px;font-size:14px;line-height:1.6;white-space:pre-wrap"><?php echo esc_html($edit->message ?? ''); ?></div>
+                    </div>
+                </div>
+
+                <?php if (!empty($ticket_replies)) : ?>
+                <?php foreach ($ticket_replies as $rep) :
+                    $is_admin = ($rep->author !== 'client');
+                ?>
+                <div style="display:flex;gap:12px;align-items:flex-start<?php echo $is_admin ? ';flex-direction:row-reverse' : ''; ?>">
+                    <div style="width:32px;height:32px;border-radius:50%;background:<?php echo $is_admin ? '#d1fae5' : '#e0f2fe'; ?>;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0"><?php echo $is_admin ? '🛠️' : '👤'; ?></div>
+                    <div style="flex:1">
+                        <div style="font-size:11px;color:#6b8599;margin-bottom:4px;<?php echo $is_admin ? 'text-align:right' : ''; ?>">
+                            <strong style="color:#1a2a38"><?php echo esc_html($rep->author); ?></strong>
+                            &nbsp;·&nbsp;<?php echo vesho_crm_format_date($rep->created_at,'d.m.Y H:i'); ?>
+                        </div>
+                        <div style="background:<?php echo $is_admin ? '#f0fdf4;border:1px solid #bbf7d0' : '#f4f7f9'; ?>;border-radius:<?php echo $is_admin ? '8px 0 8px 8px' : '0 8px 8px 8px'; ?>;padding:12px 16px;font-size:14px;line-height:1.6;white-space:pre-wrap"><?php echo esc_html($rep->message); ?></div>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+                <?php elseif (!empty($edit->reply)) : ?>
+                <!-- Legacy single-reply fallback -->
+                <div style="display:flex;gap:12px;align-items:flex-start;flex-direction:row-reverse">
+                    <div style="width:32px;height:32px;border-radius:50%;background:#d1fae5;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">🛠️</div>
+                    <div style="flex:1">
+                        <div style="font-size:11px;color:#6b8599;margin-bottom:4px;text-align:right"><strong style="color:#1a2a38">Admin</strong></div>
+                        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px 0 8px 8px;padding:12px 16px;font-size:14px;line-height:1.6;white-space:pre-wrap"><?php echo esc_html($edit->reply); ?></div>
+                    </div>
+                </div>
+                <?php endif; ?>
+
+            </div>
 
             <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px">
                 <strong style="align-self:center;font-size:13px">Muuda staatus:</strong>
@@ -105,9 +144,13 @@ $pcls       = ['low'=>'badge-gray','normal'=>'badge-info','high'=>'badge-warning
                 <input type="hidden" name="action" value="vesho_reply_ticket">
                 <input type="hidden" name="ticket_id" value="<?php echo $edit->id; ?>">
                 <label class="crm-form-label">Vastus kliendile</label>
-                <textarea class="crm-form-textarea" name="reply" style="min-height:100px;margin-top:4px" placeholder="Kirjuta vastus..."><?php echo esc_textarea($edit->reply ?? ''); ?></textarea>
-                <div style="margin-top:8px;display:flex;justify-content:flex-end">
-                    <button type="submit" class="crm-btn crm-btn-primary">✉️ Saada vastus & sulge</button>
+                <textarea class="crm-form-textarea" name="reply" style="min-height:100px;margin-top:4px" placeholder="Kirjuta vastus..."></textarea>
+                <div style="margin-top:10px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+                    <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+                        <input type="checkbox" name="close_ticket" value="1" style="width:15px;height:15px">
+                        Sulge pilet pärast vastust
+                    </label>
+                    <button type="submit" class="crm-btn crm-btn-primary">✉️ Saada vastus</button>
                 </div>
             </form>
         </div>
