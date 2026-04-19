@@ -220,7 +220,7 @@ function vesho_register_post_types() {
         ),
         'public'       => true,
         'has_archive'  => false,
-        'show_in_menu' => true,
+        'show_in_menu' => false,  // CRM "Teenused" kasutatakse selle asemel
         'show_in_rest' => true,
         'menu_icon'    => 'dashicons-hammer',
         'supports'     => array( 'title', 'editor', 'thumbnail', 'excerpt', 'custom-fields' ),
