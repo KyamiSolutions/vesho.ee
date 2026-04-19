@@ -1377,6 +1377,20 @@ foreach ($notices as $notice) : ?>
             $sell_sel    = $has('selling_price') ? "COALESCE(inv.selling_price, sri.selling_price)" : 'inv.selling_price';
 
             $placeholders = implode(',', array_fill(0, count($pending_ids), '%d'));
+            // Check inventory table columns too
+            $inv_cols   = $wpdb->get_col("DESCRIBE `{$wpdb->prefix}vesho_inventory`") ?: [];
+            $inv_has    = fn($c) => in_array($c, $inv_cols, true);
+            $inv_name   = $inv_has('name')  ? 'inv.name'  : 'NULL';
+            $inv_sku    = $inv_has('sku')   ? 'inv.sku'   : 'NULL';
+            $inv_unit   = $inv_has('unit')  ? 'inv.unit'  : 'NULL';
+            $inv_ean    = $inv_has('ean')   ? 'inv.ean'   : 'NULL';
+            $inv_sell   = $inv_has('selling_price') ? 'inv.selling_price' : 'NULL';
+            $name_sel   = "COALESCE({$inv_name}, {$name_sel})";
+            $sku_sel    = "COALESCE({$inv_sku},  {$sku_sel})";
+            $unit_sel   = "COALESCE({$inv_unit}, {$unit_sel})";
+            $ean_sel    = "COALESCE({$inv_ean},  {$ean_sel})";
+            $sell_sel   = "COALESCE({$inv_sell}, {$sell_sel})";
+
             $rows = $wpdb->get_results($wpdb->prepare(
                 "SELECT sri.id, sri.receipt_id, sri.quantity, sri.inventory_id,
                         {$actual_sel} AS actual_qty,
@@ -1392,6 +1406,7 @@ foreach ($notices as $notice) : ?>
                  ORDER BY sri.receipt_id ASC, sri.id ASC",
                 ...$pending_ids
             ) ?: []);
+            if ($wpdb->last_error) error_log('vesho preload items error: ' . $wpdb->last_error);
             foreach ($rows as $row) {
                 $rid = (int)$row->receipt_id;
                 $preloaded_items[$rid][] = [
