@@ -1,10 +1,10 @@
 {
   "name": "Vesho CRM",
   "slug": "vesho-crm",
-  "version": "2.3.12",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.3.12/vesho-crm.zip",
+  "version": "2.3.13",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.3.13/vesho-crm.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-19",
-  "changelog": "<h4>2.3.12</h4><ul><li>Pood: laoseisu haldus laost — \"Laos otsas\" märgis, keelatud \"Lisa korvi\" nupp, laoseisu indikaator tootedetaiilis</li></ul><h4>2.3.11</h4><ul><li>Pood: täielik uusehitus PHP serveripoolse shortcode'ina (kõik vaated: grid, toode, ostukorv, checkout, edu/tühistus)</li><li>Pood: kategooriafilter, otsing, sortimine</li><li>Pood: kampaania- ja lojaalsussoodustused</li><li>Pood: tarne- ja maksevalikud seadetest</li></ul><h4>2.3.10</h4><ul><li>Pood: Barlow Condensed font tootekaardi nimele ja hinnale</li></ul>"
+  "changelog": "<h4>2.3.13</h4><ul><li>Pood: laoseisu haldus laost — \"Laos otsas\" märgis, keelatud \"Lisa korvi\" nupp, laoseisu indikaator tootedetaiilis</li></ul><h4>2.3.11</h4><ul><li>Pood: täielik uusehitus PHP serveripoolse shortcode'ina (kõik vaated: grid, toode, ostukorv, checkout, edu/tühistus)</li><li>Pood: kategooriafilter, otsing, sortimine</li><li>Pood: kampaania- ja lojaalsussoodustused</li><li>Pood: tarne- ja maksevalikud seadetest</li></ul><h4>2.3.10</h4><ul><li>Pood: Barlow Condensed font tootekaardi nimele ja hinnale</li></ul>"
 }

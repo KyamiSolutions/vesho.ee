@@ -1,10 +1,10 @@
 {
   "name": "Vesho",
   "slug": "vesho",
-  "version": "2.3.12",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.3.12/vesho-theme.zip",
+  "version": "2.3.13",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.3.13/vesho-theme.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-19",
-  "changelog": "<h4>2.3.12</h4><ul><li>Versioon sünkroon pluginaga (laoseisu haldus poes)</li></ul><h4>2.3.11</h4><ul><li>Versioon sünkroon pluginaga (pood uusehitus shortcode'ina)</li></ul>"
+  "changelog": "<h4>2.3.13</h4><ul><li>Versioon sünkroon pluginaga (laoseisu haldus poes)</li></ul><h4>2.3.11</h4><ul><li>Versioon sünkroon pluginaga (pood uusehitus shortcode'ina)</li></ul>"
 }
