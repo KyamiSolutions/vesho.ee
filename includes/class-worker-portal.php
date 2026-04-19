@@ -3067,7 +3067,7 @@ document.querySelectorAll('.vwp-hist-header').forEach(function(hdr){
         if ($auto_inv && $order->client_id) {
             $mats = $order->materials_used ? json_decode($order->materials_used, true) : [];
             $total = 0;
-            $vat_rate = (float) Vesho_CRM_Database::get_setting('vat_rate', '22');
+            $vat_rate = (float) Vesho_CRM_Database::get_setting('vat_rate', '24');
             foreach ($mats as $m) {
                 $net = ($m['qty'] ?? 0) * ($m['price'] ?? 0);
                 $total += $net * (1 + $vat_rate / 100);

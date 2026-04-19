@@ -122,8 +122,8 @@ $services_page_subtitle = get_option('vesho_services_page_subtitle', '');
                     <div class="crm-form-group">
                         <label class="crm-form-label">KM määr (%)</label>
                         <input class="crm-form-input" type="number" step="0.1" min="0" max="100" name="vat_rate"
-                               value="<?php echo esc_attr(get_option('vesho_vat_rate','22')); ?>" style="max-width:100px">
-                        <small style="color:#6b8599;font-size:12px">Nt. 22 → 22%. Kasuta 0 kui ei ole KM-kohustuslane. Rakendub arvetel ja avalikul hinnakirjal.</small>
+                               value="<?php echo esc_attr(get_option('vesho_vat_rate','24')); ?>" style="max-width:100px">
+                        <small style="color:#6b8599;font-size:12px">Nt. 24 → 24% (Eesti alates 2024). Kasuta 0 kui ei ole KM-kohustuslane. Rakendub arvetel ja avalikul hinnakirjal.</small>
                     </div>
                     <div class="crm-form-group">
                         <label class="crm-form-label">Maksetähtaeg (päevi)</label>
