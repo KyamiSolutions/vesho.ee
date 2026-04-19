@@ -187,6 +187,7 @@ class Vesho_CRM_Admin {
 
         // ── LADU ──
         add_submenu_page( 'vesho-crm', 'Ladu', 'Ladu', $cap, 'vesho-crm-inventory', array( __CLASS__, 'page_inventory' ) );
+        add_submenu_page( 'vesho-crm', 'Inventuur', 'Inventuur', $cap, 'vesho-crm-stockcount', array( __CLASS__, 'page_stockcount' ) );
         add_submenu_page( 'vesho-crm', 'Vastuvõtt', 'Vastuvõtt', $cap, 'vesho-crm-receipts', array( __CLASS__, 'page_receipts' ) );
         add_submenu_page( 'vesho-crm', 'Laoaadressid', 'Laoaadressid', $cap, 'vesho-crm-locations', array( __CLASS__, 'page_locations' ) );
         add_submenu_page( 'vesho-crm', 'Tarnijad', 'Tarnijad', $cap, 'vesho-crm-suppliers', array( __CLASS__, 'page_suppliers' ) );
@@ -194,6 +195,7 @@ class Vesho_CRM_Admin {
         add_submenu_page( 'vesho-crm', 'Hinnakiri', 'Hinnakiri', $cap, 'vesho-crm-pricelist', array( __CLASS__, 'page_pricelist' ) );
 
         // ── MUU ──
+        add_submenu_page( 'vesho-crm', 'Portaali teated', 'Portaali teated', $cap, 'vesho-crm-notices', array( __CLASS__, 'page_notices' ) );
         add_submenu_page( 'vesho-crm', 'Teenused', 'Teenused', $cap, 'vesho-crm-services', array( __CLASS__, 'page_services' ) );
         add_submenu_page( 'vesho-crm', 'Tegevuslogi', 'Tegevuslogi', $cap, 'vesho-crm-activity', array( __CLASS__, 'page_activity_log' ) );
         add_submenu_page( 'vesho-crm', 'Seaded', 'Seaded', 'manage_options', 'vesho-crm-settings', array( __CLASS__, 'page_settings' ) );
@@ -365,6 +367,7 @@ class Vesho_CRM_Admin {
     public static function page_calendar()     { self::load_view('calendar'); }
     public static function page_route()        { self::load_view('route'); }
     public static function page_stockcount()   { self::load_view('stockcount'); }
+    public static function page_notices()     { self::load_view('notices'); }
     public static function page_warehouseloc() { self::load_view('warehouseloc'); }
 
 
@@ -1033,7 +1036,12 @@ private static function load_view( $name ) {
                 $inv_prefix  = get_option('vesho_invoice_prefix', 'INV');
                 $inv_num     = Vesho_CRM_Database::get_next_invoice_number();
                 $due_days    = (int) get_option('vesho_invoice_due_days', 14);
-                $inv_amount  = $wo_fresh->price > 0 ? (float)$wo_fresh->price : 0.00;
+                $mats        = ! empty( $wo_fresh->materials_used ) ? json_decode( $wo_fresh->materials_used, true ) : [];
+                $mats        = is_array( $mats ) ? $mats : [];
+                // Calculate total from materials or fall back to wo price
+                $mat_total   = 0.00;
+                foreach ( $mats as $m ) { $mat_total += round( (float)($m['qty']??1) * (float)($m['price']??0), 2 ); }
+                $inv_amount  = $mat_total > 0 ? $mat_total : ( $wo_fresh->price > 0 ? (float)$wo_fresh->price : 0.00 );
                 $inv_desc    = 'Töökäsk #' . $new_id . ( $wo_fresh->title ? ': ' . $wo_fresh->title : '' );
                 $wpdb->insert( $wpdb->prefix.'vesho_invoices', [
                     'client_id'      => (int)$wo_fresh->client_id,
@@ -1045,6 +1053,38 @@ private static function load_view( $name ) {
                     'description'    => $inv_desc,
                     'created_at'     => current_time('mysql'),
                 ] );
+                $new_inv_id = $wpdb->insert_id;
+                // Create invoice line items from materials
+                if ( $new_inv_id ) {
+                    $vat = (float) get_option('vesho_default_vat', 22);
+                    if ( ! empty( $mats ) ) {
+                        foreach ( $mats as $m ) {
+                            $desc  = sanitize_text_field( $m['name'] ?? '' );
+                            $qty   = (float)( $m['qty'] ?? 1 );
+                            $price = (float)( $m['price'] ?? 0 );
+                            if ( $desc && $qty > 0 ) {
+                                $wpdb->insert( $wpdb->prefix . 'vesho_invoice_items', [
+                                    'invoice_id'  => $new_inv_id,
+                                    'description' => $desc,
+                                    'quantity'    => $qty,
+                                    'unit_price'  => $price,
+                                    'vat_rate'    => $vat,
+                                    'total'       => round( $qty * $price, 2 ),
+                                ] );
+                            }
+                        }
+                    } elseif ( $inv_amount > 0 ) {
+                        // No materials — add single line from work price
+                        $wpdb->insert( $wpdb->prefix . 'vesho_invoice_items', [
+                            'invoice_id'  => $new_inv_id,
+                            'description' => $wo_fresh->title ?: $inv_desc,
+                            'quantity'    => 1,
+                            'unit_price'  => $inv_amount,
+                            'vat_rate'    => $vat,
+                            'total'       => $inv_amount,
+                        ] );
+                    }
+                }
             }
             // Send client completion email
             if ( $wo_fresh && $wo_fresh->client_id ) {
@@ -1097,9 +1137,12 @@ private static function load_view( $name ) {
                 ];
                 $upload = wp_handle_upload( $file, [ 'test_form' => false ] );
                 if ( ! empty( $upload['url'] ) ) {
+                    $ptype = sanitize_text_field( $_POST['photo_type'] ?? 'other' );
+                    if ( ! in_array( $ptype, ['before','after','other'], true ) ) $ptype = 'other';
                     $wpdb->insert( $wpdb->prefix . 'vesho_workorder_photos', [
                         'workorder_id' => $wid,
                         'filename'     => $upload['url'],
+                        'photo_type'   => $ptype,
                         'created_at'   => current_time('mysql'),
                     ]);
                 }
@@ -1970,7 +2013,7 @@ private static function load_view( $name ) {
             'created_at'=> current_time('mysql'),
         ];
         $wpdb->insert( $wpdb->prefix.'vesho_portal_notices', $data );
-        wp_redirect( add_query_arg( ['page'=>'vesho-crm-settings','msg'=>'saved'], admin_url('admin.php') ) );
+        wp_redirect( add_query_arg( ['page'=>'vesho-crm-notices','msg'=>'saved'], admin_url('admin.php') ) );
         exit;
     }
 
@@ -1980,7 +2023,7 @@ private static function load_view( $name ) {
         global $wpdb;
         $id = absint( $_GET['notice_id'] ?? 0 );
         if ( $id ) $wpdb->delete( $wpdb->prefix.'vesho_portal_notices', ['id'=>$id] );
-        wp_redirect( add_query_arg( ['page'=>'vesho-crm-settings','msg'=>'saved'], admin_url('admin.php') ) );
+        wp_redirect( add_query_arg( ['page'=>'vesho-crm-notices','msg'=>'deleted'], admin_url('admin.php') ) );
         exit;
     }
 

@@ -576,6 +576,7 @@ class Vesho_CRM_Database {
         self::maybe_add_column( "{$wpdb->prefix}vesho_maintenances", 'client_id',     'INT UNSIGNED DEFAULT NULL' );
         self::maybe_add_column( "{$wpdb->prefix}vesho_maintenances", 'service_id',    'INT UNSIGNED DEFAULT NULL' );
         self::maybe_add_column( "{$wpdb->prefix}vesho_workorder_photos", 'maintenance_id', 'INT UNSIGNED DEFAULT NULL' );
+        self::maybe_add_column( "{$wpdb->prefix}vesho_workorder_photos", 'photo_type',     "VARCHAR(20) DEFAULT 'other'" );
         self::maybe_add_column( "{$wpdb->prefix}vesho_maintenances",     'worker_notes',   "TEXT DEFAULT ''" );
         $wpdb->query("ALTER TABLE {$wpdb->prefix}vesho_workorder_photos ADD INDEX IF NOT EXISTS idx_wo_photos_mid (maintenance_id)");
         self::maybe_add_column( "{$wpdb->prefix}vesho_invoices",     'maintenance_id', 'INT UNSIGNED DEFAULT NULL' );
