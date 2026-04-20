@@ -192,6 +192,22 @@ function vesho_worker_is_clocked_in($worker_id) {
     <div class="crm-card">
         <div class="crm-toolbar">
             <a href="<?php echo admin_url('admin.php?page=vesho-crm-workers&action=add'); ?>" class="crm-btn crm-btn-primary">+ Lisa töötaja</a>
+            <?php
+            // "Minu kaart" — näita praeguse sisselogitud kasutaja töötajakaart
+            $my_worker = null;
+            $current_uid = get_current_user_id();
+            if ($current_uid) {
+                $my_worker = $wpdb->get_row($wpdb->prepare(
+                    "SELECT id, name, barcode_token FROM {$wpdb->prefix}vesho_workers WHERE user_id=%d LIMIT 1",
+                    $current_uid
+                ));
+            }
+            if ($my_worker && !empty($my_worker->barcode_token)) : ?>
+                <button type="button" class="crm-btn crm-btn-outline"
+                    onclick="showQRModal('<?php echo esc_js($my_worker->barcode_token); ?>','<?php echo esc_js($my_worker->name); ?>',<?php echo (int)$my_worker->id; ?>)">
+                    🪪 Minu kaart
+                </button>
+            <?php endif; ?>
             <form method="GET" style="display:flex;gap:8px;flex:1">
                 <input type="hidden" name="page" value="vesho-crm-workers">
                 <input class="crm-search" type="search" name="s" placeholder="Otsi nime, e-posti, telefoni..." value="<?php echo esc_attr($search); ?>">
@@ -228,10 +244,11 @@ function vesho_worker_is_clocked_in($worker_id) {
                 </td>
                 <td>
                     <?php if (!empty($w->barcode_token)) : ?>
-                        <button type="button" class="crm-btn crm-btn-icon crm-btn-sm" title="Näita QR koodi"
-                            onclick="showQRModal('<?php echo esc_js($w->barcode_token); ?>','<?php echo esc_js($w->name); ?>')">📱</button>
+                        <button type="button" class="crm-btn crm-btn-icon crm-btn-sm" title="Näita töötajakaarti"
+                            onclick="showQRModal('<?php echo esc_js($w->barcode_token); ?>','<?php echo esc_js($w->name); ?>',<?php echo (int)$w->id; ?>)">🪪</button>
                     <?php else : ?>
-                        <span style="color:#bbb;font-size:12px">–</span>
+                        <a href="<?php echo wp_nonce_url(admin_url('admin-post.php?action=vesho_generate_worker_barcode&worker_id='.$w->id),'vesho_generate_worker_barcode'); ?>"
+                           class="crm-btn crm-btn-icon crm-btn-sm" title="Genereeri QR kood">📱</a>
                     <?php endif; ?>
                 </td>
                 <td>
@@ -252,16 +269,21 @@ function vesho_worker_is_clocked_in($worker_id) {
     </div>
 
     <!-- QR Modal -->
-    <div id="qr-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.6);align-items:center;justify-content:center">
-        <div style="background:#fff;border-radius:12px;padding:28px;text-align:center;min-width:260px;position:relative">
+    <div id="qr-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.55);align-items:center;justify-content:center">
+        <div style="background:#fff;border-radius:16px;padding:32px 28px 24px;text-align:center;width:320px;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.3)">
             <button onclick="document.getElementById('qr-modal').style.display='none'"
-                style="position:absolute;top:10px;right:14px;background:none;border:none;font-size:22px;cursor:pointer;color:#888">✕</button>
-            <h3 id="qr-modal-name" style="margin:0 0 16px;font-size:16px"></h3>
-            <div id="qr-modal-canvas" style="display:inline-block;padding:10px;border:1px solid #eee;border-radius:8px;margin-bottom:12px"></div>
-            <div id="qr-modal-token" style="font-size:11px;color:#aaa;word-break:break-all;margin-bottom:14px"></div>
-            <div style="display:flex;gap:8px;justify-content:center">
-                <button onclick="downloadModalQR()" class="crm-btn crm-btn-outline crm-btn-sm">⬇️ Lae alla</button>
-                <button onclick="printModalQR()" class="crm-btn crm-btn-outline crm-btn-sm">🖨️ Prindi</button>
+                style="position:absolute;top:12px;right:16px;background:none;border:none;font-size:20px;cursor:pointer;color:#94a3b8;line-height:1">✕</button>
+            <div style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#94a3b8;margin-bottom:10px">
+                <?php echo esc_html(get_option('vesho_company_name','Vesho OÜ')); ?> · TÖÖTAJA KAART
+            </div>
+            <div id="qr-modal-name" style="font-size:22px;font-weight:800;color:#0d1f2d;margin-bottom:18px;font-family:'Barlow Condensed',sans-serif;letter-spacing:-.5px"></div>
+            <div id="qr-modal-canvas" style="display:inline-block;padding:12px;border:1px solid #e2e8f0;border-radius:10px;margin-bottom:8px;background:#fff"></div>
+            <div id="qr-modal-token" style="font-size:10px;color:#94a3b8;word-break:break-all;margin-bottom:20px;font-family:monospace"></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                <button onclick="printWorkerCard()" style="padding:10px 0;background:#0284c7;color:#fff;border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer">🖨️ Prindi</button>
+                <button onclick="downloadModalQR()" style="padding:10px 0;background:#10b981;color:#fff;border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer">⬇️ Lae alla</button>
+                <button onclick="regenerateCard()" id="qr-regen-btn" style="padding:10px 0;background:#f59e0b;color:#fff;border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer">🔄 Uuenda kaart</button>
+                <button onclick="document.getElementById('qr-modal').style.display='none'" style="padding:10px 0;background:#f1f5f9;color:#475569;border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer">Sulge</button>
             </div>
         </div>
     </div>
@@ -269,17 +291,23 @@ function vesho_worker_is_clocked_in($worker_id) {
     <script>
     var _qrModal = null;
     var _qrModalName = '';
-    function showQRModal(token, name){
+    var _qrModalToken = '';
+    var _qrModalWorkerId = 0;
+    var _coName = <?php echo json_encode(get_option('vesho_company_name','Vesho OÜ')); ?>;
+
+    function showQRModal(token, name, workerId){
         var modal = document.getElementById('qr-modal');
         var canvasEl = document.getElementById('qr-modal-canvas');
         canvasEl.innerHTML = '';
         _qrModalName = name;
+        _qrModalToken = token;
+        _qrModalWorkerId = workerId || 0;
         document.getElementById('qr-modal-name').textContent = name;
         document.getElementById('qr-modal-token').textContent = token;
         if(typeof QRCode !== 'undefined'){
             _qrModal = new QRCode(canvasEl, {
                 text: token, width: 200, height: 200,
-                colorDark: '#1a1a1a', colorLight: '#ffffff',
+                colorDark: '#0d1f2d', colorLight: '#ffffff',
                 correctLevel: QRCode.CorrectLevel.M
             });
         }
@@ -292,17 +320,52 @@ function vesho_worker_is_clocked_in($worker_id) {
         var canvas = document.querySelector('#qr-modal-canvas canvas');
         if(!canvas) return;
         var a = document.createElement('a');
-        a.download = 'qr-' + _qrModalName.replace(/[^a-z0-9]/gi,'_').toLowerCase() + '.png';
+        a.download = 'tootajakaart-' + _qrModalName.replace(/[^a-z0-9]/gi,'_').toLowerCase() + '.png';
         a.href = canvas.toDataURL('image/png');
         a.click();
     }
-    function printModalQR(){
+    function regenerateCard(){
+        if(!_qrModalWorkerId) return;
+        if(!confirm('Genereeri uus QR kood? Vana enam ei tööta.')) return;
+        window.location = '<?php echo wp_nonce_url(admin_url('admin-post.php?action=vesho_generate_worker_barcode&worker_id='), 'vesho_generate_worker_barcode'); ?>' + _qrModalWorkerId;
+    }
+    function printWorkerCard(){
         var canvas = document.querySelector('#qr-modal-canvas canvas');
         if(!canvas) return;
-        var w = window.open('','_blank');
-        w.document.write('<html><body style="text-align:center;padding:40px"><h2>' + _qrModalName + '</h2><img src="' + canvas.toDataURL() + '" style="width:250px"><p style="font-size:12px;color:#888">' + document.getElementById('qr-modal-token').textContent + '</p></body></html>');
+        var img = canvas.toDataURL('image/png');
+        var w = window.open('','_blank','width=500,height=700');
+        w.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>Töötaja kaart</title><style>'
+            + '*{margin:0;padding:0;box-sizing:border-box}'
+            + 'body{background:#e2e8f0;display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:"Segoe UI",Arial,sans-serif}'
+            + '.card{background:#fff;width:340px;border-radius:18px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.18)}'
+            + '.card-header{background:linear-gradient(135deg,#0d1f2d 0%,#162840 100%);padding:22px 20px 18px;text-align:center}'
+            + '.card-header .co{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#00b4c8;margin-bottom:4px}'
+            + '.card-header .title{font-size:13px;font-weight:600;color:rgba(255,255,255,.7);letter-spacing:.08em;text-transform:uppercase}'
+            + '.card-body{padding:24px 20px 20px;text-align:center}'
+            + '.worker-name{font-size:26px;font-weight:800;color:#0d1f2d;letter-spacing:-.5px;margin-bottom:16px;line-height:1.1}'
+            + '.qr-wrap{display:inline-block;padding:12px;border:2px solid #e2e8f0;border-radius:12px;margin-bottom:12px;background:#fff}'
+            + '.qr-wrap img{display:block;width:190px;height:190px}'
+            + '.token{font-size:9px;color:#94a3b8;font-family:monospace;letter-spacing:.5px;margin-bottom:20px;word-break:break-all;padding:0 10px}'
+            + '.card-footer{background:#f8fafc;border-top:1px solid #e2e8f0;padding:12px 20px;text-align:center}'
+            + '.card-footer .site{font-size:11px;color:#94a3b8;font-weight:600}'
+            + '@media print{'
+            + '  body{background:#fff}'
+            + '  .card{box-shadow:none;border-radius:0;width:100%}'
+            + '  @page{margin:0;size:A6 portrait}'
+            + '}'
+        + '</style></head><body><div class="card">'
+            + '<div class="card-header">'
+            + '<div class="co">' + _coName + '</div>'
+            + '<div class="title">Töötaja kaart</div>'
+            + '</div>'
+            + '<div class="card-body">'
+            + '<div class="worker-name">' + _qrModalName + '</div>'
+            + '<div class="qr-wrap"><img src="' + img + '"></div>'
+            + '<div class="token">' + _qrModalToken + '</div>'
+            + '</div>'
+            + '<div class="card-footer"><div class="site"><?php echo esc_js(get_site_url()); ?></div></div>'
+        + '</div><script>window.onload=function(){setTimeout(function(){window.print()},300)}<\/script></body></html>');
         w.document.close();
-        w.print();
     }
     </script>
     <?php endif; ?>
