@@ -3,7 +3,7 @@
  * Plugin Name: Vesho CRM
  * Plugin URI:  https://vesho.ee
  * Description: CRM ja klientide portaal Vesho OÜ-le. Haldab kliente, seadmeid, hooldusi, arveid ja teenuseid.
- * Version:     2.9.14
+ * Version:     2.9.15
  * Author:      Vesho OÜ
  * Author URI:  https://vesho.ee
  * Text Domain: vesho-crm
@@ -515,6 +515,57 @@ function vesho_crm_log_activity( $action, $description, $object_type = '', $obje
         'ip_address'  => $_SERVER['REMOTE_ADDR'] ?? '',
         'created_at'  => current_time( 'mysql' ),
     ) );
+}
+
+// ── Auth activity logging ─────────────────────────────────────────────────────
+add_action( 'wp_login', 'vesho_log_user_login', 10, 2 );
+function vesho_log_user_login( $user_login, $user ) {
+    global $wpdb;
+    $name = $user->display_name ?: $user->user_login;
+    $wpdb->insert( $wpdb->prefix . 'vesho_activity_log', array(
+        'user_id'     => $user->ID,
+        'user_name'   => $name,
+        'action'      => 'login',
+        'description' => 'Sisselogimine: ' . $name,
+        'object_type' => '',
+        'object_id'   => null,
+        'ip_address'  => $_SERVER['REMOTE_ADDR'] ?? '',
+        'created_at'  => current_time( 'mysql' ),
+    ) );
+}
+
+add_action( 'wp_login_failed', 'vesho_log_login_failed', 10, 2 );
+function vesho_log_login_failed( $username, $error ) {
+    global $wpdb;
+    $wpdb->insert( $wpdb->prefix . 'vesho_activity_log', array(
+        'user_id'     => null,
+        'user_name'   => $username,
+        'action'      => 'login_failed',
+        'description' => 'Ebaõnnestunud sisselogimine: ' . $username,
+        'object_type' => '',
+        'object_id'   => null,
+        'ip_address'  => $_SERVER['REMOTE_ADDR'] ?? '',
+        'created_at'  => current_time( 'mysql' ),
+    ) );
+}
+
+add_action( 'wp_logout', 'vesho_log_user_logout' );
+function vesho_log_user_logout() {
+    $user = wp_get_current_user();
+    if ( $user && $user->ID ) {
+        global $wpdb;
+        $name = $user->display_name ?: $user->user_login;
+        $wpdb->insert( $wpdb->prefix . 'vesho_activity_log', array(
+            'user_id'     => $user->ID,
+            'user_name'   => $name,
+            'action'      => 'logout',
+            'description' => 'Väljalogimine: ' . $name,
+            'object_type' => '',
+            'object_id'   => null,
+            'ip_address'  => $_SERVER['REMOTE_ADDR'] ?? '',
+            'created_at'  => current_time( 'mysql' ),
+        ) );
+    }
 }
 
 // ── AJAX: Activity log (admin) ────────────────────────────────────────────────

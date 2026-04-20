@@ -1,10 +1,10 @@
 {
   "name": "Vesho CRM",
   "slug": "vesho-crm",
-  "version": "2.9.14",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.9.14/vesho-crm.zip",
+  "version": "2.9.15",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.9.15/vesho-crm.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-20",
-  "changelog": "<h4>2.9.14</h4><ul><li>Feat: meeldetuletused perioodifilter (7/14/30/60/90p) + KPI kaardid</li></ul><h4>2.9.13</h4><ul><li>Feat: arved — 4 KPI kaarti (Laekunud/Ootab/Üle tähtaja/Kokku)</li><li>Feat: töökäsud — töötajate tööaeg (kuu) widget</li></ul><h4>2.9.12</h4><ul><li>Feat: worker portaal — Järgmisel nädalal KPI kaart</li></ul><h4>2.9.11</h4><ul><li>Feat: ⌘K globaalne otsing kõikidel CRM lehtedel</li><li>Feat: töölaud — üledatunud hooldused KPI kaart</li></ul><h4>2.9.10</h4><ul><li>Fix: teenuste leht näitab kõik teenused (count 3→12)</li></ul>"
+  "changelog": "<h4>2.9.15</h4><ul><li>Feat: tegevuslogi — logimine kõikidel CRUD toimingutel (kliendid, seadmed, hooldused, arved, töötajad, töökäsud, tööajad, tellimused)</li><li>Feat: login/logout/ebaõnnestunud sisselogimine logimine</li></ul><h4>2.9.14</h4><ul><li>Feat: meeldetuletused perioodifilter (7/14/30/60/90p) + KPI kaardid</li></ul><h4>2.9.13</h4><ul><li>Feat: arved — 4 KPI kaarti (Laekunud/Ootab/Üle tähtaja/Kokku)</li><li>Feat: töökäsud — töötajate tööaeg (kuu) widget</li></ul><h4>2.9.12</h4><ul><li>Feat: worker portaal — Järgmisel nädalal KPI kaart</li></ul><h4>2.9.11</h4><ul><li>Feat: ⌘K globaalne otsing kõikidel CRM lehtedel</li><li>Feat: töölaud — üledatunud hooldused KPI kaart</li></ul>"
 }

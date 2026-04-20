@@ -452,6 +452,11 @@ private static function load_view( $name ) {
             $wpdb->insert( $table, $data );
             $msg = 'added';
         }
+        vesho_crm_log_activity(
+            $msg === 'added' ? 'client_created' : 'client_updated',
+            ( $msg === 'added' ? 'Klient loodud' : 'Klient muudetud' ) . ': ' . $name,
+            'client', $id ?: $wpdb->insert_id
+        );
         wp_redirect( add_query_arg( array('page'=>'vesho-crm-clients','msg'=>$msg), admin_url('admin.php') ) );
         exit;
     }
@@ -461,7 +466,11 @@ private static function load_view( $name ) {
         if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorized' );
         global $wpdb;
         $id = absint( $_GET['client_id'] ?? 0 );
-        if ( $id ) $wpdb->delete( $wpdb->prefix . 'vesho_clients', array('id'=>$id) );
+        if ( $id ) {
+            $row = $wpdb->get_row( $wpdb->prepare( "SELECT name FROM {$wpdb->prefix}vesho_clients WHERE id=%d", $id ) );
+            $wpdb->delete( $wpdb->prefix . 'vesho_clients', array('id'=>$id) );
+            vesho_crm_log_activity( 'client_deleted', 'Klient kustutatud: ' . ( $row ? $row->name : "#$id" ), 'client', $id );
+        }
         wp_redirect( add_query_arg( array('page'=>'vesho-crm-clients','msg'=>'deleted'), admin_url('admin.php') ) );
         exit;
     }
@@ -486,6 +495,11 @@ private static function load_view( $name ) {
         $redirect_client = absint( $_POST['redirect_client'] ?? 0 );
         if ( $id ) { $wpdb->update( $wpdb->prefix.'vesho_devices', $data, array('id'=>$id) ); $msg='updated'; }
         else { $data['created_at']=current_time('mysql'); $wpdb->insert($wpdb->prefix.'vesho_devices',$data); $msg='added'; }
+        vesho_crm_log_activity(
+            $msg === 'added' ? 'device_created' : 'device_updated',
+            ( $msg === 'added' ? 'Seade loodud' : 'Seade muudetud' ) . ': ' . $data['name'],
+            'device', $id ?: $wpdb->insert_id
+        );
         $page = $redirect_client ? 'vesho-crm-devices&client_id='.$redirect_client : 'vesho-crm-devices';
         wp_redirect( add_query_arg( array('page'=>$page,'msg'=>$msg), admin_url('admin.php') ) );
         exit;
@@ -496,7 +510,11 @@ private static function load_view( $name ) {
         if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorized' );
         global $wpdb;
         $id = absint( $_GET['device_id'] ?? 0 );
-        if ( $id ) $wpdb->delete( $wpdb->prefix.'vesho_devices', array('id'=>$id) );
+        if ( $id ) {
+            $row = $wpdb->get_row( $wpdb->prepare( "SELECT name FROM {$wpdb->prefix}vesho_devices WHERE id=%d", $id ) );
+            $wpdb->delete( $wpdb->prefix.'vesho_devices', array('id'=>$id) );
+            vesho_crm_log_activity( 'device_deleted', 'Seade kustutatud: ' . ( $row ? $row->name : "#$id" ), 'device', $id );
+        }
         wp_redirect( add_query_arg( array('page'=>'vesho-crm-devices','msg'=>'deleted'), admin_url('admin.php') ) );
         exit;
     }
@@ -612,6 +630,11 @@ private static function load_view( $name ) {
             $wpdb->insert($wpdb->prefix.'vesho_maintenances',$data);
             $msg='added';
         }
+        vesho_crm_log_activity(
+            $msg === 'added' ? 'maintenance_created' : 'maintenance_updated',
+            ( $msg === 'added' ? 'Hooldus loodud' : 'Hooldus muudetud' ) . ( $data['scheduled_date'] ? ' (' . date('d.m.Y', strtotime($data['scheduled_date'])) . ')' : '' ) . ', staatus: ' . $data['status'],
+            'maintenance', $id ?: $wpdb->insert_id
+        );
         wp_redirect( add_query_arg( array('page'=>'vesho-crm-maintenances','msg'=>$msg), admin_url('admin.php') ) );
         exit;
     }
@@ -621,7 +644,10 @@ private static function load_view( $name ) {
         if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorized' );
         global $wpdb;
         $id = absint( $_GET['maintenance_id'] ?? 0 );
-        if ( $id ) $wpdb->delete( $wpdb->prefix.'vesho_maintenances', array('id'=>$id) );
+        if ( $id ) {
+            $wpdb->delete( $wpdb->prefix.'vesho_maintenances', array('id'=>$id) );
+            vesho_crm_log_activity( 'maintenance_deleted', "Hooldus kustutatud: #$id", 'maintenance', $id );
+        }
         wp_redirect( add_query_arg( array('page'=>'vesho-crm-maintenances','msg'=>'deleted'), admin_url('admin.php') ) );
         exit;
     }
@@ -687,6 +713,11 @@ private static function load_view( $name ) {
             ) );
         }
 
+        vesho_crm_log_activity(
+            $msg === 'added' ? 'invoice_created' : 'invoice_updated',
+            ( $msg === 'added' ? 'Arve loodud' : 'Arve muudetud' ) . ': ' . $data['invoice_number'] . ' (' . number_format($data['amount'],2,',','.') . ' €)',
+            'invoice', $id
+        );
         wp_redirect( add_query_arg( array('page'=>'vesho-crm-invoices','msg'=>$msg), admin_url('admin.php') ) );
         exit;
     }
@@ -697,8 +728,10 @@ private static function load_view( $name ) {
         global $wpdb;
         $id = absint( $_GET['invoice_id'] ?? 0 );
         if ( $id ) {
+            $row = $wpdb->get_row( $wpdb->prepare( "SELECT invoice_number FROM {$wpdb->prefix}vesho_invoices WHERE id=%d", $id ) );
             $wpdb->delete( $wpdb->prefix.'vesho_invoice_items', array('invoice_id'=>$id) );
             $wpdb->delete( $wpdb->prefix.'vesho_invoices', array('id'=>$id) );
+            vesho_crm_log_activity( 'invoice_deleted', 'Arve kustutatud: ' . ( $row ? $row->invoice_number : "#$id" ), 'invoice', $id );
         }
         wp_redirect( add_query_arg( array('page'=>'vesho-crm-invoices','msg'=>'deleted'), admin_url('admin.php') ) );
         exit;
@@ -785,6 +818,11 @@ private static function load_view( $name ) {
             $wpdb->insert( $wpdb->prefix . 'vesho_workers', $data );
             $msg = 'added';
         }
+        vesho_crm_log_activity(
+            $msg === 'added' ? 'worker_created' : 'worker_updated',
+            ( $msg === 'added' ? 'Töötaja loodud' : 'Töötaja muudetud' ) . ': ' . $worker_name,
+            'worker', $id ?: $wpdb->insert_id
+        );
         wp_redirect( add_query_arg( array('page'=>'vesho-crm-workers','msg'=>$msg), admin_url('admin.php') ) );
         exit;
     }
@@ -794,7 +832,11 @@ private static function load_view( $name ) {
         if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorized' );
         global $wpdb;
         $id = absint( $_GET['worker_id'] ?? 0 );
-        if ( $id ) $wpdb->delete($wpdb->prefix.'vesho_workers', array('id'=>$id));
+        if ( $id ) {
+            $row = $wpdb->get_row( $wpdb->prepare( "SELECT name FROM {$wpdb->prefix}vesho_workers WHERE id=%d", $id ) );
+            $wpdb->delete($wpdb->prefix.'vesho_workers', array('id'=>$id));
+            vesho_crm_log_activity( 'worker_deleted', 'Töötaja kustutatud: ' . ( $row ? $row->name : "#$id" ), 'worker', $id );
+        }
         wp_redirect( add_query_arg( array('page'=>'vesho-crm-workers','msg'=>'deleted'), admin_url('admin.php') ) );
         exit;
     }
@@ -1121,6 +1163,11 @@ private static function load_view( $name ) {
             }
         } // end completed && updated
 
+        vesho_crm_log_activity(
+            $msg === 'added' ? 'workorder_created' : 'workorder_updated',
+            ( $msg === 'added' ? 'Töökäsk loodud' : 'Töökäsk muudetud' ) . ': ' . $data['title'] . ', staatus: ' . $data['status'],
+            'workorder', $new_id
+        );
         wp_redirect( add_query_arg( array('page'=>'vesho-crm-workorders','msg'=>$msg), admin_url('admin.php') ) );
         exit;
     }
@@ -1130,7 +1177,11 @@ private static function load_view( $name ) {
         if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorized' );
         global $wpdb;
         $id = absint( $_GET['workorder_id'] ?? 0 );
-        if ( $id ) $wpdb->delete($wpdb->prefix.'vesho_workorders', array('id'=>$id));
+        if ( $id ) {
+            $row = $wpdb->get_row( $wpdb->prepare( "SELECT title FROM {$wpdb->prefix}vesho_workorders WHERE id=%d", $id ) );
+            $wpdb->delete($wpdb->prefix.'vesho_workorders', array('id'=>$id));
+            vesho_crm_log_activity( 'workorder_deleted', 'Töökäsk kustutatud: ' . ( $row ? $row->title : "#$id" ), 'workorder', $id );
+        }
         wp_redirect( add_query_arg( array('page'=>'vesho-crm-workorders','msg'=>'deleted'), admin_url('admin.php') ) );
         exit;
     }
@@ -1590,6 +1641,9 @@ private static function load_view( $name ) {
         );
         if ( $id ) { $wpdb->update($wpdb->prefix.'vesho_work_hours',$data,array('id'=>$id)); $msg='updated'; }
         else { $data['created_at']=current_time('mysql'); $wpdb->insert($wpdb->prefix.'vesho_work_hours',$data); $msg='added'; }
+        $worker_row = $wpdb->get_row( $wpdb->prepare( "SELECT name FROM {$wpdb->prefix}vesho_workers WHERE id=%d", $data['worker_id'] ) );
+        $worker_label = $worker_row ? $worker_row->name : '#' . $data['worker_id'];
+        vesho_crm_log_activity( 'workhours_saved', ( $msg === 'added' ? 'Tööaeg lisatud' : 'Tööaeg muudetud' ) . ': ' . $worker_label . ', ' . $data['hours'] . 'h (' . $data['date'] . ')', 'worker', $data['worker_id'] );
         wp_redirect( add_query_arg( array('page'=>'vesho-crm-workhours','msg'=>$msg), admin_url('admin.php') ) );
         exit;
     }
@@ -1600,6 +1654,7 @@ private static function load_view( $name ) {
         global $wpdb;
         $id = absint( $_GET['workhour_id'] ?? 0 );
         if ( $id ) $wpdb->delete($wpdb->prefix.'vesho_work_hours', array('id'=>$id));
+        vesho_crm_log_activity( 'workhours_deleted', "Tööaeg kustutatud: #$id", 'worker', 0 );
         wp_redirect( add_query_arg( array('page'=>'vesho-crm-workhours','msg'=>'deleted'), admin_url('admin.php') ) );
         exit;
     }
@@ -2092,6 +2147,7 @@ private static function load_view( $name ) {
         if ( $inv->status === 'unpaid' || $inv->status === 'draft' ) {
             $wpdb->update( $wpdb->prefix.'vesho_invoices', ['status'=>'sent'], ['id'=>$id] );
         }
+        vesho_crm_log_activity( 'invoice_email_sent', 'Arve e-mailiga saadetud: ' . $inv->invoice_number . ' → ' . $inv->client_email, 'invoice', $id );
         wp_redirect( add_query_arg( ['page'=>'vesho-crm-invoices','msg'=>'email_sent'], admin_url('admin.php') ) );
         exit;
     }
@@ -2410,6 +2466,7 @@ private static function load_view( $name ) {
         }
 
         $wpdb->update( $wpdb->prefix . 'vesho_shop_orders', $upd, array( 'id' => $order_id ) );
+        vesho_crm_log_activity( 'order_status_updated', 'Tellimuse staatus muudetud: #' . $order_id . ' → ' . $status, 'order', $order_id );
 
         // Return to view page if came from there
         $ref = wp_get_referer();
@@ -2507,6 +2564,10 @@ private static function load_view( $name ) {
                 wp_mail($m->client_email, $subject, $body);
             }
         }
+        if ( $id ) {
+            $client_name = isset($m) ? ($m->client_name ?? '') : '';
+            vesho_crm_log_activity( 'maintenance_confirmed', 'Hooldus kinnitatud' . ($client_name ? ": $client_name" : '') . ( $date ? ', ' . date('d.m.Y', strtotime($date)) : ''), 'maintenance', $id );
+        }
         wp_redirect( add_query_arg( array( 'page' => 'vesho-crm-reminders', 'msg' => 'confirmed' ), admin_url( 'admin.php' ) ) );
         exit;
     }
@@ -2541,6 +2602,10 @@ private static function load_view( $name ) {
                 wp_mail($m->client_email, $subject, $body);
             }
         }
+        if ( $id ) {
+            $client_name = isset($m) ? ($m->client_name ?? '') : '';
+            vesho_crm_log_activity( 'maintenance_rejected', 'Hooldus tagasi lükatud' . ($client_name ? ": $client_name" : ''), 'maintenance', $id );
+        }
         wp_redirect( add_query_arg( array( 'page' => 'vesho-crm-reminders', 'msg' => 'rejected' ), admin_url( 'admin.php' ) ) );
         exit;
     }
@@ -2557,6 +2622,7 @@ private static function load_view( $name ) {
                 array( 'status' => 'cancelled' ),
                 array( 'id' => $id )
             );
+            vesho_crm_log_activity( 'maintenance_cancelled', "Hooldus tühistatud: #$id", 'maintenance', $id );
         }
         wp_redirect( add_query_arg( array( 'page' => 'vesho-crm-reminders', 'msg' => 'cancelled' ), admin_url( 'admin.php' ) ) );
         exit;
@@ -2571,7 +2637,9 @@ private static function load_view( $name ) {
         $status = sanitize_text_field( $_POST['status'] ?? '' );
         $allowed = [ 'draft', 'sent', 'paid', 'unpaid', 'overdue', 'cancelled' ];
         if ( ! $id || ! in_array( $status, $allowed ) ) wp_send_json_error( [ 'message' => 'Vigased andmed' ] );
+        $inv = $wpdb->get_row( $wpdb->prepare( "SELECT invoice_number FROM {$wpdb->prefix}vesho_invoices WHERE id=%d", $id ) );
         $wpdb->update( $wpdb->prefix . 'vesho_invoices', [ 'status' => $status ], [ 'id' => $id ] );
+        vesho_crm_log_activity( 'invoice_status_updated', 'Arve staatus muudetud: ' . ( $inv ? $inv->invoice_number : "#$id" ) . ' → ' . $status, 'invoice', $id );
         wp_send_json_success( [ 'status' => $status ] );
     }
 
