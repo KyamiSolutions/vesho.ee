@@ -837,13 +837,26 @@ function veshoResendVerify(){
 (function(){
   var sidebar=document.getElementById('vcpSidebar');
   var ham=document.getElementById('vcpHamburger');
-  if(ham&&sidebar){ ham.addEventListener('click',function(){ sidebar.classList.toggle('open'); }); }
-  // Close sidebar when clicking outside on mobile
-  document.addEventListener('click',function(e){
-    if(sidebar&&sidebar.classList.contains('open')&&!sidebar.contains(e.target)&&e.target!==ham){
-      sidebar.classList.remove('open');
-    }
-  });
+  var backdrop=document.createElement('div');
+  backdrop.className='vcp-backdrop';
+  document.body.appendChild(backdrop);
+  function openSidebar(){
+    sidebar.classList.add('open');
+    backdrop.classList.add('active');
+    document.body.classList.add('vcp-sidebar-open');
+  }
+  function closeSidebar(){
+    sidebar.classList.remove('open');
+    backdrop.classList.remove('active');
+    document.body.classList.remove('vcp-sidebar-open');
+  }
+  if(ham&&sidebar){
+    ham.addEventListener('click',function(e){
+      e.stopPropagation();
+      sidebar.classList.contains('open')?closeSidebar():openSidebar();
+    });
+  }
+  backdrop.addEventListener('click',closeSidebar);
 })();
 </script>
         <?php
@@ -3036,11 +3049,18 @@ function setMsg(m){document.getElementById('vcp-pay-msg').textContent=m;}
 .vcp-panel.active{display:block}
 /* Responsive */
 @media(max-width:768px){
-  body:has(.vcp-wrap) .site-header,body:has(.vcp-wrap) .site-top-wrapper,body:has(.vcp-wrap) .site-footer,body:has(.vcp-wrap) footer{display:none !important}
+  html:has(.vcp-wrap),body:has(.vcp-wrap){overflow-x:hidden}
   body:has(.vcp-wrap) #page,body:has(.vcp-wrap) #primary,body:has(.vcp-wrap) #main,body:has(.vcp-wrap) .entry-content,body:has(.vcp-wrap) article{padding:0 !important;margin:0 !important}
-  .vcp-wrap{min-height:100svh;overflow-x:hidden}
-  .vcp-sidebar{width:52px;position:sticky;top:0;height:100svh;transition:width .22s ease;overflow:hidden;z-index:100;flex-shrink:0}
-  .vcp-sidebar.open{width:240px;position:fixed;left:0;top:0;bottom:0;z-index:200;box-shadow:4px 0 24px rgba(0,0,0,.3);height:100%}
+  .vcp-wrap{overflow-x:hidden}
+  /* Sidebar: alati fixed mobiilis — sisu ei nihku */
+  .vcp-sidebar{width:52px;position:fixed;left:0;top:var(--site-top-height,0px);height:calc(100svh - var(--site-top-height,0px));transition:width .22s ease;overflow:hidden;z-index:200;flex-shrink:0}
+  .vcp-sidebar.open{width:240px;box-shadow:4px 0 24px rgba(0,0,0,.3)}
+  /* Main: alati 52px vasakult offset */
+  .vcp-main{margin-left:52px;overflow-x:hidden;min-width:0}
+  /* Backdrop overlay */
+  .vcp-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:150}
+  .vcp-backdrop.active{display:block}
+  body.vcp-sidebar-open{overflow:hidden}
   .vcp-sidebar-logo{padding:12px 0;justify-content:center;overflow:hidden}
   .vcp-sidebar-logo img{max-width:32px;max-height:32px;margin:0 auto}
   .vcp-sidebar.open .vcp-sidebar-logo{padding:20px 20px 10px;justify-content:flex-start}
@@ -3066,7 +3086,7 @@ function setMsg(m){document.getElementById('vcp-pay-msg').textContent=m;}
   .vcp-two-col{grid-template-columns:1fr}
   .vcp-stat-grid{grid-template-columns:1fr 1fr}
   .vcp-table{width:100%;table-layout:fixed}
-  .vcp-table th,.vcp-table td{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:8px 8px}
+  .vcp-table th,.vcp-table td{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:8px}
   .vcp-table th:nth-child(n+4),.vcp-table td:nth-child(n+4){display:none}
   .vcp-table th:nth-child(3),.vcp-table td:nth-child(3){max-width:80px}
   .vcp-table th:last-child,.vcp-table td:last-child{display:table-cell !important;width:60px;text-align:right}

@@ -106,64 +106,58 @@
 .vcp-panel.active{display:block}
 /* Responsive */
 @media(max-width:768px){
-  /* ── Full-screen app: hide site header + footer ── */
-  body:has(.vcp-wrap) .site-header,
-  body:has(.vcp-wrap) .site-top-wrapper,
-  body:has(.vcp-wrap) .site-footer,
-  body:has(.vcp-wrap) footer { display:none !important; }
-  /* Remove WP page container padding */
+  html:has(.vcp-wrap),body:has(.vcp-wrap){overflow-x:hidden}
   body:has(.vcp-wrap) #page,
   body:has(.vcp-wrap) #primary,
   body:has(.vcp-wrap) #main,
   body:has(.vcp-wrap) .entry-content,
   body:has(.vcp-wrap) article { padding:0 !important; margin:0 !important; }
-  /* Portal fills full viewport */
-  .vcp-wrap { min-height:100svh; overflow-x:hidden; }
+  .vcp-wrap { overflow-x:hidden; }
 
-  /* ── Icon-only strip — always visible ── */
-  .vcp-sidebar{width:52px;position:sticky;top:0;height:100svh;transition:width .22s ease;overflow:hidden;z-index:100;flex-shrink:0}
-  /* Expanded overlay on hamburger click */
-  .vcp-sidebar.open{width:240px;position:fixed;left:0;top:0;bottom:0;z-index:200;box-shadow:4px 0 24px rgba(0,0,0,.3);height:100%}
-  /* Logo area */
+  /* ── Sidebar: alati fixed — sisu ei nihku ── */
+  .vcp-sidebar{width:52px;position:fixed;left:0;top:var(--site-top-height,0px);height:calc(100svh - var(--site-top-height,0px));transition:width .22s ease;overflow:hidden;z-index:200;flex-shrink:0}
+  .vcp-sidebar.open{width:240px;box-shadow:4px 0 24px rgba(0,0,0,.3)}
+  /* Main: alati 52px offset */
+  .vcp-main{margin-left:52px;overflow-x:hidden;min-width:0}
+  /* Backdrop */
+  .vcp-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:150}
+  .vcp-backdrop.active{display:block}
+  body.vcp-sidebar-open{overflow:hidden}
+  /* Logo */
   .vcp-sidebar-logo{padding:12px 0;justify-content:center;overflow:hidden}
   .vcp-sidebar-logo img{max-width:32px;max-height:32px;margin:0 auto}
   .vcp-sidebar.open .vcp-sidebar-logo{padding:20px 20px 10px;justify-content:flex-start}
   .vcp-sidebar.open .vcp-sidebar-logo img{max-width:160px;max-height:40px;margin:0}
   .vcp-sidebar-logo-text{display:none}
   .vcp-sidebar.open .vcp-sidebar-logo-text{display:block}
-  /* Section labels */
   .vcp-sidebar-label{display:none}
   .vcp-sidebar.open .vcp-sidebar-label{display:block}
-  /* Nav — icon only when collapsed */
+  /* Nav */
   .vcp-nav{padding:0 4px}
   .vcp-nav-link{font-size:0;justify-content:center;padding:10px 0}
   .vcp-nav-link .vcp-nav-icon{font-size:17px;width:auto}
   .vcp-sidebar.open .vcp-nav{padding:0 8px}
   .vcp-sidebar.open .vcp-nav-link{font-size:13px;justify-content:flex-start;padding:9px 12px}
   .vcp-sidebar.open .vcp-nav-link .vcp-nav-icon{width:18px;font-size:15px}
-  /* Footer */
   .vcp-sidebar-user{justify-content:center}
   .vcp-sidebar.open .vcp-sidebar-user{justify-content:flex-start}
   .vcp-sidebar-name,.vcp-sidebar-email,.vcp-logout-link{display:none}
   .vcp-sidebar.open .vcp-sidebar-name,
   .vcp-sidebar.open .vcp-sidebar-email,
   .vcp-sidebar.open .vcp-logout-link{display:block}
-  /* ── Topbar ── */
+  /* Topbar */
   .vcp-hamburger{display:block}
   .vcp-topbar{padding:0 10px;position:sticky;top:0;z-index:50}
   .vcp-topbar-right{font-size:11px;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px}
-  /* ── Content ── */
+  /* Content */
   .vcp-content{padding:16px;overflow-x:hidden}
   .vcp-two-col{grid-template-columns:1fr}
   .vcp-stat-grid{grid-template-columns:1fr 1fr}
-  /* ── Tables: fit screen, hide excess columns ── */
+  /* Tables */
   .vcp-table{width:100%;table-layout:fixed}
-  .vcp-table th,.vcp-table td{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:8px 8px}
-  /* Keep col 1-2 always, hide 3+ on small screens */
+  .vcp-table th,.vcp-table td{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:8px}
   .vcp-table th:nth-child(n+4),.vcp-table td:nth-child(n+4){display:none}
-  /* Col 3 visible only if there's room (≥340px content area = 390-52) */
   .vcp-table th:nth-child(3),.vcp-table td:nth-child(3){max-width:80px}
-  /* Action column (last) always visible */
   .vcp-table th:last-child,.vcp-table td:last-child{display:table-cell !important;width:60px;text-align:right}
 }
 
