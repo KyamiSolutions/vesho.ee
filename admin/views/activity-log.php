@@ -65,16 +65,53 @@ $distinct_actions = $wpdb->get_col("SELECT DISTINCT action FROM $table ORDER BY 
 $wp_users         = get_users(['role__in' => ['administrator','editor','author','vesho_worker'], 'orderby' => 'display_name', 'fields' => ['ID','display_name']]);
 
 $action_labels = [
-    'client_saved'    => ['Klient salvestatud',   '#dbeafe'],
-    'client_deleted'  => ['Klient kustutatud',    '#fee2e2'],
-    'invoice_paid'    => ['Arve makstud',          '#dcfce7'],
-    'invoice_sent'    => ['Arve saadetud',         '#f0fdf4'],
-    'access_sent'     => ['Ligipääs saadetud',     '#f0f9ff'],
-    'order_completed' => ['Töökäsk lõpetatud',     '#dcfce7'],
-    'settings_saved'  => ['Seaded salvestatud',    '#f8fafc'],
-    'notice_added'    => ['Teade lisatud',         '#fef9c3'],
-    'notice_deleted'  => ['Teade kustutatud',      '#fee2e2'],
-    'login'           => ['Sisselogimine',         '#f8fafc'],
+    // Clients
+    'client_created'          => ['Klient loodud',              '#dbeafe'],
+    'client_updated'          => ['Klient muudetud',            '#e0f2fe'],
+    'client_deleted'          => ['Klient kustutatud',          '#fee2e2'],
+    'client_saved'            => ['Klient salvestatud',         '#dbeafe'], // legacy
+    // Devices
+    'device_created'          => ['Seade loodud',               '#dbeafe'],
+    'device_updated'          => ['Seade muudetud',             '#e0f2fe'],
+    'device_deleted'          => ['Seade kustutatud',           '#fee2e2'],
+    // Maintenances
+    'maintenance_created'     => ['Hooldus loodud',             '#dbeafe'],
+    'maintenance_updated'     => ['Hooldus muudetud',           '#e0f2fe'],
+    'maintenance_deleted'     => ['Hooldus kustutatud',         '#fee2e2'],
+    'maintenance_confirmed'   => ['Hooldus kinnitatud',         '#dcfce7'],
+    'maintenance_rejected'    => ['Hooldus tagasi lükatud',     '#fee2e2'],
+    'maintenance_cancelled'   => ['Hooldus tühistatud',         '#fef9c3'],
+    // Invoices
+    'invoice_created'         => ['Arve loodud',                '#dbeafe'],
+    'invoice_updated'         => ['Arve muudetud',              '#e0f2fe'],
+    'invoice_deleted'         => ['Arve kustutatud',            '#fee2e2'],
+    'invoice_paid'            => ['Arve makstud',               '#dcfce7'],
+    'invoice_status_updated'  => ['Arve staatus muudetud',      '#f0fdf4'],
+    'invoice_email_sent'      => ['Arve e-mailiga saadetud',    '#f0f9ff'],
+    'invoice_sent'            => ['Arve saadetud',              '#f0fdf4'], // legacy
+    // Workers
+    'worker_created'          => ['Töötaja loodud',             '#dbeafe'],
+    'worker_updated'          => ['Töötaja muudetud',           '#e0f2fe'],
+    'worker_deleted'          => ['Töötaja kustutatud',         '#fee2e2'],
+    // Work orders
+    'workorder_created'       => ['Töökäsk loodud',             '#dbeafe'],
+    'workorder_updated'       => ['Töökäsk muudetud',           '#e0f2fe'],
+    'workorder_deleted'       => ['Töökäsk kustutatud',         '#fee2e2'],
+    'order_completed'         => ['Töökäsk lõpetatud',          '#dcfce7'], // legacy
+    // Work hours
+    'workhours_saved'         => ['Tööaeg salvestatud',         '#f0fdf4'],
+    'workhours_deleted'       => ['Tööaeg kustutatud',          '#fee2e2'],
+    // Shop orders
+    'order_status_updated'    => ['Tellimuse staatus muudetud', '#e0f2fe'],
+    // Access / settings / notices
+    'access_sent'             => ['Ligipääs saadetud',          '#f0f9ff'],
+    'settings_saved'          => ['Seaded salvestatud',         '#f8fafc'],
+    'notice_added'            => ['Teade lisatud',              '#fef9c3'],
+    'notice_deleted'          => ['Teade kustutatud',           '#fee2e2'],
+    // Auth
+    'login'                   => ['Sisselogimine',              '#f8fafc'],
+    'login_failed'            => ['Ebaõnnestunud sisselogimine','#fee2e2'],
+    'logout'                  => ['Väljalogimine',              '#f8fafc'],
 ];
 
 // Build current filter query string (without export_csv/paged)

@@ -1,10 +1,10 @@
 {
   "name": "Vesho",
   "slug": "vesho",
-  "version": "2.9.14",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.9.14/vesho-theme.zip",
+  "version": "2.9.15",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.9.15/vesho-theme.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-20",
-  "changelog": "<h4>2.9.14</h4><ul><li>Feat: meeldetuletused perioodifilter + KPI kaardid</li></ul><h4>2.9.13</h4><ul><li>Feat: arved KPI kaardid + töökäsud tööaeg widget</li></ul><h4>2.9.12</h4><ul><li>Feat: worker portaal järgmisel nädalal KPI</li></ul><h4>2.9.11</h4><ul><li>Feat: ⌘K globaalne otsing + üledatunud hooldused KPI</li></ul>"
+  "changelog": "<h4>2.9.15</h4><ul><li>Feat: tegevuslogi massiivsem logimine</li></ul><h4>2.9.14</h4><ul><li>Feat: meeldetuletused perioodifilter + KPI kaardid</li></ul><h4>2.9.13</h4><ul><li>Feat: arved KPI kaardid + töökäsud tööaeg widget</li></ul><h4>2.9.12</h4><ul><li>Feat: worker portaal järgmisel nädalal KPI</li></ul><h4>2.9.11</h4><ul><li>Feat: ⌘K globaalne otsing + üledatunud hooldused KPI</li></ul>"
 }
