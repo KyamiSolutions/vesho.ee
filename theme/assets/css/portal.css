@@ -117,8 +117,9 @@
   /* ── Sidebar: alati fixed — sisu ei nihku ── */
   .vcp-sidebar{width:52px;position:fixed;left:0;top:var(--site-top-height,0px);height:calc(100svh - var(--site-top-height,0px));transition:width .22s ease;overflow:hidden;z-index:200;flex-shrink:0}
   .vcp-sidebar.open{width:240px;box-shadow:4px 0 24px rgba(0,0,0,.3)}
-  /* Main: alati 52px offset */
+  /* Main + footer: alati 52px offset */
   .vcp-main{margin-left:52px;overflow-x:hidden;min-width:0}
+  body:has(.vcp-wrap) .site-footer,body:has(.vcp-wrap) footer{margin-left:52px}
   /* Backdrop */
   .vcp-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:150}
   .vcp-backdrop.active{display:block}
