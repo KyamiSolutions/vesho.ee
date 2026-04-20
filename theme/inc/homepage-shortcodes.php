@@ -335,7 +335,7 @@ function vesho_sc_cta( $atts = [] ) {
 //   [Shortcode] [vesho_services_cards count="3"]
 //   [Button]  "Vaata kõiki teenuseid"
 function vesho_sc_services_cards( $atts = [] ) {
-    $atts     = shortcode_atts( [ 'count' => 3 ], $atts );
+    $atts     = shortcode_atts( [ 'count' => 12 ], $atts );
     $services = vesho_get_services( (int) $atts['count'] );
     ob_start();
     ?>
