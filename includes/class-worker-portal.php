@@ -487,6 +487,21 @@ class Vesho_CRM_Worker_Portal {
              WHERE wo.worker_id=%d AND wo.status='in_progress' ORDER BY wo.created_at DESC LIMIT 1", $wid
         ));
 
+        // Next-week jobs (workorders + maintenances)
+        $next_week_start = date('Y-m-d', strtotime('monday next week', current_time('timestamp')));
+        $next_week_end   = date('Y-m-d', strtotime('sunday next week', current_time('timestamp')));
+        $next_week_wo = (int)$wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM {$wpdb->prefix}vesho_workorders
+             WHERE worker_id=%d AND scheduled_date BETWEEN %s AND %s AND status NOT IN ('completed','cancelled')",
+            $wid, $next_week_start, $next_week_end
+        ));
+        $next_week_maint = (int)$wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM {$wpdb->prefix}vesho_maintenances
+             WHERE worker_id=%d AND scheduled_date BETWEEN %s AND %s AND status NOT IN ('completed','cancelled')",
+            $wid, $next_week_start, $next_week_end
+        ));
+        $next_week_total = $next_week_wo + $next_week_maint;
+
         $fmt_mins = function(int $m): string {
             if ($m < 60) return "{$m} min";
             $h = intdiv($m, 60); $rem = $m % 60;
@@ -518,6 +533,10 @@ class Vesho_CRM_Worker_Portal {
   <div class="vwp-stat-card vwp-stat-green">
     <div class="vwp-stat-label">Tehtud täna</div>
     <div class="vwp-stat-value"><?php echo $completed_today; ?></div>
+  </div>
+  <div class="vwp-stat-card" style="border-top:3px solid #f59e0b;background:#fffbeb">
+    <div class="vwp-stat-label" style="color:#92400e">Järgmisel nädalal</div>
+    <div class="vwp-stat-value" style="color:#d97706"><?php echo $next_week_total; ?></div>
   </div>
 </div>
 
