@@ -9,6 +9,7 @@ defined( 'ABSPATH' ) || exit;
 class Vesho_CRM_Admin {
 
     public static function init() {
+        add_action( 'admin_init', array( __CLASS__, 'maybe_print_invoice' ) );
         add_action( 'admin_menu', array( __CLASS__, 'register_menus' ) );
         add_action( 'admin_post_vesho_save_client',      array( __CLASS__, 'handle_save_client' ) );
         add_action( 'admin_post_vesho_delete_client',    array( __CLASS__, 'handle_delete_client' ) );
@@ -157,6 +158,197 @@ class Vesho_CRM_Admin {
 
     // ── Menu registration ──────────────────────────────────────────────────────
 
+    /**
+     * Intercept invoice print request BEFORE admin UI renders — output clean standalone page.
+     */
+    public static function maybe_print_invoice() {
+        if ( ! isset( $_GET['page'] ) || $_GET['page'] !== 'vesho-crm-invoices' ) return;
+        if ( ! isset( $_GET['action'] ) || $_GET['action'] !== 'print' ) return;
+        $invoice_id = absint( $_GET['invoice_id'] ?? 0 );
+        if ( ! $invoice_id ) return;
+        if ( ! current_user_can( 'manage_options' ) && ! current_user_can( 'vesho_crm_admin' ) ) return;
+
+        global $wpdb;
+        $inv = $wpdb->get_row( $wpdb->prepare(
+            "SELECT i.*, c.name as client_name, c.email as client_email, c.address as client_address,
+                    c.company as client_company, c.reg_code as client_reg, c.vat_number as client_vat
+             FROM {$wpdb->prefix}vesho_invoices i
+             LEFT JOIN {$wpdb->prefix}vesho_clients c ON i.client_id = c.id
+             WHERE i.id = %d", $invoice_id ) );
+        if ( ! $inv ) wp_die( 'Arve ei leitud.' );
+
+        $items = $wpdb->get_results( $wpdb->prepare(
+            "SELECT * FROM {$wpdb->prefix}vesho_invoice_items WHERE invoice_id = %d ORDER BY id ASC",
+            $invoice_id ) );
+
+        // Load company settings
+        $co = [
+            'name'  => get_option('vesho_company_name',  'Vesho OÜ'),
+            'reg'   => get_option('vesho_company_reg',   ''),
+            'vat'   => get_option('vesho_company_vat',   ''),
+            'addr'  => get_option('vesho_company_address',''),
+            'bank'  => get_option('vesho_company_bank',  ''),
+            'iban'  => get_option('vesho_company_iban',  ''),
+            'email' => get_option('vesho_company_email', ''),
+            'phone' => get_option('vesho_company_phone', ''),
+            'logo'  => get_option('vesho_company_logo',  ''),
+        ];
+        $vat_rate = (float) get_option('vesho_vat_rate', '22');
+        $status_labels = ['draft'=>'Mustand','sent'=>'Saadetud','paid'=>'Makstud','unpaid'=>'Maksmata','overdue'=>'Tähtaeg ületatud'];
+        $status_colors = ['paid'=>'#16a34a','draft'=>'#6b7280','sent'=>'#2563eb','unpaid'=>'#dc2626','overdue'=>'#dc2626'];
+        $inv_status = $inv->status ?? 'draft';
+        $status_label = $status_labels[$inv_status] ?? ucfirst($inv_status);
+        $status_color = $status_colors[$inv_status] ?? '#6b7280';
+
+        // Totals
+        $subtotal = 0;
+        foreach ( $items as $it ) $subtotal += (float)$it->quantity * (float)$it->unit_price;
+        $vat_amount = $subtotal * $vat_rate / 100;
+        $total      = $subtotal + $vat_amount;
+
+        // Output standalone clean HTML — no WP admin chrome
+        header('Content-Type: text/html; charset=utf-8');
+        ?><!DOCTYPE html>
+<html lang="et">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Arve <?php echo esc_html($inv->invoice_number ?? 'INV-'.$inv->id); ?> — <?php echo esc_html($co['name']); ?></title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;font-size:14px;color:#1e293b;background:#f1f5f9;padding:24px}
+.page{background:#fff;max-width:800px;margin:0 auto;padding:48px;border-radius:8px;box-shadow:0 2px 16px rgba(0,0,0,.1)}
+.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:36px;padding-bottom:24px;border-bottom:2px solid #00b4c8}
+.logo{font-size:28px;font-weight:800;color:#1e293b;letter-spacing:-1px}
+.logo span{color:#00b4c8}
+.logo img{max-height:56px;max-width:180px;object-fit:contain}
+.co-info{text-align:right;font-size:12px;color:#64748b;line-height:1.6}
+.co-info strong{color:#1e293b;font-size:13px}
+.inv-title{font-size:32px;font-weight:900;letter-spacing:-1px;color:#1e293b;margin-bottom:4px}
+.inv-num{font-size:16px;font-weight:700;color:#00b4c8;margin-bottom:12px}
+.inv-meta{font-size:13px;color:#64748b;display:flex;gap:24px;margin-bottom:24px}
+.inv-meta span strong{color:#1e293b}
+.status-badge{display:inline-block;padding:4px 14px;border-radius:999px;font-size:12px;font-weight:700;color:#fff;background:<?php echo $status_color; ?>;margin-bottom:20px}
+.parties{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:28px}
+.party-box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px 16px}
+.party-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#94a3b8;margin-bottom:6px}
+.party-name{font-size:15px;font-weight:700;color:#1e293b;margin-bottom:4px}
+.party-detail{font-size:12px;color:#64748b;line-height:1.6}
+table{width:100%;border-collapse:collapse;margin-bottom:0}
+thead tr{background:#1e293b}
+thead th{padding:10px 12px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#fff}
+thead th:last-child{text-align:right}
+tbody tr:nth-child(even){background:#f8fafc}
+tbody td{padding:10px 12px;font-size:13px;border-bottom:1px solid #f1f5f9;vertical-align:top}
+tbody td:last-child{text-align:right;font-weight:600}
+.totals{margin-top:0;border-top:2px solid #e2e8f0}
+.totals td{padding:8px 12px;font-size:13px;border-bottom:none}
+.totals td:first-child{color:#64748b}
+.totals td:last-child{text-align:right;font-weight:600}
+.totals .grand td{font-size:15px;font-weight:800;color:#1e293b;border-top:2px solid #1e293b;padding-top:12px}
+.bank-info{margin-top:28px;padding:14px 16px;background:#f0fdff;border:1px solid #a5f3fc;border-radius:8px;font-size:12px;color:#0e7490;line-height:1.7}
+.bank-info strong{color:#0e7490}
+.print-btn{position:fixed;bottom:28px;right:28px;padding:12px 24px;background:#00b4c8;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(0,180,200,.4);transition:.15s}
+.print-btn:hover{background:#0097a9}
+@media print{
+  body{background:#fff;padding:0}
+  .page{box-shadow:none;padding:20mm 20mm;border-radius:0}
+  .print-btn{display:none!important}
+  @page{margin:0}
+}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="header">
+    <div>
+      <?php if($co['logo']): ?><img src="<?php echo esc_url($co['logo']); ?>" alt="<?php echo esc_attr($co['name']); ?>">
+      <?php else: ?><div class="logo"><?php echo esc_html(strtok($co['name'],' ')); ?> <span><?php echo esc_html(substr(strstr($co['name'],' '),1)); ?></span></div><?php endif; ?>
+    </div>
+    <div class="co-info">
+      <strong><?php echo esc_html($co['name']); ?></strong><br>
+      <?php if($co['addr']) echo nl2br(esc_html($co['addr'])).'<br>'; ?>
+      <?php if($co['email']) echo esc_html($co['email']).'<br>'; ?>
+      <?php if($co['phone']) echo esc_html($co['phone']).'<br>'; ?>
+      <?php if($co['reg'])  echo 'Reg: '.esc_html($co['reg']).'<br>'; ?>
+      <?php if($co['vat'])  echo 'KMKR: '.esc_html($co['vat']); ?>
+    </div>
+  </div>
+
+  <div class="inv-title">ARVE</div>
+  <div class="inv-num"><?php echo esc_html($inv->invoice_number ?? 'INV-'.$inv->id); ?></div>
+  <div class="inv-meta">
+    <span><strong>Kuupäev:</strong> <?php echo esc_html($inv->invoice_date ?? '—'); ?></span>
+    <span><strong>Maksetähtaeg:</strong> <?php echo esc_html($inv->due_date ?? '—'); ?></span>
+  </div>
+  <div><span class="status-badge"><?php echo esc_html($status_label); ?></span></div>
+
+  <div class="parties">
+    <div class="party-box">
+      <div class="party-label">Müüja</div>
+      <div class="party-name"><?php echo esc_html($co['name']); ?></div>
+      <div class="party-detail">
+        <?php if($co['addr']) echo esc_html($co['addr']).'<br>'; ?>
+        <?php if($co['reg'])  echo 'Reg: '.esc_html($co['reg']).'<br>'; ?>
+        <?php if($co['vat'])  echo 'KMKR: '.esc_html($co['vat']); ?>
+      </div>
+    </div>
+    <div class="party-box">
+      <div class="party-label">Ostja</div>
+      <div class="party-name"><?php echo esc_html($inv->client_name ?? '—'); ?></div>
+      <div class="party-detail">
+        <?php if(!empty($inv->client_address)) echo esc_html($inv->client_address).'<br>'; ?>
+        <?php if(!empty($inv->client_email))   echo esc_html($inv->client_email).'<br>'; ?>
+        <?php if(!empty($inv->client_company)) echo esc_html($inv->client_company).'<br>'; ?>
+        <?php if(!empty($inv->client_reg))     echo 'Reg: '.esc_html($inv->client_reg).'<br>'; ?>
+        <?php if(!empty($inv->client_vat))     echo 'KMKR: '.esc_html($inv->client_vat); ?>
+      </div>
+    </div>
+  </div>
+
+  <table>
+    <thead><tr>
+      <th>#</th><th>Kirjeldus</th><th>Kogus</th><th>Ühikuhind</th>
+      <th>KM <?php echo $vat_rate; ?>%</th><th>Kokku</th>
+    </tr></thead>
+    <tbody>
+    <?php $n=1; foreach($items as $it):
+      $line = (float)$it->quantity * (float)$it->unit_price;
+      $line_vat = $line * $vat_rate / 100;
+    ?>
+      <tr>
+        <td><?php echo $n++; ?></td>
+        <td><?php echo esc_html($it->description); ?></td>
+        <td><?php echo number_format((float)$it->quantity, 2, ',', ' '); ?></td>
+        <td><?php echo number_format((float)$it->unit_price, 2, ',', ' '); ?> €</td>
+        <td><?php echo number_format($line_vat, 2, ',', ' '); ?> €</td>
+        <td><?php echo number_format($line + $line_vat, 2, ',', ' '); ?> €</td>
+      </tr>
+    <?php endforeach; ?>
+    </tbody>
+    <tbody class="totals">
+      <tr><td colspan="5">Summa (km-ta):</td><td><?php echo number_format($subtotal, 2, ',', ' '); ?> €</td></tr>
+      <tr><td colspan="5">Käibemaks (<?php echo $vat_rate; ?>%):</td><td><?php echo number_format($vat_amount, 2, ',', ' '); ?> €</td></tr>
+      <tr class="grand"><td colspan="5">KOKKU TASUDA:</td><td><?php echo number_format($total, 2, ',', ' '); ?> €</td></tr>
+    </tbody>
+  </table>
+
+  <?php if($co['iban']): ?>
+  <div class="bank-info">
+    <strong>Pangaandmed:</strong><br>
+    <?php if($co['bank']) echo esc_html($co['bank']).' — '; echo esc_html($co['iban']); ?><br>
+    Selgitus: <?php echo esc_html($inv->invoice_number ?? 'INV-'.$inv->id); ?>
+  </div>
+  <?php endif; ?>
+</div>
+
+<button class="print-btn" onclick="window.print()">📄 Prindi / Salvesta PDF</button>
+<script>window.onload=function(){window.print();};</script>
+</body></html>
+<?php
+        exit;
+    }
+
     public static function register_menus() {
         $icon = 'data:image/svg+xml;base64,' . base64_encode(
             '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="currentColor">'
@@ -228,8 +420,8 @@ class Vesho_CRM_Admin {
         );
         add_submenu_page(
             'vesho-crm',
-            'Juhend',
-            '📖 Juhend',
+            'Kasutusjuhend',
+            '📖 Kasutusjuhend',
             'manage_options',
             'vesho-crm-docs',
             function() {
