@@ -84,16 +84,16 @@
   .vwp-wrap { overflow-x:hidden; }
   .vwp-sidebar{display:none;position:fixed;left:0;top:0;width:240px;height:100%;z-index:200;overflow-y:auto}
   .vwp-sidebar.open{display:flex}
-  .vwp-main{overflow-x:hidden;min-width:0}
+  .vwp-main{min-width:0}
   .vwp-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:150}
   .vwp-backdrop.active{display:block}
   body.vwp-sidebar-open{overflow:hidden}
   .vwp-sidebar-logo{padding:20px 20px 10px}
   .vwp-sidebar-logo img{max-width:160px;max-height:40px}
   .vwp-hamburger{display:block}
-  .vwp-topbar{padding:0 10px;position:sticky;top:var(--site-top-height,0px);z-index:1001}
+  .vwp-topbar{padding:0 10px;position:fixed;top:var(--site-top-height,94px);left:0;right:0;z-index:1001}
   .vwp-topbar-right{font-size:11px;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px}
-  .vwp-content{padding:16px;overflow-x:hidden}
+  .vwp-content{padding:72px 16px 16px;overflow-x:hidden}
   .vwp-stat-grid{grid-template-columns:1fr 1fr}
   .vwp-table{width:100%;table-layout:fixed}
   .vwp-table th,.vwp-table td{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:8px}
@@ -105,6 +105,6 @@
 /* ── 480px and below ─────────────────────────────────────────────────────── */
 @media(max-width:480px){
   .vwp-stat-grid{grid-template-columns:1fr}
-  .vwp-content{padding:10px}
+  .vwp-content{padding:72px 10px 10px}
   .vwp-login-card{padding:24px 18px;border-radius:12px}
 }

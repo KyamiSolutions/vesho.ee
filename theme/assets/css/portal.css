@@ -117,19 +117,19 @@
   /* Sidebar: peidetud, avaneb hamburgeriga */
   .vcp-sidebar{display:none;position:fixed;left:0;top:0;width:240px;height:100%;z-index:200;overflow-y:auto}
   .vcp-sidebar.open{display:flex}
-  .vcp-main{overflow-x:hidden;min-width:0}
+  .vcp-main{min-width:0}
   /* Backdrop */
   .vcp-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:150}
   .vcp-backdrop.active{display:block}
   body.vcp-sidebar-open{overflow:hidden}
   .vcp-sidebar-logo{padding:20px 20px 10px}
   .vcp-sidebar-logo img{max-width:160px;max-height:40px}
-  /* Topbar */
+  /* Topbar: fixed so it stays visible above site header */
   .vcp-hamburger{display:block}
-  .vcp-topbar{padding:0 10px;position:sticky;top:var(--site-top-height,0px);z-index:1001}
+  .vcp-topbar{padding:0 10px;position:fixed;top:var(--site-top-height,94px);left:0;right:0;z-index:1001}
   .vcp-topbar-right{font-size:11px;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px}
-  /* Content */
-  .vcp-content{padding:16px;overflow-x:hidden}
+  /* Content: top padding accounts for fixed topbar (56px) */
+  .vcp-content{padding:72px 16px 16px;overflow-x:hidden}
   .vcp-two-col{grid-template-columns:1fr}
   .vcp-stat-grid{grid-template-columns:1fr 1fr}
   /* Tables */
@@ -144,7 +144,7 @@
 @media(max-width:480px){
   .vauth-wrap{padding:16px}
   .vauth-card{padding:28px 20px;border-radius:10px}
-  .vcp-content{padding:12px}
+  .vcp-content{padding:72px 12px 12px}
   .vcp-topbar{padding:0 12px}
   .vcp-page-header h1{font-size:18px}
   .vcp-stat-grid{grid-template-columns:1fr 1fr}
