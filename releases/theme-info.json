@@ -1,10 +1,10 @@
 {
   "name": "Vesho",
   "slug": "vesho",
-  "version": "2.9.10",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.9.10/vesho-theme.zip",
+  "version": "2.9.11",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.9.11/vesho-theme.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-20",
-  "changelog": "<h4>2.9.10</h4><ul><li>Fix: teenuste leht näitab kõik teenused</li></ul><h4>2.9.9</h4><ul><li>Uus versioon</li></ul><h4>2.9.8</h4><ul><li>Uus versioon</li></ul><h4>2.9.5</h4><ul><li>Feat: sotsiaalmeedia (FB/IG/LI) + tööajad CRM seadetesse</li><li>Fix: header/footer loevad sotsiaalmeedia konsistentselt</li></ul>"
+  "changelog": "<h4>2.9.11</h4><ul><li>Feat: ⌘K globaalne otsing + üledatunud hooldused KPI</li></ul><h4>2.9.10</h4><ul><li>Fix: teenuste leht näitab kõik teenused</li></ul><h4>2.9.9</h4><ul><li>Uus versioon</li></ul>"
 }

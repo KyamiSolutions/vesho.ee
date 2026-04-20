@@ -116,6 +116,9 @@ class Vesho_CRM_Admin {
         add_action( 'admin_post_vesho_change_password',   array( __CLASS__, 'handle_change_password' ) );
         // Admin barcode scanner assets
         add_action( 'admin_enqueue_scripts',              array( __CLASS__, 'enqueue_scanner_assets' ) );
+        // ⌘K global search
+        add_action( 'wp_ajax_vesho_crm_global_search',   array( __CLASS__, 'ajax_global_search' ) );
+        add_action( 'admin_footer',                       array( __CLASS__, 'render_global_search_modal' ) );
     }
 
     // ── Scanner assets ─────────────────────────────────────────────────────────
@@ -3628,5 +3631,235 @@ private static function load_view( $name ) {
         } else {
             wp_send_json_error( ['message' => 'Emaili saatmine ebaõnnestus'] );
         }
+    }
+
+    // ── ⌘K Global search ──────────────────────────────────────────────────────
+
+    public static function ajax_global_search() {
+        check_ajax_referer( 'vesho_crm_nonce', 'nonce' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error();
+
+        global $wpdb;
+        $q = sanitize_text_field( trim( $_POST['q'] ?? '' ) );
+        if ( strlen( $q ) < 2 ) wp_send_json_success( [] );
+
+        $like  = '%' . $wpdb->esc_like( $q ) . '%';
+        $results = [];
+
+        // Clients
+        $clients = $wpdb->get_results( $wpdb->prepare(
+            "SELECT id, name, email FROM {$wpdb->prefix}vesho_clients
+             WHERE name LIKE %s OR email LIKE %s OR phone LIKE %s LIMIT 5",
+            $like, $like, $like
+        ) );
+        foreach ( $clients as $c ) {
+            $results[] = [
+                'type'  => 'Klient',
+                'label' => esc_html( $c->name ) . ( $c->email ? ' — ' . esc_html( $c->email ) : '' ),
+                'url'   => admin_url( 'admin.php?page=vesho-crm-clients&action=edit&id=' . $c->id ),
+                'icon'  => '👤',
+            ];
+        }
+
+        // Invoices
+        $invoices = $wpdb->get_results( $wpdb->prepare(
+            "SELECT i.id, i.invoice_number, c.name AS client_name
+             FROM {$wpdb->prefix}vesho_invoices i
+             LEFT JOIN {$wpdb->prefix}vesho_clients c ON c.id = i.client_id
+             WHERE i.invoice_number LIKE %s OR c.name LIKE %s LIMIT 5",
+            $like, $like
+        ) );
+        foreach ( $invoices as $inv ) {
+            $results[] = [
+                'type'  => 'Arve',
+                'label' => esc_html( $inv->invoice_number ) . ( $inv->client_name ? ' — ' . esc_html( $inv->client_name ) : '' ),
+                'url'   => admin_url( 'admin.php?page=vesho-crm-invoices&action=view&id=' . $inv->id ),
+                'icon'  => '🧾',
+            ];
+        }
+
+        // Work orders
+        $workorders = $wpdb->get_results( $wpdb->prepare(
+            "SELECT w.id, w.title, c.name AS client_name
+             FROM {$wpdb->prefix}vesho_workorders w
+             LEFT JOIN {$wpdb->prefix}vesho_clients c ON c.id = w.client_id
+             WHERE w.title LIKE %s OR c.name LIKE %s LIMIT 5",
+            $like, $like
+        ) );
+        foreach ( $workorders as $wo ) {
+            $results[] = [
+                'type'  => 'Töökäsk',
+                'label' => esc_html( $wo->title ) . ( $wo->client_name ? ' — ' . esc_html( $wo->client_name ) : '' ),
+                'url'   => admin_url( 'admin.php?page=vesho-crm-workorders&action=view&id=' . $wo->id ),
+                'icon'  => '🔧',
+            ];
+        }
+
+        // Maintenances
+        $maints = $wpdb->get_results( $wpdb->prepare(
+            "SELECT m.id, m.scheduled_date, c.name AS client_name
+             FROM {$wpdb->prefix}vesho_maintenances m
+             LEFT JOIN {$wpdb->prefix}vesho_clients c ON c.id = m.client_id
+             WHERE c.name LIKE %s LIMIT 5",
+            $like
+        ) );
+        foreach ( $maints as $m ) {
+            $results[] = [
+                'type'  => 'Hooldus',
+                'label' => esc_html( $m->client_name ) . ( $m->scheduled_date ? ' — ' . esc_html( $m->scheduled_date ) : '' ),
+                'url'   => admin_url( 'admin.php?page=vesho-crm-maintenances&action=view&id=' . $m->id ),
+                'icon'  => '📅',
+            ];
+        }
+
+        // Shop orders
+        $orders = $wpdb->get_results( $wpdb->prepare(
+            "SELECT id, order_number, customer_name
+             FROM {$wpdb->prefix}vesho_shop_orders
+             WHERE order_number LIKE %s OR customer_name LIKE %s LIMIT 5",
+            $like, $like
+        ) );
+        foreach ( $orders as $o ) {
+            $results[] = [
+                'type'  => 'Tellimus',
+                'label' => esc_html( $o->order_number ) . ( $o->customer_name ? ' — ' . esc_html( $o->customer_name ) : '' ),
+                'url'   => admin_url( 'admin.php?page=vesho-crm-orders&action=view&id=' . $o->id ),
+                'icon'  => '📦',
+            ];
+        }
+
+        wp_send_json_success( $results );
+    }
+
+    public static function render_global_search_modal() {
+        $screen = get_current_screen();
+        if ( ! $screen ) return;
+        $page = sanitize_text_field( $_GET['page'] ?? '' );
+        if ( strpos( $page, 'vesho-crm' ) === false ) return;
+        if ( ! current_user_can( 'manage_options' ) ) return;
+
+        $nonce = wp_create_nonce( 'vesho_crm_nonce' );
+        $ajax_url = admin_url( 'admin-ajax.php' );
+        ?>
+<style>
+#vcmd-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99998;display:none;align-items:flex-start;justify-content:center;padding-top:120px}
+#vcmd-overlay.vcmd-open{display:flex}
+#vcmd-box{background:#fff;border-radius:10px;width:560px;max-width:calc(100vw - 40px);box-shadow:0 24px 80px rgba(0,0,0,.28);overflow:hidden;font-family:'Barlow',system-ui,sans-serif}
+#vcmd-input-wrap{display:flex;align-items:center;padding:14px 18px;border-bottom:1px solid #e2e8f0;gap:10px}
+#vcmd-input-wrap svg{flex-shrink:0;color:#94a3b8}
+#vcmd-q{border:none;outline:none;flex:1;font-size:16px;color:#1a2a38;background:transparent}
+#vcmd-q::placeholder{color:#94a3b8}
+#vcmd-kbd{font-size:11px;color:#94a3b8;white-space:nowrap}
+#vcmd-results{max-height:380px;overflow-y:auto}
+#vcmd-results:empty::after{content:'Sisesta otsingusõna…';display:block;padding:24px;color:#94a3b8;font-size:14px;text-align:center}
+.vcmd-item{display:flex;align-items:center;gap:12px;padding:10px 18px;cursor:pointer;text-decoration:none;color:#1a2a38}
+.vcmd-item:hover,.vcmd-item.vcmd-active{background:#f0f9ff}
+.vcmd-item-icon{font-size:18px;width:28px;text-align:center;flex-shrink:0}
+.vcmd-item-body{flex:1;min-width:0}
+.vcmd-item-label{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vcmd-item-type{font-size:11px;color:#64748b;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+#vcmd-empty{padding:24px;color:#94a3b8;font-size:14px;text-align:center;display:none}
+#vcmd-footer{padding:8px 18px;border-top:1px solid #e2e8f0;display:flex;gap:16px;font-size:11px;color:#94a3b8}
+#vcmd-footer kbd{background:#f1f5f9;border:1px solid #e2e8f0;border-radius:3px;padding:1px 5px;font-size:10px}
+</style>
+<div id="vcmd-overlay">
+  <div id="vcmd-box" role="dialog" aria-modal="true" aria-label="Globaalne otsing">
+    <div id="vcmd-input-wrap">
+      <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input id="vcmd-q" type="text" placeholder="Otsi kliente, arveid, tellimusi…" autocomplete="off" spellcheck="false">
+      <span id="vcmd-kbd">ESC sulgeb</span>
+    </div>
+    <div id="vcmd-results"></div>
+    <div id="vcmd-empty">Tulemusi ei leitud</div>
+    <div id="vcmd-footer">
+      <span><kbd>↑</kbd><kbd>↓</kbd> navigeeri</span>
+      <span><kbd>↵</kbd> ava</span>
+      <span><kbd>ESC</kbd> sulge</span>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  var overlay = document.getElementById('vcmd-overlay');
+  var input   = document.getElementById('vcmd-q');
+  var results = document.getElementById('vcmd-results');
+  var emptyEl = document.getElementById('vcmd-empty');
+  var timer, activeIdx = -1;
+
+  function open() {
+    overlay.classList.add('vcmd-open');
+    input.value = '';
+    results.innerHTML = '';
+    emptyEl.style.display = 'none';
+    activeIdx = -1;
+    setTimeout(function(){ input.focus(); }, 30);
+  }
+  function close() {
+    overlay.classList.remove('vcmd-open');
+  }
+  function setActive(idx) {
+    var items = results.querySelectorAll('.vcmd-item');
+    items.forEach(function(el, i){ el.classList.toggle('vcmd-active', i === idx); });
+    activeIdx = idx;
+    if (items[idx]) items[idx].scrollIntoView({block:'nearest'});
+  }
+
+  // Keyboard shortcut Ctrl+K / ⌘K
+  document.addEventListener('keydown', function(e) {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+      e.preventDefault();
+      if (overlay.classList.contains('vcmd-open')) { close(); } else { open(); }
+      return;
+    }
+    if (!overlay.classList.contains('vcmd-open')) return;
+    if (e.key === 'Escape') { close(); return; }
+    var items = results.querySelectorAll('.vcmd-item');
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setActive(Math.min(activeIdx + 1, items.length - 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActive(Math.max(activeIdx - 1, 0));
+    } else if (e.key === 'Enter') {
+      if (items[activeIdx]) { window.location.href = items[activeIdx].href; }
+    }
+  });
+
+  overlay.addEventListener('mousedown', function(e){ if (e.target === overlay) close(); });
+
+  input.addEventListener('input', function() {
+    clearTimeout(timer);
+    var q = input.value.trim();
+    if (q.length < 2) { results.innerHTML = ''; emptyEl.style.display='none'; activeIdx=-1; return; }
+    timer = setTimeout(function(){ doSearch(q); }, 220);
+  });
+
+  function doSearch(q) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '<?php echo esc_js($ajax_url); ?>');
+    xhr.setRequestHeader('Content-Type','application/x-www-form-urlencoded');
+    xhr.onload = function() {
+      var data = JSON.parse(xhr.responseText);
+      activeIdx = -1;
+      if (!data.success || !data.data.length) {
+        results.innerHTML = '';
+        emptyEl.style.display = 'block';
+        return;
+      }
+      emptyEl.style.display = 'none';
+      results.innerHTML = data.data.map(function(r){
+        return '<a class="vcmd-item" href="'+r.url+'">'
+          +'<span class="vcmd-item-icon">'+r.icon+'</span>'
+          +'<span class="vcmd-item-body">'
+          +'<span class="vcmd-item-label">'+r.label+'</span>'
+          +'<span class="vcmd-item-type">'+r.type+'</span>'
+          +'</span></a>';
+      }).join('');
+    };
+    xhr.send('action=vesho_crm_global_search&nonce=<?php echo esc_js($nonce); ?>&q='+encodeURIComponent(q));
+  }
+})();
+</script>
+        <?php
     }
 }
