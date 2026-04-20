@@ -4107,7 +4107,10 @@ document.querySelectorAll('.vwp-hist-header').forEach(function(hdr){
 .vwp-login-title{font-size:18px;font-weight:600;color:#1e293b;margin:0 0 24px}
 /* Responsive */
 @media(max-width:768px){
-  .vwp-sidebar{width:52px;position:sticky;top:0;height:100vh;transition:width .22s ease;overflow:hidden;z-index:100;flex-shrink:0}
+  body:has(.vwp-wrap) .site-header,body:has(.vwp-wrap) .site-top-wrapper,body:has(.vwp-wrap) .site-footer,body:has(.vwp-wrap) footer{display:none !important}
+  body:has(.vwp-wrap) #page,body:has(.vwp-wrap) #primary,body:has(.vwp-wrap) #main,body:has(.vwp-wrap) .entry-content,body:has(.vwp-wrap) article{padding:0 !important;margin:0 !important}
+  .vwp-wrap{min-height:100svh;overflow-x:hidden}
+  .vwp-sidebar{width:52px;position:sticky;top:0;height:100svh;transition:width .22s ease;overflow:hidden;z-index:100;flex-shrink:0}
   .vwp-sidebar.open{width:240px;position:fixed;left:0;top:0;bottom:0;z-index:200;box-shadow:4px 0 24px rgba(0,0,0,.3);height:100%}
   .vwp-sidebar-logo{padding:12px 0;justify-content:center;overflow:hidden}
   .vwp-sidebar-logo img{max-width:32px;max-height:32px;margin:0 auto}
@@ -4128,8 +4131,15 @@ document.querySelectorAll('.vwp-hist-header').forEach(function(hdr){
   .vwp-sidebar-name,.vwp-sidebar-role,.vwp-logout-link{display:none}
   .vwp-sidebar.open .vwp-sidebar-name,.vwp-sidebar.open .vwp-sidebar-role,.vwp-sidebar.open .vwp-logout-link{display:block}
   .vwp-hamburger{display:block}
-  .vwp-content{padding:16px}
+  .vwp-topbar{padding:0 10px;position:sticky;top:0;z-index:50}
+  .vwp-topbar-right{font-size:11px;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px}
+  .vwp-content{padding:16px;overflow-x:hidden}
   .vwp-stat-grid{grid-template-columns:1fr 1fr}
+  .vwp-table{width:100%;table-layout:fixed}
+  .vwp-table th,.vwp-table td{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:8px 8px}
+  .vwp-table th:nth-child(n+4),.vwp-table td:nth-child(n+4){display:none}
+  .vwp-table th:nth-child(3),.vwp-table td:nth-child(3){max-width:80px}
+  .vwp-table th:last-child,.vwp-table td:last-child{display:table-cell !important;width:60px;text-align:right}
 }
 ';
     }

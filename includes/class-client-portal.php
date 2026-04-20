@@ -3036,7 +3036,10 @@ function setMsg(m){document.getElementById('vcp-pay-msg').textContent=m;}
 .vcp-panel.active{display:block}
 /* Responsive */
 @media(max-width:768px){
-  .vcp-sidebar{width:52px;position:sticky;top:0;height:100vh;transition:width .22s ease;overflow:hidden;z-index:100;flex-shrink:0}
+  body:has(.vcp-wrap) .site-header,body:has(.vcp-wrap) .site-top-wrapper,body:has(.vcp-wrap) .site-footer,body:has(.vcp-wrap) footer{display:none !important}
+  body:has(.vcp-wrap) #page,body:has(.vcp-wrap) #primary,body:has(.vcp-wrap) #main,body:has(.vcp-wrap) .entry-content,body:has(.vcp-wrap) article{padding:0 !important;margin:0 !important}
+  .vcp-wrap{min-height:100svh;overflow-x:hidden}
+  .vcp-sidebar{width:52px;position:sticky;top:0;height:100svh;transition:width .22s ease;overflow:hidden;z-index:100;flex-shrink:0}
   .vcp-sidebar.open{width:240px;position:fixed;left:0;top:0;bottom:0;z-index:200;box-shadow:4px 0 24px rgba(0,0,0,.3);height:100%}
   .vcp-sidebar-logo{padding:12px 0;justify-content:center;overflow:hidden}
   .vcp-sidebar-logo img{max-width:32px;max-height:32px;margin:0 auto}
@@ -3057,9 +3060,16 @@ function setMsg(m){document.getElementById('vcp-pay-msg').textContent=m;}
   .vcp-sidebar-name,.vcp-sidebar-email,.vcp-logout-link{display:none}
   .vcp-sidebar.open .vcp-sidebar-name,.vcp-sidebar.open .vcp-sidebar-email,.vcp-sidebar.open .vcp-logout-link{display:block}
   .vcp-hamburger{display:block}
-  .vcp-content{padding:16px}
+  .vcp-topbar{padding:0 10px;position:sticky;top:0;z-index:50}
+  .vcp-topbar-right{font-size:11px;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px}
+  .vcp-content{padding:16px;overflow-x:hidden}
   .vcp-two-col{grid-template-columns:1fr}
   .vcp-stat-grid{grid-template-columns:1fr 1fr}
+  .vcp-table{width:100%;table-layout:fixed}
+  .vcp-table th,.vcp-table td{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:8px 8px}
+  .vcp-table th:nth-child(n+4),.vcp-table td:nth-child(n+4){display:none}
+  .vcp-table th:nth-child(3),.vcp-table td:nth-child(3){max-width:80px}
+  .vcp-table th:last-child,.vcp-table td:last-child{display:table-cell !important;width:60px;text-align:right}
 }
 ';
     }
