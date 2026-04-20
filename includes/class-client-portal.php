@@ -3063,7 +3063,7 @@ function setMsg(m){document.getElementById('vcp-pay-msg').textContent=m;}
   .vcp-sidebar-logo{padding:20px 20px 10px}
   .vcp-sidebar-logo img{max-width:160px;max-height:40px}
   .vcp-hamburger{display:block}
-  .vcp-topbar{padding:0 10px;position:sticky;top:0;z-index:50}
+  .vcp-topbar{padding:0 10px;position:sticky;top:var(--site-top-height,0px);z-index:1001}
   .vcp-topbar-right{font-size:11px;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px}
   .vcp-content{padding:16px;overflow-x:hidden}
   .vcp-two-col{grid-template-columns:1fr}
