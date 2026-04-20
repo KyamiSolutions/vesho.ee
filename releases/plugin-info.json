@@ -1,10 +1,10 @@
 {
   "name": "Vesho CRM",
   "slug": "vesho-crm",
-  "version": "2.9.19",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.9.19/vesho-crm.zip",
+  "version": "2.9.20",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.9.20/vesho-crm.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-20",
-  "changelog": "<h4>2.9.19</h4><ul><li>Fix: sidebar ei kata enam jalust mobiilis (footer margin-left:52px)</li></ul><h4>2.9.18</h4><ul><li>Fix: portaali mobiil — header/footer taastatud, sidebar alati fixed, backdrop, scroll lock</li></ul><h4>2.9.17</h4><ul><li>Fix: portaali mobiilivaate täiendused — topbar sticky, tabelid ekraanile</li></ul><h4>2.9.16</h4><ul><li>Fix: klient + worker portaal mobiilne küljeriba — icon-only strip + hamburger overlay</li></ul>"
+  "changelog": "<h4>2.9.20</h4><ul><li>Fix: mobiilis sidebar asendatud puhtaks hamburger-menüüks — peidetud vaikimisi, avaneb overlay'na, katab rohkem midagi</li></ul><h4>2.9.19</h4><ul><li>Fix: sidebar ei kata jalust mobiilis</li></ul><h4>2.9.18</h4><ul><li>Fix: portaali mobiil — header taastatud, sidebar fixed, backdrop, scroll lock</li></ul><h4>2.9.17</h4><ul><li>Fix: portaali mobiilivaate täiendused</li></ul>"
 }

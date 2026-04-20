@@ -3052,34 +3052,16 @@ function setMsg(m){document.getElementById('vcp-pay-msg').textContent=m;}
   html:has(.vcp-wrap),body:has(.vcp-wrap){overflow-x:hidden}
   body:has(.vcp-wrap) #page,body:has(.vcp-wrap) #primary,body:has(.vcp-wrap) #main,body:has(.vcp-wrap) .entry-content,body:has(.vcp-wrap) article{padding:0 !important;margin:0 !important}
   .vcp-wrap{overflow-x:hidden}
-  /* Sidebar: alati fixed mobiilis — sisu ei nihku */
-  .vcp-sidebar{width:52px;position:fixed;left:0;top:var(--site-top-height,0px);height:calc(100svh - var(--site-top-height,0px));transition:width .22s ease;overflow:hidden;z-index:200;flex-shrink:0}
-  .vcp-sidebar.open{width:240px;box-shadow:4px 0 24px rgba(0,0,0,.3)}
-  /* Main + footer: alati 52px vasakult offset */
-  .vcp-main{margin-left:52px;overflow-x:hidden;min-width:0}
-  body:has(.vcp-wrap) .site-footer,body:has(.vcp-wrap) footer{margin-left:52px}
+  /* Sidebar: peidetud vaikimisi, avaneb hamburgeriga */
+  .vcp-sidebar{display:none;position:fixed;left:0;top:0;width:240px;height:100%;z-index:200;overflow-y:auto}
+  .vcp-sidebar.open{display:flex}
+  .vcp-main{overflow-x:hidden;min-width:0}
   /* Backdrop overlay */
   .vcp-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:150}
   .vcp-backdrop.active{display:block}
   body.vcp-sidebar-open{overflow:hidden}
-  .vcp-sidebar-logo{padding:12px 0;justify-content:center;overflow:hidden}
-  .vcp-sidebar-logo img{max-width:32px;max-height:32px;margin:0 auto}
-  .vcp-sidebar.open .vcp-sidebar-logo{padding:20px 20px 10px;justify-content:flex-start}
-  .vcp-sidebar.open .vcp-sidebar-logo img{max-width:160px;max-height:40px;margin:0}
-  .vcp-sidebar-logo-text{display:none}
-  .vcp-sidebar.open .vcp-sidebar-logo-text{display:block}
-  .vcp-sidebar-label{display:none}
-  .vcp-sidebar.open .vcp-sidebar-label{display:block}
-  .vcp-nav{padding:0 4px}
-  .vcp-nav-link{font-size:0;justify-content:center;padding:10px 0}
-  .vcp-nav-link .vcp-nav-icon{font-size:17px;width:auto}
-  .vcp-sidebar.open .vcp-nav{padding:0 8px}
-  .vcp-sidebar.open .vcp-nav-link{font-size:13px;justify-content:flex-start;padding:9px 12px}
-  .vcp-sidebar.open .vcp-nav-link .vcp-nav-icon{width:18px;font-size:15px}
-  .vcp-sidebar-user{justify-content:center}
-  .vcp-sidebar.open .vcp-sidebar-user{justify-content:flex-start}
-  .vcp-sidebar-name,.vcp-sidebar-email,.vcp-logout-link{display:none}
-  .vcp-sidebar.open .vcp-sidebar-name,.vcp-sidebar.open .vcp-sidebar-email,.vcp-sidebar.open .vcp-logout-link{display:block}
+  .vcp-sidebar-logo{padding:20px 20px 10px}
+  .vcp-sidebar-logo img{max-width:160px;max-height:40px}
   .vcp-hamburger{display:block}
   .vcp-topbar{padding:0 10px;position:sticky;top:0;z-index:50}
   .vcp-topbar-right{font-size:11px;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px}
