@@ -401,12 +401,26 @@ class Vesho_CRM_Worker_Portal {
 (function(){
   var sidebar=document.getElementById('vwpSidebar');
   var ham=document.getElementById('vwpHamburger');
-  if(ham&&sidebar){ ham.addEventListener('click',function(){sidebar.classList.toggle('open');}); }
-  document.addEventListener('click',function(e){
-    if(sidebar&&sidebar.classList.contains('open')&&!sidebar.contains(e.target)&&e.target!==ham){
-      sidebar.classList.remove('open');
-    }
-  });
+  var backdrop=document.createElement('div');
+  backdrop.className='vwp-backdrop';
+  document.body.appendChild(backdrop);
+  function openSidebar(){
+    sidebar.classList.add('open');
+    backdrop.classList.add('active');
+    document.body.classList.add('vwp-sidebar-open');
+  }
+  function closeSidebar(){
+    sidebar.classList.remove('open');
+    backdrop.classList.remove('active');
+    document.body.classList.remove('vwp-sidebar-open');
+  }
+  if(ham&&sidebar){
+    ham.addEventListener('click',function(e){
+      e.stopPropagation();
+      sidebar.classList.contains('open')?closeSidebar():openSidebar();
+    });
+  }
+  backdrop.addEventListener('click',closeSidebar);
 })();
 </script>
         <?php
@@ -4107,11 +4121,15 @@ document.querySelectorAll('.vwp-hist-header').forEach(function(hdr){
 .vwp-login-title{font-size:18px;font-weight:600;color:#1e293b;margin:0 0 24px}
 /* Responsive */
 @media(max-width:768px){
-  body:has(.vwp-wrap) .site-header,body:has(.vwp-wrap) .site-top-wrapper,body:has(.vwp-wrap) .site-footer,body:has(.vwp-wrap) footer{display:none !important}
+  html:has(.vwp-wrap),body:has(.vwp-wrap){overflow-x:hidden}
   body:has(.vwp-wrap) #page,body:has(.vwp-wrap) #primary,body:has(.vwp-wrap) #main,body:has(.vwp-wrap) .entry-content,body:has(.vwp-wrap) article{padding:0 !important;margin:0 !important}
-  .vwp-wrap{min-height:100svh;overflow-x:hidden}
-  .vwp-sidebar{width:52px;position:sticky;top:0;height:100svh;transition:width .22s ease;overflow:hidden;z-index:100;flex-shrink:0}
-  .vwp-sidebar.open{width:240px;position:fixed;left:0;top:0;bottom:0;z-index:200;box-shadow:4px 0 24px rgba(0,0,0,.3);height:100%}
+  .vwp-wrap{overflow-x:hidden}
+  .vwp-sidebar{width:52px;position:fixed;left:0;top:var(--site-top-height,0px);height:calc(100svh - var(--site-top-height,0px));transition:width .22s ease;overflow:hidden;z-index:200;flex-shrink:0}
+  .vwp-sidebar.open{width:240px;box-shadow:4px 0 24px rgba(0,0,0,.3)}
+  .vwp-main{margin-left:52px;overflow-x:hidden;min-width:0}
+  .vwp-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:150}
+  .vwp-backdrop.active{display:block}
+  body.vwp-sidebar-open{overflow:hidden}
   .vwp-sidebar-logo{padding:12px 0;justify-content:center;overflow:hidden}
   .vwp-sidebar-logo img{max-width:32px;max-height:32px;margin:0 auto}
   .vwp-sidebar.open .vwp-sidebar-logo{padding:20px 20px 10px;justify-content:flex-start}
@@ -4136,7 +4154,7 @@ document.querySelectorAll('.vwp-hist-header').forEach(function(hdr){
   .vwp-content{padding:16px;overflow-x:hidden}
   .vwp-stat-grid{grid-template-columns:1fr 1fr}
   .vwp-table{width:100%;table-layout:fixed}
-  .vwp-table th,.vwp-table td{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:8px 8px}
+  .vwp-table th,.vwp-table td{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:8px}
   .vwp-table th:nth-child(n+4),.vwp-table td:nth-child(n+4){display:none}
   .vwp-table th:nth-child(3),.vwp-table td:nth-child(3){max-width:80px}
   .vwp-table th:last-child,.vwp-table td:last-child{display:table-cell !important;width:60px;text-align:right}
