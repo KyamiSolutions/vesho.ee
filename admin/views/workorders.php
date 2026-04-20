@@ -32,6 +32,22 @@ $total = count($workorders);
 $statuses   = ['open'=>'Ootel','assigned'=>'Määratud','in_progress'=>'Töös','completed'=>'Lõpetatud','cancelled'=>'Tühistatud'];
 $priorities = ['low'=>'Madal','normal'=>'Tavaline','high'=>'Kõrge','urgent'=>'Kiire'];
 
+// ── Töötajate tööaeg (kuu) widget ─────────────────────────────────────────────
+$kuu_start = date('Y-m-01');
+$nadal_start = date('Y-m-d', strtotime('monday this week'));
+$worker_time_stats = $wpdb->get_results($wpdb->prepare(
+    "SELECT w.id, w.name,
+            COALESCE(SUM(CASE WHEN wh.date >= %s THEN wh.hours ELSE 0 END), 0) as kuu_hours,
+            COALESCE(SUM(CASE WHEN wh.date >= %s THEN wh.hours ELSE 0 END), 0) as nadal_hours,
+            COUNT(DISTINCT CASE WHEN wo.status IN ('open','assigned','in_progress') THEN wo.id END) as active_wo
+     FROM {$wpdb->prefix}vesho_workers w
+     LEFT JOIN {$wpdb->prefix}vesho_work_hours wh ON wh.worker_id = w.id
+     LEFT JOIN {$wpdb->prefix}vesho_workorders wo ON wo.worker_id = w.id AND wo.status IN ('open','assigned','in_progress')
+     WHERE w.active = 1
+     GROUP BY w.id ORDER BY kuu_hours DESC, w.name ASC",
+    $kuu_start, $nadal_start
+));
+
 // ── PDF print view ────────────────────────────────────────────────────────────
 if ( $action === 'print' && $workorder_id ) {
     $wo = $wpdb->get_row( $wpdb->prepare(
@@ -150,6 +166,24 @@ if ( $action === 'print' && $workorder_id ) {
         $msgs = ['added'=>'Töökäsk lisatud!','updated'=>'Töökäsk uuendatud!','deleted'=>'Töökäsk kustutatud!'];
         echo '<div class="crm-alert crm-alert-success">'.esc_html($msgs[$_GET['msg']]??'Salvestatud!').'</div>';
     endif; ?>
+
+    <?php if ($action !== 'edit' && $action !== 'add' && $action !== 'view' && $action !== 'print' && !empty($worker_time_stats)) : ?>
+    <div style="margin-bottom:20px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#6b7280;margin-bottom:10px">Töötajate tööaeg (kuu)</div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px">
+        <?php foreach ($worker_time_stats as $ws) : ?>
+        <div class="crm-stat-card" style="flex:1;min-width:160px;max-width:220px;padding:14px 16px">
+            <div style="font-size:13px;font-weight:600;color:#1e293b;margin-bottom:6px"><?php echo esc_html($ws->name); ?></div>
+            <div style="display:flex;gap:16px;font-size:12px;color:#6b7280">
+                <span>Kuu: <strong style="color:#1e293b"><?php echo number_format((float)$ws->kuu_hours, 1); ?> h</strong></span>
+                <span>Nädal: <strong style="color:#1e293b"><?php echo number_format((float)$ws->nadal_hours, 1); ?> h</strong></span>
+            </div>
+            <div style="font-size:11px;color:#9ca3af;margin-top:4px"><?php echo intval($ws->active_wo); ?> töökäsku · <?php echo intval($ws->active_wo); ?> aktiivset</div>
+        </div>
+        <?php endforeach; ?>
+        </div>
+    </div>
+    <?php endif; ?>
 
     <?php if ($action === 'edit' || $action === 'add') : ?>
     <div class="crm-card">

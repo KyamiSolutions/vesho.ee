@@ -38,9 +38,16 @@ $statuses_edit   = ['draft'=>'Mustand','sent'=>'Saadetud','paid'=>'Makstud'];
 
 // Stats
 $stats = $wpdb->get_row("SELECT
-    SUM(CASE WHEN status='unpaid' OR status='overdue' THEN amount ELSE 0 END) as unpaid_total,
-    SUM(CASE WHEN status='paid' THEN amount ELSE 0 END) as paid_total,
-    COUNT(CASE WHEN status='unpaid' OR status='overdue' THEN 1 END) as unpaid_count
+    SUM(CASE WHEN status='paid' THEN amount ELSE 0 END)                           as paid_total,
+    COUNT(CASE WHEN status='paid' THEN 1 END)                                     as paid_count,
+    SUM(CASE WHEN status IN ('sent','unpaid') THEN amount ELSE 0 END)             as pending_total,
+    COUNT(CASE WHEN status IN ('sent','unpaid') THEN 1 END)                       as pending_count,
+    SUM(CASE WHEN status='overdue' THEN amount ELSE 0 END)                        as overdue_total,
+    COUNT(CASE WHEN status='overdue' THEN 1 END)                                  as overdue_count,
+    SUM(CASE WHEN status NOT IN ('draft','cancelled') THEN amount ELSE 0 END)     as all_total,
+    COUNT(CASE WHEN status NOT IN ('draft','cancelled') THEN 1 END)               as all_count,
+    SUM(CASE WHEN status='unpaid' OR status='overdue' THEN amount ELSE 0 END)     as unpaid_total,
+    COUNT(CASE WHEN status='unpaid' OR status='overdue' THEN 1 END)               as unpaid_count
     FROM {$wpdb->prefix}vesho_invoices");
 
 $vat_rate = (float) get_option('vesho_vat_rate', '24');
@@ -298,10 +305,27 @@ if ( $action === 'print' && $invoice_id ) {
     endif; ?>
 
     <?php if ($action !== 'edit' && $action !== 'add') : ?>
-    <div class="crm-stats-row" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:20px">
-        <div class="crm-stat-card"><div class="crm-stat-num"><?php echo vesho_crm_format_money($stats->paid_total??0); ?></div><div class="crm-stat-label">Makstud kokku</div></div>
-        <div class="crm-stat-card"><div class="crm-stat-num" style="color:#ef4444"><?php echo vesho_crm_format_money($stats->unpaid_total??0); ?></div><div class="crm-stat-label">Maksmata</div></div>
-        <div class="crm-stat-card"><div class="crm-stat-num"><?php echo intval($stats->unpaid_count??0); ?></div><div class="crm-stat-label">Maksmata arvet</div></div>
+    <div class="crm-stats-row" style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px">
+        <div class="crm-stat-card" style="border-top:3px solid #10b981">
+            <div class="crm-stat-num" style="color:#10b981;font-size:20px"><?php echo vesho_crm_format_money($stats->paid_total??0); ?></div>
+            <div class="crm-stat-label" style="margin-top:2px">Laekunud</div>
+            <div style="font-size:11px;color:#9ca3af;margin-top:2px"><?php echo intval($stats->paid_count??0); ?> arvet</div>
+        </div>
+        <div class="crm-stat-card" style="border-top:3px solid #3b82f6">
+            <div class="crm-stat-num" style="color:#3b82f6;font-size:20px"><?php echo vesho_crm_format_money($stats->pending_total??0); ?></div>
+            <div class="crm-stat-label" style="margin-top:2px">Ootab maksmist</div>
+            <div style="font-size:11px;color:#9ca3af;margin-top:2px"><?php echo intval($stats->pending_count??0); ?> arvet</div>
+        </div>
+        <div class="crm-stat-card" style="border-top:3px solid #ef4444">
+            <div class="crm-stat-num" style="color:#ef4444;font-size:20px"><?php echo vesho_crm_format_money($stats->overdue_total??0); ?></div>
+            <div class="crm-stat-label" style="margin-top:2px">Üle tähtaja</div>
+            <div style="font-size:11px;color:#9ca3af;margin-top:2px"><?php echo intval($stats->overdue_count??0); ?> arvet</div>
+        </div>
+        <div class="crm-stat-card" style="border-top:3px solid #6b7280">
+            <div class="crm-stat-num" style="font-size:20px"><?php echo vesho_crm_format_money($stats->all_total??0); ?></div>
+            <div class="crm-stat-label" style="margin-top:2px">Kokku</div>
+            <div style="font-size:11px;color:#9ca3af;margin-top:2px"><?php echo intval($stats->all_count??0); ?> arvet</div>
+        </div>
     </div>
     <?php endif; ?>
 
