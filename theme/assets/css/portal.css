@@ -115,7 +115,7 @@
   .vcp-wrap { overflow-x:hidden; }
 
   /* Sidebar: peidetud, avaneb hamburgeriga */
-  .vcp-sidebar{display:none;position:fixed;left:0;top:0;width:240px;height:100%;z-index:200;overflow-y:auto}
+  .vcp-sidebar{display:none;position:fixed;left:0;top:var(--site-top-height,94px);width:240px;height:calc(100% - var(--site-top-height,94px));z-index:200;overflow-y:auto}
   .vcp-sidebar.open{display:flex}
   .vcp-main{min-width:0}
   /* Backdrop */

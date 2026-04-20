@@ -4124,7 +4124,7 @@ document.querySelectorAll('.vwp-hist-header').forEach(function(hdr){
   html:has(.vwp-wrap),body:has(.vwp-wrap){overflow-x:hidden}
   body:has(.vwp-wrap) #page,body:has(.vwp-wrap) #primary,body:has(.vwp-wrap) #main,body:has(.vwp-wrap) .entry-content,body:has(.vwp-wrap) article{padding:0 !important;margin:0 !important}
   .vwp-wrap{overflow-x:hidden}
-  .vwp-sidebar{display:none;position:fixed;left:0;top:0;width:240px;height:100%;z-index:200;overflow-y:auto}
+  .vwp-sidebar{display:none;position:fixed;left:0;top:var(--site-top-height,94px);width:240px;height:calc(100% - var(--site-top-height,94px));z-index:200;overflow-y:auto}
   .vwp-sidebar.open{display:flex}
   .vwp-main{min-width:0}
   .vwp-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:150}

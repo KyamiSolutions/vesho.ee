@@ -3053,7 +3053,7 @@ function setMsg(m){document.getElementById('vcp-pay-msg').textContent=m;}
   body:has(.vcp-wrap) #page,body:has(.vcp-wrap) #primary,body:has(.vcp-wrap) #main,body:has(.vcp-wrap) .entry-content,body:has(.vcp-wrap) article{padding:0 !important;margin:0 !important}
   .vcp-wrap{overflow-x:hidden}
   /* Sidebar: peidetud vaikimisi, avaneb hamburgeriga */
-  .vcp-sidebar{display:none;position:fixed;left:0;top:0;width:240px;height:100%;z-index:200;overflow-y:auto}
+  .vcp-sidebar{display:none;position:fixed;left:0;top:var(--site-top-height,94px);width:240px;height:calc(100% - var(--site-top-height,94px));z-index:200;overflow-y:auto}
   .vcp-sidebar.open{display:flex}
   .vcp-main{min-width:0}
   /* Backdrop overlay */
