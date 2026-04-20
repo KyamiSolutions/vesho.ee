@@ -226,6 +226,16 @@ class Vesho_CRM_Admin {
                 include VESHO_CRM_PATH . 'admin/views/releases.php';
             }
         );
+        add_submenu_page(
+            'vesho-crm',
+            'Juhend',
+            '📖 Juhend',
+            'manage_options',
+            'vesho-crm-docs',
+            function() {
+                include VESHO_CRM_PATH . 'admin/views/docs.php';
+            }
+        );
     }
 
     public static function register_my_account_page() {

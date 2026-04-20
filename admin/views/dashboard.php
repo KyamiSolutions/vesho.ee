@@ -159,6 +159,7 @@ $status_labels = [
         <a href="<?php echo admin_url('admin.php?page=vesho-crm-clients&action=add'); ?>" class="crm-btn crm-btn-primary crm-btn-sm">+ Lisa klient</a>
         <a href="<?php echo admin_url('admin.php?page=vesho-crm-maintenances&action=add'); ?>" class="crm-btn crm-btn-sm" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.25)">+ Lisa hooldus</a>
         <a href="<?php echo admin_url('admin.php?page=vesho-crm-invoices&action=add'); ?>" class="crm-btn crm-btn-sm" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.25)">+ Lisa arve</a>
+        <a href="<?php echo admin_url('admin.php?page=vesho-crm-docs'); ?>" class="crm-btn crm-btn-sm" style="background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.25)">📖 Juhend</a>
     </div>
 </div>
 

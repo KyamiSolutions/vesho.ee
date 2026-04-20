@@ -1,10 +1,10 @@
 {
   "name": "Vesho CRM",
   "slug": "vesho-crm",
-  "version": "2.9.23",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.9.23/vesho-crm.zip",
+  "version": "2.9.24",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.9.24/vesho-crm.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-20",
-  "changelog": "<h4>2.9.23</h4><ul><li>Fix: mobiili sidebar algab site-header alt (top:var(--site-top-height)) — nav ei peidu header taha</li></ul><h4>2.9.22</h4><ul><li>Fix: mobiili topbar position:fixed + overflow-x:hidden eemaldatud vcp/vwp-main küljest</li></ul><h4>2.9.21</h4><ul><li>Fix: topbar z-index:1001 ja top:var(--site-top-height) — hamburger nähtav üle site-header</li></ul>"
+  "changelog": "<h4>2.9.24</h4><ul><li>Uus: Omaniku/haldaja juhend — 📖 Juhend link dashboardil, täielik dokumentatsioon süsteemiinfoga</li></ul><h4>2.9.23</h4><ul><li>Fix: mobiili sidebar top:var(--site-top-height) — nav ei peidu header taha</li></ul><h4>2.9.22</h4><ul><li>Fix: mobiili topbar position:fixed + overflow-x:hidden eemaldatud vcp/vwp-main küljest</li></ul>"
 }
