@@ -772,6 +772,16 @@ function veshoResendVerify(){
       </a></li>
       <?php endforeach; ?>
     </ul>
+    <div class="vcp-sidebar-footer">
+      <div class="vcp-sidebar-user">
+        <div class="vcp-avatar"><?php echo esc_html($avatar); ?></div>
+        <div style="min-width:0">
+          <div class="vcp-sidebar-name"><?php echo esc_html($client->name ?? ''); ?></div>
+          <div class="vcp-sidebar-email"><?php echo esc_html($client->email ?? ''); ?></div>
+        </div>
+      </div>
+      <a href="<?php echo esc_url($logout_url); ?>" class="vcp-logout-link">↩ Logi välja</a>
+    </div>
   </aside>
 
   <div class="vcp-main">

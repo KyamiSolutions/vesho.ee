@@ -1,10 +1,10 @@
 {
   "name": "Vesho CRM",
   "slug": "vesho-crm",
-  "version": "2.9.36",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.9.36/vesho-crm.zip",
+  "version": "2.9.37",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.9.37/vesho-crm.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-21",
-  "changelog": "<h4>2.9.36</h4><ul><li>Fix: töötaja portaali leht kasutab nüüd automaatselt Portal Template't (saidi header+footer nähtav)</li></ul><h4>2.9.35</h4><ul><li>Fix: portaali teadaanne murdub mobiilil (flex-wrap, word-break)</li></ul><h4>2.9.34</h4><ul><li>Fix: teadaande riba mobiilivaade — tekst ei kattu sulge-nupuga</li></ul><h4>2.9.33</h4><ul><li>Fix: kliendi ja töötaja portaali mobiilivaade — 5 breakpointi</li></ul><h4>2.9.32</h4><ul><li>Fix: vesho_sc_services_cards filtreerib show_on_website</li></ul>"
+  "changelog": "<h4>2.9.37</h4><ul><li>Uus: kliendi portaali sidebar — kasutaja info + logout nupp</li><li>Fix: mõlema portaali täielik mobiiliülekirjutus — 5 breakpointi, tabelid keritavad, nupud puutetundlikud, sidebar arvestab saidi päist</li></ul><h4>2.9.36</h4><ul><li>Fix: portaalid kasutavad automaatselt Portal Template't (header+footer)</li></ul><h4>2.9.35</h4><ul><li>Fix: portaali teadaanne murdub mobiilil</li></ul><h4>2.9.34</h4><ul><li>Fix: teadaande riba mobiilivaade</li></ul><h4>2.9.33</h4><ul><li>Fix: portaalide mobiilivaade 5 breakpointi</li></ul>"
 }

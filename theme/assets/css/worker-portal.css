@@ -1,10 +1,14 @@
 /* ============================================================
-   VESHO WORKER PORTAL CSS
+   VESHO WORKER PORTAL CSS  v2.9.37
    Töötaja portaali kujundus — amber aktsent (#f59e0b)
+   5 breakpointi: 1024 / 768 / 600 / 480 / 360
    ============================================================ */
 
+/* ── Portaali kest ──────────────────────────────────────────────────────────── */
 .vwp-wrap{display:flex;min-height:100vh;font-family:'Barlow',system-ui,sans-serif;font-size:14px;color:#1e293b;background:#f8fafc}
-.vwp-sidebar{width:240px;height:calc(100vh - var(--site-top-height,94px));background:var(--vesho-dark,#1e293b);display:flex;flex-direction:column;flex-shrink:0;position:sticky;top:var(--site-top-height,94px)}
+
+/* Sidebar — sticky, arvestab fikseeritud saidi päist */
+.vwp-sidebar{width:240px;height:calc(100vh - var(--site-top-height,94px));background:var(--vesho-dark,#1e293b);display:flex;flex-direction:column;flex-shrink:0;position:sticky;top:var(--site-top-height,94px);overflow-y:auto}
 .vwp-sidebar-logo{padding:20px 20px 10px;display:flex;align-items:center;gap:10px;min-height:60px}
 .vwp-sidebar-logo img{max-height:40px;max-width:160px;object-fit:contain}
 .vwp-sidebar-logo-text{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;color:#fff;letter-spacing:-.5px}
@@ -12,60 +16,89 @@
 .vwp-sidebar-label{padding:4px 20px 8px;font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.35)}
 .vwp-nav{list-style:none;margin:0;padding:0 8px}
 .vwp-nav li{margin-bottom:2px}
-.vwp-nav-link{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;color:rgba(255,255,255,.65);text-decoration:none;font-size:13px;font-weight:500;transition:background .15s,color .15s}
+.vwp-nav-link{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;color:rgba(255,255,255,.65);text-decoration:none;font-size:13px;font-weight:500;transition:background .15s,color .15s;min-height:40px}
 .vwp-nav-link:hover,.vwp-nav-link.active{background:rgba(245,158,11,.15);color:#fff}
 .vwp-nav-link.active{color:#f59e0b}
-.vwp-nav-icon{width:18px;text-align:center;font-size:15px}
-.vwp-sidebar-footer{margin-top:auto;padding:16px 16px 20px;border-top:1px solid rgba(255,255,255,.08)}
-.vwp-sidebar-user{display:flex;gap:10px;align-items:center;margin-bottom:12px}
+.vwp-nav-icon{width:18px;text-align:center;font-size:15px;flex-shrink:0}
+
+/* Sidebar footer */
+.vwp-sidebar-footer{margin-top:auto;padding:16px 16px 20px;border-top:1px solid rgba(255,255,255,.08);flex-shrink:0}
+.vwp-sidebar-user{display:flex;gap:10px;align-items:center;margin-bottom:12px;min-width:0}
 .vwp-avatar{width:34px;height:34px;border-radius:50%;background:#f59e0b;color:#fff;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .vwp-sidebar-name{color:#fff;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px}
 .vwp-sidebar-role{color:rgba(255,255,255,.4);font-size:11px}
-.vwp-logout-link{display:block;color:rgba(255,255,255,.4);font-size:12px;text-decoration:none;padding:4px 0;transition:color .15s}
+.vwp-logout-link{display:block;color:rgba(255,255,255,.45);font-size:12px;text-decoration:none;padding:6px 0;transition:color .15s}
 .vwp-logout-link:hover{color:#fff}
-.vwp-main{flex:1;display:flex;flex-direction:column;min-width:0}
-.vwp-topbar{height:56px;background:#fff;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;padding:0 24px;gap:12px;position:sticky;top:var(--site-top-height,94px);z-index:50}
-.vwp-topbar-title{font-size:16px;font-weight:600;flex:1}
-.vwp-topbar-right{font-size:13px;color:#64748b}
-.vwp-hamburger{display:none;background:none;border:none;font-size:20px;cursor:pointer;color:#1e293b;padding:4px 8px}
-.vwp-content{padding:28px;max-width:1100px;width:100%}
+
+/* Põhiala */
+.vwp-main{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden}
+
+/* Topbar — sticky, arvestab saidi päist */
+.vwp-topbar{height:56px;background:#fff;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;padding:0 24px;gap:12px;position:sticky;top:var(--site-top-height,94px);z-index:90;flex-shrink:0}
+.vwp-topbar-title{font-size:16px;font-weight:600;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vwp-topbar-right{font-size:13px;color:#64748b;white-space:nowrap}
+.vwp-hamburger{display:none;background:none;border:none;font-size:22px;cursor:pointer;color:#1e293b;padding:4px 8px;line-height:1;min-width:40px;min-height:40px;align-items:center;justify-content:center}
+
+/* Sisu */
+.vwp-content{padding:28px;max-width:1100px;width:100%;box-sizing:border-box}
 .vwp-page-header{margin-bottom:24px}
-.vwp-page-header h1{font-size:22px;font-weight:700;margin:0 0 4px}
+.vwp-page-header h1{font-size:22px;font-weight:700;margin:0 0 4px;line-height:1.2}
+.vwp-page-header p{margin:0;color:#64748b;font-size:14px}
 .vwp-section-title{font-size:16px;font-weight:600;margin:0 0 12px}
+
+/* Stat kaardid */
 .vwp-stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:28px}
 .vwp-stat-card{background:#fff;border-radius:12px;padding:20px;border-left:4px solid #e2e8f0;box-shadow:0 1px 3px rgba(0,0,0,.07)}
 .vwp-stat-blue{border-left-color:#3b82f6}
 .vwp-stat-green{border-left-color:#10b981}
 .vwp-stat-orange{border-left-color:#f59e0b}
 .vwp-stat-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:#94a3b8;margin-bottom:6px}
-.vwp-stat-value{font-size:1.6rem;font-weight:700;color:#1e293b}
+.vwp-stat-value{font-size:1.6rem;font-weight:700;color:#1e293b;line-height:1}
+
+/* Üldised kaardid */
 .vwp-card{background:#fff;border-radius:12px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.07);margin-bottom:16px}
-.vwp-order-card{background:#fff;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.07);overflow:hidden}
+
+/* Tellimuse kaart */
+.vwp-order-card{background:#fff;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.07);overflow:hidden;margin-bottom:12px}
 .vwp-order-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #f1f5f9;flex-wrap:wrap;gap:8px}
-.vwp-order-meta{font-size:12px;color:#64748b;white-space:nowrap}
+.vwp-order-meta{font-size:12px;color:#64748b}
 .vwp-order-body{padding:12px 16px}
-.vwp-desc{margin:0 0 10px;color:#64748b;font-size:13px}
+.vwp-desc{margin:0 0 10px;color:#64748b;font-size:13px;word-break:break-word}
 .vwp-order-actions{display:flex;gap:8px;flex-wrap:wrap}
 .vwp-priority{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;color:#fff;margin-left:6px}
+
+/* Tabelid — horisontaalselt keritavad */
+.vwp-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.07);margin-bottom:16px}
 .vwp-table{width:100%;border-collapse:collapse;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.07)}
+.vwp-table-wrap .vwp-table{box-shadow:none;border-radius:0;margin-bottom:0}
 .vwp-table thead tr{background:#f8fafc}
-.vwp-table th{padding:10px 14px;text-align:left;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:#64748b;border-bottom:1px solid #e2e8f0}
+.vwp-table th{padding:10px 14px;text-align:left;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:#64748b;border-bottom:1px solid #e2e8f0;white-space:nowrap}
 .vwp-table td{padding:10px 14px;border-bottom:1px solid #f1f5f9;font-size:13px}
 .vwp-table tbody tr:last-child td{border-bottom:none}
 .vwp-table tbody tr:nth-child(even){background:#fafafa}
 .vwp-table tbody tr:hover{background:#f1f5f9}
+
+/* Tühi olek */
 .vwp-empty{padding:32px;text-align:center;color:#94a3b8;background:#fff;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.07)}
-.vwp-btn-primary{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:#f59e0b;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;transition:background .15s}
+
+/* Nupud */
+.vwp-btn-primary{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 18px;min-height:40px;background:#f59e0b;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;transition:background .15s;white-space:nowrap;box-sizing:border-box}
 .vwp-btn-primary:hover{background:#d97706;color:#fff}
-.vwp-btn-outline{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:#fff;color:#1e293b;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;transition:border-color .15s}
+.vwp-btn-outline{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 18px;min-height:40px;background:#fff;color:#1e293b;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;transition:border-color .15s;white-space:nowrap;box-sizing:border-box}
 .vwp-btn-outline:hover{border-color:#94a3b8}
+.vwp-btn-danger{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 18px;min-height:40px;background:#fee2e2;color:#dc2626;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;transition:background .15s}
+.vwp-btn-danger:hover{background:#fecaca;color:#dc2626}
+
+/* Vormiväljad */
 .vwp-field{display:flex;flex-direction:column;gap:4px}
 .vwp-field label{font-size:12px;font-weight:600;color:#64748b}
-.vwp-input{width:100%;padding:8px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;font-family:inherit;transition:border-color .15s;outline:none}
+.vwp-input{width:100%;padding:10px 12px;min-height:40px;border:1px solid #e2e8f0;border-radius:8px;font-size:14px;color:#1e293b;box-sizing:border-box;font-family:inherit;transition:border-color .15s;outline:none;background:#fff}
 .vwp-input:focus{border-color:#f59e0b;box-shadow:0 0 0 3px rgba(245,158,11,.12)}
+textarea.vwp-input{min-height:90px;resize:vertical;line-height:1.5}
 .vwp-msg{padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:12px}
 .vwp-msg.success{background:#dcfce7;color:#16a34a;border:1px solid #bbf7d0}
 .vwp-msg.error{background:#fee2e2;color:#dc2626;border:1px solid #fecaca}
+
 /* Login */
 .vwp-login-wrap{display:flex;align-items:center;justify-content:center;min-height:60vh;padding:24px}
 .vwp-login-card{background:#fff;border-radius:16px;padding:36px;width:100%;max-width:380px;box-shadow:0 4px 24px rgba(0,0,0,.1)}
@@ -73,13 +106,23 @@
 .vwp-login-logo span{color:#f59e0b}
 .vwp-login-logo img{max-height:40px;max-width:150px;object-fit:contain;margin-bottom:8px}
 .vwp-login-title{font-size:18px;font-weight:600;color:#1e293b;margin:0 0 24px}
-/* ── 1024px — tablet landscape ───────────────────────────────────────────── */
+
+/* Tabid */
+.vwp-tabs{display:flex;gap:0;border-bottom:2px solid #f1f5f9;margin-bottom:20px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.vwp-tab{padding:8px 16px;background:none;border:none;font-size:13px;font-weight:600;color:#94a3b8;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;white-space:nowrap;min-height:40px}
+.vwp-tab.active{color:#f59e0b;border-bottom-color:#f59e0b}
+
+/* Backdrop */
+.vwp-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:300}
+.vwp-backdrop.active{display:block}
+
+/* ── 1024px — tahvelarvuti, horisontaalne ────────────────────────────────── */
 @media(max-width:1024px){
-  .vwp-content{padding:22px 20px}
+  .vwp-content{padding:24px 20px}
   .vwp-stat-grid{grid-template-columns:repeat(2,1fr)}
 }
 
-/* ── 768px — tablet portrait / mobile ───────────────────────────────────── */
+/* ── 768px — tahvelarvuti, vertikaalne / mobiil ──────────────────────────── */
 @media(max-width:768px){
   html:has(.vwp-wrap),body:has(.vwp-wrap){overflow-x:hidden}
   body:has(.vwp-wrap) #page,
@@ -88,49 +131,101 @@
   body:has(.vwp-wrap) .entry-content,
   body:has(.vwp-wrap) article{padding:0 !important;margin:0 !important}
   .vwp-wrap{overflow-x:hidden}
-  .vwp-sidebar{display:none;position:fixed;left:0;top:var(--site-top-height,94px);width:240px;height:calc(100% - var(--site-top-height,94px));z-index:200;overflow-y:auto}
+
+  /* Sidebar: peidetud, avaneb hamburgeriga */
+  .vwp-sidebar{
+    display:none;
+    position:fixed;
+    left:0;
+    top:var(--site-top-height,56px);
+    width:min(280px,85vw);
+    height:calc(100dvh - var(--site-top-height,56px));
+    z-index:500;
+    overflow-y:auto;
+  }
   .vwp-sidebar.open{display:flex}
-  .vwp-main{min-width:0}
-  .vwp-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:150}
-  .vwp-backdrop.active{display:block}
   body.vwp-sidebar-open{overflow:hidden}
-  .vwp-sidebar-logo{padding:20px 20px 10px}
-  .vwp-sidebar-logo img{max-width:160px;max-height:40px}
-  .vwp-hamburger{display:block}
-  .vwp-topbar{padding:0 14px;position:fixed;top:var(--site-top-height,94px);left:0;right:0;z-index:1001}
-  .vwp-topbar-right{font-size:12px;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px}
-  .vwp-content{padding:72px 16px 24px;overflow-x:hidden}
+
+  /* Topbar: fikseeritud */
+  .vwp-hamburger{display:flex}
+  .vwp-topbar{
+    position:fixed;
+    top:var(--site-top-height,56px);
+    left:0;right:0;
+    z-index:400;
+    padding:0 14px;
+    height:52px;
+  }
+  .vwp-topbar-right{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px}
+  .vwp-main{min-width:0}
+
+  /* Sisu */
+  .vwp-content{padding:68px 16px 24px;overflow-x:hidden;max-width:100%}
+
+  /* Stat grid */
   .vwp-stat-grid{grid-template-columns:1fr 1fr}
-  .vwp-table{width:100%;table-layout:fixed}
-  .vwp-table th,.vwp-table td{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:8px 10px}
-  .vwp-table th:nth-child(n+4),.vwp-table td:nth-child(n+4){display:none}
-  .vwp-table th:nth-child(3),.vwp-table td:nth-child(3){max-width:90px}
-  .vwp-table th:last-child,.vwp-table td:last-child{display:table-cell !important;width:64px;text-align:right}
-  .vwp-order-actions{flex-wrap:wrap}
+
+  /* Tabelid: keritavad */
+  .vwp-table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;white-space:nowrap;border-radius:12px}
+  .vwp-table th,.vwp-table td{white-space:nowrap}
+
+  /* Kaardid */
   .vwp-card{padding:16px}
+  .vwp-order-actions{flex-wrap:wrap}
+}
+
+/* ── 600px — mobiil ──────────────────────────────────────────────────────── */
+@media(max-width:600px){
+  .vwp-content{padding:64px 14px 20px}
+  .vwp-card{padding:14px}
+  .vwp-order-body{padding:10px 14px}
+  .vwp-order-header{padding:12px 14px}
+  .vwp-stat-card{padding:16px 12px}
 }
 
 /* ── 480px — telefon ─────────────────────────────────────────────────────── */
 @media(max-width:480px){
   .vwp-stat-grid{grid-template-columns:1fr}
-  .vwp-stat-card{padding:16px}
+  .vwp-stat-card{padding:14px}
   .vwp-stat-value{font-size:1.4rem}
-  .vwp-content{padding:72px 12px 16px}
-  .vwp-topbar{padding:0 10px}
-  .vwp-topbar-right{max-width:80px}
+  .vwp-stat-label{font-size:10px}
+
+  .vwp-content{padding:60px 12px 16px}
+  .vwp-topbar{padding:0 10px;height:48px}
+  .vwp-topbar-title{font-size:14px}
+  .vwp-topbar-right{max-width:90px;font-size:11px}
+
+  .vwp-page-header{margin-bottom:16px}
   .vwp-page-header h1{font-size:18px}
-  .vwp-login-card{padding:24px 18px;border-radius:12px}
-  .vwp-btn-primary,.vwp-btn-outline{width:100%;justify-content:center;box-sizing:border-box}
-  .vwp-order-actions{flex-direction:column}
-  .vwp-table th,.vwp-table td{font-size:12px;padding:8px}
+  .vwp-section-title{font-size:15px}
+
+  .vwp-btn-primary,.vwp-btn-outline,.vwp-btn-danger{width:100%;justify-content:center}
+  .vwp-order-actions{flex-direction:column;gap:6px}
+
+  .vwp-login-card{padding:24px 16px;border-radius:12px}
+  .vwp-login-title{font-size:16px}
+
+  .vwp-input{font-size:16px} /* iOS: ei zoom input-il */
+
+  /* Tellimuse kaardid */
+  .vwp-order-header{padding:10px 12px}
+  .vwp-order-body{padding:10px 12px}
+  .vwp-card{padding:12px}
+
+  /* Tabid */
+  .vwp-tab{padding:8px 10px;font-size:12px}
 }
 
 /* ── 360px — väike telefon ───────────────────────────────────────────────── */
 @media(max-width:360px){
-  .vwp-content{padding:68px 10px 16px}
+  .vwp-content{padding:56px 10px 14px}
   .vwp-stat-value{font-size:1.2rem}
   .vwp-page-header h1{font-size:16px}
+  .vwp-stat-card{padding:12px}
+  .vwp-topbar{height:46px;padding:0 8px}
+  .vwp-topbar-title{font-size:13px}
+  .vwp-topbar-right{max-width:70px}
   .vwp-login-card{padding:20px 14px}
-  .vwp-table th:nth-child(n+3),.vwp-table td:nth-child(n+3){display:none}
-  .vwp-table th:last-child,.vwp-table td:last-child{display:table-cell !important}
+  .vwp-sidebar{width:min(260px,90vw)}
+  .vwp-order-header,.vwp-order-body{padding:10px}
 }
