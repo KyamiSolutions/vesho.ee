@@ -633,7 +633,7 @@ function veshoResendVerify(){
             </div>
             <div class="vcl-group"><label>Täisnimi *</label><input type="text" name="name" required placeholder="Nimi Perekonnanimi" autocomplete="name"></div>
             <div class="vcl-group"><label>E-post *</label><input type="email" name="email" required placeholder="nimi@ettevote.ee" autocomplete="email"></div>
-            <div class="vcl-group"><label>Telefon</label><input type="tel" name="phone" placeholder="+372 5XXX XXXX"></div>
+            <div class="vcl-group"><label>Telefon</label><input type="tel" name="phone" placeholder="+372 5XXX XXXX" autocomplete="tel"></div>
             <div class="vcl-group"><label>Parool * <small style="font-weight:400;text-transform:none">(min 8 märki)</small></label><input type="password" name="password" required minlength="8" placeholder="••••••••" autocomplete="new-password"></div>
             <button type="submit" class="vcl-btn">Loo konto</button>
           </form>
