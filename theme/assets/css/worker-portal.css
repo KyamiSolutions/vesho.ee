@@ -31,7 +31,7 @@
 .vwp-logout-link:hover{color:#fff}
 
 /* Põhiala */
-.vwp-main{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden}
+.vwp-main{flex:1;display:flex;flex-direction:column;min-width:0}
 
 /* Topbar — sticky, arvestab saidi päist */
 .vwp-topbar{height:56px;background:#fff;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;padding:0 24px;gap:12px;position:sticky;top:var(--site-top-height,94px);z-index:90;flex-shrink:0}
