@@ -51,6 +51,17 @@ class Vesho_CRM_Worker_Portal {
         add_action('wp_ajax_vesho_upload_maintenance_photo', [__CLASS__, 'ajax_upload_maintenance_photo']);
 
         add_action('wp_enqueue_scripts', [__CLASS__, 'enqueue_assets']);
+        add_filter('template_include',  [__CLASS__, 'force_portal_template']);
+    }
+
+    // ── Force portal template (site header+footer) ────────────────────────────
+    public static function force_portal_template( $template ) {
+        global $post;
+        if ( $post && has_shortcode( $post->post_content, 'vesho_worker_portal' ) ) {
+            $pt = locate_template( 'page-portal.php' );
+            if ( $pt ) return $pt;
+        }
+        return $template;
     }
 
     // ── Assets ────────────────────────────────────────────────────────────────
