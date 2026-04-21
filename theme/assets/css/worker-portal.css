@@ -8,7 +8,7 @@
 .vwp-wrap{display:flex;min-height:100vh;font-family:'Barlow',system-ui,sans-serif;font-size:14px;color:#1e293b;background:#f8fafc}
 
 /* Sidebar — sticky, arvestab fikseeritud saidi päist */
-.vwp-sidebar{width:240px;height:calc(100vh - var(--site-top-height,94px));background:var(--vesho-dark,#1e293b);display:flex;flex-direction:column;flex-shrink:0;position:sticky;top:var(--site-top-height,94px);overflow-y:auto}
+.vwp-sidebar{width:240px;min-height:100vh;background:var(--vesho-dark,#1e293b);display:flex;flex-direction:column;flex-shrink:0;position:sticky;top:0;overflow-y:auto}
 .vwp-sidebar-logo{padding:20px 20px 10px;display:flex;align-items:center;gap:10px;min-height:60px}
 .vwp-sidebar-logo img{max-height:40px;max-width:160px;object-fit:contain}
 .vwp-sidebar-logo-text{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;color:#fff;letter-spacing:-.5px}
@@ -34,7 +34,7 @@
 .vwp-main{flex:1;display:flex;flex-direction:column;min-width:0}
 
 /* Topbar — sticky, arvestab saidi päist */
-.vwp-topbar{height:56px;background:#fff;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;padding:0 24px;gap:12px;position:sticky;top:var(--site-top-height,94px);z-index:90;flex-shrink:0}
+.vwp-topbar{height:56px;background:#fff;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;padding:0 24px;gap:12px;position:sticky;top:0;z-index:90;flex-shrink:0}
 .vwp-topbar-title{font-size:16px;font-weight:600;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .vwp-topbar-right{font-size:13px;color:#64748b;white-space:nowrap}
 .vwp-hamburger{display:none;background:none;border:none;font-size:22px;cursor:pointer;color:#1e293b;padding:4px 8px;line-height:1;min-width:40px;min-height:40px;align-items:center;justify-content:center}
