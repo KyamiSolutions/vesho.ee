@@ -3074,21 +3074,21 @@ function setMsg(m){document.getElementById('vcp-pay-msg').textContent=m;}
 /* Responsive — mobiil: sidebar horisontaalne nav riba */
 @media(max-width:768px){
   body:has(.vcp-wrap) #page,body:has(.vcp-wrap) #primary,body:has(.vcp-wrap) #main,body:has(.vcp-wrap) .entry-content,body:has(.vcp-wrap) article{padding:0 !important;margin:0 !important}
-  .vcp-wrap{flex-direction:column}
-  .vcp-sidebar{width:100%;min-height:unset;position:static;flex-direction:row;align-items:center;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;padding:0}
-  .vcp-sidebar-logo{display:none}
-  .vcp-sidebar-label{display:none}
-  .vcp-sidebar-footer{display:none}
-  .vcp-nav{display:flex;flex-direction:row;padding:4px 8px;flex:1;min-width:0}
-  .vcp-nav li{margin:0}
-  .vcp-nav-link{flex-direction:column;gap:2px;padding:8px 12px;font-size:11px;border-radius:6px;white-space:nowrap;min-height:unset}
-  .vcp-nav-icon{font-size:16px;width:auto}
-  .vcp-hamburger{display:none}
-  .vcp-topbar{display:none}
-  .vcp-content{padding:16px;overflow-x:hidden;max-width:100%}
-  .vcp-two-col{grid-template-columns:1fr}
-  .vcp-stat-grid{grid-template-columns:1fr 1fr}
-  .vcp-table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .vcp-wrap{flex-direction:column !important}
+  .vcp-sidebar{display:flex !important;width:100% !important;min-height:unset !important;height:auto !important;position:static !important;flex-direction:row !important;align-items:center !important;overflow-x:auto !important;overflow-y:hidden !important;-webkit-overflow-scrolling:touch !important;padding:0 !important}
+  .vcp-sidebar-logo{display:none !important}
+  .vcp-sidebar-label{display:none !important}
+  .vcp-sidebar-footer{display:none !important}
+  .vcp-nav{display:flex !important;flex-direction:row !important;padding:4px 8px !important;flex:1 !important;min-width:0 !important}
+  .vcp-nav li{margin:0 !important}
+  .vcp-nav-link{flex-direction:column !important;gap:2px !important;padding:8px 12px !important;font-size:11px !important;border-radius:6px !important;white-space:nowrap !important;min-height:unset !important}
+  .vcp-nav-icon{font-size:16px !important;width:auto !important}
+  .vcp-hamburger{display:none !important}
+  .vcp-topbar{display:none !important}
+  .vcp-content{padding:16px !important;overflow-x:hidden !important;max-width:100% !important}
+  .vcp-two-col{grid-template-columns:1fr !important}
+  .vcp-stat-grid{grid-template-columns:1fr 1fr !important}
+  .vcp-table{display:block !important;overflow-x:auto !important;-webkit-overflow-scrolling:touch !important}
 }
 ';
     }

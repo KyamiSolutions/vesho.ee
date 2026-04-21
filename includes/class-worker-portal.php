@@ -4133,20 +4133,20 @@ document.querySelectorAll('.vwp-hist-header').forEach(function(hdr){
 /* Responsive — mobiil: sidebar horisontaalne nav riba */
 @media(max-width:768px){
   body:has(.vwp-wrap) #page,body:has(.vwp-wrap) #primary,body:has(.vwp-wrap) #main,body:has(.vwp-wrap) .entry-content,body:has(.vwp-wrap) article{padding:0 !important;margin:0 !important}
-  .vwp-wrap{flex-direction:column}
-  .vwp-sidebar{width:100%;min-height:unset;position:static;flex-direction:row;align-items:center;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;padding:0}
-  .vwp-sidebar-logo{display:none}
-  .vwp-sidebar-label{display:none}
-  .vwp-sidebar-footer{display:none}
-  .vwp-nav{display:flex;flex-direction:row;padding:4px 8px;flex:1;min-width:0}
-  .vwp-nav li{margin:0}
-  .vwp-nav-link{flex-direction:column;gap:2px;padding:8px 12px;font-size:11px;border-radius:6px;white-space:nowrap;min-height:unset}
-  .vwp-nav-icon{font-size:16px;width:auto}
-  .vwp-hamburger{display:none}
-  .vwp-topbar{display:none}
-  .vwp-content{padding:16px;overflow-x:hidden;max-width:100%}
-  .vwp-stat-grid{grid-template-columns:1fr 1fr}
-  .vwp-table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .vwp-wrap{flex-direction:column !important}
+  .vwp-sidebar{display:flex !important;width:100% !important;min-height:unset !important;height:auto !important;position:static !important;flex-direction:row !important;align-items:center !important;overflow-x:auto !important;overflow-y:hidden !important;-webkit-overflow-scrolling:touch !important;padding:0 !important}
+  .vwp-sidebar-logo{display:none !important}
+  .vwp-sidebar-label{display:none !important}
+  .vwp-sidebar-footer{display:none !important}
+  .vwp-nav{display:flex !important;flex-direction:row !important;padding:4px 8px !important;flex:1 !important;min-width:0 !important}
+  .vwp-nav li{margin:0 !important}
+  .vwp-nav-link{flex-direction:column !important;gap:2px !important;padding:8px 12px !important;font-size:11px !important;border-radius:6px !important;white-space:nowrap !important;min-height:unset !important}
+  .vwp-nav-icon{font-size:16px !important;width:auto !important}
+  .vwp-hamburger{display:none !important}
+  .vwp-topbar{display:none !important}
+  .vwp-content{padding:16px !important;overflow-x:hidden !important;max-width:100% !important}
+  .vwp-stat-grid{grid-template-columns:1fr 1fr !important}
+  .vwp-table{display:block !important;overflow-x:auto !important;-webkit-overflow-scrolling:touch !important}
 }
 ';
     }
