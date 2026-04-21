@@ -9,6 +9,7 @@
 
 /* Sidebar — sticky, arvestab fikseeritud saidi päist */
 .vwp-sidebar{width:240px;min-height:100vh;background:var(--vesho-dark,#1e293b);display:flex;flex-direction:column;flex-shrink:0;position:sticky;top:0;overflow-y:auto}
+.vwp-nav-arrow{display:none !important;pointer-events:none !important}
 .vwp-sidebar-logo{padding:20px 20px 10px;display:flex;align-items:center;gap:10px;min-height:60px}
 .vwp-sidebar-logo img{max-height:40px;max-width:160px;object-fit:contain}
 .vwp-sidebar-logo-text{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;color:#fff;letter-spacing:-.5px}

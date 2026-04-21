@@ -3021,7 +3021,7 @@ function setMsg(m){document.getElementById('vcp-pay-msg').textContent=m;}
 /* === Vesho Client Portal CSS === */
 .vcp-wrap{display:flex;min-height:100vh;font-family:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:14px;color:#1e293b;background:#f8fafc}
 .vcp-sidebar{width:240px;min-height:100vh;background:#1e293b;display:flex;flex-direction:column;flex-shrink:0;position:sticky;top:0}
-.vcp-nav-arrow{display:none}
+.vcp-nav-arrow{display:none !important;pointer-events:none !important}
 .vcp-sidebar-logo{padding:24px 20px 12px;font-size:22px;font-weight:800;color:#fff;letter-spacing:-.5px}
 .vcp-sidebar-logo span{color:#00b4c8}
 .vcp-sidebar-label{padding:4px 20px 8px;font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.35)}

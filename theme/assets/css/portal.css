@@ -31,6 +31,7 @@
 /* ── Portaali kest (DESKTOP — muutmata) ── */
 .vcp-wrap{display:flex;min-height:100vh;font-family:'Barlow',system-ui,sans-serif;font-size:14px;color:#1e293b;background:#f8fafc}
 .vcp-sidebar{width:240px;min-height:100vh;background:var(--vesho-dark,#1e293b);display:flex;flex-direction:column;flex-shrink:0;position:sticky;top:0}
+.vcp-nav-arrow{display:none !important;pointer-events:none !important}
 .vcp-sidebar-logo{padding:20px 20px 10px;display:flex;align-items:center;gap:10px;min-height:60px}
 .vcp-sidebar-logo img{max-height:40px;max-width:160px;object-fit:contain}
 .vcp-sidebar-logo-text{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;color:#fff;letter-spacing:-.5px}
