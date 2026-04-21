@@ -34,11 +34,14 @@ add_shortcode( 'vesho_team_cards', function() {
 } );
 
 // ── [vesho_services_cards] ────────────────────────────────────────────────────
-add_shortcode( 'vesho_services_cards', function() {
+add_shortcode( 'vesho_services_cards', function( $atts ) {
+    $atts = shortcode_atts( ['limit' => 12], $atts );
+    $limit = max(1, intval($atts['limit']));
     global $wpdb;
-    $services = $wpdb->get_results(
-        "SELECT * FROM {$wpdb->prefix}vesho_services WHERE active=1 ORDER BY sort_order ASC, id ASC LIMIT 12"
-    );
+    $services = $wpdb->get_results( $wpdb->prepare(
+        "SELECT * FROM {$wpdb->prefix}vesho_services WHERE active=1 ORDER BY sort_order ASC, id ASC LIMIT %d",
+        $limit
+    ) );
 
     if ( empty($services) ) {
         $services = [
