@@ -129,13 +129,11 @@ textarea.vcp-input{min-height:100px;resize:vertical;line-height:1.5}
   /* Layout: vertikaalne virn — EI overflow:hidden (lõhub sticky!) */
   .vcp-wrap{flex-direction:column}
 
-  /* Sidebar → horisontaalne nav riba (sticky, ei kao!) */
+  /* Sidebar → horisontaalne nav riba (static, ei kao!) */
   .vcp-sidebar{
     width:100%;
     min-height:unset;
-    position:sticky;
-    top:var(--site-top-height,94px);
-    z-index:200;
+    position:static;
     flex-direction:row;
     align-items:center;
     overflow-x:auto;
