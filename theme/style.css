@@ -4,7 +4,7 @@ Theme URI: https://vesho.ee
 Author: Vesho OÜ
 Author URI: https://vesho.ee
 Description: Vesho water systems custom WordPress theme. Clean, modern, professional design with navy and cyan color palette.
-Version: 2.9.33
+Version: 2.9.34
 Requires at least: 6.0
 Tested up to: 6.7
 Requires PHP: 8.0
@@ -378,6 +378,21 @@ p:last-child {
 .aligncenter { display: block; margin: 0 auto 16px; }
 .wp-caption { max-width: 100%; }
 .wp-caption-text { font-size: 13px; color: var(--text-muted); text-align: center; margin-top: 6px; }
+
+/* ── Global announcement bar ── */
+#global-announcement-bar {
+  padding-right: 52px; /* close button ruumi */
+}
+
+@media (max-width: 600px) {
+  #global-announcement-bar {
+    padding: 10px 48px 10px 16px;
+    font-size: 12px;
+    text-align: center;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+}
 
 /* ── Screen reader text ── */
 .screen-reader-text {
