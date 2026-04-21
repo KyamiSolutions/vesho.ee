@@ -1,10 +1,10 @@
 {
   "name": "Vesho",
   "slug": "vesho",
-  "version": "2.9.26",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.9.26/vesho-theme.zip",
+  "version": "2.9.27",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.9.27/vesho-theme.zip",
   "requires": "6.0",
   "tested": "6.7",
-  "last_updated": "2026-04-20",
-  "changelog": "<h4>2.9.26</h4><ul><li>Uus: Töötaja kaart — visuaalne ID-kaart PDF prindiga, 🪪 Minu kaart nupp, uuenda/lae alla</li></ul><h4>2.9.25</h4><ul><li>Fix: nimeta Juhend → Kasutusjuhend; puhas PDF print ilma WP admin chroomita</li></ul><h4>2.9.24</h4><ul><li>Uus: Omaniku/haldaja juhend — 📖 Kasutusjuhend link dashboardil</li></ul><h4>2.9.23</h4><ul><li>Fix: mobiili sidebar top:var(--site-top-height) — nav ei peidu header taha</li></ul>"
+  "last_updated": "2026-04-21",
+  "changelog": "<h4>2.9.27</h4><ul><li>Uus: vesho_services_cards limit parameeter — [vesho_services_cards limit=3]</li></ul><h4>2.9.26</h4><ul><li>Uus: Töötaja kaart — visuaalne ID-kaart PDF prindiga, 🪪 Minu kaart nupp</li></ul><h4>2.9.25</h4><ul><li>Fix: nimeta Juhend → Kasutusjuhend; puhas PDF print</li></ul><h4>2.9.24</h4><ul><li>Uus: 📖 Kasutusjuhend dashboardil</li></ul>"
 }
