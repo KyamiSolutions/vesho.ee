@@ -156,9 +156,8 @@ textarea.vcp-input{min-height:100px;resize:vertical;line-height:1.5}
   /* Hamburger: pole vaja */
   .vcp-hamburger{display:none}
 
-  /* Topbar: staatiline */
-  .vcp-topbar{position:static;padding:0 16px}
-  .vcp-topbar-right{font-size:12px}
+  /* Topbar: peidetud mobiilis (nav ribalt näha kus oled) */
+  .vcp-topbar{display:none}
 
   /* Sisu: normaalne padding */
   .vcp-content{padding:16px;overflow-x:hidden;max-width:100%}
@@ -189,7 +188,6 @@ textarea.vcp-input{min-height:100px;resize:vertical;line-height:1.5}
   .vcp-stat-card{padding:14px}
   .vcp-stat-value{font-size:1.4rem}
   .vcp-content{padding:12px}
-  .vcp-topbar{padding:0 12px}
   .vcp-page-header h1{font-size:18px}
   .vcp-page-header p{font-size:13px}
   .vcp-btn-primary,.vcp-btn-outline,.vcp-btn-danger{width:100%;justify-content:center;box-sizing:border-box}
