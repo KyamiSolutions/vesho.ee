@@ -1,10 +1,10 @@
 {
   "name": "Vesho CRM",
   "slug": "vesho-crm",
-  "version": "2.9.30",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.9.30/vesho-crm.zip",
+  "version": "2.9.31",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.9.31/vesho-crm.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-21",
-  "changelog": "<h4>2.9.30</h4><ul><li>Debug: vesho_services_cards debug=1 parameeter diagnoosimiseks</li></ul><h4>2.9.29</h4><ul><li>Fix: vesho_services_cards show_on_website filtreerimine PHP-s (toimib ka siis kui veerg pole veel DB-s)</li></ul><h4>2.9.28</h4><ul><li>Uus: teenustel 🌐 Kuva esilehel valik — vali mis teenused esilehel kuvatakse</li></ul><h4>2.9.27</h4><ul><li>Uus: vesho_services_cards limit parameeter</li></ul><h4>2.9.26</h4><ul><li>Uus: töötaja kaart — visuaalne ID-kaart PDF prindiga</li></ul><h4>2.9.25</h4><ul><li>Fix: Kasutusjuhend + puhas PDF print</li></ul>"
+  "changelog": "<h4>2.9.31</h4><ul><li>Fix: debug=1 töötab ilma admin-piiranguta</li></ul><h4>2.9.30</h4><ul><li>Debug: vesho_services_cards debug=1 parameeter diagnoosimiseks</li></ul><h4>2.9.29</h4><ul><li>Fix: vesho_services_cards show_on_website filtreerimine PHP-s</li></ul><h4>2.9.28</h4><ul><li>Uus: teenustel 🌐 Kuva esilehel valik</li></ul><h4>2.9.27</h4><ul><li>Uus: vesho_services_cards limit parameeter</li></ul><h4>2.9.26</h4><ul><li>Uus: töötaja kaart — visuaalne ID-kaart PDF prindiga</li></ul><h4>2.9.25</h4><ul><li>Fix: Kasutusjuhend + puhas PDF print</li></ul>"
 }

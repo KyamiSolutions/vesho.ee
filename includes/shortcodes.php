@@ -38,7 +38,7 @@ add_shortcode( 'vesho_services_cards', function( $atts ) {
     $atts = shortcode_atts( ['limit' => 12, 'all' => '0', 'debug' => '0'], $atts );
     $limit = max(1, intval($atts['limit']));
     $show_all = $atts['all'] === '1';
-    $debug    = $atts['debug'] === '1' && current_user_can('manage_options');
+    $debug    = $atts['debug'] === '1';
     global $wpdb;
     $all_services = $wpdb->get_results( $wpdb->prepare(
         "SELECT * FROM {$wpdb->prefix}vesho_services WHERE active=1 ORDER BY sort_order ASC, id ASC LIMIT %d",
