@@ -104,16 +104,22 @@
 .vcp-tab.active{color:var(--vesho-primary,#00b4c8);border-bottom-color:var(--vesho-primary,#00b4c8)}
 .vcp-panel{display:none}
 .vcp-panel.active{display:block}
-/* Responsive */
+/* ── 1024px — tablet landscape ───────────────────────────────────────────── */
+@media(max-width:1024px){
+  .vcp-content{padding:24px 20px}
+  .vcp-stat-grid{grid-template-columns:repeat(2,1fr)}
+  .vcp-two-col{gap:16px}
+}
+
+/* ── 768px — tablet portrait / mobile ───────────────────────────────────── */
 @media(max-width:768px){
   html:has(.vcp-wrap),body:has(.vcp-wrap){overflow-x:hidden}
   body:has(.vcp-wrap) #page,
   body:has(.vcp-wrap) #primary,
   body:has(.vcp-wrap) #main,
   body:has(.vcp-wrap) .entry-content,
-  body:has(.vcp-wrap) article { padding:0 !important; margin:0 !important; }
-  .vcp-wrap { overflow-x:hidden; }
-
+  body:has(.vcp-wrap) article{padding:0 !important;margin:0 !important}
+  .vcp-wrap{overflow-x:hidden}
   /* Sidebar: peidetud, avaneb hamburgeriga */
   .vcp-sidebar{display:none;position:fixed;left:0;top:var(--site-top-height,94px);width:240px;height:calc(100% - var(--site-top-height,94px));z-index:200;overflow-y:auto}
   .vcp-sidebar.open{display:flex}
@@ -124,40 +130,45 @@
   body.vcp-sidebar-open{overflow:hidden}
   .vcp-sidebar-logo{padding:20px 20px 10px}
   .vcp-sidebar-logo img{max-width:160px;max-height:40px}
-  /* Topbar: fixed so it stays visible above site header */
   .vcp-hamburger{display:block}
-  .vcp-topbar{padding:0 10px;position:fixed;top:var(--site-top-height,94px);left:0;right:0;z-index:1001}
-  .vcp-topbar-right{font-size:11px;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px}
-  /* Content: top padding accounts for fixed topbar (56px) */
-  .vcp-content{padding:72px 16px 16px;overflow-x:hidden}
+  .vcp-topbar{padding:0 14px;position:fixed;top:var(--site-top-height,94px);left:0;right:0;z-index:1001}
+  .vcp-topbar-right{font-size:12px;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px}
+  .vcp-content{padding:72px 16px 24px;overflow-x:hidden}
   .vcp-two-col{grid-template-columns:1fr}
   .vcp-stat-grid{grid-template-columns:1fr 1fr}
   /* Tables */
   .vcp-table{width:100%;table-layout:fixed}
-  .vcp-table th,.vcp-table td{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:8px}
+  .vcp-table th,.vcp-table td{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:8px 10px}
   .vcp-table th:nth-child(n+4),.vcp-table td:nth-child(n+4){display:none}
-  .vcp-table th:nth-child(3),.vcp-table td:nth-child(3){max-width:80px}
-  .vcp-table th:last-child,.vcp-table td:last-child{display:table-cell !important;width:60px;text-align:right}
+  .vcp-table th:nth-child(3),.vcp-table td:nth-child(3){max-width:90px}
+  .vcp-table th:last-child,.vcp-table td:last-child{display:table-cell !important;width:64px;text-align:right}
+  .vcp-maint-item{flex-wrap:wrap;gap:8px}
 }
 
-/* ── 480px and below ─────────────────────────────────────────────────────── */
+/* ── 480px — telefon ─────────────────────────────────────────────────────── */
 @media(max-width:480px){
-  .vauth-wrap{padding:16px}
-  .vauth-card{padding:28px 20px;border-radius:10px}
-  .vcp-content{padding:72px 12px 12px}
-  .vcp-topbar{padding:0 12px}
+  .vauth-wrap{padding:12px}
+  .vauth-card{padding:28px 18px;border-radius:10px}
+  .vcp-content{padding:72px 12px 16px}
+  .vcp-topbar{padding:0 10px}
   .vcp-page-header h1{font-size:18px}
-  .vcp-stat-grid{grid-template-columns:1fr 1fr}
-  .vcp-stat-value{font-size:1.35rem}
-  .vcp-table th,.vcp-table td{padding:8px 10px;font-size:12px}
+  .vcp-stat-grid{grid-template-columns:1fr}
+  .vcp-stat-card{padding:16px}
+  .vcp-stat-value{font-size:1.4rem}
+  .vcp-table th,.vcp-table td{padding:8px;font-size:12px}
   .vcp-quick-actions{flex-direction:column}
   .vcp-btn-primary,.vcp-btn-outline{width:100%;text-align:center;box-sizing:border-box}
+  .vcp-card{padding:16px}
+  .vcp-topbar-right{max-width:80px}
 }
 
-/* ── 360px and below ─────────────────────────────────────────────────────── */
+/* ── 360px — väike telefon ───────────────────────────────────────────────── */
 @media(max-width:360px){
-  .vcp-stat-grid{grid-template-columns:1fr}
+  .vauth-wrap{padding:8px}
   .vauth-card{padding:22px 14px}
   .vauth-logo a{font-size:1.4rem}
   .vauth-group input{font-size:14px;padding:10px 12px}
+  .vcp-content{padding:68px 10px 16px}
+  .vcp-stat-value{font-size:1.2rem}
+  .vcp-page-header h1{font-size:16px}
 }
