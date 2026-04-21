@@ -1,10 +1,10 @@
 {
   "name": "Vesho CRM",
   "slug": "vesho-crm",
-  "version": "2.9.43",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.9.43/vesho-crm.zip",
+  "version": "2.9.44",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.9.44/vesho-crm.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-21",
-  "changelog": "<h4>2.9.43</h4><ul><li>Mobiil: topbar peidetud, nav riba sticky</li></ul><h4>2.9.41</h4><ul><li>Nav riba sticky, overflow fix</li></ul><h4>2.9.40</h4><ul><li>Portaalid mobiilis: sidebar nav ribaks</li></ul><h4>2.9.39</h4><ul><li>Fix: desktop sticky taastatud</li></ul>"
+  "changelog": "<h4>2.9.44</h4><ul><li>Fix: PHP inline CSS vana display:none sidebar eemaldatud</li></ul><h4>2.9.43</h4><ul><li>Nav riba static mobiilis</li></ul><h4>2.9.42</h4><ul><li>Topbar peidetud mobiilis</li></ul><h4>2.9.41</h4><ul><li>Nav riba sticky, overflow fix</li></ul>"
 }
