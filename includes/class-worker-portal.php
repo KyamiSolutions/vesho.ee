@@ -308,7 +308,8 @@ class Vesho_CRM_Worker_Portal {
       <?php endif; ?>
     </div>
     <div class="vwp-sidebar-label">Menüü</div>
-    <ul class="vwp-nav">
+    <button class="vwp-nav-arrow vwp-nav-arrow--left" id="vwpNavLeft" aria-hidden="true">&#8249;</button>
+    <ul class="vwp-nav" id="vwpNavScroll">
       <?php foreach ($nav_items as $tid => $item): ?>
       <li><a href="<?php echo esc_url(add_query_arg('wtab', $tid, $base)); ?>"
              class="vwp-nav-link <?php echo $tab === $tid ? 'active' : ''; ?>"
@@ -323,6 +324,7 @@ class Vesho_CRM_Worker_Portal {
       </a></li>
       <?php endforeach; ?>
     </ul>
+    <button class="vwp-nav-arrow vwp-nav-arrow--right" id="vwpNavRight" aria-hidden="true">&#8250;</button>
     <div class="vwp-sidebar-footer">
       <div class="vwp-sidebar-user">
         <div class="vwp-avatar"><?php echo esc_html($avatar); ?></div>
@@ -432,6 +434,23 @@ class Vesho_CRM_Worker_Portal {
     });
   }
   backdrop.addEventListener('click',closeSidebar);
+  // Nav scroll arrows
+  (function(){
+    var nav=document.getElementById('vwpNavScroll');
+    var btnL=document.getElementById('vwpNavLeft');
+    var btnR=document.getElementById('vwpNavRight');
+    if(!nav||!btnL||!btnR) return;
+    function upd(){
+      btnL.disabled=nav.scrollLeft<=1;
+      btnR.disabled=nav.scrollLeft>=nav.scrollWidth-nav.clientWidth-1;
+    }
+    nav.addEventListener('scroll',upd,{passive:true});
+    btnL.addEventListener('click',function(){nav.scrollBy({left:-120,behavior:'smooth'});});
+    btnR.addEventListener('click',function(){nav.scrollBy({left:120,behavior:'smooth'});});
+    var active=nav.querySelector('.vwp-nav-link.active');
+    if(active) active.scrollIntoView({inline:'nearest',block:'nearest'});
+    upd();
+  })();
 })();
 </script>
         <?php
@@ -4065,6 +4084,7 @@ document.querySelectorAll('.vwp-hist-header').forEach(function(hdr){
 /* === Vesho Worker Portal CSS === */
 .vwp-wrap{display:flex;min-height:100vh;font-family:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:14px;color:#1e293b;background:#f8fafc}
 .vwp-sidebar{width:240px;min-height:100vh;background:#1e293b;display:flex;flex-direction:column;flex-shrink:0;position:sticky;top:0}
+.vwp-nav-arrow{display:none}
 .vwp-sidebar-logo{padding:24px 20px 12px;font-size:22px;font-weight:800;color:#fff;letter-spacing:-.5px}
 .vwp-sidebar-logo span{color:#f59e0b}
 .vwp-sidebar-label{padding:4px 20px 8px;font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.35)}
@@ -4141,8 +4161,7 @@ document.querySelectorAll('.vwp-hist-header').forEach(function(hdr){
     width:100% !important; min-height:unset !important; height:56px !important;
     flex-direction:row !important;
     z-index:500 !important;
-    overflow-x:auto !important; overflow-y:hidden !important;
-    -webkit-overflow-scrolling:touch !important;
+    overflow:hidden !important;
     border-top:2px solid rgba(255,255,255,0.1) !important;
     padding:0 !important;
   }
@@ -4150,11 +4169,18 @@ document.querySelectorAll('.vwp-hist-header').forEach(function(hdr){
   .vwp-sidebar-label{display:none !important}
   .vwp-sidebar-footer{display:none !important}
 
-  /* Nav lingid bottom bars */
-  .vwp-nav{display:flex !important;flex-direction:row !important;flex:1 !important;padding:0 !important;min-width:0 !important}
-  .vwp-nav li{flex:1 !important;min-width:52px !important;margin:0 !important}
-  .vwp-nav-link{flex-direction:column !important;justify-content:center !important;align-items:center !important;gap:2px !important;padding:4px 2px !important;font-size:10px !important;border-radius:0 !important;min-height:56px !important;height:56px !important;text-align:center !important}
+  /* Nav: keritav, ilma scrollbarita */
+  .vwp-nav{display:flex !important;flex-direction:row !important;flex:1 !important;padding:0 !important;min-width:0 !important;overflow-x:auto !important;overflow-y:hidden !important;scroll-behavior:smooth !important;-webkit-overflow-scrolling:touch !important;scrollbar-width:none !important}
+  .vwp-nav::-webkit-scrollbar{display:none !important}
+  .vwp-nav li{flex:0 0 auto !important;min-width:64px !important;margin:0 !important}
+  .vwp-nav-link{flex-direction:column !important;justify-content:center !important;align-items:center !important;gap:2px !important;padding:4px 6px !important;font-size:10px !important;border-radius:0 !important;min-height:56px !important;height:56px !important;text-align:center !important;white-space:nowrap !important}
   .vwp-nav-icon{font-size:18px !important;width:auto !important;text-align:center !important}
+
+  /* Noolte nupud */
+  .vwp-nav-arrow{display:flex !important;align-items:center !important;justify-content:center !important;width:28px !important;height:56px !important;background:#1e293b !important;border:none !important;padding:0 !important;margin:0 !important;cursor:pointer !important;color:rgba(255,255,255,.85) !important;font-size:26px !important;line-height:1 !important;flex-shrink:0 !important;transition:opacity .2s !important}
+  .vwp-nav-arrow--left{box-shadow:4px 0 10px rgba(0,0,0,.35) !important}
+  .vwp-nav-arrow--right{box-shadow:-4px 0 10px rgba(0,0,0,.35) !important}
+  .vwp-nav-arrow:disabled{opacity:0 !important;pointer-events:none !important}
 
   /* Main ala: täislaius */
   .vwp-main{width:100% !important;min-width:0 !important}

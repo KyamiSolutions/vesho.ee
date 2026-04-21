@@ -133,8 +133,7 @@ textarea.vcp-input{min-height:100px;resize:vertical;line-height:1.5}
     width:100%!important; min-height:unset!important; height:56px!important;
     flex-direction:row!important;
     z-index:500!important;
-    overflow-x:auto!important; overflow-y:hidden!important;
-    -webkit-overflow-scrolling:touch!important;
+    overflow:hidden!important;
     border-top:2px solid rgba(255,255,255,0.1)!important;
     padding:0!important;
   }
@@ -142,11 +141,18 @@ textarea.vcp-input{min-height:100px;resize:vertical;line-height:1.5}
   .vcp-sidebar-label{display:none!important}
   .vcp-sidebar-footer{display:none!important}
 
-  /* Nav lingid bottom bar täiteks */
-  .vcp-nav{display:flex;flex-direction:row;flex:1;padding:0;min-width:0}
-  .vcp-nav li{flex:1;min-width:52px;margin:0}
-  .vcp-nav-link{flex-direction:column;justify-content:center;align-items:center;gap:2px;padding:4px 2px;font-size:10px;border-radius:0;min-height:56px;height:56px;text-align:center}
+  /* Nav: keritav, ilma scrollbarita */
+  .vcp-nav{display:flex;flex-direction:row;flex:1;padding:0;min-width:0;overflow-x:auto;overflow-y:hidden;scroll-behavior:smooth;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .vcp-nav::-webkit-scrollbar{display:none}
+  .vcp-nav li{flex:0 0 auto;min-width:64px;margin:0}
+  .vcp-nav-link{flex-direction:column;justify-content:center;align-items:center;gap:2px;padding:4px 6px;font-size:10px;border-radius:0;min-height:56px;height:56px;text-align:center;white-space:nowrap}
   .vcp-nav-icon{font-size:18px;width:auto;text-align:center}
+
+  /* Noolte nupud */
+  .vcp-nav-arrow{display:flex;align-items:center;justify-content:center;width:28px;height:56px;background:#1e293b;border:none;padding:0;margin:0;cursor:pointer;color:rgba(255,255,255,.85);font-size:26px;line-height:1;flex-shrink:0;transition:opacity .2s}
+  .vcp-nav-arrow--left{box-shadow:4px 0 10px rgba(0,0,0,.35)}
+  .vcp-nav-arrow--right{box-shadow:-4px 0 10px rgba(0,0,0,.35)}
+  .vcp-nav-arrow:disabled{opacity:0;pointer-events:none}
 
   /* Main ala */
   .vcp-main{width:100%;min-width:0}

@@ -763,7 +763,8 @@ function veshoResendVerify(){
       <?php endif; ?>
     </div>
     <div class="vcp-sidebar-label">Menüü</div>
-    <ul class="vcp-nav">
+    <button class="vcp-nav-arrow vcp-nav-arrow--left" id="vcpNavLeft" aria-hidden="true">&#8249;</button>
+    <ul class="vcp-nav" id="vcpNavScroll">
       <?php foreach ($nav_items as $tid => $item): ?>
       <li><a href="<?php echo esc_url(add_query_arg('ptab', $tid, $base)); ?>"
              class="vcp-nav-link <?php echo $tab === $tid ? 'active' : ''; ?>">
@@ -772,6 +773,7 @@ function veshoResendVerify(){
       </a></li>
       <?php endforeach; ?>
     </ul>
+    <button class="vcp-nav-arrow vcp-nav-arrow--right" id="vcpNavRight" aria-hidden="true">&#8250;</button>
     <div class="vcp-sidebar-footer">
       <div class="vcp-sidebar-user">
         <div class="vcp-avatar"><?php echo esc_html($avatar); ?></div>
@@ -881,6 +883,24 @@ function veshoResendVerify(){
     });
   }
   backdrop.addEventListener('click',closeSidebar);
+  // Nav scroll arrows
+  (function(){
+    var nav=document.getElementById('vcpNavScroll');
+    var btnL=document.getElementById('vcpNavLeft');
+    var btnR=document.getElementById('vcpNavRight');
+    if(!nav||!btnL||!btnR) return;
+    function upd(){
+      btnL.disabled=nav.scrollLeft<=1;
+      btnR.disabled=nav.scrollLeft>=nav.scrollWidth-nav.clientWidth-1;
+    }
+    nav.addEventListener('scroll',upd,{passive:true});
+    btnL.addEventListener('click',function(){nav.scrollBy({left:-120,behavior:'smooth'});});
+    btnR.addEventListener('click',function(){nav.scrollBy({left:120,behavior:'smooth'});});
+    // Scroll active item into view
+    var active=nav.querySelector('.vcp-nav-link.active');
+    if(active) active.scrollIntoView({inline:'nearest',block:'nearest'});
+    upd();
+  })();
 })();
 </script>
         <?php
@@ -3001,6 +3021,7 @@ function setMsg(m){document.getElementById('vcp-pay-msg').textContent=m;}
 /* === Vesho Client Portal CSS === */
 .vcp-wrap{display:flex;min-height:100vh;font-family:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:14px;color:#1e293b;background:#f8fafc}
 .vcp-sidebar{width:240px;min-height:100vh;background:#1e293b;display:flex;flex-direction:column;flex-shrink:0;position:sticky;top:0}
+.vcp-nav-arrow{display:none}
 .vcp-sidebar-logo{padding:24px 20px 12px;font-size:22px;font-weight:800;color:#fff;letter-spacing:-.5px}
 .vcp-sidebar-logo span{color:#00b4c8}
 .vcp-sidebar-label{padding:4px 20px 8px;font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.35)}
@@ -3082,8 +3103,7 @@ function setMsg(m){document.getElementById('vcp-pay-msg').textContent=m;}
     width:100% !important; min-height:unset !important; height:56px !important;
     flex-direction:row !important;
     z-index:500 !important;
-    overflow-x:auto !important; overflow-y:hidden !important;
-    -webkit-overflow-scrolling:touch !important;
+    overflow:hidden !important;
     border-top:2px solid rgba(255,255,255,0.1) !important;
     padding:0 !important;
   }
@@ -3091,11 +3111,18 @@ function setMsg(m){document.getElementById('vcp-pay-msg').textContent=m;}
   .vcp-sidebar-label{display:none !important}
   .vcp-sidebar-footer{display:none !important}
 
-  /* Nav lingid bottom bars */
-  .vcp-nav{display:flex !important;flex-direction:row !important;flex:1 !important;padding:0 !important;min-width:0 !important}
-  .vcp-nav li{flex:1 !important;min-width:52px !important;margin:0 !important}
-  .vcp-nav-link{flex-direction:column !important;justify-content:center !important;align-items:center !important;gap:2px !important;padding:4px 2px !important;font-size:10px !important;border-radius:0 !important;min-height:56px !important;height:56px !important;text-align:center !important}
+  /* Nav: keritav, ilma scrollbarita */
+  .vcp-nav{display:flex !important;flex-direction:row !important;flex:1 !important;padding:0 !important;min-width:0 !important;overflow-x:auto !important;overflow-y:hidden !important;scroll-behavior:smooth !important;-webkit-overflow-scrolling:touch !important;scrollbar-width:none !important}
+  .vcp-nav::-webkit-scrollbar{display:none !important}
+  .vcp-nav li{flex:0 0 auto !important;min-width:64px !important;margin:0 !important}
+  .vcp-nav-link{flex-direction:column !important;justify-content:center !important;align-items:center !important;gap:2px !important;padding:4px 6px !important;font-size:10px !important;border-radius:0 !important;min-height:56px !important;height:56px !important;text-align:center !important;white-space:nowrap !important}
   .vcp-nav-icon{font-size:18px !important;width:auto !important;text-align:center !important}
+
+  /* Noolte nupud */
+  .vcp-nav-arrow{display:flex !important;align-items:center !important;justify-content:center !important;width:28px !important;height:56px !important;background:#1e293b !important;border:none !important;padding:0 !important;margin:0 !important;cursor:pointer !important;color:rgba(255,255,255,.85) !important;font-size:26px !important;line-height:1 !important;flex-shrink:0 !important;transition:opacity .2s !important}
+  .vcp-nav-arrow--left{box-shadow:4px 0 10px rgba(0,0,0,.35) !important}
+  .vcp-nav-arrow--right{box-shadow:-4px 0 10px rgba(0,0,0,.35) !important}
+  .vcp-nav-arrow:disabled{opacity:0 !important;pointer-events:none !important}
 
   /* Main ala: täislaius */
   .vcp-main{width:100% !important;min-width:0 !important}
