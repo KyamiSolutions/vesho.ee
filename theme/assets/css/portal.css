@@ -126,36 +126,41 @@ textarea.vcp-input{min-height:100px;resize:vertical;line-height:1.5}
   body:has(.vcp-wrap) #main,
   body:has(.vcp-wrap) .entry-content,
   body:has(.vcp-wrap) article{padding:0!important;margin:0!important}
-  .vcp-wrap{overflow-x:hidden}
 
-  /* Sidebar: peitud → avaneb hamburgeriga */
+  /* Layout: vertikaalne virn */
+  .vcp-wrap{flex-direction:column}
+
+  /* Sidebar → horisontaalne nav riba (ei kao!) */
   .vcp-sidebar{
-    display:none;
-    position:fixed;
-    left:0;
-    top:var(--site-top-height,94px);
-    width:min(280px,85vw);
-    height:calc(100dvh - var(--site-top-height,94px));
-    z-index:500;
-    overflow-y:auto;
-    min-height:0;
+    width:100%;
+    min-height:unset;
+    position:static;
+    flex-direction:row;
+    align-items:center;
+    overflow-x:auto;
+    overflow-y:hidden;
+    -webkit-overflow-scrolling:touch;
+    padding:0;
   }
-  .vcp-sidebar.open{display:flex}
-  body.vcp-sidebar-open{overflow:hidden}
+  .vcp-sidebar-logo{display:none}
+  .vcp-sidebar-label{display:none}
+  .vcp-sidebar-footer{display:none}
 
-  /* Topbar: fikseeritud */
-  .vcp-hamburger{display:block}
-  .vcp-topbar{
-    position:fixed;
-    top:var(--site-top-height,94px);
-    left:0;right:0;
-    z-index:400;
-    padding:0 14px;
-  }
-  .vcp-topbar-right{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px}
+  /* Nav lingid horisontaalselt */
+  .vcp-nav{display:flex;flex-direction:row;padding:4px 8px;flex:1;min-width:0}
+  .vcp-nav li{margin:0}
+  .vcp-nav-link{flex-direction:column;gap:2px;padding:8px 12px;font-size:11px;border-radius:6px;white-space:nowrap;min-height:unset}
+  .vcp-nav-icon{font-size:16px;width:auto}
 
-  /* Sisu: ruum fikseeritud topbari all */
-  .vcp-content{padding:72px 16px 24px;overflow-x:hidden;max-width:100%}
+  /* Hamburger: pole vaja */
+  .vcp-hamburger{display:none}
+
+  /* Topbar: staatiline */
+  .vcp-topbar{position:static;padding:0 16px}
+  .vcp-topbar-right{font-size:12px}
+
+  /* Sisu: normaalne padding */
+  .vcp-content{padding:16px;overflow-x:hidden;max-width:100%}
 
   /* Grid */
   .vcp-stat-grid{grid-template-columns:1fr 1fr}
@@ -170,7 +175,7 @@ textarea.vcp-input{min-height:100px;resize:vertical;line-height:1.5}
 }
 
 @media(max-width:600px){
-  .vcp-content{padding:68px 14px 20px}
+  .vcp-content{padding:14px}
   .vcp-card{padding:16px}
   .vcp-stat-card{padding:16px}
   .vcp-quick-actions{flex-direction:column}
@@ -182,9 +187,8 @@ textarea.vcp-input{min-height:100px;resize:vertical;line-height:1.5}
   .vcp-stat-grid{grid-template-columns:1fr}
   .vcp-stat-card{padding:14px}
   .vcp-stat-value{font-size:1.4rem}
-  .vcp-content{padding:64px 12px 16px}
-  .vcp-topbar{padding:0 10px}
-  .vcp-topbar-right{max-width:90px;font-size:11px}
+  .vcp-content{padding:12px}
+  .vcp-topbar{padding:0 12px}
   .vcp-page-header h1{font-size:18px}
   .vcp-page-header p{font-size:13px}
   .vcp-btn-primary,.vcp-btn-outline,.vcp-btn-danger{width:100%;justify-content:center;box-sizing:border-box}
@@ -198,13 +202,11 @@ textarea.vcp-input{min-height:100px;resize:vertical;line-height:1.5}
 }
 
 @media(max-width:360px){
-  .vcp-content{padding:60px 10px 14px}
+  .vcp-content{padding:10px}
   .vcp-stat-value{font-size:1.2rem}
   .vcp-page-header h1{font-size:16px}
   .vcp-stat-card{padding:12px}
-  .vcp-topbar{padding:0 8px}
-  .vcp-topbar-right{max-width:70px}
+  .vcp-nav-link{padding:6px 10px;font-size:10px}
   .vauth-card{padding:22px 14px}
   .vcp-login-card{padding:20px 14px}
-  .vcp-sidebar{width:min(260px,92vw)}
 }

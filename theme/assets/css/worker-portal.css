@@ -129,44 +129,48 @@ textarea.vwp-input{min-height:90px;resize:vertical;line-height:1.5}
   body:has(.vwp-wrap) #primary,
   body:has(.vwp-wrap) #main,
   body:has(.vwp-wrap) .entry-content,
-  body:has(.vwp-wrap) article{padding:0 !important;margin:0 !important}
-  .vwp-wrap{overflow-x:hidden}
+  body:has(.vwp-wrap) article{padding:0!important;margin:0!important}
 
-  /* Sidebar: peidetud, avaneb hamburgeriga */
+  /* Layout: vertikaalne virn */
+  .vwp-wrap{flex-direction:column}
+
+  /* Sidebar → horisontaalne nav riba (ei kao!) */
   .vwp-sidebar{
-    display:none;
-    position:fixed;
-    left:0;
-    top:var(--site-top-height,56px);
-    width:min(280px,85vw);
-    height:calc(100dvh - var(--site-top-height,56px));
-    z-index:500;
-    overflow-y:auto;
+    width:100%;
+    min-height:unset;
+    position:static;
+    flex-direction:row;
+    align-items:center;
+    overflow-x:auto;
+    overflow-y:hidden;
+    -webkit-overflow-scrolling:touch;
+    padding:0;
   }
-  .vwp-sidebar.open{display:flex}
-  body.vwp-sidebar-open{overflow:hidden}
+  .vwp-sidebar-logo{display:none}
+  .vwp-sidebar-label{display:none}
+  .vwp-sidebar-footer{display:none}
 
-  /* Topbar: fikseeritud */
-  .vwp-hamburger{display:flex}
-  .vwp-topbar{
-    position:fixed;
-    top:var(--site-top-height,56px);
-    left:0;right:0;
-    z-index:400;
-    padding:0 14px;
-    height:52px;
-  }
-  .vwp-topbar-right{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px}
-  .vwp-main{min-width:0}
+  /* Nav lingid horisontaalselt */
+  .vwp-nav{display:flex;flex-direction:row;padding:4px 8px;flex:1;min-width:0}
+  .vwp-nav li{margin:0}
+  .vwp-nav-link{flex-direction:column;gap:2px;padding:8px 12px;font-size:11px;border-radius:6px;white-space:nowrap;min-height:unset}
+  .vwp-nav-icon{font-size:16px;width:auto}
+
+  /* Hamburger: pole vaja */
+  .vwp-hamburger{display:none}
+
+  /* Topbar: staatiline */
+  .vwp-topbar{position:static;padding:0 16px;height:48px}
+  .vwp-topbar-right{font-size:12px}
 
   /* Sisu */
-  .vwp-content{padding:68px 16px 24px;overflow-x:hidden;max-width:100%}
+  .vwp-content{padding:16px;overflow-x:hidden;max-width:100%}
 
   /* Stat grid */
   .vwp-stat-grid{grid-template-columns:1fr 1fr}
 
   /* Tabelid: keritavad */
-  .vwp-table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;white-space:nowrap;border-radius:12px}
+  .vwp-table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
   .vwp-table th,.vwp-table td{white-space:nowrap}
 
   /* Kaardid */
@@ -176,7 +180,7 @@ textarea.vwp-input{min-height:90px;resize:vertical;line-height:1.5}
 
 /* ── 600px — mobiil ──────────────────────────────────────────────────────── */
 @media(max-width:600px){
-  .vwp-content{padding:64px 14px 20px}
+  .vwp-content{padding:14px}
   .vwp-card{padding:14px}
   .vwp-order-body{padding:10px 14px}
   .vwp-order-header{padding:12px 14px}
@@ -190,10 +194,10 @@ textarea.vwp-input{min-height:90px;resize:vertical;line-height:1.5}
   .vwp-stat-value{font-size:1.4rem}
   .vwp-stat-label{font-size:10px}
 
-  .vwp-content{padding:60px 12px 16px}
-  .vwp-topbar{padding:0 10px;height:48px}
+  .vwp-content{padding:12px}
+  .vwp-topbar{padding:0 10px;height:44px}
   .vwp-topbar-title{font-size:14px}
-  .vwp-topbar-right{max-width:90px;font-size:11px}
+  .vwp-topbar-right{font-size:11px}
 
   .vwp-page-header{margin-bottom:16px}
   .vwp-page-header h1{font-size:18px}
@@ -207,25 +211,20 @@ textarea.vwp-input{min-height:90px;resize:vertical;line-height:1.5}
 
   .vwp-input{font-size:16px} /* iOS: ei zoom input-il */
 
-  /* Tellimuse kaardid */
   .vwp-order-header{padding:10px 12px}
   .vwp-order-body{padding:10px 12px}
   .vwp-card{padding:12px}
 
-  /* Tabid */
   .vwp-tab{padding:8px 10px;font-size:12px}
 }
 
 /* ── 360px — väike telefon ───────────────────────────────────────────────── */
 @media(max-width:360px){
-  .vwp-content{padding:56px 10px 14px}
+  .vwp-content{padding:10px}
   .vwp-stat-value{font-size:1.2rem}
   .vwp-page-header h1{font-size:16px}
   .vwp-stat-card{padding:12px}
-  .vwp-topbar{height:46px;padding:0 8px}
-  .vwp-topbar-title{font-size:13px}
-  .vwp-topbar-right{max-width:70px}
+  .vwp-nav-link{padding:6px 10px;font-size:10px}
   .vwp-login-card{padding:20px 14px}
-  .vwp-sidebar{width:min(260px,90vw)}
   .vwp-order-header,.vwp-order-body{padding:10px}
 }
