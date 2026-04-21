@@ -120,21 +120,22 @@ textarea.vcp-input{min-height:100px;resize:vertical;line-height:1.5}
 
 @media(max-width:768px){
   /* WP wrapper reset */
-  html:has(.vcp-wrap),body:has(.vcp-wrap){overflow-x:hidden}
   body:has(.vcp-wrap) #page,
   body:has(.vcp-wrap) #primary,
   body:has(.vcp-wrap) #main,
   body:has(.vcp-wrap) .entry-content,
   body:has(.vcp-wrap) article{padding:0!important;margin:0!important}
 
-  /* Layout: vertikaalne virn */
+  /* Layout: vertikaalne virn — EI overflow:hidden (lõhub sticky!) */
   .vcp-wrap{flex-direction:column}
 
-  /* Sidebar → horisontaalne nav riba (ei kao!) */
+  /* Sidebar → horisontaalne nav riba (sticky, ei kao!) */
   .vcp-sidebar{
     width:100%;
     min-height:unset;
-    position:static;
+    position:sticky;
+    top:var(--site-top-height,94px);
+    z-index:200;
     flex-direction:row;
     align-items:center;
     overflow-x:auto;

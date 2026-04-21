@@ -1,10 +1,10 @@
 {
   "name": "Vesho CRM",
   "slug": "vesho-crm",
-  "version": "2.9.40",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.9.40/vesho-crm.zip",
+  "version": "2.9.41",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.9.41/vesho-crm.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-21",
-  "changelog": "<h4>2.9.40</h4><ul><li>Portaalid mobiilis: sidebar muutub horisontaalseks nav ribaks — midagi ei kao</li></ul><h4>2.9.39</h4><ul><li>Fix: portal/worker-portal desktop sticky taastatud (top:0, min-height:100vh)</li></ul><h4>2.9.38</h4><ul><li>Hotfix: eemaldatud overflow:hidden vcp-main/vwp-main pealt</li></ul><h4>2.9.37</h4><ul><li>Portaalid: täielik mobiiliülekirjutus, 5 breakpointi</li></ul>"
+  "changelog": "<h4>2.9.41</h4><ul><li>Portaalid mobiilis: sidebar muutub horisontaalseks nav ribaks — midagi ei kao</li></ul><h4>2.9.39</h4><ul><li>Fix: portal/worker-portal desktop sticky taastatud (top:0, min-height:100vh)</li></ul><h4>2.9.38</h4><ul><li>Hotfix: eemaldatud overflow:hidden vcp-main/vwp-main pealt</li></ul><h4>2.9.37</h4><ul><li>Portaalid: täielik mobiiliülekirjutus, 5 breakpointi</li></ul>"
 }
