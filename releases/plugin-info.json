@@ -1,10 +1,10 @@
 {
   "name": "Vesho CRM",
   "slug": "vesho-crm",
-  "version": "2.9.33",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.9.33/vesho-crm.zip",
+  "version": "2.9.34",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.9.34/vesho-crm.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-21",
-  "changelog": "<h4>2.9.33</h4><ul><li>Fix: kliendi ja töötaja portaali mobiilivaade — 5 breakpointi (1024/768/480/360px), stat-grid 1-veeruline telefonis</li></ul><h4>2.9.32</h4><ul><li>Fix: teema shortcode vesho_sc_services_cards filtreerib show_on_website</li></ul><h4>2.9.31</h4><ul><li>Fix: debug=1 ilma admin-piiranguta</li></ul><h4>2.9.30</h4><ul><li>Debug: vesho_services_cards debug=1 parameeter</li></ul><h4>2.9.29</h4><ul><li>Fix: vesho_services_cards show_on_website filtreerimine PHP-s</li></ul><h4>2.9.28</h4><ul><li>Uus: teenustel 🌐 Kuva esilehel valik</li></ul>"
+  "changelog": "<h4>2.9.34</h4><ul><li>Fix: teadaande riba mobiilivaade — tekst ei kattu sulge-nupuga</li></ul><h4>2.9.33</h4><ul><li>Fix: kliendi ja töötaja portaali mobiilivaade — 5 breakpointi (1024/768/480/360px), stat-grid 1-veeruline telefonis</li></ul><h4>2.9.32</h4><ul><li>Fix: teema shortcode vesho_sc_services_cards filtreerib show_on_website</li></ul><h4>2.9.31</h4><ul><li>Fix: debug=1 ilma admin-piiranguta</li></ul><h4>2.9.30</h4><ul><li>Debug: vesho_services_cards debug=1 parameeter</li></ul><h4>2.9.29</h4><ul><li>Fix: vesho_services_cards show_on_website filtreerimine PHP-s</li></ul><h4>2.9.28</h4><ul><li>Uus: teenustel 🌐 Kuva esilehel valik</li></ul>"
 }
