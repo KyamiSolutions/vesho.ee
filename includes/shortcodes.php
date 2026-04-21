@@ -39,11 +39,17 @@ add_shortcode( 'vesho_services_cards', function( $atts ) {
     $limit = max(1, intval($atts['limit']));
     $show_all = $atts['all'] === '1';
     global $wpdb;
-    $where = $show_all ? 'active=1' : 'active=1 AND show_on_website=1';
-    $services = $wpdb->get_results( $wpdb->prepare(
-        "SELECT * FROM {$wpdb->prefix}vesho_services WHERE {$where} ORDER BY sort_order ASC, id ASC LIMIT %d",
-        $limit
+    $all_services = $wpdb->get_results( $wpdb->prepare(
+        "SELECT * FROM {$wpdb->prefix}vesho_services WHERE active=1 ORDER BY sort_order ASC, id ASC LIMIT %d",
+        100
     ) );
+
+    // Filter by show_on_website in PHP (robust — works even if column doesn't exist yet)
+    if ( ! $show_all ) {
+        $web = array_filter( $all_services, fn($s) => ! empty( $s->show_on_website ) );
+        $all_services = ! empty($web) ? array_values($web) : $all_services;
+    }
+    $services = array_slice( $all_services, 0, $limit );
 
     if ( empty($services) ) {
         $services = [
