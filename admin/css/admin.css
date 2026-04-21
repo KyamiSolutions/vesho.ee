@@ -1444,5 +1444,49 @@
 .select2-container--open { z-index: 100000 !important; }
 
 /* --------------------------------------------------------------------------
+   24. iOS / Touch — zoom-fix ja 360px väike telefon
+   -------------------------------------------------------------------------- */
+
+/* iOS: takistab automaatse suumimise input-il (vajab font-size >= 16px) */
+@media (max-width: 480px) {
+  .crm-form input[type="text"],
+  .crm-form input[type="email"],
+  .crm-form input[type="tel"],
+  .crm-form input[type="number"],
+  .crm-form input[type="password"],
+  .crm-form input[type="date"],
+  .crm-form select,
+  .crm-form textarea { font-size: 16px !important; }
+
+  /* Puutetundlik miinimumsuurus */
+  .crm-btn { min-height: 40px; }
+  .crm-tab { min-height: 40px; padding-left: 12px; padding-right: 12px; }
+}
+
+/* ── 360px — väike telefon ───────────────────────────────────────────────── */
+@media (max-width: 360px) {
+  .crm-page-header { padding: 12px 10px; gap: 10px; }
+  .crm-page-header__title { font-size: 14px; }
+  .crm-card-header,
+  .crm-card-body,
+  .crm-card-footer { padding-left: 10px; padding-right: 10px; }
+  .crm-toolbar { padding: 10px; gap: 8px; }
+  .crm-stat { padding: 12px 10px; }
+  .crm-stat__num { font-size: 20px; }
+  /* 1 veerg väiksel telefonil */
+  .crm-stat-grid--4,
+  .crm-stat-grid--5 { grid-template-columns: 1fr; }
+  .crm-modal { width: calc(100vw - 4px); border-radius: 6px; }
+  .crm-modal__header,
+  .crm-modal__body,
+  .crm-modal__footer { padding-left: 10px; padding-right: 10px; }
+  .crm-btn { padding: 8px 12px; font-size: 12px; }
+  .crm-table { font-size: 11px; }
+  .crm-table thead th,
+  .crm-table tbody td { padding: 6px; }
+  .crm-page-title { font-size: 15px; }
+}
+
+/* --------------------------------------------------------------------------
    End of Vesho CRM Admin Stylesheet
    ========================================================================== */
