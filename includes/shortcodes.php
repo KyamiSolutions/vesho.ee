@@ -35,9 +35,10 @@ add_shortcode( 'vesho_team_cards', function() {
 
 // ── [vesho_services_cards] ────────────────────────────────────────────────────
 add_shortcode( 'vesho_services_cards', function( $atts ) {
-    $atts = shortcode_atts( ['limit' => 12, 'all' => '0'], $atts );
+    $atts = shortcode_atts( ['limit' => 12, 'all' => '0', 'debug' => '0'], $atts );
     $limit = max(1, intval($atts['limit']));
     $show_all = $atts['all'] === '1';
+    $debug    = $atts['debug'] === '1' && current_user_can('manage_options');
     global $wpdb;
     $all_services = $wpdb->get_results( $wpdb->prepare(
         "SELECT * FROM {$wpdb->prefix}vesho_services WHERE active=1 ORDER BY sort_order ASC, id ASC LIMIT %d",
@@ -50,6 +51,20 @@ add_shortcode( 'vesho_services_cards', function( $atts ) {
         $all_services = ! empty($web) ? array_values($web) : $all_services;
     }
     $services = array_slice( $all_services, 0, $limit );
+
+    if ( $debug ) {
+        $raw = $wpdb->get_results( "SELECT id, name, active, show_on_website FROM {$wpdb->prefix}vesho_services ORDER BY id ASC" );
+        $out = '<div style="background:#1e293b;color:#e2e8f0;padding:16px;border-radius:8px;margin-bottom:20px;font-family:monospace;font-size:13px">';
+        $out .= '<strong style="color:#00b4c8">🛠 vesho_services_cards debug</strong><br><br>';
+        $out .= '<strong>show_all:</strong> ' . ($show_all?'jah':'ei') . ' | <strong>limit:</strong> ' . $limit . ' | <strong>kuvatavaid:</strong> ' . count($services) . '<br><br>';
+        $out .= '<table style="border-collapse:collapse;width:100%"><tr style="color:#94a3b8"><th style="text-align:left;padding:4px 8px">ID</th><th style="text-align:left;padding:4px 8px">Nimi</th><th style="padding:4px 8px">active</th><th style="padding:4px 8px">show_on_website</th></tr>';
+        foreach ( $raw as $r ) {
+            $web_val = property_exists($r,'show_on_website') ? $r->show_on_website : '<em style="color:#f87171">VEERG PUUDUB</em>';
+            $out .= '<tr style="border-top:1px solid #334155"><td style="padding:4px 8px">'.$r->id.'</td><td style="padding:4px 8px">'.esc_html($r->name).'</td><td style="text-align:center;padding:4px 8px">'.$r->active.'</td><td style="text-align:center;padding:4px 8px">'.$web_val.'</td></tr>';
+        }
+        $out .= '</table></div>';
+        echo $out;
+    }
 
     if ( empty($services) ) {
         $services = [
