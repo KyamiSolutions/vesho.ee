@@ -341,9 +341,9 @@ class Vesho_CRM_Worker_Portal {
           $g_col_w = $g_type_w==='warning' ? '#92400e' : ($g_type_w==='success' ? '#166534' : '#3730a3');
           $g_icon_w = $g_type_w==='warning' ? '⚠️' : ($g_type_w==='success' ? '✅' : '📣');
       ?>
-      <div style="background:<?php echo $g_bg_w; ?>;border-bottom:2px solid <?php echo $g_brd_w; ?>;padding:10px 20px;display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600;color:<?php echo $g_col_w; ?>">
-        <span><?php echo $g_icon_w; ?></span>
-        <span><?php echo esc_html($g_ann_w); ?></span>
+      <div style="background:<?php echo $g_bg_w; ?>;border-bottom:2px solid <?php echo $g_brd_w; ?>;padding:10px 16px;display:flex;align-items:flex-start;gap:8px;font-size:13px;font-weight:600;color:<?php echo $g_col_w; ?>;flex-wrap:wrap">
+        <span style="flex-shrink:0;line-height:1.4"><?php echo $g_icon_w; ?></span>
+        <span style="flex:1;min-width:0;word-break:break-word;line-height:1.4"><?php echo esc_html($g_ann_w); ?></span>
       </div>
       <?php endif; ?>
       <?php

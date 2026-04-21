@@ -777,9 +777,9 @@ function veshoResendVerify(){
           $g_col = $g_type==='warning' ? '#92400e' : ($g_type==='success' ? '#166534' : '#3730a3');
           $g_icon = $g_type==='warning' ? '⚠️' : ($g_type==='success' ? '✅' : '📣');
       ?>
-      <div style="background:<?php echo $g_bg; ?>;border-bottom:2px solid <?php echo $g_brd; ?>;padding:10px 20px;display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600;color:<?php echo $g_col; ?>">
-        <span><?php echo $g_icon; ?></span>
-        <span><?php echo esc_html($g_ann); ?></span>
+      <div style="background:<?php echo $g_bg; ?>;border-bottom:2px solid <?php echo $g_brd; ?>;padding:10px 16px;display:flex;align-items:flex-start;gap:8px;font-size:13px;font-weight:600;color:<?php echo $g_col; ?>;flex-wrap:wrap">
+        <span style="flex-shrink:0;line-height:1.4"><?php echo $g_icon; ?></span>
+        <span style="flex:1;min-width:0;word-break:break-word;line-height:1.4"><?php echo esc_html($g_ann); ?></span>
       </div>
       <?php endif; ?>
       <?php
