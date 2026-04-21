@@ -35,11 +35,13 @@ add_shortcode( 'vesho_team_cards', function() {
 
 // ── [vesho_services_cards] ────────────────────────────────────────────────────
 add_shortcode( 'vesho_services_cards', function( $atts ) {
-    $atts = shortcode_atts( ['limit' => 12], $atts );
+    $atts = shortcode_atts( ['limit' => 12, 'all' => '0'], $atts );
     $limit = max(1, intval($atts['limit']));
+    $show_all = $atts['all'] === '1';
     global $wpdb;
+    $where = $show_all ? 'active=1' : 'active=1 AND show_on_website=1';
     $services = $wpdb->get_results( $wpdb->prepare(
-        "SELECT * FROM {$wpdb->prefix}vesho_services WHERE active=1 ORDER BY sort_order ASC, id ASC LIMIT %d",
+        "SELECT * FROM {$wpdb->prefix}vesho_services WHERE {$where} ORDER BY sort_order ASC, id ASC LIMIT %d",
         $limit
     ) );
 

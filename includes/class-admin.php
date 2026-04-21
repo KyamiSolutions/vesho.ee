@@ -1055,8 +1055,9 @@ private static function load_view( $name ) {
             'price'       => (float)( $_POST['price'] ?? 0 ),
             'price_unit'  => sanitize_text_field( $_POST['price_unit'] ?? '' ),
             'icon'        => sanitize_text_field( $_POST['icon'] ?? '💧' ),
-            'active'      => isset($_POST['active']) ? 1 : 0,
-            'sort_order'  => absint( $_POST['sort_order'] ?? 0 ),
+            'active'          => isset($_POST['active']) ? 1 : 0,
+            'show_on_website' => isset($_POST['show_on_website']) ? 1 : 0,
+            'sort_order'      => absint( $_POST['sort_order'] ?? 0 ),
         );
         if ( $id ) { $wpdb->update($wpdb->prefix.'vesho_services',$data,array('id'=>$id)); }
         else { $data['created_at']=current_time('mysql'); $wpdb->insert($wpdb->prefix.'vesho_services',$data); }

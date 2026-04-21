@@ -53,9 +53,15 @@ $total    = count($services);
                     <label class="crm-form-label">Järjekord</label>
                     <input class="crm-form-input" type="number" name="sort_order" value="<?php echo esc_attr($edit->sort_order??0); ?>">
                 </div>
-                <div class="crm-form-group" style="justify-content:flex-end;flex-direction:row;align-items:center;gap:8px;padding-top:22px">
-                    <input type="checkbox" name="active" id="svc_active" value="1" <?php checked($edit->active??1,1); ?>>
-                    <label for="svc_active" class="crm-form-label" style="margin:0">Aktiivne (näidatakse veebis)</label>
+                <div class="crm-form-group" style="flex-direction:column;gap:8px;padding-top:22px">
+                    <div style="display:flex;align-items:center;gap:8px">
+                        <input type="checkbox" name="active" id="svc_active" value="1" <?php checked($edit->active??1,1); ?>>
+                        <label for="svc_active" class="crm-form-label" style="margin:0">Aktiivne (kasutatav arvetel/pakkumistel)</label>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px">
+                        <input type="checkbox" name="show_on_website" id="svc_web" value="1" <?php checked($edit->show_on_website??0,1); ?>>
+                        <label for="svc_web" class="crm-form-label" style="margin:0">🌐 Kuva esilehel</label>
+                    </div>
                 </div>
                 <div class="crm-form-group crm-form-full">
                     <label class="crm-form-label">Kirjeldus</label>
@@ -79,7 +85,7 @@ $total    = count($services);
         <?php else : ?>
         <table class="crm-table">
             <thead><tr>
-                <th>Ikoon</th><th>Nimi</th><th>Alghind</th><th>Ühik</th><th>Staatus</th><th class="td-actions">Toimingud</th>
+                <th>Ikoon</th><th>Nimi</th><th>Alghind</th><th>Ühik</th><th>Staatus</th><th>Veebil</th><th class="td-actions">Toimingud</th>
             </tr></thead>
             <tbody>
             <?php foreach ($services as $svc) : ?>
@@ -92,6 +98,7 @@ $total    = count($services);
                 <td><?php echo $svc->price ? 'alates '.vesho_crm_format_money($svc->price) : '–'; ?></td>
                 <td><?php echo esc_html($svc->price_unit?:'–'); ?></td>
                 <td><?php echo $svc->active ? '<span class="crm-badge badge-success">Aktiivne</span>' : '<span class="crm-badge badge-gray">Peidetud</span>'; ?></td>
+                <td><?php echo !empty($svc->show_on_website) ? '<span class="crm-badge" style="background:#e0f7fa;color:#00b4c8">🌐 Jah</span>' : '<span style="color:#bbb;font-size:12px">–</span>'; ?></td>
                 <td class="td-actions">
                     <a href="<?php echo admin_url('admin.php?page=vesho-crm-services&action=edit&service_id='.$svc->id); ?>" class="crm-btn crm-btn-icon crm-btn-sm" title="Muuda">✏️</a>
                     <a href="<?php echo wp_nonce_url(admin_url('admin-post.php?action=vesho_delete_service&service_id='.$svc->id),'vesho_delete_service'); ?>"
