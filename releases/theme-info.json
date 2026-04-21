@@ -1,10 +1,10 @@
 {
   "name": "Vesho",
   "slug": "vesho",
-  "version": "2.9.45",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.9.45/vesho-theme.zip",
+  "version": "2.9.46",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.9.46/vesho-theme.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-21",
-  "changelog": "<h4>2.9.45</h4><ul><li>Fix: PHP inline CSS vana display:none sidebar eemaldatud</li></ul><h4>2.9.43</h4><ul><li>Nav riba static mobiilis</li></ul><h4>2.9.42</h4><ul><li>Topbar peidetud mobiilis</li></ul><h4>2.9.41</h4><ul><li>Nav riba sticky, overflow fix</li></ul>"
+  "changelog": "<h4>2.9.46</h4><ul><li>Mobiil: bottom nav bar (position:fixed;bottom:0) klient- ja töötaja portaalil</li></ul><h4>2.9.45</h4><ul><li>Fix: PHP inline CSS vana display:none sidebar eemaldatud</li></ul><h4>2.9.43</h4><ul><li>Nav riba static mobiilis</li></ul><h4>2.9.42</h4><ul><li>Topbar peidetud mobiilis</li></ul>"
 }

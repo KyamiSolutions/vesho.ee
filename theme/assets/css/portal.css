@@ -126,45 +126,44 @@ textarea.vcp-input{min-height:100px;resize:vertical;line-height:1.5}
   body:has(.vcp-wrap) .entry-content,
   body:has(.vcp-wrap) article{padding:0!important;margin:0!important}
 
-  /* Layout: vertikaalne virn — EI overflow:hidden (lõhub sticky!) */
-  .vcp-wrap{flex-direction:column}
-
-  /* Sidebar → horisontaalne nav riba (static, ei kao!) */
+  /* Sidebar → fikseeritud bottom nav bar */
   .vcp-sidebar{
-    width:100%;
-    min-height:unset;
-    position:static;
-    flex-direction:row;
-    align-items:center;
-    overflow-x:auto;
-    overflow-y:hidden;
-    -webkit-overflow-scrolling:touch;
-    padding:0;
+    position:fixed!important;
+    bottom:0!important; left:0!important; right:0!important; top:auto!important;
+    width:100%!important; min-height:unset!important; height:56px!important;
+    flex-direction:row!important;
+    z-index:500!important;
+    overflow-x:auto!important; overflow-y:hidden!important;
+    -webkit-overflow-scrolling:touch!important;
+    border-top:2px solid rgba(255,255,255,0.1)!important;
+    padding:0!important;
   }
-  .vcp-sidebar-logo{display:none}
-  .vcp-sidebar-label{display:none}
-  .vcp-sidebar-footer{display:none}
+  .vcp-sidebar-logo{display:none!important}
+  .vcp-sidebar-label{display:none!important}
+  .vcp-sidebar-footer{display:none!important}
 
-  /* Nav lingid horisontaalselt */
-  .vcp-nav{display:flex;flex-direction:row;padding:4px 8px;flex:1;min-width:0}
-  .vcp-nav li{margin:0}
-  .vcp-nav-link{flex-direction:column;gap:2px;padding:8px 12px;font-size:11px;border-radius:6px;white-space:nowrap;min-height:unset}
-  .vcp-nav-icon{font-size:16px;width:auto}
+  /* Nav lingid bottom bar täiteks */
+  .vcp-nav{display:flex;flex-direction:row;flex:1;padding:0;min-width:0}
+  .vcp-nav li{flex:1;min-width:52px;margin:0}
+  .vcp-nav-link{flex-direction:column;justify-content:center;align-items:center;gap:2px;padding:4px 2px;font-size:10px;border-radius:0;min-height:56px;height:56px;text-align:center}
+  .vcp-nav-icon{font-size:18px;width:auto;text-align:center}
 
-  /* Hamburger: pole vaja */
+  /* Main ala */
+  .vcp-main{width:100%;min-width:0}
   .vcp-hamburger{display:none}
 
-  /* Topbar: peidetud mobiilis (nav ribalt näha kus oled) */
-  .vcp-topbar{display:none}
+  /* Topbar: staatiline */
+  .vcp-topbar{position:static!important;padding:0 16px!important;height:48px!important}
+  .vcp-topbar-right{display:none}
 
-  /* Sisu: normaalne padding */
-  .vcp-content{padding:16px;overflow-x:hidden;max-width:100%}
+  /* Sisu: padding-bottom bottom nav jaoks */
+  .vcp-content{padding:16px 16px 72px;overflow-x:hidden;max-width:100%}
 
   /* Grid */
   .vcp-stat-grid{grid-template-columns:1fr 1fr}
   .vcp-two-col{grid-template-columns:1fr}
 
-  /* Tabelid: keritavad (kõik veerud nähtavad) */
+  /* Tabelid */
   .vcp-table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
 
   /* Kaardid */

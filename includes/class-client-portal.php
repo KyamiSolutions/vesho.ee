@@ -3071,21 +3071,42 @@ function setMsg(m){document.getElementById('vcp-pay-msg').textContent=m;}
 .vcp-tab.active{color:#00b4c8;border-bottom-color:#00b4c8}
 .vcp-panel{display:none}
 .vcp-panel.active{display:block}
-/* Responsive — mobiil: sidebar horisontaalne nav riba */
+/* Responsive — mobiil: bottom navigation bar */
 @media(max-width:768px){
   body:has(.vcp-wrap) #page,body:has(.vcp-wrap) #primary,body:has(.vcp-wrap) #main,body:has(.vcp-wrap) .entry-content,body:has(.vcp-wrap) article{padding:0 !important;margin:0 !important}
-  .vcp-wrap{flex-direction:column !important}
-  .vcp-sidebar{display:flex !important;width:100% !important;min-height:unset !important;height:auto !important;position:static !important;flex-direction:row !important;align-items:center !important;overflow-x:auto !important;overflow-y:hidden !important;-webkit-overflow-scrolling:touch !important;padding:0 !important}
+
+  /* Sidebar → fikseeritud bottom nav bar */
+  .vcp-sidebar{
+    position:fixed !important;
+    bottom:0 !important; left:0 !important; right:0 !important; top:auto !important;
+    width:100% !important; min-height:unset !important; height:56px !important;
+    flex-direction:row !important;
+    z-index:500 !important;
+    overflow-x:auto !important; overflow-y:hidden !important;
+    -webkit-overflow-scrolling:touch !important;
+    border-top:2px solid rgba(255,255,255,0.1) !important;
+    padding:0 !important;
+  }
   .vcp-sidebar-logo{display:none !important}
   .vcp-sidebar-label{display:none !important}
   .vcp-sidebar-footer{display:none !important}
-  .vcp-nav{display:flex !important;flex-direction:row !important;padding:4px 8px !important;flex:1 !important;min-width:0 !important}
-  .vcp-nav li{margin:0 !important}
-  .vcp-nav-link{flex-direction:column !important;gap:2px !important;padding:8px 12px !important;font-size:11px !important;border-radius:6px !important;white-space:nowrap !important;min-height:unset !important}
-  .vcp-nav-icon{font-size:16px !important;width:auto !important}
+
+  /* Nav lingid bottom bars */
+  .vcp-nav{display:flex !important;flex-direction:row !important;flex:1 !important;padding:0 !important;min-width:0 !important}
+  .vcp-nav li{flex:1 !important;min-width:52px !important;margin:0 !important}
+  .vcp-nav-link{flex-direction:column !important;justify-content:center !important;align-items:center !important;gap:2px !important;padding:4px 2px !important;font-size:10px !important;border-radius:0 !important;min-height:56px !important;height:56px !important;text-align:center !important}
+  .vcp-nav-icon{font-size:18px !important;width:auto !important;text-align:center !important}
+
+  /* Main ala: täislaius */
+  .vcp-main{width:100% !important;min-width:0 !important}
   .vcp-hamburger{display:none !important}
-  .vcp-topbar{display:none !important}
-  .vcp-content{padding:16px !important;overflow-x:hidden !important;max-width:100% !important}
+
+  /* Topbar: nähtav, staatiline (näitab lehe pealkirja) */
+  .vcp-topbar{position:static !important;padding:0 16px !important;height:48px !important}
+  .vcp-topbar-right{display:none !important}
+
+  /* Sisu: padding-bottom bottom nav jaoks */
+  .vcp-content{padding:16px 16px 72px !important;max-width:100% !important}
   .vcp-two-col{grid-template-columns:1fr !important}
   .vcp-stat-grid{grid-template-columns:1fr 1fr !important}
   .vcp-table{display:block !important;overflow-x:auto !important;-webkit-overflow-scrolling:touch !important}
