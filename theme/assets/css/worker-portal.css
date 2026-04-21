@@ -160,9 +160,8 @@ textarea.vwp-input{min-height:90px;resize:vertical;line-height:1.5}
   /* Hamburger: pole vaja */
   .vwp-hamburger{display:none}
 
-  /* Topbar: staatiline */
-  .vwp-topbar{position:static;padding:0 16px;height:48px}
-  .vwp-topbar-right{font-size:12px}
+  /* Topbar: peidetud mobiilis */
+  .vwp-topbar{display:none}
 
   /* Sisu */
   .vwp-content{padding:16px;overflow-x:hidden;max-width:100%}
@@ -196,9 +195,7 @@ textarea.vwp-input{min-height:90px;resize:vertical;line-height:1.5}
   .vwp-stat-label{font-size:10px}
 
   .vwp-content{padding:12px}
-  .vwp-topbar{padding:0 10px;height:44px}
   .vwp-topbar-title{font-size:14px}
-  .vwp-topbar-right{font-size:11px}
 
   .vwp-page-header{margin-bottom:16px}
   .vwp-page-header h1{font-size:18px}
