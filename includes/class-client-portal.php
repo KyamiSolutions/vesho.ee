@@ -3071,32 +3071,24 @@ function setMsg(m){document.getElementById('vcp-pay-msg').textContent=m;}
 .vcp-tab.active{color:#00b4c8;border-bottom-color:#00b4c8}
 .vcp-panel{display:none}
 .vcp-panel.active{display:block}
-/* Responsive */
+/* Responsive — mobiil: sidebar horisontaalne nav riba */
 @media(max-width:768px){
-  html:has(.vcp-wrap),body:has(.vcp-wrap){overflow-x:hidden}
   body:has(.vcp-wrap) #page,body:has(.vcp-wrap) #primary,body:has(.vcp-wrap) #main,body:has(.vcp-wrap) .entry-content,body:has(.vcp-wrap) article{padding:0 !important;margin:0 !important}
-  .vcp-wrap{overflow-x:hidden}
-  /* Sidebar: peidetud vaikimisi, avaneb hamburgeriga */
-  .vcp-sidebar{display:none;position:fixed;left:0;top:var(--site-top-height,94px);width:240px;height:calc(100% - var(--site-top-height,94px));z-index:200;overflow-y:auto}
-  .vcp-sidebar.open{display:flex}
-  .vcp-main{min-width:0}
-  /* Backdrop overlay */
-  .vcp-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:150}
-  .vcp-backdrop.active{display:block}
-  body.vcp-sidebar-open{overflow:hidden}
-  .vcp-sidebar-logo{padding:20px 20px 10px}
-  .vcp-sidebar-logo img{max-width:160px;max-height:40px}
-  .vcp-hamburger{display:block}
-  .vcp-topbar{padding:0 10px;position:fixed;top:var(--site-top-height,94px);left:0;right:0;z-index:1001}
-  .vcp-topbar-right{font-size:11px;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px}
-  .vcp-content{padding:72px 16px 16px;overflow-x:hidden}
+  .vcp-wrap{flex-direction:column}
+  .vcp-sidebar{width:100%;min-height:unset;position:static;flex-direction:row;align-items:center;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;padding:0}
+  .vcp-sidebar-logo{display:none}
+  .vcp-sidebar-label{display:none}
+  .vcp-sidebar-footer{display:none}
+  .vcp-nav{display:flex;flex-direction:row;padding:4px 8px;flex:1;min-width:0}
+  .vcp-nav li{margin:0}
+  .vcp-nav-link{flex-direction:column;gap:2px;padding:8px 12px;font-size:11px;border-radius:6px;white-space:nowrap;min-height:unset}
+  .vcp-nav-icon{font-size:16px;width:auto}
+  .vcp-hamburger{display:none}
+  .vcp-topbar{display:none}
+  .vcp-content{padding:16px;overflow-x:hidden;max-width:100%}
   .vcp-two-col{grid-template-columns:1fr}
   .vcp-stat-grid{grid-template-columns:1fr 1fr}
-  .vcp-table{width:100%;table-layout:fixed}
-  .vcp-table th,.vcp-table td{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:8px}
-  .vcp-table th:nth-child(n+4),.vcp-table td:nth-child(n+4){display:none}
-  .vcp-table th:nth-child(3),.vcp-table td:nth-child(3){max-width:80px}
-  .vcp-table th:last-child,.vcp-table td:last-child{display:table-cell !important;width:60px;text-align:right}
+  .vcp-table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
 }
 ';
     }
