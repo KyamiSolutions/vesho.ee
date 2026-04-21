@@ -1,10 +1,10 @@
 {
   "name": "Vesho",
   "slug": "vesho",
-  "version": "2.9.27",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.9.27/vesho-theme.zip",
+  "version": "2.9.28",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.9.28/vesho-theme.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-21",
-  "changelog": "<h4>2.9.27</h4><ul><li>Uus: vesho_services_cards limit parameeter — [vesho_services_cards limit=3]</li></ul><h4>2.9.26</h4><ul><li>Uus: Töötaja kaart — visuaalne ID-kaart PDF prindiga, 🪪 Minu kaart nupp</li></ul><h4>2.9.25</h4><ul><li>Fix: nimeta Juhend → Kasutusjuhend; puhas PDF print</li></ul><h4>2.9.24</h4><ul><li>Uus: 📖 Kasutusjuhend dashboardil</li></ul>"
+  "changelog": "<h4>2.9.28</h4><ul><li>Uus: teenustel 🌐 Kuva esilehel valik — vali mis teenused esilehel kuvatakse</li></ul><h4>2.9.27</h4><ul><li>Uus: vesho_services_cards limit parameeter</li></ul><h4>2.9.26</h4><ul><li>Uus: töötaja kaart — visuaalne ID-kaart PDF prindiga</li></ul><h4>2.9.25</h4><ul><li>Fix: Kasutusjuhend + puhas PDF print</li></ul>"
 }
