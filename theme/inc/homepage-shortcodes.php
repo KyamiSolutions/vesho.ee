@@ -335,8 +335,15 @@ function vesho_sc_cta( $atts = [] ) {
 //   [Shortcode] [vesho_services_cards count="3"]
 //   [Button]  "Vaata kõiki teenuseid"
 function vesho_sc_services_cards( $atts = [] ) {
-    $atts     = shortcode_atts( [ 'count' => 12 ], $atts );
-    $services = vesho_get_services( (int) $atts['count'] );
+    $atts    = shortcode_atts( [ 'count' => 12, 'all' => '0' ], $atts );
+    $show_all = $atts['all'] === '1';
+    // Fetch all active services, filter show_on_website in PHP (robust if column missing)
+    $all = vesho_get_services( 0 );
+    if ( ! $show_all && ! empty( $all ) ) {
+        $web = array_filter( $all, fn($s) => ! empty( $s->show_on_website ) );
+        $all = ! empty( $web ) ? array_values( $web ) : $all;
+    }
+    $services = array_slice( $all, 0, max( 1, (int) $atts['count'] ) );
     ob_start();
     ?>
     <div class="services-grid">
