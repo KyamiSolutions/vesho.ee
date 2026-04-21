@@ -46,6 +46,20 @@ class Vesho_CRM_Client_Portal {
 
         add_action('wp_enqueue_scripts', [__CLASS__, 'enqueue_assets']);
         add_action('wp_footer', [__CLASS__, 'register_form_fix_script']);
+        add_filter('template_include',  [__CLASS__, 'force_portal_template']);
+    }
+
+    // ── Force portal template (site header+footer) ────────────────────────────
+    public static function force_portal_template( $template ) {
+        global $post;
+        if ( $post && (
+            has_shortcode( $post->post_content, 'vesho_client_portal' ) ||
+            has_shortcode( $post->post_content, 'vesho_client_login' )
+        )) {
+            $pt = locate_template( 'page-portal.php' );
+            if ( $pt ) return $pt;
+        }
+        return $template;
     }
 
     public static function maybe_hide_admin_bar($show) {
