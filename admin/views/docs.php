@@ -37,9 +37,9 @@ $wp_ok      = version_compare($wp_ver,  '6.0', '>=');
 #vdToc{width:200px;flex-shrink:0;position:sticky;top:calc(32px + 44px + 20px);max-height:calc(100vh - 120px);overflow-y:auto;margin-left:32px;order:2;scrollbar-width:none}
 #vdToc::-webkit-scrollbar{display:none}
 .vd-toc-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#94a3b8;margin-bottom:8px;padding:0 4px}
-.vd-toc a{display:block;padding:5px 8px;font-size:12px;color:#64748b;text-decoration:none;border-left:2px solid transparent;border-radius:0 4px 4px 0;transition:.12s;line-height:1.3}
-.vd-toc a:hover{color:#1e293b;background:#f8fafc}
-.vd-toc a.active{color:#00b4c8;border-left-color:#00b4c8;background:#f0fdff;font-weight:600}
+#vdToc a{display:block;padding:6px 8px;font-size:12px;color:#64748b;text-decoration:none;border-left:2px solid transparent;border-radius:0 4px 4px 0;transition:.12s;line-height:1.4}
+#vdToc a:hover{color:#1e293b;background:#f8fafc}
+#vdToc a.active{color:#00b4c8;border-left-color:#00b4c8;background:#f0fdff;font-weight:600}
 
 /* ── Main content ── */
 #vdMain{flex:1;min-width:0;order:1}
@@ -656,8 +656,17 @@ code,.vc{background:#f1f5f9;border:1px solid #e2e8f0;border-radius:3px;padding:1
     var html = '';
     secs.forEach(function(s){
       var title = s.querySelector('.vd-sec-h');
-      var text = title ? title.innerText.trim().replace(/^[^\w]*/, '') : s.id;
-      html += '<a href="#'+s.id+'" class="vd-toc-link" data-id="'+s.id+'">'+text+'</a>';
+      var text = s.id;
+      if(title){
+        var clone = title.cloneNode(true);
+        var ic = clone.querySelector('.ic');
+        if(ic) ic.remove();
+        // also remove any link children text
+        var links = clone.querySelectorAll('a');
+        links.forEach(function(l){ l.remove(); });
+        text = clone.textContent.trim().replace(/\s+/g,' ');
+      }
+      html += '<a href="#'+s.id+'" data-id="'+s.id+'">'+text+'</a>';
     });
     tocDiv.innerHTML = html;
     document.querySelectorAll('#vdTocLinks a').forEach(function(a){
