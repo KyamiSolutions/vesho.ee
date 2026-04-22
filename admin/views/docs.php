@@ -144,6 +144,7 @@ code,.vc{background:#f1f5f9;border:1px solid #e2e8f0;border-radius:3px;padding:1
   <a class="vd-tab" data-panel="veebileht" href="#"><span class="vd-tab-icon">🎨</span>Veebileht</a>
   <a class="vd-tab" data-panel="seaded" href="#"><span class="vd-tab-icon">⚙️</span>Seaded</a>
   <a class="vd-tab" data-panel="toovood" href="#"><span class="vd-tab-icon">🔄</span>Töövood</a>
+  <a class="vd-tab" data-panel="uuendused" href="#"><span class="vd-tab-icon">🚀</span>Uuendused</a>
   <a class="vd-tab" data-panel="susteem" href="#"><span class="vd-tab-icon">🖥️</span>Süsteem</a>
 </div>
 
@@ -590,7 +591,8 @@ code,.vc{background:#f1f5f9;border:1px solid #e2e8f0;border-radius:3px;padding:1
     </div><!-- /panel-toovood -->
 
     <!-- ══════════════════════════════════════════════════════ SÜSTEEM -->
-    <div class="vd-panel" id="panel-susteem">
+    <!-- ══════════════════════════════════════════════════════ UUENDUSED -->
+    <div class="vd-panel" id="panel-uuendused">
 
       <div class="vd-sec" id="uuendused">
         <div class="vd-sec-h"><span class="ic cyan">🚀</span>Uuendused</div>
@@ -618,6 +620,11 @@ code,.vc{background:#f1f5f9;border:1px solid #e2e8f0;border-radius:3px;padding:1
         </div>
         <div class="vd-warn"><b>Ettevaatust</b>Ära uuenda WordPressi kohe uue versiooni ilmumisel — oota 1–2 nädalat kuni vead on parandatud.</div>
       </div>
+
+    </div><!-- /panel-uuendused -->
+
+    <!-- ══════════════════════════════════════════════════════ SÜSTEEM -->
+    <div class="vd-panel" id="panel-susteem">
 
       <div class="vd-sec" id="sysinfo">
         <div class="vd-sec-h"><span class="ic cyan">🖥️</span>Süsteemi info</div>
