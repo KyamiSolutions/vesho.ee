@@ -1,10 +1,10 @@
 {
   "name": "Vesho",
   "slug": "vesho",
-  "version": "2.9.50",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.9.50/vesho-theme.zip",
+  "version": "2.9.51",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.9.51/vesho-theme.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-22",
-  "changelog": "<h4>2.9.50</h4><ul><li>Fix: session_start() blokeeris REST API päringuid wp-admin'is → põhjustas väljalogimist</li></ul><h4>2.9.49</h4><ul><li>Fix: noolenupud peidetud desktopil (min-width:769px)</li></ul><h4>2.9.47</h4><ul><li>Mobiil nav: keritav + vasak/parem noolenupud</li></ul><h4>2.9.46</h4><ul><li>Mobiil: bottom nav bar</li></ul>"
+  "changelog": "<h4>2.9.51</h4><ul><li>Kasutusjuhend: uus tab-disain, TOC parandus</li></ul><h4>2.9.50</h4><ul><li>Fix: session_start() blokeeris REST API päringuid wp-admin'is</li></ul><h4>2.9.49</h4><ul><li>Fix: noolenupud peidetud desktopil</li></ul>"
 }
