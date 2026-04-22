@@ -1,10 +1,10 @@
 {
   "name": "Vesho",
   "slug": "vesho",
-  "version": "2.9.53",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.9.53/vesho-theme.zip",
+  "version": "2.9.54",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.9.54/vesho-theme.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-22",
-  "changelog": "<h4>2.9.53</h4><ul><li>Töölaud: broneeringute inline kinnita/lükka tagasi</li><li>Töölaud: töötajate nädalatundide kaart</li><li>Marsruut: 7 päeva eelvaade nupuribana</li><li>Kampaaniad: AJAX peata/jätka ilma lehelaadimiseta + kustuta nupp</li><li>Ladu: kogusel kliki-muuda inline</li><li>Müügiraport: baargraafiku hover-tooltip</li></ul><h4>2.9.52</h4><ul><li>Kalender: ✓ Tehtud nupp hoolduse modaalis</li><li>Töökäsud: inline staatuse muutmine nimekirjast</li><li>Töötajad: 🟢/⚫ aktiveeri/deaktiveeri nupp nimekirjast</li><li>Arved: 📋 kopeeri arve uueks mustandiks</li><li>Kiirotsing: kliendid, töötajad, arved, töökäsud automaatne otsing</li><li>Kasutusjuhend: uued funktsioonid dokumenteeritud</li></ul><h4>2.9.51</h4><ul><li>Kasutusjuhend: uus tab-disain, TOC parandus</li></ul><h4>2.9.50</h4><ul><li>Fix: session_start() blokeeris REST API päringuid wp-admin'is</li></ul><h4>2.9.49</h4><ul><li>Fix: noolenupud peidetud desktopil</li></ul>"
+  "changelog": "<h4>2.9.54</h4><ul><li>Tugipiletid: split-vaade + AJAX vastamine + staatuse muutmine ilma lehelaadimiseta</li><li>Töötunnid: 3 kokkuvõttekaarti + Kellaaeg sisse/välja vaheleht</li><li>Töökäsud: 📷 fotode AJAX-expand nimekirjast (enne/pärast/muu)</li><li>Arved: KM-ga/KM-ta lüliti + kliendi automaatne otsimine</li></ul><h4>2.9.53</h4><ul><li>Töölaud: broneeringute inline kinnita/lükka tagasi</li><li>Töölaud: töötajate nädalatundide kaart</li><li>Marsruut: 7 päeva eelvaade nupuribana</li><li>Kampaaniad: AJAX peata/jätka ilma lehelaadimiseta + kustuta nupp</li><li>Ladu: kogusel kliki-muuda inline</li><li>Müügiraport: baargraafiku hover-tooltip</li></ul><h4>2.9.52</h4><ul><li>Kalender: ✓ Tehtud nupp hoolduse modaalis</li><li>Töökäsud: inline staatuse muutmine nimekirjast</li><li>Töötajad: 🟢/⚫ aktiveeri/deaktiveeri nupp nimekirjast</li><li>Arved: 📋 kopeeri arve uueks mustandiks</li><li>Kiirotsing: kliendid, töötajad, arved, töökäsud automaatne otsing</li><li>Kasutusjuhend: uued funktsioonid dokumenteeritud</li></ul><h4>2.9.51</h4><ul><li>Kasutusjuhend: uus tab-disain, TOC parandus</li></ul><h4>2.9.50</h4><ul><li>Fix: session_start() blokeeris REST API päringuid wp-admin'is</li></ul><h4>2.9.49</h4><ul><li>Fix: noolenupud peidetud desktopil</li></ul>"
 }

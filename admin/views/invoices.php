@@ -52,6 +52,14 @@ $stats = $wpdb->get_row("SELECT
 
 $vat_rate = (float) get_option('vesho_vat_rate', '24');
 
+// Client name for autocomplete (v2.9.54)
+$edit_client_name = '';
+if ($edit && $edit->client_id) {
+    foreach ($all_clients as $c) {
+        if ($c->id == $edit->client_id) { $edit_client_name = $c->name; break; }
+    }
+}
+
 // Print/PDF view — professional A4 invoice
 if ( $action === 'print' && $invoice_id ) {
     $inv  = $wpdb->get_row($wpdb->prepare(
@@ -341,14 +349,14 @@ if ( $action === 'print' && $invoice_id ) {
             <input type="hidden" name="action" value="vesho_save_invoice">
             <?php if ($edit) : ?><input type="hidden" name="invoice_id" value="<?php echo $edit->id; ?>"><?php endif; ?>
             <div class="crm-form-grid">
-                <div class="crm-form-group">
+                <div class="crm-form-group" style="position:relative">
                     <label class="crm-form-label">Klient *</label>
-                    <select class="crm-form-select" name="client_id" required>
-                        <option value="">— Vali klient —</option>
-                        <?php foreach ($all_clients as $c) : ?>
-                            <option value="<?php echo $c->id; ?>" <?php selected($edit->client_id??0,$c->id); ?>><?php echo esc_html($c->name); ?></option>
-                        <?php endforeach; ?>
-                    </select>
+                    <input type="text" id="client-search-inp" class="crm-form-input" autocomplete="off"
+                           placeholder="Otsi klienti nimega..."
+                           value="<?php echo esc_attr($edit_client_name); ?>">
+                    <input type="hidden" name="client_id" id="client-id-hidden"
+                           value="<?php echo esc_attr($edit->client_id ?? ''); ?>">
+                    <div id="client-dropdown" style="display:none;position:absolute;left:0;right:0;top:calc(100% + 2px);z-index:50;background:#fff;border:1px solid #e2e8f0;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.12);max-height:200px;overflow-y:auto"></div>
                 </div>
                 <?php if ($edit) : ?>
                 <div class="crm-form-group">
@@ -381,7 +389,10 @@ if ( $action === 'print' && $invoice_id ) {
             <!-- Line items -->
             <div style="margin-top:24px">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-                    <strong style="font-size:14px">Arve read</strong>
+                    <div style="display:flex;align-items:center;gap:10px">
+                        <strong style="font-size:14px">Arve read</strong>
+                        <button type="button" id="vat-toggle-btn" class="crm-btn crm-btn-outline crm-btn-sm" data-on="1" onclick="toggleAllVat()" style="font-size:11px;padding:4px 10px">KM-ga</button>
+                    </div>
                     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
                         <?php if (!empty($price_list)) : ?>
                         <select id="price-list-picker" class="crm-form-select" style="max-width:200px;font-size:12px;padding:5px 8px">
@@ -474,6 +485,68 @@ if ( $action === 'print' && $invoice_id ) {
     </div>
     <script>
     var defaultVat = <?php echo $vat_rate; ?>;
+
+    // KM toggle (v2.9.54)
+    function toggleAllVat() {
+        var btn = document.getElementById('vat-toggle-btn');
+        var on  = btn.dataset.on === '1';
+        document.querySelectorAll('.item-vat').forEach(function(el){
+            if (on) { el.dataset.prevVat = el.value; el.value = '0'; }
+            else    { el.value = el.dataset.prevVat !== undefined ? el.dataset.prevVat : defaultVat; }
+            recalcRow(el.closest('.item-row'));
+        });
+        btn.dataset.on  = on ? '0' : '1';
+        btn.textContent = on ? 'KM-ta' : 'KM-ga';
+        if (on) { btn.style.background='#fef9c3'; btn.style.borderColor='#fbbf24'; btn.style.color='#92400e'; }
+        else    { btn.style.background=''; btn.style.borderColor=''; btn.style.color=''; }
+    }
+
+    // Client autocomplete (v2.9.54)
+    (function(){
+        var clients = <?php echo json_encode(array_values(array_map(function($c){ return ['id'=>(int)$c->id,'name'=>$c->name]; }, $all_clients))); ?>;
+        var inp = document.getElementById('client-search-inp');
+        var hid = document.getElementById('client-id-hidden');
+        var dd  = document.getElementById('client-dropdown');
+        if (!inp || !hid || !dd) return;
+        function showDropdown(q) {
+            var matches = clients.filter(function(c){ return c.name.toLowerCase().indexOf(q.toLowerCase()) !== -1; }).slice(0,10);
+            if (!matches.length) { dd.style.display='none'; return; }
+            dd.innerHTML = '';
+            matches.forEach(function(c){
+                var item = document.createElement('div');
+                item.textContent = c.name;
+                item.style.cssText = 'padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid #f1f5f9';
+                item.addEventListener('mousedown', function(e){
+                    e.preventDefault();
+                    inp.value = c.name; hid.value = c.id; dd.style.display='none';
+                });
+                item.addEventListener('mouseover', function(){ item.style.background='#f8fafc'; });
+                item.addEventListener('mouseout',  function(){ item.style.background=''; });
+                dd.appendChild(item);
+            });
+            dd.style.display = 'block';
+        }
+        inp.addEventListener('input', function(){
+            hid.value = '';
+            var q = inp.value.trim();
+            if (!q) { dd.style.display='none'; return; }
+            showDropdown(q);
+        });
+        inp.addEventListener('blur',  function(){ setTimeout(function(){ dd.style.display='none'; }, 180); });
+        inp.addEventListener('focus', function(){ if (inp.value.trim()) showDropdown(inp.value.trim()); });
+        // Validate on submit
+        var form = document.getElementById('invoice-form');
+        if (form) {
+            form.addEventListener('submit', function(e){
+                if (!hid.value && inp.value.trim()) {
+                    e.preventDefault();
+                    inp.style.borderColor='#ef4444';
+                    inp.focus();
+                    alert('Palun vali klient nimekirjast (klõpsa soovitusele).');
+                }
+            });
+        }
+    })();
 
     function recalcRow(row) {
         var qty   = parseFloat(row.querySelector('.item-qty').value)   || 0;

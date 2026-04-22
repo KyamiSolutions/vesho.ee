@@ -20,12 +20,14 @@ if ($filter_st) { $where .= $wpdb->prepare(' AND wo.status=%s', $filter_st); }
 if ($search)    { $where .= $wpdb->prepare(' AND (wo.title LIKE %s OR c.name LIKE %s)', '%'.$wpdb->esc_like($search).'%', '%'.$wpdb->esc_like($search).'%'); }
 
 $workorders = $wpdb->get_results(
-    "SELECT wo.*, c.name as client_name, w.name as worker_name, d.name as device_name
+    "SELECT wo.*, c.name as client_name, w.name as worker_name, d.name as device_name,
+            COUNT(ph.id) as photo_count
      FROM {$wpdb->prefix}vesho_workorders wo
      LEFT JOIN {$wpdb->prefix}vesho_clients c ON wo.client_id=c.id
      LEFT JOIN {$wpdb->prefix}vesho_workers w ON wo.worker_id=w.id
      LEFT JOIN {$wpdb->prefix}vesho_devices d ON wo.device_id=d.id
-     WHERE $where ORDER BY wo.created_at DESC LIMIT 200"
+     LEFT JOIN {$wpdb->prefix}vesho_workorder_photos ph ON ph.workorder_id=wo.id
+     WHERE $where GROUP BY wo.id ORDER BY wo.created_at DESC LIMIT 200"
 );
 $total = count($workorders);
 
@@ -392,9 +394,15 @@ if ( $action === 'print' && $workorder_id ) {
                     <a href="<?php echo admin_url('admin.php?page=vesho-crm-workorders&action=edit&workorder_id='.$wo->id); ?>" class="crm-btn crm-btn-icon crm-btn-sm" title="Muuda">✏️</a>
                     <a href="<?php echo admin_url('admin.php?page=vesho-crm-workorders&action=print&workorder_id='.$wo->id); ?>"
                        class="crm-btn crm-btn-icon crm-btn-sm" title="PDF / Prindi" target="_blank">📄</a>
+                    <button class="crm-btn crm-btn-icon crm-btn-sm" title="Fotod" onclick="toggleWoPhotos(<?php echo $wo->id; ?>,this)" style="position:relative">
+                        📷<?php if ($wo->photo_count > 0) : ?><sup style="font-size:9px;font-weight:700"><?php echo (int)$wo->photo_count; ?></sup><?php endif; ?>
+                    </button>
                     <a href="<?php echo wp_nonce_url(admin_url('admin-post.php?action=vesho_delete_workorder&workorder_id='.$wo->id),'vesho_delete_workorder'); ?>"
                        class="crm-btn crm-btn-icon crm-btn-sm" onclick="return confirm('Kustuta töökäsk?')">🗑️</a>
                 </td>
+            </tr>
+            <tr id="wo-photos-<?php echo $wo->id; ?>" style="display:none;background:#f8fafc">
+                <td colspan="10" id="wo-photos-cell-<?php echo $wo->id; ?>" style="padding:12px 20px"></td>
             </tr>
             <?php endforeach; ?>
             </tbody>
@@ -434,4 +442,40 @@ document.querySelectorAll('.wo-status-sel').forEach(function(s){
         timer = setTimeout(function(){ inp.closest('form').submit(); }, 350);
     });
 })();
+
+// Photo expand (v2.9.54)
+var woPhotoNonce = '<?php echo wp_create_nonce('vesho_admin_nonce'); ?>';
+var woPhotoAjax  = '<?php echo admin_url('admin-ajax.php'); ?>';
+function toggleWoPhotos(id, btn) {
+    var row  = document.getElementById('wo-photos-'+id);
+    var cell = document.getElementById('wo-photos-cell-'+id);
+    if (row.style.display !== 'none') { row.style.display='none'; return; }
+    cell.innerHTML = '<span style="color:#94a3b8;font-size:13px">Laadin fotosid...</span>';
+    row.style.display = '';
+    if (cell.dataset.loaded) return;
+    fetch(woPhotoAjax, {method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body:'action=vesho_get_workorder_photos&workorder_id='+id+'&_ajax_nonce='+woPhotoNonce
+    }).then(function(r){return r.json();}).then(function(d){
+        cell.dataset.loaded = '1';
+        if (!d.success || !d.data || !d.data.photos || !d.data.photos.length) {
+            cell.innerHTML = '<span style="color:#94a3b8;font-size:13px">Fotosid ei leitud.</span>'; return;
+        }
+        var photos = d.data.photos;
+        var groups = {before:[],after:[],other:[]};
+        photos.forEach(function(p){ var g=p.photo_type; groups[g]?groups[g].push(p):groups.other.push(p); });
+        var labels = {before:'🔴 Enne tööd',after:'🟢 Pärast tööd',other:'📷 Muu'};
+        var html = '<div style="display:flex;gap:20px;flex-wrap:wrap">';
+        ['before','after','other'].forEach(function(t){
+            if (!groups[t].length) return;
+            html += '<div><div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:6px">'+labels[t]+'</div>';
+            html += '<div style="display:flex;gap:8px;flex-wrap:wrap">';
+            groups[t].forEach(function(p){
+                html += '<a href="'+p.filename+'" target="_blank"><img src="'+p.filename+'" style="width:72px;height:72px;object-fit:cover;border-radius:6px;border:1px solid #e2e8f0" loading="lazy"></a>';
+            });
+            html += '</div></div>';
+        });
+        html += '</div>';
+        cell.innerHTML = html;
+    });
+}
 </script>
