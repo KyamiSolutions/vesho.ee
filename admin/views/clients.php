@@ -102,10 +102,25 @@ if ( $action === 'history-pdf' && $client_id ) {
 <div class="crm-wrap">
     <h1 class="crm-page-title">👥 Kliendid <span class="crm-count">(<?php echo $total; ?>)</span></h1>
 
-    <?php if ( isset($_GET['msg']) ) : ?>
-        <?php $msgs = ['added'=>'Klient lisatud!','updated'=>'Klient uuendatud!','deleted'=>'Klient kustutatud!']; ?>
-        <div class="crm-alert crm-alert-success"><?php echo esc_html($msgs[$_GET['msg']] ?? 'Muudatused salvestatud!'); ?></div>
-    <?php endif; ?>
+    <?php if ( isset($_GET['msg']) ) :
+        $msg   = sanitize_text_field($_GET['msg']);
+        $count = absint($_GET['count'] ?? 0);
+        $cid   = absint($_GET['cid']   ?? 0);
+        if ( $msg === 'blocked_invoices' ) : ?>
+            <div class="crm-alert crm-alert-error">
+                ⛔ Klienti ei saa kustutada — tal on <strong><?php echo $count; ?> maksmata arve<?php echo $count > 1 ? 't' : ''; ?></strong>.
+                <?php if ($cid) : ?><a href="<?php echo admin_url('admin.php?page=vesho-crm-invoices&status=unpaid'); ?>" style="margin-left:8px;text-decoration:underline">Vaata arveid →</a><?php endif; ?>
+            </div>
+        <?php elseif ( $msg === 'blocked_workorders' ) : ?>
+            <div class="crm-alert crm-alert-error">
+                ⛔ Klienti ei saa kustutada — tal on <strong><?php echo $count; ?> avatud töökäsk<?php echo $count > 1 ? 'u' : ''; ?></strong>.
+                <?php if ($cid) : ?><a href="<?php echo admin_url('admin.php?page=vesho-crm-workorders&action=view&client_id='.$cid); ?>" style="margin-left:8px;text-decoration:underline">Vaata töökäske →</a><?php endif; ?>
+            </div>
+        <?php else :
+            $msgs = ['added'=>'Klient lisatud!','updated'=>'Klient uuendatud!','deleted'=>'Klient kustutatud!'];
+            echo '<div class="crm-alert crm-alert-success">'.esc_html($msgs[$msg] ?? 'Muudatused salvestatud!').'</div>';
+        endif;
+    endif; ?>
 
     <?php if ($action === 'view' && $client_id) :
         $c = Vesho_CRM_Database::get_client($client_id);

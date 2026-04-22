@@ -685,6 +685,36 @@ private static function load_view( $name ) {
         global $wpdb;
         $id = absint( $_GET['client_id'] ?? 0 );
         if ( $id ) {
+            // Block if unpaid invoices exist
+            $unpaid = (int) $wpdb->get_var( $wpdb->prepare(
+                "SELECT COUNT(*) FROM {$wpdb->prefix}vesho_invoices
+                 WHERE client_id=%d AND status IN ('sent','unpaid','overdue')", $id
+            ) );
+            if ( $unpaid > 0 ) {
+                wp_redirect( add_query_arg( array(
+                    'page'  => 'vesho-crm-clients',
+                    'msg'   => 'blocked_invoices',
+                    'count' => $unpaid,
+                    'cid'   => $id,
+                ), admin_url('admin.php') ) );
+                exit;
+            }
+
+            // Block if open work orders exist
+            $open_wo = (int) $wpdb->get_var( $wpdb->prepare(
+                "SELECT COUNT(*) FROM {$wpdb->prefix}vesho_workorders
+                 WHERE client_id=%d AND status IN ('open','assigned','in_progress')", $id
+            ) );
+            if ( $open_wo > 0 ) {
+                wp_redirect( add_query_arg( array(
+                    'page'  => 'vesho-crm-clients',
+                    'msg'   => 'blocked_workorders',
+                    'count' => $open_wo,
+                    'cid'   => $id,
+                ), admin_url('admin.php') ) );
+                exit;
+            }
+
             $row = $wpdb->get_row( $wpdb->prepare( "SELECT name FROM {$wpdb->prefix}vesho_clients WHERE id=%d", $id ) );
             $wpdb->delete( $wpdb->prefix . 'vesho_clients', array('id'=>$id) );
             vesho_crm_log_activity( 'client_deleted', 'Klient kustutatud: ' . ( $row ? $row->name : "#$id" ), 'client', $id );
