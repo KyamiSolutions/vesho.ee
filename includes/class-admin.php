@@ -131,6 +131,11 @@ class Vesho_CRM_Admin {
         add_action( 'wp_ajax_vesho_toggle_campaign',         array( __CLASS__, 'ajax_toggle_campaign' ) );
         add_action( 'wp_ajax_vesho_delete_campaign',         array( __CLASS__, 'ajax_delete_campaign' ) );
         add_action( 'wp_ajax_vesho_update_inventory_qty',    array( __CLASS__, 'ajax_update_inventory_qty' ) );
+        // Inline AJAX actions (v2.9.54)
+        add_action( 'wp_ajax_vesho_get_ticket_detail',       array( __CLASS__, 'ajax_get_ticket_detail' ) );
+        add_action( 'wp_ajax_vesho_ajax_reply_ticket',       array( __CLASS__, 'ajax_reply_ticket_inline' ) );
+        add_action( 'wp_ajax_vesho_ajax_ticket_status',      array( __CLASS__, 'ajax_ticket_status_inline' ) );
+        add_action( 'wp_ajax_vesho_get_workorder_photos',    array( __CLASS__, 'ajax_get_workorder_photos' ) );
     }
 
     // ── Scanner assets ─────────────────────────────────────────────────────────
@@ -4318,5 +4323,89 @@ private static function load_view( $name ) {
         if ( ! $id ) wp_send_json_error( 'Puudub ID' );
         $wpdb->update( $wpdb->prefix . 'vesho_inventory', array( 'quantity' => $qty ), array( 'id' => $id ) );
         wp_send_json_success( array( 'quantity' => $qty ) );
+    }
+
+    // ── AJAX: get ticket detail (v2.9.54 split-view) ──────────────────────────
+    public static function ajax_get_ticket_detail() {
+        check_ajax_referer( 'vesho_admin_nonce' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error( 'Unauthorized' );
+        global $wpdb;
+        $id = absint( $_POST['ticket_id'] ?? 0 );
+        if ( ! $id ) wp_send_json_error( 'Puudub ID' );
+        $ticket = $wpdb->get_row( $wpdb->prepare(
+            "SELECT t.*, c.name as client_name, c.email as client_email, w.name as worker_name
+             FROM {$wpdb->prefix}vesho_support_tickets t
+             LEFT JOIN {$wpdb->prefix}vesho_clients c ON c.id=t.client_id
+             LEFT JOIN {$wpdb->prefix}vesho_workers w ON w.id=t.assigned_worker_id
+             WHERE t.id=%d", $id
+        ) );
+        if ( ! $ticket ) wp_send_json_error( 'Pilet ei leitud' );
+        $replies = $wpdb->get_results( $wpdb->prepare(
+            "SELECT * FROM {$wpdb->prefix}vesho_ticket_replies WHERE ticket_id=%d ORDER BY created_at ASC", $id
+        ) );
+        $workers = $wpdb->get_results( "SELECT id, name FROM {$wpdb->prefix}vesho_workers WHERE active=1 ORDER BY name ASC" );
+        wp_send_json_success( array(
+            'ticket'  => $ticket,
+            'replies' => $replies,
+            'workers' => $workers,
+        ) );
+    }
+
+    // ── AJAX: reply to ticket inline ──────────────────────────────────────────
+    public static function ajax_reply_ticket_inline() {
+        check_ajax_referer( 'vesho_admin_nonce' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error( 'Unauthorized' );
+        global $wpdb;
+        $id      = absint( $_POST['ticket_id'] ?? 0 );
+        $message = sanitize_textarea_field( $_POST['reply'] ?? '' );
+        $close   = ! empty( $_POST['close_ticket'] );
+        if ( ! $id || ! $message ) wp_send_json_error( 'Puuduvad andmed' );
+        $author  = wp_get_current_user()->display_name ?: 'Admin';
+        $wpdb->insert( $wpdb->prefix . 'vesho_ticket_replies', array(
+            'ticket_id'  => $id,
+            'message'    => $message,
+            'author'     => $author,
+            'created_at' => current_time( 'mysql' ),
+        ) );
+        $new_status = $close ? 'closed' : null;
+        $update_data = array( 'updated_at' => current_time( 'mysql' ) );
+        if ( $new_status ) $update_data['status'] = $new_status;
+        $wpdb->update( $wpdb->prefix . 'vesho_support_tickets', $update_data, array( 'id' => $id ) );
+        wp_send_json_success( array(
+            'author'  => $author,
+            'message' => $message,
+            'time'    => current_time( 'd.m.Y H:i' ),
+            'closed'  => $close,
+        ) );
+    }
+
+    // ── AJAX: change ticket status inline ────────────────────────────────────
+    public static function ajax_ticket_status_inline() {
+        check_ajax_referer( 'vesho_admin_nonce' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error( 'Unauthorized' );
+        global $wpdb;
+        $id     = absint( $_POST['ticket_id'] ?? 0 );
+        $status = sanitize_text_field( $_POST['status'] ?? '' );
+        $allowed = array( 'open', 'in_progress', 'closed', 'spam' );
+        if ( ! $id || ! in_array( $status, $allowed, true ) ) wp_send_json_error( 'Vale andmed' );
+        $wpdb->update(
+            $wpdb->prefix . 'vesho_support_tickets',
+            array( 'status' => $status, 'updated_at' => current_time( 'mysql' ) ),
+            array( 'id' => $id )
+        );
+        wp_send_json_success( array( 'status' => $status ) );
+    }
+
+    // ── AJAX: get workorder photos ────────────────────────────────────────────
+    public static function ajax_get_workorder_photos() {
+        check_ajax_referer( 'vesho_admin_nonce' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error( 'Unauthorized' );
+        global $wpdb;
+        $id = absint( $_POST['workorder_id'] ?? 0 );
+        if ( ! $id ) wp_send_json_error( 'Puudub ID' );
+        $photos = $wpdb->get_results( $wpdb->prepare(
+            "SELECT * FROM {$wpdb->prefix}vesho_workorder_photos WHERE workorder_id=%d ORDER BY photo_type ASC, id ASC", $id
+        ) );
+        wp_send_json_success( array( 'photos' => $photos ) );
     }
 }
