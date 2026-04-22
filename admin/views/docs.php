@@ -597,6 +597,15 @@ code,.vc{background:#f1f5f9;border:1px solid #e2e8f0;border-radius:3px;padding:1
       <div class="vd-sec" id="uuendused">
         <div class="vd-sec-h"><span class="ic cyan">🚀</span>Uuendused</div>
         <div class="vd-tip"><b>Paigaldatud</b>Vesho CRM <strong>v<?php echo esc_html($plugin_ver); ?></strong> · Teema <strong>v<?php echo esc_html($theme_ver); ?></strong></div>
+        <div class="vd-h3">v2.9.53 — Uued funktsioonid</div>
+        <div class="vd-g3">
+          <div class="vd-c"><h4>📋 Broneeringute kinnitamine töölaual</h4><p>Töölaud näitab nüüd iga ootava broneeringu eraldi reana — kinnita ✓ või lükka tagasi ✕ ilma lehelt lahkumata.</p></div>
+          <div class="vd-c"><h4>⏱️ Nädalatunnid töölaual</h4><p>Uus kaart näitab töötajate selle nädala töötunde jooksvalt.</p></div>
+          <div class="vd-c"><h4>🗺️ 7-päeva eelvaade (marsruut)</h4><p>Marsruudi lehel on nüüd nupuriba järgmise 7 päeva hoolduste arvudega — klõpsa päeval et otse laadida.</p></div>
+          <div class="vd-c"><h4>🎉 Kampaaniate AJAX-lüliti</h4><p>Kampaaniate nimekirjas saab peata/jätka-nupuga lülitada ilma lehelaadimiseta. Lisandus ka kustuta-nupp.</p></div>
+          <div class="vd-c"><h4>📦 Lao koguse kiirmuutmine</h4><p>Laonimekirjas klõpsa koguse lahtrile — muutub otse redigeeritavaks. Enter salvestab, Escape tühistab.</p></div>
+          <div class="vd-c"><h4>📊 Müügiraporti tooltip</h4><p>Käibegraafikul hiirega üle baaride liikudes kuvatakse täpne summa.</p></div>
+        </div>
         <div class="vd-h3">v2.9.52 — Uued funktsioonid</div>
         <div class="vd-g3">
           <div class="vd-c"><h4>✓ Tehtud (kalender)</h4><p>Kalendris hooldusel klõpsates saab selle otse tehtuks märkida — ilma muutmisleheta.</p></div>

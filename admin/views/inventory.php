@@ -430,7 +430,7 @@ foreach ($tabs as $tid => [$icon, $tlabel, $tcount]):
         <?php if ($item->ean) echo '<small style="font-family:monospace;color:#b0bec5">'.esc_html($item->ean).'</small>'; ?>
       </td>
       <td style="font-family:monospace;font-size:12px;color:#64748b"><?php echo esc_html($item->sku ?: '–'); ?></td>
-      <td>
+      <td class="inv-qty-cell" data-id="<?php echo (int)$item->id; ?>" data-qty="<?php echo (float)$item->quantity; ?>" title="Kliki koguse muutmiseks" style="cursor:pointer">
         <span class="inv-qty <?php echo $low ? 'low' : ''; ?>"><?php echo inv_fmt($item->quantity); ?></span>
         <?php if ($low) echo '<span class="crm-badge badge-danger" style="margin-left:4px;font-size:10px">Vähe</span>'; ?>
       </td>
@@ -1841,6 +1841,57 @@ function esc(str) {
 
 /* ── Init ────────────────────────────────────────────────────────────────── */
 initCsvFileInput();
+
+/* ── Inline quantity click-to-edit ──────────────────────────────────────── */
+(function(){
+  var nonce = '<?php echo esc_js($nonce_val); ?>';
+  var ajaxUrl = '<?php echo esc_js($ajax_url); ?>';
+
+  document.querySelectorAll('.inv-qty-cell').forEach(function(cell){
+    cell.addEventListener('click', function(){
+      if (cell.querySelector('input')) return; // already editing
+      var id  = cell.dataset.id;
+      var qty = cell.dataset.qty;
+      var origHtml = cell.innerHTML;
+      cell.innerHTML = '';
+      var inp = document.createElement('input');
+      inp.type = 'number'; inp.step = '0.001'; inp.value = parseFloat(qty);
+      inp.style.cssText = 'width:80px;padding:4px 6px;border:2px solid #00b4c8;border-radius:6px;font-size:13px;font-weight:700;outline:none';
+      cell.appendChild(inp);
+      inp.focus(); inp.select();
+
+      function save() {
+        var newQty = parseFloat(inp.value);
+        if (isNaN(newQty)) { cell.innerHTML = origHtml; return; }
+        var fd = new FormData();
+        fd.append('action', 'vesho_update_inventory_qty');
+        fd.append('nonce', nonce);
+        fd.append('inventory_id', id);
+        fd.append('quantity', newQty);
+        fetch(ajaxUrl, {method:'POST', body:fd})
+          .then(function(r){ return r.json(); })
+          .then(function(d){
+            if (d.success) {
+              cell.dataset.qty = newQty;
+              var fmt = newQty.toFixed(3).replace(/\.?0+$/,'') || '0';
+              cell.innerHTML = '<span class="inv-qty">' + fmt + '</span>';
+              // flash green
+              cell.style.background = '#d1fae5';
+              setTimeout(function(){ cell.style.background = ''; }, 800);
+            } else {
+              cell.innerHTML = origHtml;
+            }
+          }).catch(function(){ cell.innerHTML = origHtml; });
+      }
+
+      inp.addEventListener('keydown', function(e){
+        if (e.key === 'Enter') { e.preventDefault(); save(); }
+        if (e.key === 'Escape') { cell.innerHTML = origHtml; }
+      });
+      inp.addEventListener('blur', function(){ save(); });
+    });
+  });
+})();
 
 })();
 </script>

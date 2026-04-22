@@ -44,6 +44,27 @@ $reminders = $wpdb->get_results(
 // ── Kinnitust ootavad broneeringud ────────────────────────────────────────────
 $pending_bookings_count = (int) $wpdb->get_var(
     "SELECT COUNT(*) FROM {$wpdb->prefix}vesho_maintenances WHERE status='pending'");
+$pending_bookings = $wpdb->get_results(
+    "SELECT m.id, m.scheduled_date, m.description,
+            COALESCE(c.name, '—') as client_name, c.phone as client_phone,
+            d.name as device_name
+     FROM {$wpdb->prefix}vesho_maintenances m
+     LEFT JOIN {$wpdb->prefix}vesho_devices d ON d.id = m.device_id
+     LEFT JOIN {$wpdb->prefix}vesho_clients c ON c.id = COALESCE(m.client_id, d.client_id)
+     WHERE m.status='pending'
+     ORDER BY m.scheduled_date ASC, m.id ASC
+     LIMIT 10"
+);
+
+// ── Töötajate nädala tunnid ───────────────────────────────────────────────────
+$week_start = date('Y-m-d', strtotime('monday this week'));
+$worker_week_stats = $wpdb->get_results($wpdb->prepare(
+    "SELECT w.name, COALESCE(SUM(wh.hours),0) as week_hours, COUNT(wh.id) as entries
+     FROM {$wpdb->prefix}vesho_workers w
+     LEFT JOIN {$wpdb->prefix}vesho_work_hours wh ON wh.worker_id=w.id AND wh.date>=%s
+     WHERE w.active=1
+     GROUP BY w.id HAVING week_hours > 0 ORDER BY week_hours DESC LIMIT 8",
+    $week_start));
 
 // ── Viimased töökäsud ─────────────────────────────────────────────────────────
 $recent_workorders = $wpdb->get_results(
@@ -290,19 +311,87 @@ $status_labels = [
 <!-- ── Kinnitust ootavad broneeringud ─────────────────────────────────────── -->
 <?php if ($pending_bookings_count > 0): ?>
 <div style="padding:0 2px;margin-bottom:20px">
-    <div class="crm-card" style="margin:0;border-left:4px solid #f59e0b;background:#fffbeb">
-        <div style="padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px">
-            <div style="display:flex;align-items:center;gap:12px">
-                <span style="font-size:22px">📋</span>
-                <div>
-                    <div style="font-size:14px;font-weight:600;color:#92400e">Kinnitust ootavad broneeringud</div>
-                    <div style="font-size:12px;color:#b45309"><?php echo $pending_bookings_count; ?> broneeringut ootab kinnitust</div>
-                </div>
-            </div>
-            <a href="<?php echo admin_url('admin.php?page=vesho-crm-maintenances&status=pending'); ?>" class="crm-btn crm-btn-sm" style="background:#f59e0b;color:#fff;border:none;white-space:nowrap">→ Vaata kõiki</a>
+    <div class="crm-card" style="margin:0;border-left:4px solid #f59e0b">
+        <div class="crm-card-header" style="background:#fffbeb">
+            <span class="crm-card-title" style="color:#92400e">📋 Kinnitust ootavad broneeringud <span class="crm-count">(<?php echo $pending_bookings_count; ?>)</span></span>
+            <a href="<?php echo admin_url('admin.php?page=vesho-crm-maintenances&status=pending'); ?>" class="crm-btn crm-btn-sm" style="background:#f59e0b;color:#fff;border:none">→ Vaata kõiki</a>
         </div>
+        <table style="width:100%;border-collapse:collapse" id="dash-pending-table">
+            <thead>
+                <tr style="background:#fffbeb;border-bottom:1px solid #fde68a">
+                    <th style="padding:8px 18px;text-align:left;font-size:11px;font-weight:600;color:#92400e;text-transform:uppercase">Klient</th>
+                    <th style="padding:8px 18px;text-align:left;font-size:11px;font-weight:600;color:#92400e;text-transform:uppercase">Seade</th>
+                    <th style="padding:8px 18px;text-align:left;font-size:11px;font-weight:600;color:#92400e;text-transform:uppercase">Soovitav kuupäev</th>
+                    <th style="padding:8px 18px;text-align:left;font-size:11px;font-weight:600;color:#92400e;text-transform:uppercase">Kirjeldus</th>
+                    <th style="padding:8px 18px;text-align:right;font-size:11px;font-weight:600;color:#92400e;text-transform:uppercase">Toiming</th>
+                </tr>
+            </thead>
+            <tbody>
+            <?php foreach ($pending_bookings as $pb): ?>
+            <tr data-id="<?php echo (int)$pb->id; ?>" style="border-bottom:1px solid #fef9c3">
+                <td style="padding:10px 18px;font-size:13px;font-weight:500;color:#1a2a38">
+                    <?php echo esc_html($pb->client_name); ?>
+                    <?php if ($pb->client_phone): ?><br><span style="font-size:11px;color:#6b8599"><?php echo esc_html($pb->client_phone); ?></span><?php endif; ?>
+                </td>
+                <td style="padding:10px 18px;font-size:13px;color:#374151"><?php echo esc_html($pb->device_name ?: '—'); ?></td>
+                <td style="padding:10px 18px;font-size:13px;color:#374151"><?php echo $pb->scheduled_date ? esc_html(date('d.m.Y', strtotime($pb->scheduled_date))) : '—'; ?></td>
+                <td style="padding:10px 18px;font-size:12px;color:#6b8599;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><?php echo esc_html(mb_substr($pb->description ?: '', 0, 60)); ?></td>
+                <td style="padding:10px 18px;text-align:right;white-space:nowrap">
+                    <button class="crm-btn crm-btn-sm dash-confirm-btn"
+                            data-id="<?php echo (int)$pb->id; ?>"
+                            data-nonce="<?php echo wp_create_nonce('vesho_admin_nonce'); ?>"
+                            style="background:#10b981;color:#fff;border:none;margin-right:4px">✓ Kinnita</button>
+                    <button class="crm-btn crm-btn-sm dash-reject-btn"
+                            data-id="<?php echo (int)$pb->id; ?>"
+                            data-nonce="<?php echo wp_create_nonce('vesho_admin_nonce'); ?>"
+                            style="background:#fee2e2;color:#b91c1c;border:none">✕ Lükka tagasi</button>
+                </td>
+            </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
     </div>
 </div>
+<script>
+(function(){
+    var nonce = '<?php echo wp_create_nonce('vesho_admin_nonce'); ?>';
+    function bookingAction(btn, action) {
+        var id = btn.dataset.id;
+        var row = btn.closest('tr');
+        btn.disabled = true;
+        var fd = new FormData();
+        fd.append('action', action);
+        fd.append('nonce', nonce);
+        fd.append('maintenance_id', id);
+        fetch(ajaxurl, {method:'POST', body:fd})
+            .then(function(r){ return r.json(); })
+            .then(function(d){
+                if (d.success) {
+                    row.style.opacity = '0';
+                    row.style.transition = 'opacity .3s';
+                    setTimeout(function(){ row.remove();
+                        var tbody = document.querySelector('#dash-pending-table tbody');
+                        if (tbody && !tbody.querySelector('tr')) {
+                            document.querySelector('#dash-pending-table').closest('.crm-card').parentElement.remove();
+                        }
+                    }, 320);
+                } else {
+                    btn.disabled = false;
+                    alert('Viga: ' + (d.data || 'tundmatu viga'));
+                }
+            }).catch(function(){ btn.disabled = false; });
+    }
+    document.querySelectorAll('.dash-confirm-btn').forEach(function(b){
+        b.addEventListener('click', function(){ bookingAction(b, 'vesho_confirm_booking'); });
+    });
+    document.querySelectorAll('.dash-reject-btn').forEach(function(b){
+        b.addEventListener('click', function(){
+            if (!confirm('Lükka broneering tagasi?')) return;
+            bookingAction(b, 'vesho_reject_booking');
+        });
+    });
+})();
+</script>
 <?php endif; ?>
 
 <!-- ── Tänased hooldused ───────────────────────────────────────────────────── -->
@@ -501,6 +590,33 @@ $status_labels = [
 </div>
 
 <!-- ── Töötajate aktiivsus (kuu) ────────────────────────────────────────────── -->
+<?php if (!empty($worker_week_stats)) : ?>
+<div style="padding:0 2px;margin-bottom:20px">
+    <div class="crm-card" style="margin:0">
+        <div class="crm-card-header">
+            <span class="crm-card-title">⏱️ Töötajate nädalatunnid <span style="font-size:12px;color:#6b8599;font-weight:400">(alates <?php echo date_i18n('d.m.Y', strtotime('monday this week')); ?>)</span></span>
+            <a href="<?php echo admin_url('admin.php?page=vesho-crm-workhours'); ?>" class="crm-btn crm-btn-outline crm-btn-sm">Kõik tunnid</a>
+        </div>
+        <div style="padding:12px 0">
+        <?php
+        $ww_max = max(array_column((array)$worker_week_stats, 'week_hours') ?: [1]);
+        $ww_max = $ww_max > 0 ? $ww_max : 1;
+        foreach ($worker_week_stats as $wws):
+            $pct = round(($wws->week_hours / $ww_max) * 100);
+        ?>
+        <div style="padding:8px 20px;display:flex;align-items:center;gap:12px">
+            <div style="width:120px;font-size:13px;font-weight:500;color:#1a2a38;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><?php echo esc_html($wws->name); ?></div>
+            <div style="flex:1;background:#f0f4f7;border-radius:4px;overflow:hidden;height:10px">
+                <div style="width:<?php echo $pct; ?>%;background:#00b4c8;height:100%;border-radius:4px"></div>
+            </div>
+            <div style="font-size:13px;font-weight:600;color:#0d1f2d;min-width:52px;text-align:right"><?php echo number_format((float)$wws->week_hours, 1); ?> h</div>
+        </div>
+        <?php endforeach; ?>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
 <?php if (!empty($worker_stats)) : ?>
 <div style="padding:0 2px;margin-bottom:20px">
     <div class="crm-card" style="margin:0">

@@ -109,6 +109,17 @@ $maintenances_sorted = array_map( fn($p) => $p['obj'], $sorted_points );
 
 $date_label = date('d.m.Y', strtotime($raw_date));
 
+// ── 7-day upcoming preview ─────────────────────────────────────────────────
+$preview_days = [];
+for ($d = 0; $d < 7; $d++) {
+    $day_date  = date('Y-m-d', strtotime("+{$d} days"));
+    $day_count = (int)$wpdb->get_var($wpdb->prepare(
+        "SELECT COUNT(*) FROM {$wpdb->prefix}vesho_maintenances
+         WHERE scheduled_date=%s AND status IN ('scheduled','pending')", $day_date
+    ));
+    $preview_days[] = ['date' => $day_date, 'count' => $day_count];
+}
+
 // Build all addresses for multi-stop Google Maps URL (sorted order)
 $addresses = [];
 foreach ( $maintenances_sorted as $m ) {
@@ -121,6 +132,33 @@ if (!empty($addresses)) {
 ?>
 <div class="crm-wrap">
     <h1 class="crm-page-title">🗺️ Päeva marsruut</h1>
+
+    <!-- 7-day upcoming preview -->
+    <div class="crm-card" style="margin-bottom:16px;padding:14px 16px">
+        <div style="font-size:12px;font-weight:600;color:#6b8599;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Järgmised 7 päeva</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <?php foreach ($preview_days as $pd):
+            $is_today    = ($pd['date'] === date('Y-m-d'));
+            $is_selected = ($pd['date'] === $raw_date);
+            $day_url     = admin_url('admin.php?page=vesho-crm-route&date=' . $pd['date']);
+            $day_label   = $is_today ? 'Täna' : date_i18n('D', strtotime($pd['date']));
+            $day_num     = date('d.m', strtotime($pd['date']));
+            $has_work    = $pd['count'] > 0;
+        ?>
+        <a href="<?php echo esc_url($day_url); ?>"
+           style="display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 14px;border-radius:10px;text-decoration:none;min-width:72px;text-align:center;
+                  background:<?php echo $is_selected ? '#0d1f2d' : ($has_work ? '#e0f7fa' : '#f8fafc'); ?>;
+                  border:1px solid <?php echo $is_selected ? '#0d1f2d' : ($has_work ? '#00b4c8' : '#e2e8f0'); ?>;
+                  color:<?php echo $is_selected ? '#fff' : '#1a2a38'; ?>">
+            <span style="font-size:11px;font-weight:600;opacity:.7"><?php echo esc_html($day_label); ?></span>
+            <span style="font-size:13px;font-weight:700"><?php echo esc_html($day_num); ?></span>
+            <span style="font-size:14px;font-weight:800;color:<?php echo $is_selected ? '#fff' : ($has_work ? '#0284c7' : '#94a3b8'); ?>">
+                <?php echo $pd['count']; ?>
+            </span>
+        </a>
+        <?php endforeach; ?>
+        </div>
+    </div>
 
     <?php if ($geocoded_any) : ?>
     <div class="crm-alert crm-alert-success" style="margin-bottom:12px">📍 Geokodeeritud uued aadressid — marsruut optimeeritud koordinaatide järgi.</div>

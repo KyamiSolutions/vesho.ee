@@ -125,6 +125,12 @@ class Vesho_CRM_Admin {
         add_action( 'wp_ajax_vesho_update_workorder_status', array( __CLASS__, 'ajax_update_workorder_status' ) );
         add_action( 'wp_ajax_vesho_toggle_worker_active',    array( __CLASS__, 'ajax_toggle_worker_active' ) );
         add_action( 'wp_ajax_vesho_copy_invoice',            array( __CLASS__, 'ajax_copy_invoice' ) );
+        // Inline AJAX actions (v2.9.53)
+        add_action( 'wp_ajax_vesho_confirm_booking',         array( __CLASS__, 'ajax_confirm_booking' ) );
+        add_action( 'wp_ajax_vesho_reject_booking',          array( __CLASS__, 'ajax_reject_booking' ) );
+        add_action( 'wp_ajax_vesho_toggle_campaign',         array( __CLASS__, 'ajax_toggle_campaign' ) );
+        add_action( 'wp_ajax_vesho_delete_campaign',         array( __CLASS__, 'ajax_delete_campaign' ) );
+        add_action( 'wp_ajax_vesho_update_inventory_qty',    array( __CLASS__, 'ajax_update_inventory_qty' ) );
     }
 
     // ── Scanner assets ─────────────────────────────────────────────────────────
@@ -4244,5 +4250,73 @@ private static function load_view( $name ) {
             'number'  => $new_num,
             'edit_url' => admin_url( 'admin.php?page=vesho-crm-invoices&action=edit&invoice_id=' . $new_id ),
         ) );
+    }
+
+    // ── AJAX: confirm booking (pending → scheduled) ───────────────────────────
+    public static function ajax_confirm_booking() {
+        check_ajax_referer( 'vesho_admin_nonce' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error( 'Unauthorized' );
+        global $wpdb;
+        $id = absint( $_POST['maintenance_id'] ?? 0 );
+        if ( ! $id ) wp_send_json_error( 'Puudub ID' );
+        $wpdb->update(
+            $wpdb->prefix . 'vesho_maintenances',
+            array( 'status' => 'scheduled' ),
+            array( 'id' => $id )
+        );
+        wp_send_json_success();
+    }
+
+    // ── AJAX: reject booking (pending → cancelled) ────────────────────────────
+    public static function ajax_reject_booking() {
+        check_ajax_referer( 'vesho_admin_nonce' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error( 'Unauthorized' );
+        global $wpdb;
+        $id = absint( $_POST['maintenance_id'] ?? 0 );
+        if ( ! $id ) wp_send_json_error( 'Puudub ID' );
+        $wpdb->update(
+            $wpdb->prefix . 'vesho_maintenances',
+            array( 'status' => 'cancelled' ),
+            array( 'id' => $id )
+        );
+        wp_send_json_success();
+    }
+
+    // ── AJAX: toggle campaign paused ──────────────────────────────────────────
+    public static function ajax_toggle_campaign() {
+        check_ajax_referer( 'vesho_admin_nonce' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error( 'Unauthorized' );
+        global $wpdb;
+        $id = absint( $_POST['campaign_id'] ?? 0 );
+        if ( ! $id ) wp_send_json_error( 'Puudub ID' );
+        $cur = (int) $wpdb->get_var( $wpdb->prepare(
+            "SELECT paused FROM {$wpdb->prefix}vesho_campaigns WHERE id=%d", $id
+        ) );
+        $new = $cur ? 0 : 1;
+        $wpdb->update( $wpdb->prefix . 'vesho_campaigns', array( 'paused' => $new ), array( 'id' => $id ) );
+        wp_send_json_success( array( 'paused' => $new ) );
+    }
+
+    // ── AJAX: delete campaign ─────────────────────────────────────────────────
+    public static function ajax_delete_campaign() {
+        check_ajax_referer( 'vesho_admin_nonce' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error( 'Unauthorized' );
+        global $wpdb;
+        $id = absint( $_POST['campaign_id'] ?? 0 );
+        if ( ! $id ) wp_send_json_error( 'Puudub ID' );
+        $wpdb->delete( $wpdb->prefix . 'vesho_campaigns', array( 'id' => $id ) );
+        wp_send_json_success();
+    }
+
+    // ── AJAX: update inventory quantity ───────────────────────────────────────
+    public static function ajax_update_inventory_qty() {
+        check_ajax_referer( 'vesho_admin_nonce' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error( 'Unauthorized' );
+        global $wpdb;
+        $id  = absint( $_POST['inventory_id'] ?? 0 );
+        $qty = floatval( $_POST['quantity'] ?? 0 );
+        if ( ! $id ) wp_send_json_error( 'Puudub ID' );
+        $wpdb->update( $wpdb->prefix . 'vesho_inventory', array( 'quantity' => $qty ), array( 'id' => $id ) );
+        wp_send_json_success( array( 'quantity' => $qty ) );
     }
 }

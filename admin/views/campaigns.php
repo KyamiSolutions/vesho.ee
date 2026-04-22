@@ -191,13 +191,15 @@ function vesho_campaign_status( $cam ) {
                 </td>
                 <td class="td-actions">
                     <a href="<?php echo admin_url('admin.php?page=vesho-crm-campaigns&action=edit&campaign_id='.$cam->id); ?>" class="crm-btn crm-btn-icon crm-btn-sm" title="Muuda">✏️</a>
-                    <?php if (!$cam->paused) : ?>
-                    <a href="<?php echo wp_nonce_url(admin_url('admin-post.php?action=vesho_pause_campaign&campaign_id='.$cam->id),'vesho_pause_campaign'); ?>"
-                       class="crm-btn crm-btn-icon crm-btn-sm" title="Peata">⏸</a>
-                    <?php else : ?>
-                    <a href="<?php echo wp_nonce_url(admin_url('admin-post.php?action=vesho_resume_campaign&campaign_id='.$cam->id),'vesho_resume_campaign'); ?>"
-                       class="crm-btn crm-btn-icon crm-btn-sm" title="Jätka">▶</a>
-                    <?php endif; ?>
+                    <button class="crm-btn crm-btn-icon crm-btn-sm camp-toggle-btn"
+                            data-id="<?php echo (int)$cam->id; ?>"
+                            data-paused="<?php echo $cam->paused ? '1' : '0'; ?>"
+                            title="<?php echo $cam->paused ? 'Jätka' : 'Peata'; ?>">
+                        <?php echo $cam->paused ? '▶' : '⏸'; ?>
+                    </button>
+                    <button class="crm-btn crm-btn-icon crm-btn-sm camp-delete-btn"
+                            data-id="<?php echo (int)$cam->id; ?>"
+                            title="Kustuta" style="background:#fee2e2;color:#b91c1c;border:none">🗑️</button>
                 </td>
             </tr>
             <?php endforeach; ?>
@@ -210,3 +212,62 @@ function vesho_campaign_status( $cam ) {
     </div>
     <?php endif; ?>
 </div>
+<script>
+(function(){
+    var nonce = '<?php echo wp_create_nonce('vesho_admin_nonce'); ?>';
+    // Toggle pause/resume
+    document.querySelectorAll('.camp-toggle-btn').forEach(function(btn){
+        btn.addEventListener('click', function(){
+            var id = btn.dataset.id;
+            btn.disabled = true;
+            var fd = new FormData();
+            fd.append('action', 'vesho_toggle_campaign');
+            fd.append('nonce', nonce);
+            fd.append('campaign_id', id);
+            fetch(ajaxurl, {method:'POST', body:fd})
+                .then(function(r){ return r.json(); })
+                .then(function(d){
+                    if (d.success) {
+                        var paused = d.data.paused;
+                        btn.dataset.paused = paused ? '1' : '0';
+                        btn.textContent = paused ? '▶' : '⏸';
+                        btn.title = paused ? 'Jätka' : 'Peata';
+                        // Update status badge in same row
+                        var row = btn.closest('tr');
+                        var badge = row ? row.querySelector('td:nth-child(6) span') : null;
+                        if (badge) {
+                            if (paused) {
+                                badge.style.background = '#fff8ed'; badge.style.color = '#f59e0b';
+                                badge.textContent = '⏸ Peatatud';
+                            } else {
+                                badge.style.background = '#f0fdf4'; badge.style.color = '#10b981';
+                                badge.textContent = '🟢 Aktiivne';
+                            }
+                        }
+                    } else { alert('Viga'); }
+                    btn.disabled = false;
+                }).catch(function(){ btn.disabled = false; });
+        });
+    });
+    // Delete
+    document.querySelectorAll('.camp-delete-btn').forEach(function(btn){
+        btn.addEventListener('click', function(){
+            if (!confirm('Kustuta kampaania? Seda ei saa tagasi võtta.')) return;
+            var id = btn.dataset.id;
+            btn.disabled = true;
+            var fd = new FormData();
+            fd.append('action', 'vesho_delete_campaign');
+            fd.append('nonce', nonce);
+            fd.append('campaign_id', id);
+            fetch(ajaxurl, {method:'POST', body:fd})
+                .then(function(r){ return r.json(); })
+                .then(function(d){
+                    if (d.success) {
+                        var row = btn.closest('tr');
+                        if (row) { row.style.opacity = '0'; setTimeout(function(){ row.remove(); }, 300); }
+                    } else { btn.disabled = false; alert('Kustutamine ebaõnnestus'); }
+                }).catch(function(){ btn.disabled = false; });
+        });
+    });
+})();
+</script>

@@ -218,23 +218,26 @@ $months_et = ['','Jaanuar','Veebruar','Märts','Aprill','Mai','Juuni','Juuli','A
         <?php endif; ?>
     </div>
 
-    <!-- Last 12 months HTML/CSS bar chart -->
+    <!-- Last 12 months HTML/CSS bar chart with hover tooltips -->
     <div class="crm-card" style="margin-bottom:20px">
         <div class="crm-card-header"><span class="crm-card-title">📈 <?php echo intval($year); ?>. aasta käive kuude kaupa</span></div>
-        <div style="padding:20px 20px 12px">
+        <div style="padding:20px 20px 12px;position:relative">
+            <div id="sales-bar-tooltip" style="display:none;position:fixed;z-index:9999;background:#0d1f2d;color:#fff;padding:8px 12px;border-radius:8px;font-size:12px;pointer-events:none;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.25)"></div>
             <div style="display:flex;align-items:flex-end;gap:6px;height:160px">
                 <?php foreach ($chart_months as $cm) :
                     $pct = $chart_max > 0 ? round(($cm['total'] / $chart_max) * 100) : 0;
                     $bar_h = max($pct, $cm['total'] > 0 ? 2 : 0);
                     $is_current = ($cm['key'] === date('Y-m') && intval($year) === intval(date('Y')));
+                    $tooltip_val = number_format($cm['total'], 2, ',', ' ') . ' €';
                 ?>
-                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end">
+                <div class="sales-bar-col" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end;cursor:pointer"
+                     data-label="<?php echo esc_attr($cm['label']); ?>" data-val="<?php echo esc_attr($tooltip_val); ?>">
                     <?php if ($cm['total'] > 0) : ?>
                     <div style="font-size:10px;color:#0369a1;font-weight:600;white-space:nowrap">
                         <?php echo $cm['total'] >= 1000 ? number_format($cm['total']/1000,1).'k' : number_format($cm['total'],0); ?>
                     </div>
                     <?php endif; ?>
-                    <div style="width:100%;background:<?php echo $is_current ? '#0284c7' : '#00b4c8'; ?>;height:<?php echo $bar_h; ?>%;border-radius:3px 3px 0 0;min-height:<?php echo $cm['total']>0?'3px':'1px'; ?>;<?php echo $cm['total']<=0?'background:#e2e8f0;':''; ?>"></div>
+                    <div class="sales-bar" style="width:100%;background:<?php echo $is_current ? '#0284c7' : '#00b4c8'; ?>;height:<?php echo $bar_h; ?>%;border-radius:3px 3px 0 0;min-height:<?php echo $cm['total']>0?'3px':'1px'; ?>;<?php echo $cm['total']<=0?'background:#e2e8f0;':''; ?>;transition:filter .15s"></div>
                     <div style="font-size:10px;color:#64748b;white-space:nowrap;transform:rotate(-30deg);transform-origin:top center;margin-top:4px;height:28px">
                         <?php echo esc_html($cm['label']); ?>
                     </div>
@@ -243,6 +246,28 @@ $months_et = ['','Jaanuar','Veebruar','Märts','Aprill','Mai','Juuni','Juuli','A
             </div>
         </div>
     </div>
+<script>
+(function(){
+    var tooltip = document.getElementById('sales-bar-tooltip');
+    document.querySelectorAll('.sales-bar-col').forEach(function(col){
+        col.addEventListener('mouseenter', function(e){
+            var bar = col.querySelector('.sales-bar');
+            if (bar) bar.style.filter = 'brightness(1.15)';
+            tooltip.textContent = col.dataset.label + ': ' + col.dataset.val;
+            tooltip.style.display = 'block';
+        });
+        col.addEventListener('mousemove', function(e){
+            tooltip.style.left = (e.clientX + 12) + 'px';
+            tooltip.style.top  = (e.clientY - 36) + 'px';
+        });
+        col.addEventListener('mouseleave', function(){
+            var bar = col.querySelector('.sales-bar');
+            if (bar) bar.style.filter = '';
+            tooltip.style.display = 'none';
+        });
+    });
+})();
+</script>
 
     <!-- Revenue breakdown -->
     <div class="crm-card" style="margin-bottom:20px">
