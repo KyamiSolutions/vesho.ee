@@ -444,3 +444,12 @@ if ( $action === 'history-pdf' && $client_id ) {
     </div>
     <?php endif; ?>
 </div>
+<script>
+// Live search — auto-submit on keyup
+(function(){
+    var inp = document.querySelector('input[name="s"].crm-search');
+    if (!inp) return;
+    var t;
+    inp.addEventListener('input', function(){ clearTimeout(t); t = setTimeout(function(){ inp.closest('form').submit(); }, 350); });
+})();
+</script>

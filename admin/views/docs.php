@@ -260,6 +260,7 @@ code,.vc{background:#f1f5f9;border:1px solid #e2e8f0;border-radius:3px;padding:1
         </table>
         <div class="vd-h3">Külaliste taotlused</div>
         <p class="vd-p">Kui külaline täidab veebilehel kontaktvormi, ilmub taotlus <strong>Kliendid → 👤 Külaliste taotlused</strong>. Sealt saad ühe klõpsuga lisada külalise kliendiks.</p>
+        <div class="vd-tip"><b>Kiirotsing</b>Klientide, töötajate ja arvete otsingukast otsib automaatselt kirjutades — ei pea nuppu vajutama.</div>
       </div>
 
       <div class="vd-sec" id="seadmed">
@@ -304,6 +305,8 @@ code,.vc{background:#f1f5f9;border:1px solid #e2e8f0;border-radius:3px;padding:1
           <div class="vd-fs">Lõpetatud</div>
         </div>
         <div class="vd-tip"><b>Lõpetamisel</b>Töötaja saab lisada: kommentaari, kasutatud materjalid laost, fotod. Admin näeb kõiki andmeid töökäsu detailvaates.</div>
+        <div class="vd-h3">Kiire staatuse muutmine</div>
+        <p class="vd-p">Töökäsude nimekirjas on staatus muudetav otse ripploendist — kliki staatusel, vali uus. Muutus salvestub koheselt ilma lehte laadimata.</p>
       </div>
 
       <div class="vd-sec" id="tootajad">
@@ -314,6 +317,8 @@ code,.vc{background:#f1f5f9;border:1px solid #e2e8f0;border-radius:3px;padding:1
           <div class="vd-step"><div class="vd-step-n">2</div><div class="vd-step-b"><strong>Täida nimi, telefon, e-post</strong><p></p></div></div>
           <div class="vd-step"><div class="vd-step-n">3</div><div class="vd-step-b"><strong>Salvesta</strong><p>Süsteem loob WP kasutaja rolliga <code>vesho_worker</code> ja saadab kutsemeili.</p></div></div>
         </div>
+        <div class="vd-h3">Töötaja aktiveerimine / deaktiveerimine</div>
+        <p class="vd-p">Töötajate nimekirjas on iga rea lõpus <strong>🟢 / ⚫ nupp</strong> — vajutades muutub töötaja staatus kohe (ei laadi lehte uuesti). Mitteaktiivne töötaja ei saa portaali sisse logida.</p>
         <div class="vd-h3">Töötunnid ja töötasud</div>
         <p class="vd-p">Vesho CRM → <strong>Töötunnid</strong> — töötaja logib portaalis alguse ja lõpu aja. Admin näeb kokkuvõtet perioodi kaupa. Töötajale saab määrata tunnitasu — raport arvutab töötasud automaatselt.</p>
       </div>
@@ -346,6 +351,12 @@ code,.vc{background:#f1f5f9;border:1px solid #e2e8f0;border-radius:3px;padding:1
         </table>
         <div class="vd-h3">PDF printimine</div>
         <p class="vd-p">Ava arve → "🖨️ Prindi / PDF" → avaneb printimisvaade. PDF salvestamiseks vali printeriks "Salvesta PDF-ina" (Chrome/Edge).</p>
+        <div class="vd-h3">Kiired toimingud nimekirjas</div>
+        <div class="vd-g3">
+          <div class="vd-c"><h4>📋 Kopeeri uueks</h4><p>Iga arve juures on 📋 nupp — loob mustandkoopia täna kuupäevaga. Kasulik korduvarvete jaoks.</p></div>
+          <div class="vd-c"><h4>✉️ Saada e-post</h4><p>Saada arve kliendile otse nimekirja nupust, ilma arvet avamata.</p></div>
+          <div class="vd-c"><h4>KARV Kreeditarve</h4><p>Tasutud/saadetud arve juures — loo kreeditarve summa ja põhjusega.</p></div>
+        </div>
       </div>
 
       <div class="vd-sec" id="ladu">
@@ -546,6 +557,9 @@ code,.vc{background:#f1f5f9;border:1px solid #e2e8f0;border-radius:3px;padding:1
           <div class="vd-fs">Planeeri hooldus</div>
         </div>
 
+        <div class="vd-h3">Hoolduse kiire lõpetamine kalendrist</div>
+        <p class="vd-p">Kliki kalendris hooldusel → avaneb modal → vajuta <strong>✓ Tehtud</strong> — hooldus märgitakse tehtuks ja kuupäev salvestatakse kohe. Ei pea avama hoolduse muutmislehte.</p>
+
         <div class="vd-h3">Igakuine hoolduste planeerimine</div>
         <div class="vd-flow">
           <div class="vd-fs">Töölaud → Meeldetuletused</div><div class="vd-fa">→</div>
@@ -581,6 +595,15 @@ code,.vc{background:#f1f5f9;border:1px solid #e2e8f0;border-radius:3px;padding:1
       <div class="vd-sec" id="uuendused">
         <div class="vd-sec-h"><span class="ic cyan">🚀</span>Uuendused</div>
         <div class="vd-tip"><b>Paigaldatud</b>Vesho CRM <strong>v<?php echo esc_html($plugin_ver); ?></strong> · Teema <strong>v<?php echo esc_html($theme_ver); ?></strong></div>
+        <div class="vd-h3">v2.9.52 — Uued funktsioonid</div>
+        <div class="vd-g3">
+          <div class="vd-c"><h4>✓ Tehtud (kalender)</h4><p>Kalendris hooldusel klõpsates saab selle otse tehtuks märkida — ilma muutmisleheta.</p></div>
+          <div class="vd-c"><h4>Töökäsu staatuse muutmine</h4><p>Töökäsude nimekirjas saab staatust muuta otse rippmenüüst — salvestub koheselt.</p></div>
+          <div class="vd-c"><h4>Töötaja aktiveerimine</h4><p>🟢/⚫ nupuga saab töötaja aktiveerida/deaktiveerida otse nimekirjast.</p></div>
+          <div class="vd-c"><h4>Arve kopeerimine</h4><p>📋 nupp arve nimekirjas — loob mustandkoopia täna kuupäevaga.</p></div>
+          <div class="vd-c"><h4>Kiirotsing</h4><p>Kliendid, töötajad, arved ja töökäsud otsivad automaatselt kirjutades.</p></div>
+          <div class="vd-c"><h4>Kasutusjuhend uuendatud</h4><p>Kõik uued funktsioonid on dokumenteeritud — sh lühijuhised ja töövood.</p></div>
+        </div>
         <div class="vd-h3">CRM pistikprogramm ja teema</div>
         <div class="vd-steps">
           <div class="vd-step"><div class="vd-step-n">1</div><div class="vd-step-b"><strong>Vesho CRM → 🚀 Uuendused</strong><p>Kontrollib uut versiooni. Muudatuste logi näitab mis parandati.</p></div></div>

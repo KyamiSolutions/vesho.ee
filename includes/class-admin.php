@@ -120,6 +120,11 @@ class Vesho_CRM_Admin {
         // ⌘K global search
         add_action( 'wp_ajax_vesho_crm_global_search',   array( __CLASS__, 'ajax_global_search' ) );
         add_action( 'admin_footer',                       array( __CLASS__, 'render_global_search_modal' ) );
+        // Inline AJAX actions (v2.9.52)
+        add_action( 'wp_ajax_vesho_complete_maintenance',    array( __CLASS__, 'ajax_complete_maintenance' ) );
+        add_action( 'wp_ajax_vesho_update_workorder_status', array( __CLASS__, 'ajax_update_workorder_status' ) );
+        add_action( 'wp_ajax_vesho_toggle_worker_active',    array( __CLASS__, 'ajax_toggle_worker_active' ) );
+        add_action( 'wp_ajax_vesho_copy_invoice',            array( __CLASS__, 'ajax_copy_invoice' ) );
     }
 
     // ── Scanner assets ─────────────────────────────────────────────────────────
@@ -4132,5 +4137,112 @@ private static function load_view( $name ) {
 })();
 </script>
         <?php
+    }
+
+    // ── AJAX: complete maintenance ────────────────────────────────────────────
+    public static function ajax_complete_maintenance() {
+        check_ajax_referer( 'vesho_admin_nonce' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error( 'Unauthorized' );
+        global $wpdb;
+        $id = absint( $_POST['maintenance_id'] ?? 0 );
+        if ( ! $id ) wp_send_json_error( 'Puudub ID' );
+        $wpdb->update(
+            $wpdb->prefix . 'vesho_maintenances',
+            array( 'status' => 'completed', 'completed_date' => current_time( 'Y-m-d' ) ),
+            array( 'id' => $id )
+        );
+        wp_send_json_success();
+    }
+
+    // ── AJAX: update work order status ────────────────────────────────────────
+    public static function ajax_update_workorder_status() {
+        check_ajax_referer( 'vesho_admin_nonce' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error( 'Unauthorized' );
+        global $wpdb;
+        $id     = absint( $_POST['workorder_id'] ?? 0 );
+        $status = sanitize_text_field( $_POST['status'] ?? '' );
+        $allowed = array( 'open', 'assigned', 'in_progress', 'completed', 'cancelled' );
+        if ( ! $id || ! in_array( $status, $allowed, true ) ) wp_send_json_error( 'Vale andmed' );
+        $wpdb->update(
+            $wpdb->prefix . 'vesho_workorders',
+            array( 'status' => $status ),
+            array( 'id' => $id )
+        );
+        wp_send_json_success();
+    }
+
+    // ── AJAX: toggle worker active ────────────────────────────────────────────
+    public static function ajax_toggle_worker_active() {
+        check_ajax_referer( 'vesho_admin_nonce' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error( 'Unauthorized' );
+        global $wpdb;
+        $id = absint( $_POST['worker_id'] ?? 0 );
+        if ( ! $id ) wp_send_json_error( 'Puudub ID' );
+        $cur = (int) $wpdb->get_var( $wpdb->prepare(
+            "SELECT active FROM {$wpdb->prefix}vesho_workers WHERE id=%d", $id
+        ) );
+        $new = $cur ? 0 : 1;
+        $wpdb->update(
+            $wpdb->prefix . 'vesho_workers',
+            array( 'active' => $new ),
+            array( 'id' => $id )
+        );
+        wp_send_json_success( array( 'active' => $new ) );
+    }
+
+    // ── AJAX: copy invoice as new draft ───────────────────────────────────────
+    public static function ajax_copy_invoice() {
+        check_ajax_referer( 'vesho_admin_nonce' );
+        if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error( 'Unauthorized' );
+        global $wpdb;
+        $id = absint( $_POST['invoice_id'] ?? 0 );
+        if ( ! $id ) wp_send_json_error( 'Puudub ID' );
+        $inv = $wpdb->get_row( $wpdb->prepare(
+            "SELECT * FROM {$wpdb->prefix}vesho_invoices WHERE id=%d", $id
+        ) );
+        if ( ! $inv ) wp_send_json_error( 'Arvet ei leitud' );
+
+        // Generate new invoice number
+        $year = date( 'Y' );
+        $last_num = (int) $wpdb->get_var(
+            "SELECT MAX(CAST(SUBSTRING_INDEX(invoice_number,'-',-1) AS UNSIGNED)) FROM {$wpdb->prefix}vesho_invoices"
+        );
+        $new_num = 'ARV-' . $year . '-' . str_pad( $last_num + 1, 3, '0', STR_PAD_LEFT );
+
+        $today = current_time( 'Y-m-d' );
+        $due   = date( 'Y-m-d', strtotime( '+30 days' ) );
+
+        $wpdb->insert( $wpdb->prefix . 'vesho_invoices', array(
+            'client_id'      => $inv->client_id,
+            'invoice_number' => $new_num,
+            'invoice_date'   => $today,
+            'due_date'       => $due,
+            'status'         => 'draft',
+            'amount'         => $inv->amount,
+            'description'    => $inv->description,
+            'created_at'     => current_time( 'mysql' ),
+        ) );
+        $new_id = $wpdb->insert_id;
+
+        // Copy line items
+        $items = $wpdb->get_results( $wpdb->prepare(
+            "SELECT * FROM {$wpdb->prefix}vesho_invoice_items WHERE invoice_id=%d ORDER BY id ASC", $id
+        ) );
+        foreach ( $items as $item ) {
+            $wpdb->insert( $wpdb->prefix . 'vesho_invoice_items', array(
+                'invoice_id'  => $new_id,
+                'description' => $item->description,
+                'quantity'    => $item->quantity,
+                'unit_price'  => $item->unit_price,
+                'vat_rate'    => $item->vat_rate,
+                'total'       => $item->total,
+            ) );
+        }
+
+        wp_send_json_success( array(
+            'new_id'  => $new_id,
+            'number'  => $new_num,
+            'edit_url' => admin_url( 'admin.php?page=vesho-crm-invoices&action=edit&invoice_id=' . $new_id ),
+        ) );
     }
 }

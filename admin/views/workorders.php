@@ -365,7 +365,7 @@ if ( $action === 'print' && $workorder_id ) {
             </tr></thead>
             <tbody>
             <?php foreach ($workorders as $wo) : ?>
-            <tr>
+            <tr id="wo-row-<?php echo $wo->id; ?>">
                 <td style="color:#6b8599">#<?php echo $wo->id; ?></td>
                 <td><strong><?php echo esc_html($wo->title); ?></strong></td>
                 <td><?php echo $wo->client_id ? '<a href="'.admin_url('admin.php?page=vesho-crm-clients&action=view&client_id='.$wo->client_id).'">'.esc_html($wo->client_name).'</a>' : '–'; ?></td>
@@ -379,7 +379,14 @@ if ( $action === 'print' && $workorder_id ) {
                     $pcls = ['low'=>'badge-gray','normal'=>'badge-info','high'=>'badge-warning','urgent'=>'badge-danger'];
                     echo '<span class="crm-badge '.esc_attr($pcls[$wo->priority]??'badge-gray').'">'.esc_html($priorities[$wo->priority]??$wo->priority).'</span>';
                 ?></td>
-                <td><?php echo vesho_crm_status_badge($wo->status); ?></td>
+                <td>
+                    <select class="wo-status-sel" data-id="<?php echo $wo->id; ?>" onchange="updateWoStatus(this)"
+                      style="padding:4px 8px;border-radius:20px;font-size:11px;font-weight:700;border:1.5px solid #e2e8f0;cursor:pointer;background:#fff">
+                      <?php foreach ($statuses as $v=>$l): ?>
+                        <option value="<?php echo $v; ?>" <?php selected($wo->status,$v); ?>><?php echo $l; ?></option>
+                      <?php endforeach; ?>
+                    </select>
+                </td>
                 <td><?php echo $wo->price!==null ? vesho_crm_format_money($wo->price) : '–'; ?></td>
                 <td class="td-actions">
                     <a href="<?php echo admin_url('admin.php?page=vesho-crm-workorders&action=edit&workorder_id='.$wo->id); ?>" class="crm-btn crm-btn-icon crm-btn-sm" title="Muuda">✏️</a>
@@ -396,3 +403,35 @@ if ( $action === 'print' && $workorder_id ) {
     </div>
     <?php endif; ?>
 </div>
+<script>
+// Inline workorder status change
+function updateWoStatus(sel) {
+    var id     = sel.dataset.id;
+    var status = sel.value;
+    var nonce  = '<?php echo wp_create_nonce('vesho_admin_nonce'); ?>';
+    sel.disabled = true;
+    fetch('<?php echo admin_url('admin-ajax.php'); ?>', {
+        method: 'POST',
+        headers: {'Content-Type':'application/x-www-form-urlencoded'},
+        body: 'action=vesho_update_workorder_status&workorder_id=' + id + '&status=' + encodeURIComponent(status) + '&_ajax_nonce=' + nonce
+    }).then(function(r){ return r.json(); }).then(function(d){
+        sel.disabled = false;
+        if (!d.success) { alert('Viga salvestamisel'); sel.value = sel.dataset.prev || sel.value; }
+    });
+}
+document.querySelectorAll('.wo-status-sel').forEach(function(s){
+    s.dataset.prev = s.value;
+    s.addEventListener('mousedown', function(){ this.dataset.prev = this.value; });
+});
+
+// Live search (debounced auto-submit)
+(function(){
+    var inp = document.querySelector('input[name="s"].crm-search');
+    if (!inp) return;
+    var timer;
+    inp.addEventListener('input', function(){
+        clearTimeout(timer);
+        timer = setTimeout(function(){ inp.closest('form').submit(); }, 350);
+    });
+})();
+</script>
