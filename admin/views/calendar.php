@@ -396,8 +396,12 @@ function openEventModal(id) {
     if (ev.date) document.getElementById('postpone-date').value = ev.date;
 
     var acts = document.getElementById('event-modal-actions');
+    var completeBtn = ev.status !== 'completed' && ev.status !== 'cancelled'
+        ? '<button class="crm-btn crm-btn-sm" style="background:#10b981;color:#fff" onclick="doCompleteMaintenance()">✓ Tehtud</button>'
+        : '';
     acts.innerHTML = '<a href="<?php echo esc_js(admin_url('admin.php?page=vesho-crm-maintenances&action=edit&maintenance_id=')); ?>' + id +
         '" class="crm-btn crm-btn-sm crm-btn-outline">✏️ Muuda</a>' +
+        completeBtn +
         '<button class="crm-btn crm-btn-sm" style="background:#f59e0b;color:#fff" onclick="showPostpone()">📅 Edasilükka</button>';
 
     document.getElementById('vesho-event-modal').style.display = 'flex';
@@ -423,6 +427,17 @@ function doPostpone() {
         } else {
             alert('Viga: ' + (data.data || 'Teadmata viga'));
         }
+    });
+}
+function doCompleteMaintenance() {
+    if (!currentEventId || !confirm('Märgi hooldus tehtuks?')) return;
+    fetch(veshoAjaxUrl, {
+        method: 'POST',
+        headers: {'Content-Type':'application/x-www-form-urlencoded'},
+        body: 'action=vesho_complete_maintenance&maintenance_id=' + currentEventId + '&_ajax_nonce=' + veshoNonce
+    }).then(function(r){ return r.json(); }).then(function(data){
+        if (data.success) { closeEventModal(); window.location.reload(); }
+        else alert('Viga: ' + (data.data || 'Teadmata viga'));
     });
 }
 document.getElementById('vesho-event-modal').addEventListener('click', function(e){ if(e.target===this) closeEventModal(); });

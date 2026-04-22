@@ -258,6 +258,10 @@ function vesho_worker_is_clocked_in($worker_id) {
                 <td class="td-actions">
                     <a href="<?php echo admin_url('admin.php?page=vesho-crm-workers&action=edit&worker_id='.$w->id); ?>" class="crm-btn crm-btn-icon crm-btn-sm" title="Muuda">✏️</a>
                     <a href="<?php echo admin_url('admin.php?page=vesho-crm-workhours&worker_id='.$w->id); ?>" class="crm-btn crm-btn-icon crm-btn-sm" title="Töötunnid">⏱️</a>
+                    <button type="button" class="crm-btn crm-btn-icon crm-btn-sm worker-toggle-btn"
+                        data-id="<?php echo $w->id; ?>" data-active="<?php echo $w->active ? 1 : 0; ?>"
+                        title="<?php echo $w->active ? 'Deaktiveeri' : 'Aktiveeri'; ?>"
+                        onclick="toggleWorkerActive(this)"><?php echo $w->active ? '🟢' : '⚫'; ?></button>
                     <a href="<?php echo wp_nonce_url(admin_url('admin-post.php?action=vesho_delete_worker&worker_id='.$w->id),'vesho_delete_worker'); ?>"
                        class="crm-btn crm-btn-icon crm-btn-sm" onclick="return confirm('Kustuta töötaja?')">🗑️</a>
                 </td>
@@ -370,3 +374,38 @@ function vesho_worker_is_clocked_in($worker_id) {
     </script>
     <?php endif; ?>
 </div>
+<script>
+// Toggle worker active/inactive
+function toggleWorkerActive(btn) {
+    var id     = btn.dataset.id;
+    var nonce  = '<?php echo wp_create_nonce('vesho_admin_nonce'); ?>';
+    btn.disabled = true;
+    fetch('<?php echo admin_url('admin-ajax.php'); ?>', {
+        method: 'POST',
+        headers: {'Content-Type':'application/x-www-form-urlencoded'},
+        body: 'action=vesho_toggle_worker_active&worker_id=' + id + '&_ajax_nonce=' + nonce
+    }).then(function(r){ return r.json(); }).then(function(d){
+        btn.disabled = false;
+        if (d.success) {
+            var active = d.data.active;
+            btn.dataset.active = active;
+            btn.title = active ? 'Deaktiveeri' : 'Aktiveeri';
+            btn.textContent = active ? '🟢' : '⚫';
+            var row = btn.closest('tr');
+            var badge = row ? row.querySelector('.crm-badge') : null;
+            if (badge && (badge.classList.contains('badge-success') || badge.classList.contains('badge-gray'))) {
+                badge.className = active ? 'crm-badge badge-success' : 'crm-badge badge-gray';
+                badge.textContent = active ? 'Aktiivne' : 'Mitteaktiivne';
+            }
+        } else { alert('Viga!'); }
+    });
+}
+
+// Live search — auto-submit on keyup
+(function(){
+    var inp = document.querySelector('input[name="s"].crm-search');
+    if (!inp) return;
+    var t;
+    inp.addEventListener('input', function(){ clearTimeout(t); t = setTimeout(function(){ inp.closest('form').submit(); }, 350); });
+})();
+</script>

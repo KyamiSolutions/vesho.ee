@@ -636,6 +636,7 @@ if ( $action === 'print' && $invoice_id ) {
                     <?php if (in_array($inv->status, ['paid','sent'])) : ?>
                     <button class="crm-btn crm-btn-sm" style="background:#f0f9ff;border:1px solid #00b4c8;color:#00b4c8;padding:3px 8px;font-size:11px;font-weight:700" onclick="openCreditNoteModal(<?php echo $inv->id; ?>, '<?php echo esc_js($inv->invoice_number); ?>', <?php echo $inv->amount; ?>)">KARV</button>
                     <?php endif; ?>
+                    <button class="crm-btn crm-btn-icon crm-btn-sm" title="Kopeeri uueks mustandiks" onclick="copyInvoice(<?php echo $inv->id; ?>)">📋</button>
                 </td>
             </tr>
             <?php endforeach; ?>
@@ -743,6 +744,27 @@ if ( $action === 'print' && $invoice_id ) {
         else alert('Viga: ' + d.data);
       });
     }
+    function copyInvoice(id) {
+      if (!confirm('Kopeeri arve uueks mustandiks?')) return;
+      fetch(ajaxurl, {
+        method: 'POST',
+        headers: {'Content-Type':'application/x-www-form-urlencoded'},
+        body: 'action=vesho_copy_invoice&invoice_id=' + id + '&_ajax_nonce=' + veshoNonce
+      }).then(r=>r.json()).then(d=>{
+        if (d.success) {
+          if (confirm('Arve ' + d.data.number + ' loodud! Ava muutmiseks?')) {
+            window.location.href = d.data.edit_url;
+          } else { location.reload(); }
+        } else { alert('Viga: ' + d.data); }
+      });
+    }
+    // Live search auto-submit
+    (function(){
+      var inp = document.querySelector('input[name="s"].crm-search');
+      if (!inp) return;
+      var t;
+      inp.addEventListener('input', function(){ clearTimeout(t); t = setTimeout(function(){ inp.closest('form').submit(); }, 350); });
+    })();
     </script>
 
     <?php endif; ?>
