@@ -3,7 +3,7 @@
 class Vesho_CRM_Client_Portal {
 
     public static function init() {
-        if (!session_id() && !headers_sent()) {
+        if (!session_id() && !headers_sent() && !is_admin()) {
             session_start();
         }
         // Hide WP admin bar on portal pages
