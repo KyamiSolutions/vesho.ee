@@ -41,6 +41,15 @@ $tickets = $wpdb->get_results(
 $total    = count($tickets);
 $open_cnt = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}vesho_support_tickets WHERE status='open'");
 
+// KPI counts (v2.9.54)
+$kpi_rows = $wpdb->get_results("SELECT status, COUNT(*) as cnt FROM {$wpdb->prefix}vesho_support_tickets GROUP BY status");
+$kpi_map  = [];
+foreach ($kpi_rows as $k) $kpi_map[$k->status] = (int)$k->cnt;
+$kpi_all    = array_sum($kpi_map);
+$kpi_open   = $kpi_map['open']        ?? 0;
+$kpi_inprog = $kpi_map['in_progress'] ?? 0;
+$kpi_closed = $kpi_map['closed']      ?? 0;
+
 $statuses   = ['open'=>'Avatud','in_progress'=>'Töös','closed'=>'Suletud','spam'=>'Rämpspost'];
 $priorities = ['low'=>'Madal','normal'=>'Tavaline','high'=>'Kõrge','urgent'=>'Kiire'];
 $pcls       = ['low'=>'badge-gray','normal'=>'badge-info','high'=>'badge-warning','urgent'=>'badge-danger'];
@@ -176,49 +185,209 @@ $pcls       = ['low'=>'badge-gray','normal'=>'badge-info','high'=>'badge-warning
         </div>
     </div>
     <?php else : ?>
-    <div class="crm-card">
-        <div class="crm-toolbar">
-            <form method="GET" style="display:flex;gap:8px;flex:1">
-                <input type="hidden" name="page" value="vesho-crm-tickets">
-                <select class="crm-form-select" name="status" style="max-width:140px;padding:7px 10px;font-size:13px">
-                    <option value="">Kõik</option>
-                    <?php foreach ($statuses as $v=>$l) : ?>
-                        <option value="<?php echo $v; ?>" <?php selected($filter_st,$v); ?>><?php echo $l; ?></option>
-                    <?php endforeach; ?>
-                </select>
-                <input class="crm-search" type="search" name="s" placeholder="Otsi teemat, klienti..." value="<?php echo esc_attr($search); ?>">
-                <button type="submit" class="crm-btn crm-btn-outline crm-btn-sm">Otsi</button>
-            </form>
+    <!-- KPI cards (v2.9.54) -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px">
+        <div class="crm-stat-card" style="border-top:3px solid #6b7280;cursor:pointer" onclick="tkFilterStatus('')">
+            <div class="crm-stat-num"><?php echo $kpi_all; ?></div>
+            <div class="crm-stat-label">Kõik piletid</div>
         </div>
-        <?php if (empty($tickets)) : ?>
-            <div class="crm-empty">Tugipileteid ei leitud.</div>
-        <?php else : ?>
-        <table class="crm-table">
-            <thead><tr>
-                <th>ID</th><th>Klient</th><th>Teema</th><th>Töötaja</th><th>Prioriteet</th><th>Saadetud</th><th>Staatus</th><th class="td-actions">Toimingud</th>
-            </tr></thead>
-            <tbody>
-            <?php foreach ($tickets as $t) : ?>
-            <tr <?php if ($t->status==='open') echo 'style="font-weight:600;background:#fef9e7"'; ?>>
-                <td style="color:#6b8599">#<?php echo $t->id; ?></td>
-                <td><?php echo esc_html($t->client_name ?? '–'); ?></td>
-                <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><?php echo esc_html($t->subject); ?></td>
-                <td style="font-size:12px;color:#64748b"><?php echo $t->worker_name ? '👷 '.esc_html($t->worker_name) : '—'; ?></td>
-                <td><span class="crm-badge <?php echo esc_attr($pcls[$t->priority]??'badge-gray'); ?>"><?php echo esc_html($priorities[$t->priority]??$t->priority); ?></span></td>
-                <td><?php echo vesho_crm_format_date($t->created_at, 'd.m H:i'); ?></td>
-                <td><?php echo vesho_crm_status_badge($t->status); ?></td>
-                <td class="td-actions">
-                    <a href="<?php echo admin_url('admin.php?page=vesho-crm-tickets&action=view&ticket_id='.$t->id); ?>" class="crm-btn crm-btn-icon crm-btn-sm" title="Vaata">👁️</a>
-                    <?php if ($t->status !== 'closed') : ?>
-                    <a href="<?php echo wp_nonce_url(admin_url('admin-post.php?action=vesho_update_ticket_status&ticket_id='.$t->id.'&status=closed'),'vesho_ticket_action'); ?>"
-                       class="crm-btn crm-btn-icon crm-btn-sm" title="Sulge">✅</a>
-                    <?php endif; ?>
-                </td>
-            </tr>
-            <?php endforeach; ?>
-            </tbody>
-        </table>
-        <?php endif; ?>
+        <div class="crm-stat-card" style="border-top:3px solid #f59e0b;cursor:pointer" onclick="tkFilterStatus('open')">
+            <div class="crm-stat-num" style="color:#f59e0b"><?php echo $kpi_open; ?></div>
+            <div class="crm-stat-label">Avatud</div>
+        </div>
+        <div class="crm-stat-card" style="border-top:3px solid #3b82f6;cursor:pointer" onclick="tkFilterStatus('in_progress')">
+            <div class="crm-stat-num" style="color:#3b82f6"><?php echo $kpi_inprog; ?></div>
+            <div class="crm-stat-label">Töös</div>
+        </div>
+        <div class="crm-stat-card" style="border-top:3px solid #10b981;cursor:pointer" onclick="tkFilterStatus('closed')">
+            <div class="crm-stat-num" style="color:#10b981"><?php echo $kpi_closed; ?></div>
+            <div class="crm-stat-label">Suletud</div>
+        </div>
+    </div>
+
+    <!-- Split view -->
+    <div class="crm-card" style="overflow:hidden">
+        <div style="display:flex;min-height:560px">
+
+            <!-- Left panel: ticket list -->
+            <div style="width:360px;flex-shrink:0;border-right:1px solid #e2e8f0;display:flex;flex-direction:column">
+                <!-- Search/filter toolbar -->
+                <div style="padding:10px 12px;border-bottom:1px solid #e2e8f0;flex-shrink:0">
+                    <form method="GET" style="display:flex;gap:6px">
+                        <input type="hidden" name="page" value="vesho-crm-tickets">
+                        <select id="tk-status-filter" class="crm-form-select" name="status" style="font-size:12px;padding:5px 8px;max-width:120px">
+                            <option value="">Kõik</option>
+                            <?php foreach ($statuses as $v=>$l) : ?>
+                                <option value="<?php echo $v; ?>" <?php selected($filter_st,$v); ?>><?php echo $l; ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <input class="crm-form-input" type="search" name="s" placeholder="Otsi..." value="<?php echo esc_attr($search); ?>" style="font-size:12px;padding:5px 8px">
+                        <button type="submit" class="crm-btn crm-btn-outline crm-btn-sm" style="padding:5px 10px;font-size:11px">🔍</button>
+                    </form>
+                </div>
+                <!-- Ticket rows -->
+                <div style="overflow-y:auto;flex:1">
+                <?php if (empty($tickets)) : ?>
+                    <div style="padding:24px;text-align:center;color:#94a3b8;font-size:13px">Pileteid ei leitud.</div>
+                <?php else : ?>
+                <?php foreach ($tickets as $t) : ?>
+                <div class="tk-list-row" data-id="<?php echo $t->id; ?>"
+                     style="padding:10px 14px;cursor:pointer;border-bottom:1px solid #f1f5f9;transition:.12s<?php if ($t->status==='open') echo ';background:#fefce8'; ?>">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
+                        <span style="font-size:11px;color:#94a3b8">#<?php echo $t->id; ?></span>
+                        <?php echo vesho_crm_status_badge($t->status); ?>
+                    </div>
+                    <div style="font-size:13px;font-weight:600;color:#1a2a38;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><?php echo esc_html($t->subject); ?></div>
+                    <div style="font-size:11px;color:#64748b;margin-top:2px"><?php echo esc_html($t->client_name??'–'); ?> · <?php echo vesho_crm_format_date($t->created_at,'d.m.Y'); ?></div>
+                </div>
+                <?php endforeach; ?>
+                <?php endif; ?>
+                </div>
+            </div>
+
+            <!-- Right panel: detail (AJAX) -->
+            <div id="tk-detail-panel" style="flex:1;overflow-y:auto">
+                <div style="display:flex;align-items:center;justify-content:center;height:100%;min-height:300px;color:#94a3b8;font-size:14px;flex-direction:column;gap:8px">
+                    <span style="font-size:32px">🎫</span>
+                    <span>← Vali pilet nimekirjast</span>
+                </div>
+            </div>
+
+        </div>
     </div>
     <?php endif; ?>
 </div>
+<script>
+var tkNonce  = '<?php echo wp_create_nonce('vesho_admin_nonce'); ?>';
+var tkAjax   = '<?php echo admin_url('admin-ajax.php'); ?>';
+var tkStatuses   = <?php echo json_encode($statuses); ?>;
+var tkPriorities = <?php echo json_encode($priorities); ?>;
+var tkPcls       = <?php echo json_encode($pcls); ?>;
+
+function tkFilterStatus(st) {
+    var sel = document.getElementById('tk-status-filter');
+    if (sel) { sel.value = st; sel.closest('form').submit(); }
+}
+
+document.querySelectorAll('.tk-list-row').forEach(function(row) {
+    row.addEventListener('click', function() {
+        document.querySelectorAll('.tk-list-row').forEach(function(r){ r.style.background = r.dataset.origBg || ''; });
+        row.dataset.origBg = row.style.background;
+        row.style.background = '#eff6ff';
+        loadTicketDetail(parseInt(row.dataset.id));
+    });
+});
+
+function loadTicketDetail(id) {
+    var panel = document.getElementById('tk-detail-panel');
+    panel.innerHTML = '<div style="padding:32px;text-align:center;color:#94a3b8">Laadin...</div>';
+    fetch(tkAjax, {
+        method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body:'action=vesho_get_ticket_detail&ticket_id='+id+'&_ajax_nonce='+tkNonce
+    }).then(function(r){return r.json();}).then(function(d){
+        if (!d.success) { panel.innerHTML='<div style="padding:24px;color:#ef4444">Viga laadimisel</div>'; return; }
+        renderTicketDetail(d.data, panel);
+    });
+}
+
+function renderTicketDetail(data, panel) {
+    var t = data.ticket; var replies = data.replies;
+    var stLabel = tkStatuses[t.status]||t.status;
+    var prLabel = tkPriorities[t.priority]||t.priority;
+    var prCls   = tkPcls[t.priority]||'badge-gray';
+    var html    = '<div style="padding:20px">';
+    // Header
+    html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;flex-wrap:wrap;gap:8px">';
+    html += '<div><div style="font-size:11px;color:#94a3b8;margin-bottom:3px">#'+t.id+'</div>';
+    html += '<h3 style="font-size:15px;font-weight:700;color:#1a2a38;margin:0 0 4px">'+tkEsc(t.subject)+'</h3>';
+    html += '<div style="font-size:12px;color:#64748b">'+tkEsc(t.client_name||'–')+(t.client_email?(' · <a href="mailto:'+tkEsc(t.client_email)+'">'+tkEsc(t.client_email)+'</a>'):'')+'</div></div>';
+    html += '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">';
+    html += '<span id="tk-sbadge-'+t.id+'" class="crm-badge '+tkStCls(t.status)+'">'+stLabel+'</span>';
+    html += '<span class="crm-badge '+prCls+'">'+prLabel+'</span></div></div>';
+    // Thread
+    html += '<div id="tk-thread" style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px;max-height:320px;overflow-y:auto">';
+    html += tkBuildMsg(t.client_name||'Klient', t.created_at, t.message, false);
+    for (var i=0;i<replies.length;i++) { html += tkBuildMsg(replies[i].author, replies[i].created_at, replies[i].message, replies[i].author!=='client'); }
+    html += '</div>';
+    // Status buttons
+    html += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;align-items:center">';
+    html += '<strong style="font-size:12px;color:#64748b">Muuda:</strong>';
+    ['open','in_progress','closed','spam'].forEach(function(sv){
+        var dis = sv===t.status ? ' disabled style="opacity:.4"' : '';
+        html += '<button class="crm-btn crm-btn-outline crm-btn-sm" onclick="tkSetStatus('+t.id+',\''+sv+'\',this)"'+dis+'>'+(tkStatuses[sv]||sv)+'</button>';
+    });
+    html += '</div>';
+    // Reply form
+    html += '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px">';
+    html += '<label style="font-size:12px;font-weight:600;color:#475569;display:block;margin-bottom:6px">✉️ Vastus kliendile</label>';
+    html += '<textarea id="tk-reply-'+t.id+'" class="crm-form-textarea" style="min-height:80px;font-size:13px" placeholder="Kirjuta vastus..."></textarea>';
+    html += '<div style="margin-top:8px;display:flex;justify-content:space-between;align-items:center">';
+    html += '<label style="font-size:12px;cursor:pointer;display:flex;gap:5px;align-items:center"><input type="checkbox" id="tk-close-'+t.id+'"> Sulge pilet pärast vastust</label>';
+    html += '<button class="crm-btn crm-btn-primary crm-btn-sm" onclick="tkReply('+t.id+')">✉️ Saada</button>';
+    html += '</div></div></div>';
+    panel.innerHTML = html;
+}
+
+function tkStCls(s) {
+    return {open:'badge-warning',in_progress:'badge-info',closed:'badge-success',spam:'badge-danger'}[s]||'badge-gray';
+}
+
+function tkBuildMsg(author, time, msg, isAdmin) {
+    var d = isAdmin?'flex-direction:row-reverse;':'';
+    var bb = isAdmin?'background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px 0 8px 8px':'background:#f4f7f9;border-radius:0 8px 8px 8px';
+    var na = isAdmin?'text-align:right;':'';
+    var ic = isAdmin?'🛠️':'👤'; var ib = isAdmin?'#d1fae5':'#e0f2fe';
+    return '<div style="display:flex;gap:10px;align-items:flex-start;'+d+'">'
+        +'<div style="width:28px;height:28px;border-radius:50%;background:'+ib+';display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0">'+ic+'</div>'
+        +'<div style="flex:1"><div style="font-size:11px;color:#6b8599;margin-bottom:3px;'+na+'"><strong style="color:#1a2a38">'+tkEsc(author)+'</strong> · '+tkEsc(time||'')+'</div>'
+        +'<div style="'+bb+';padding:10px 14px;font-size:13px;line-height:1.6;white-space:pre-wrap">'+tkEsc(msg||'')+'</div></div></div>';
+}
+
+function tkSetStatus(id, status, btn) {
+    if (btn.disabled) return;
+    fetch(tkAjax, {method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body:'action=vesho_ajax_ticket_status&ticket_id='+id+'&status='+status+'&_ajax_nonce='+tkNonce
+    }).then(function(r){return r.json();}).then(function(d){
+        if (d.success) {
+            var badge = document.getElementById('tk-sbadge-'+id);
+            if (badge) { badge.className='crm-badge '+tkStCls(status); badge.textContent=tkStatuses[status]||status; }
+            var listRow = document.querySelector('.tk-list-row[data-id="'+id+'"]');
+            if (listRow) {
+                var lb = listRow.querySelector('.crm-badge');
+                if (lb) { lb.className='crm-badge '+tkStCls(status); lb.textContent=tkStatuses[status]||status; }
+            }
+            document.querySelectorAll('[onclick^="tkSetStatus('+id+'"]').forEach(function(b){ b.disabled=false; });
+            btn.disabled = true;
+        }
+    });
+}
+
+function tkReply(id) {
+    var ta = document.getElementById('tk-reply-'+id);
+    var msg = ta ? ta.value.trim() : '';
+    if (!msg) { ta && ta.focus(); return; }
+    var close = document.getElementById('tk-close-'+id);
+    var shouldClose = (close && close.checked) ? '1' : '0';
+    fetch(tkAjax, {method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body:'action=vesho_ajax_reply_ticket&ticket_id='+id+'&message='+encodeURIComponent(msg)+'&close_ticket='+shouldClose+'&_ajax_nonce='+tkNonce
+    }).then(function(r){return r.json();}).then(function(d){
+        if (d.success) {
+            var thread = document.getElementById('tk-thread');
+            if (thread) {
+                thread.insertAdjacentHTML('beforeend', tkBuildMsg(d.data.author, d.data.time, d.data.message, true));
+                thread.scrollTop = thread.scrollHeight;
+            }
+            if (ta) ta.value = '';
+            if (close) close.checked = false;
+            if (d.data.closed) tkSetStatus(id, 'closed', document.querySelector('[onclick="tkSetStatus('+id+',\'closed\',this)"]')||{disabled:false});
+        } else {
+            alert(d.data||'Viga saatmisel');
+        }
+    });
+}
+
+function tkEsc(s) {
+    if (!s) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>

@@ -597,6 +597,16 @@ code,.vc{background:#f1f5f9;border:1px solid #e2e8f0;border-radius:3px;padding:1
       <div class="vd-sec" id="uuendused">
         <div class="vd-sec-h"><span class="ic cyan">🚀</span>Uuendused</div>
         <div class="vd-tip"><b>Paigaldatud</b>Vesho CRM <strong>v<?php echo esc_html($plugin_ver); ?></strong> · Teema <strong>v<?php echo esc_html($theme_ver); ?></strong></div>
+        <div class="vd-h3">v2.9.54 — Uued funktsioonid</div>
+        <div class="vd-g3">
+          <div class="vd-c"><h4>🎫 Tugipiletid: split-vaade</h4><p>Piletite leht on nüüd jagatud vaateks: vasak paneel näitab nimekirja, parem paneel laab valitud pileti detailid AJAX-iga — lehte ei laadita uuesti.</p></div>
+          <div class="vd-c"><h4>💬 Vastamine ja staatuse muutmine kohapeal</h4><p>Pileti detailpaneelis saad saata vastuse ja muuta staatust otse — ilma eraldi vaateta. Vastus ilmub sõnumite ahelasse koheselt.</p></div>
+          <div class="vd-c"><h4>🕐 Töötunnid: kellaajavahekaart</h4><p>Töötundide lehel on nüüd teine vahekaart "Kellaaeg sisse/välja" — näitab aktiivseid ja lõpetatud kellaajasisestusi.</p></div>
+          <div class="vd-c"><h4>📊 Töötunnide kokkuvõttekaardid</h4><p>Töötundide lehe ülaosas on kolm kokkuvõttekaarti: nädala tunnid, kuu tunnid ja praegu töös olevad töötajad.</p></div>
+          <div class="vd-c"><h4>📷 Töökäskude fotod nimekirjast</h4><p>Töökäskude nimekirjas on 📷 nupp iga rea juures. Klõpsa, et laadida fotod AJAX-iga ridade vahele — enne/pärast/muu rühmitusega.</p></div>
+          <div class="vd-c"><h4>🧾 KM lüliti arvete vormil</h4><p>Arve ridade tabeli kohal on "KM-ga / KM-ta" nupp — lülitab kõik read korraga. KM väärtused taastatakse tagasilülitamisel.</p></div>
+          <div class="vd-c"><h4>🔍 Kliendi automaatne täitmine arvetel</h4><p>Arve vorme saab kliendi leida kiirelt nimeotsinguga — kirjuta nimi, vali soovitus. Ei tarvitse enam kerida pikka nimekirja.</p></div>
+        </div>
         <div class="vd-h3">v2.9.53 — Uued funktsioonid</div>
         <div class="vd-g3">
           <div class="vd-c"><h4>📋 Broneeringute kinnitamine töölaual</h4><p>Töölaud näitab nüüd iga ootava broneeringu eraldi reana — kinnita ✓ või lükka tagasi ✕ ilma lehelt lahkumata.</p></div>
