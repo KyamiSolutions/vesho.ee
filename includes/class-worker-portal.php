@@ -652,10 +652,10 @@ class Vesho_CRM_Worker_Portal {
     <tbody>
     <?php foreach ($today_list as $wo): ?>
     <tr>
-      <td><strong><?php echo esc_html($wo->title); ?></strong></td>
-      <td><?php echo esc_html($wo->client_name ?? '—'); ?></td>
-      <td style="color:#64748b;font-size:12px"><?php echo esc_html($wo->service_type ?? '—'); ?></td>
-      <td><?php echo self::status_badge($wo->status); ?></td>
+      <td data-label="Töökäsk"><strong><?php echo esc_html($wo->title); ?></strong></td>
+      <td data-label="Klient"><?php echo esc_html($wo->client_name ?? '—'); ?></td>
+      <td data-label="Liik" style="color:#64748b;font-size:12px"><?php echo esc_html($wo->service_type ?? '—'); ?></td>
+      <td data-label="Staatus"><?php echo self::status_badge($wo->status); ?></td>
     </tr>
     <?php endforeach; ?>
     </tbody>
@@ -672,10 +672,10 @@ class Vesho_CRM_Worker_Portal {
     <tbody>
     <?php foreach ($upcoming as $wo): ?>
     <tr>
-      <td><strong><?php echo esc_html($wo->title); ?></strong></td>
-      <td><?php echo esc_html($wo->client_name ?? '—'); ?></td>
-      <td style="color:#64748b;font-size:12px"><?php echo esc_html($wo->scheduled_date ? date('d.m.Y', strtotime($wo->scheduled_date)) : '—'); ?></td>
-      <td><?php echo self::status_badge($wo->status); ?></td>
+      <td data-label="Töökäsk"><strong><?php echo esc_html($wo->title); ?></strong></td>
+      <td data-label="Klient"><?php echo esc_html($wo->client_name ?? '—'); ?></td>
+      <td data-label="Kuupäev" style="color:#64748b;font-size:12px"><?php echo esc_html($wo->scheduled_date ? date('d.m.Y', strtotime($wo->scheduled_date)) : '—'); ?></td>
+      <td data-label="Staatus"><?php echo self::status_badge($wo->status); ?></td>
     </tr>
     <?php endforeach; ?>
     </tbody>
@@ -3059,11 +3059,11 @@ document.querySelectorAll('.vwp-hist-header').forEach(function(hdr){
       }
     ?>
     <tr>
-      <td><?php echo esc_html($h->date ? date('d.m.Y', strtotime($h->date)) : '—'); ?></td>
-      <td><?php echo esc_html($h->order_title ?? '—'); ?></td>
-      <td><strong><?php echo number_format((float)$h->hours, 1); ?> h</strong></td>
-      <td style="color:#64748b;font-size:12px"><?php echo esc_html($clock_info); ?></td>
-      <td style="color:#64748b"><?php echo esc_html($h->description ?? '—'); ?></td>
+      <td data-label="Kuupäev"><?php echo esc_html($h->date ? date('d.m.Y', strtotime($h->date)) : '—'); ?></td>
+      <td data-label="Töökäsk"><?php echo esc_html($h->order_title ?? '—'); ?></td>
+      <td data-label="Tunnid"><strong><?php echo number_format((float)$h->hours, 1); ?> h</strong></td>
+      <td data-label="Kellaaeg" style="color:#64748b;font-size:12px"><?php echo esc_html($clock_info); ?></td>
+      <td data-label="Kirjeldus" style="color:#64748b"><?php echo esc_html($h->description ?? '—'); ?></td>
     </tr>
     <?php endforeach; ?>
     </tbody>
@@ -4082,7 +4082,7 @@ document.querySelectorAll('.vwp-hist-header').forEach(function(hdr){
     private static function portal_css() {
         return '
 /* === Vesho Worker Portal CSS === */
-.vwp-wrap{display:flex;min-height:100vh;font-family:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:14px;color:#1e293b;background:#f8fafc}
+.vwp-wrap{display:flex;min-height:100vh;font-family:Barlow,system-ui,sans-serif;font-size:14px;color:#1e293b;background:#f8fafc}
 .vwp-sidebar{width:240px;min-height:100vh;background:#1e293b;display:flex;flex-direction:column;flex-shrink:0;position:sticky;top:0}
 @media(min-width:769px){.vwp-nav-arrow{display:none !important;pointer-events:none !important}}
 .vwp-sidebar-logo{padding:24px 20px 12px;font-size:22px;font-weight:800;color:#fff;letter-spacing:-.5px}
@@ -4150,114 +4150,163 @@ document.querySelectorAll('.vwp-hist-header').forEach(function(hdr){
 .vwp-login-logo{font-size:24px;font-weight:800;color:#1e293b;margin-bottom:4px;letter-spacing:-.5px}
 .vwp-login-logo span{color:#f59e0b}
 .vwp-login-title{font-size:18px;font-weight:600;color:#1e293b;margin:0 0 24px}
-/* ═══════════════════════════════════════════════════════
-   MOBIIL — Vesho Worker Portal täielik mobiilivaade
-   ═══════════════════════════════════════════════════════ */
-html:has(.vwp-wrap),body:has(.vwp-wrap){overscroll-behavior-x:none;touch-action:pan-y}
-.vwp-wrap,.vwp-main,.vwp-content{box-sizing:border-box;max-width:100%}
-.vwp-table-wrap{touch-action:pan-x pan-y}
+/* ════════════════════════════════════════════════════════════
+   MOBIIL — Vesho Worker Portal v2.9.64
+   ════════════════════════════════════════════════════════════ */
 
-/* 1024px: tahvelarvuti */
+/* Globaalsed alused */
+html:has(.vwp-wrap),body:has(.vwp-wrap){overscroll-behavior-x:none;touch-action:pan-y}
+*{box-sizing:border-box}
+.vwp-wrap,.vwp-main,.vwp-content{box-sizing:border-box;max-width:100%}
+.vwp-table-wrap{touch-action:pan-x pan-y;-webkit-overflow-scrolling:touch}
+
+/* ── 1024px: tahvelarvuti ── */
 @media(max-width:1024px){
   .vwp-content{padding:24px 20px}
   .vwp-stat-grid{grid-template-columns:repeat(2,1fr)}
 }
 
-/* 768px: mobiil */
+/* ── 768px: mobiil ── */
 @media(max-width:768px){
-  /* Saidi päis: portaalil ainult logo */
-  body:has(.vwp-wrap) .site-topbar,body:has(.vwp-wrap) .header-nav,
-  body:has(.vwp-wrap) .header-phone,body:has(.vwp-wrap) .header-cta,
-  body:has(.vwp-wrap) .hamburger{display:none !important}
-  body:has(.vwp-wrap) .site-header .header-inner{height:52px !important;padding:0 16px !important}
-  body:has(.vwp-wrap) #page-content{padding-top:52px !important}
-  body:has(.vwp-wrap) #page,body:has(.vwp-wrap) #primary,body:has(.vwp-wrap) #main,
-  body:has(.vwp-wrap) .entry-content,body:has(.vwp-wrap) article{padding:0 !important;margin:0 !important}
 
-  /* Bottom nav — amber aktsendiga */
+  /* Avaliku saidi päis: ainult logo */
+  body:has(.vwp-wrap) .site-topbar,
+  body:has(.vwp-wrap) .header-nav,
+  body:has(.vwp-wrap) .header-phone,
+  body:has(.vwp-wrap) .header-cta,
+  body:has(.vwp-wrap) .hamburger{display:none !important}
+  body:has(.vwp-wrap) .site-header .header-inner{height:52px !important;padding:0 16px !important;min-height:unset !important}
+  body:has(.vwp-wrap) #page-content{padding-top:52px !important}
+  body:has(.vwp-wrap) #page,
+  body:has(.vwp-wrap) #primary,
+  body:has(.vwp-wrap) #main,
+  body:has(.vwp-wrap) .entry-content,
+  body:has(.vwp-wrap) article{padding:0 !important;margin:0 !important}
+
+  /* ── Bottom navigation — amber aktsent ── */
   .vwp-sidebar{
-    position:fixed !important;bottom:0 !important;left:0 !important;right:0 !important;top:auto !important;
+    position:fixed !important;
+    bottom:0 !important;left:0 !important;right:0 !important;top:auto !important;
     width:100% !important;min-height:unset !important;
-    height:calc(62px + env(safe-area-inset-bottom)) !important;
-    flex-direction:row !important;z-index:500 !important;overflow:hidden !important;
-    border-top:1px solid rgba(255,255,255,.1) !important;
+    height:calc(64px + env(safe-area-inset-bottom)) !important;
+    flex-direction:row !important;
+    z-index:900 !important;
+    overflow:hidden !important;
+    border-top:1px solid rgba(245,158,11,.2) !important;
     padding:0 0 env(safe-area-inset-bottom) !important;
     background:#0d1f2d !important;
-    box-shadow:0 -4px 24px rgba(0,0,0,.3) !important;
+    box-shadow:0 -2px 20px rgba(0,0,0,.35) !important;
   }
   .vwp-sidebar-logo,.vwp-sidebar-label,.vwp-sidebar-footer{display:none !important}
 
-  /* Nav rida */
-  .vwp-nav{display:flex !important;flex-direction:row !important;flex:1 !important;padding:0 !important;
-    min-width:0 !important;overflow-x:auto !important;overflow-y:hidden !important;
+  /* Nav: flex rida */
+  .vwp-nav{
+    display:flex !important;flex-direction:row !important;flex:1 !important;
+    padding:0 !important;margin:0 !important;min-width:0 !important;
+    overflow-x:auto !important;overflow-y:hidden !important;
     scroll-behavior:smooth !important;-webkit-overflow-scrolling:touch !important;
-    scrollbar-width:none !important;align-items:stretch !important}
-  .vwp-nav::-webkit-scrollbar{display:none !important}
-  .vwp-nav li{flex:1 1 0 !important;min-width:52px !important;margin:0 !important;display:flex !important}
-
-  /* Nav link: amber aktsent */
-  .vwp-nav-link{
-    flex-direction:column !important;justify-content:center !important;align-items:center !important;
-    gap:3px !important;padding:8px 4px 6px !important;font-size:10px !important;font-weight:600 !important;
-    letter-spacing:.2px !important;border-radius:0 !important;
-    min-height:62px !important;height:62px !important;
-    text-align:center !important;white-space:nowrap !important;
-    color:rgba(255,255,255,.45) !important;
-    transition:color .15s,background .15s !important;flex:1 !important;
-    position:relative !important;
+    scrollbar-width:none !important;align-items:stretch !important;
   }
-  .vwp-nav-link:hover{color:rgba(255,255,255,.75) !important;background:rgba(255,255,255,.04) !important}
-  .vwp-nav-link.active{color:#f59e0b !important;background:rgba(245,158,11,.08) !important}
-  .vwp-nav-link.active::before{content:"";position:absolute;top:0;left:15%;right:15%;height:2px;background:#f59e0b;border-radius:0 0 2px 2px}
-  .vwp-nav-icon{font-size:20px !important;width:auto !important;line-height:1 !important}
+  .vwp-nav::-webkit-scrollbar{display:none !important}
+  .vwp-nav li{flex:1 1 0 !important;min-width:54px !important;margin:0 !important;display:flex !important}
 
-  /* Nav noolte nupud */
-  .vwp-nav-arrow{display:flex !important;align-items:center !important;justify-content:center !important;
-    width:30px !important;height:62px !important;background:#0d1f2d !important;
-    border:none !important;padding:0 !important;margin:0 !important;cursor:pointer !important;
-    color:rgba(255,255,255,.5) !important;font-size:18px !important;line-height:1 !important;
-    flex-shrink:0 !important;transition:opacity .2s !important}
-  .vwp-nav-arrow--left{box-shadow:5px 0 10px rgba(0,0,0,.3) !important}
-  .vwp-nav-arrow--right{box-shadow:-5px 0 10px rgba(0,0,0,.3) !important}
+  /* Nav link — amber */
+  .vwp-nav-link{
+    flex-direction:column !important;
+    justify-content:center !important;align-items:center !important;
+    gap:4px !important;padding:6px 4px 8px !important;
+    font-size:10px !important;font-weight:700 !important;letter-spacing:.3px !important;
+    border-radius:0 !important;
+    min-height:64px !important;height:64px !important;
+    text-align:center !important;white-space:nowrap !important;
+    color:rgba(255,255,255,.4) !important;
+    transition:color .15s,background .15s !important;
+    flex:1 !important;position:relative !important;
+    text-decoration:none !important;
+  }
+  .vwp-nav-link:hover{
+    color:rgba(255,255,255,.7) !important;
+    background:rgba(255,255,255,.05) !important;
+  }
+  .vwp-nav-link.active{
+    color:#f59e0b !important;
+    background:rgba(245,158,11,.07) !important;
+  }
+  .vwp-nav-link.active::after{
+    content:"" !important;
+    position:absolute !important;top:0 !important;left:20% !important;right:20% !important;
+    height:2px !important;background:#f59e0b !important;
+    border-radius:0 0 3px 3px !important;
+  }
+  .vwp-nav-icon{font-size:21px !important;width:auto !important;line-height:1 !important}
+
+  /* Nav noolenupud */
+  .vwp-nav-arrow{
+    display:flex !important;align-items:center !important;justify-content:center !important;
+    width:32px !important;height:64px !important;background:#0d1f2d !important;
+    border:none !important;padding:0 !important;cursor:pointer !important;
+    color:rgba(255,255,255,.5) !important;font-size:16px !important;
+    flex-shrink:0 !important;transition:opacity .2s !important;
+  }
+  .vwp-nav-arrow--left{box-shadow:6px 0 12px rgba(0,0,0,.3) !important}
+  .vwp-nav-arrow--right{box-shadow:-6px 0 12px rgba(0,0,0,.3) !important}
   .vwp-nav-arrow:disabled{opacity:0 !important;pointer-events:none !important}
 
-  /* Main + topbar */
+  /* Main area */
   .vwp-main{width:100% !important;min-width:0 !important}
   .vwp-hamburger{display:none !important}
-  .vwp-topbar{position:sticky !important;top:0 !important;padding:0 16px !important;
-    height:52px !important;z-index:100 !important;
-    border-bottom:1px solid #f1f5f9 !important;background:#fff !important}
-  .vwp-topbar-title{font-size:15px !important;font-weight:700 !important}
+
+  /* Topbar */
+  .vwp-topbar{
+    position:sticky !important;top:0 !important;
+    padding:0 16px !important;height:52px !important;
+    z-index:200 !important;
+    background:#fff !important;
+    border-bottom:2px solid #f1f5f9 !important;
+    box-shadow:0 1px 6px rgba(0,0,0,.06) !important;
+  }
+  .vwp-topbar-title{font-size:15px !important;font-weight:700 !important;color:#0d1f2d !important}
   .vwp-topbar-right{display:none !important}
 
   /* Sisu */
-  .vwp-content{padding:14px 14px calc(76px + env(safe-area-inset-bottom)) !important;max-width:100% !important;box-sizing:border-box !important}
+  .vwp-content{
+    padding:16px 14px calc(80px + env(safe-area-inset-bottom)) !important;
+    max-width:100% !important;
+  }
 
   /* Stat kaardid */
-  .vwp-stat-grid{grid-template-columns:1fr 1fr !important;gap:10px !important}
-  .vwp-stat-card{padding:14px 12px !important;border-radius:10px !important;border-left-width:3px !important}
-  .vwp-stat-label{font-size:10px !important;letter-spacing:.03em !important;margin-bottom:4px !important}
-  .vwp-stat-value{font-size:1.45rem !important;font-weight:800 !important}
+  .vwp-stat-grid{grid-template-columns:1fr 1fr !important;gap:10px !important;margin-bottom:16px !important}
+  .vwp-stat-card{
+    padding:14px 12px 12px !important;
+    border-radius:12px !important;
+    border-left-width:3px !important;
+    box-shadow:0 1px 4px rgba(0,0,0,.08) !important;
+  }
+  .vwp-stat-label{font-size:10px !important;letter-spacing:.04em !important;margin-bottom:6px !important}
+  .vwp-stat-value{font-size:1.5rem !important;font-weight:800 !important;line-height:1.1 !important}
 
   /* Lehepealkiri */
   .vwp-page-header{margin-bottom:14px !important}
   .vwp-page-header h1{font-size:20px !important;font-weight:800 !important}
   .vwp-page-header p{font-size:13px !important}
-  .vwp-section-title{font-size:14px !important;font-weight:700 !important}
+  .vwp-section-title{font-size:14px !important;font-weight:700 !important;margin-bottom:10px !important}
 
-  /* Kaardid ja tellimused */
-  .vwp-card{padding:14px !important;border-radius:10px !important}
+  /* Tellimuste kaardid */
+  .vwp-card{padding:14px !important;border-radius:12px !important;margin-bottom:12px !important}
+  .vwp-order-card{border-radius:12px !important;margin-bottom:10px !important}
   .vwp-order-header{padding:12px 14px !important;flex-wrap:wrap !important;gap:6px !important}
   .vwp-order-body{padding:12px 14px !important}
   .vwp-order-actions{flex-wrap:wrap !important;gap:6px !important}
 
   /* Tabelid */
-  .vwp-table{display:block !important;overflow-x:auto !important;-webkit-overflow-scrolling:touch !important}
+  .vwp-table{font-size:12.5px !important}
   .vwp-table th{font-size:10px !important;padding:8px 10px !important;white-space:nowrap !important}
-  .vwp-table td{font-size:13px !important;padding:10px 10px !important}
+  .vwp-table td{font-size:12.5px !important;padding:9px 10px !important}
 
   /* Nupud */
-  .vwp-btn-primary,.vwp-btn-outline,.vwp-btn-danger{padding:11px 18px !important;font-size:13px !important}
+  .vwp-btn-primary,.vwp-btn-outline,.vwp-btn-danger{
+    padding:11px 16px !important;font-size:13px !important;
+  }
 
   /* Login */
   .vwp-login-card{padding:28px 20px !important}
@@ -4265,28 +4314,67 @@ html:has(.vwp-wrap),body:has(.vwp-wrap){overscroll-behavior-x:none;touch-action:
   .vwp-input{font-size:16px !important}
 }
 
-/* 480px */
+/* ── 640px: tabelid → kaartideks ── */
+@media(max-width:640px){
+  .vwp-table thead{display:none !important}
+  .vwp-table-wrap{background:transparent !important;box-shadow:none !important;border-radius:0 !important}
+  .vwp-table tbody{display:flex !important;flex-direction:column !important;gap:8px !important}
+  .vwp-table tbody tr{
+    display:block !important;
+    background:#fff !important;
+    border-radius:12px !important;
+    box-shadow:0 1px 4px rgba(0,0,0,.08) !important;
+    overflow:hidden !important;
+    border-bottom:none !important;
+  }
+  .vwp-table tbody tr:nth-child(even){background:#fff !important}
+  .vwp-table tbody tr:hover{background:#fffbf0 !important}
+  .vwp-table tbody td{
+    display:flex !important;
+    align-items:center !important;
+    justify-content:space-between !important;
+    gap:10px !important;
+    padding:10px 14px !important;
+    border-bottom:1px solid #f1f5f9 !important;
+    font-size:13px !important;
+    min-height:42px !important;
+  }
+  .vwp-table tbody td:last-child{border-bottom:none !important}
+  .vwp-table tbody td::before{
+    content:attr(data-label) !important;
+    font-size:10px !important;font-weight:700 !important;
+    color:#94a3b8 !important;
+    text-transform:uppercase !important;letter-spacing:.07em !important;
+    flex-shrink:0 !important;min-width:70px !important;
+  }
+  .vwp-table tbody td[data-label=""]::before{display:none !important}
+  .vwp-table tbody td[data-label=""]{justify-content:flex-end !important}
+}
+
+/* ── 480px ── */
 @media(max-width:480px){
-  .vwp-content{padding:12px 12px calc(70px + env(safe-area-inset-bottom)) !important;box-sizing:border-box !important}
+  .vwp-content{padding:12px 12px calc(76px + env(safe-area-inset-bottom)) !important}
   .vwp-stat-card{padding:12px 10px !important}
-  .vwp-stat-value{font-size:1.3rem !important}
+  .vwp-stat-value{font-size:1.35rem !important}
   .vwp-page-header h1{font-size:18px !important}
-  .vwp-btn-primary,.vwp-btn-outline,.vwp-btn-danger{width:100% !important;justify-content:center !important}
+  .vwp-btn-primary,.vwp-btn-outline,.vwp-btn-danger{
+    width:100% !important;justify-content:center !important;
+  }
   .vwp-order-actions{flex-direction:column !important;gap:6px !important}
   .vwp-card{padding:12px !important}
-  .vwp-input{font-size:16px !important}
   .vwp-login-card{padding:24px 16px !important}
 }
 
-/* 360px */
+/* ── 360px ── */
 @media(max-width:360px){
-  .vwp-content{padding:10px 10px calc(66px + env(safe-area-inset-bottom)) !important}
+  .vwp-content{padding:10px 10px calc(72px + env(safe-area-inset-bottom)) !important}
   .vwp-stat-value{font-size:1.2rem !important}
   .vwp-stat-card{padding:10px 8px !important}
   .vwp-page-header h1{font-size:16px !important}
-  .vwp-nav-link{font-size:9px !important}
+  .vwp-nav-link{font-size:9px !important;gap:3px !important}
+  .vwp-nav-icon{font-size:19px !important}
   .vwp-order-header,.vwp-order-body{padding:10px !important}
-  .vwp-login-card{padding:20px 14px !important}
+  .vwp-login-card{padding:20px 12px !important}
 }
 ';
     }

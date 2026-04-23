@@ -1017,11 +1017,11 @@ function veshoResendVerify(){
         <tbody>
         <?php foreach ($recent_invoices as $inv): ?>
         <tr>
-          <td><?php echo esc_html($inv->invoice_number); ?></td>
-          <td><?php echo esc_html($inv->invoice_date ? date('d.m.Y', strtotime($inv->invoice_date)) : '—'); ?></td>
-          <td><?php echo number_format((float)$inv->amount, 2, ',', ' '); ?> €</td>
-          <td><?php echo self::status_badge($inv->status, 'invoice'); ?></td>
-          <td><?php if ($inv->status !== 'paid'): ?>
+          <td data-label="Number"><?php echo esc_html($inv->invoice_number); ?></td>
+          <td data-label="Kuupäev"><?php echo esc_html($inv->invoice_date ? date('d.m.Y', strtotime($inv->invoice_date)) : '—'); ?></td>
+          <td data-label="Summa"><?php echo number_format((float)$inv->amount, 2, ',', ' '); ?> €</td>
+          <td data-label="Staatus"><?php echo self::status_badge($inv->status, 'invoice'); ?></td>
+          <td data-label=""><?php if ($inv->status !== 'paid'): ?>
             <button onclick="vwpOpenPayment(<?php echo (int)$inv->id; ?>,<?php echo (float)$inv->amount; ?>)"
                     style="padding:4px 12px;background:#f59e0b;border:none;border-radius:6px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">
                 💳 Maksa
@@ -1111,12 +1111,12 @@ function veshoResendVerify(){
     <tbody>
     <?php foreach ($devices as $d): ?>
     <tr>
-      <td><strong><?php echo esc_html($d->name); ?></strong></td>
-      <td><?php echo esc_html($d->model ?? '—'); ?></td>
-      <td><code><?php echo esc_html($d->serial_number ?? '—'); ?></code></td>
-      <td><?php echo esc_html($d->install_date ? date('d.m.Y', strtotime($d->install_date)) : '—'); ?></td>
-      <td><?php echo esc_html($d->location ?? '—'); ?></td>
-      <td>
+      <td data-label="Seade"><strong><?php echo esc_html($d->name); ?></strong></td>
+      <td data-label="Mudel"><?php echo esc_html($d->model ?? '—'); ?></td>
+      <td data-label="Seeria"><code><?php echo esc_html($d->serial_number ?? '—'); ?></code></td>
+      <td data-label="Paigaldus"><?php echo esc_html($d->install_date ? date('d.m.Y', strtotime($d->install_date)) : '—'); ?></td>
+      <td data-label="Asukoht"><?php echo esc_html($d->location ?? '—'); ?></td>
+      <td data-label="">
         <button type="button"
                 class="vcp-btn-outline vcp-dev-history-toggle"
                 style="font-size:12px;padding:4px 10px"
@@ -1759,11 +1759,11 @@ function veshoResendVerify(){
   <tbody>
   <?php foreach ($credit_notes as $cn) : ?>
   <tr>
-    <td><strong><?php echo esc_html($cn->credit_note_number); ?></strong></td>
-    <td><?php echo esc_html($cn->invoice_number ?? '—'); ?></td>
-    <td><strong><?php echo number_format((float)$cn->amount, 2, ',', ' '); ?> €</strong></td>
-    <td><?php echo esc_html($cn->reason ?: '—'); ?></td>
-    <td><?php echo $cn->issued_date ? date('d.m.Y', strtotime($cn->issued_date)) : '—'; ?></td>
+    <td data-label="Number"><strong><?php echo esc_html($cn->credit_note_number); ?></strong></td>
+    <td data-label="Arve"><?php echo esc_html($cn->invoice_number ?? '—'); ?></td>
+    <td data-label="Summa"><strong><?php echo number_format((float)$cn->amount, 2, ',', ' '); ?> €</strong></td>
+    <td data-label="Põhjus"><?php echo esc_html($cn->reason ?: '—'); ?></td>
+    <td data-label="Kuupäev"><?php echo $cn->issued_date ? date('d.m.Y', strtotime($cn->issued_date)) : '—'; ?></td>
   </tr>
   <?php endforeach; ?>
   </tbody>
@@ -3019,7 +3019,7 @@ function setMsg(m){document.getElementById('vcp-pay-msg').textContent=m;}
     private static function portal_css() {
         return '
 /* === Vesho Client Portal CSS === */
-.vcp-wrap{display:flex;min-height:100vh;font-family:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:14px;color:#1e293b;background:#f8fafc}
+.vcp-wrap{display:flex;min-height:100vh;font-family:Barlow,system-ui,sans-serif;font-size:14px;color:#1e293b;background:#f8fafc}
 .vcp-sidebar{width:240px;min-height:100vh;background:#1e293b;display:flex;flex-direction:column;flex-shrink:0;position:sticky;top:0}
 @media(min-width:769px){.vcp-nav-arrow{display:none !important;pointer-events:none !important}}
 .vcp-sidebar-logo{padding:24px 20px 12px;font-size:22px;font-weight:800;color:#fff;letter-spacing:-.5px}
@@ -3092,149 +3092,242 @@ function setMsg(m){document.getElementById('vcp-pay-msg').textContent=m;}
 .vcp-tab.active{color:#00b4c8;border-bottom-color:#00b4c8}
 .vcp-panel{display:none}
 .vcp-panel.active{display:block}
-/* ═══════════════════════════════════════════════════════
-   MOBIIL — Vesho Client Portal täielik mobiilivaade
-   ═══════════════════════════════════════════════════════ */
-html:has(.vcp-wrap),body:has(.vcp-wrap){overscroll-behavior-x:none;touch-action:pan-y}
-.vcp-wrap,.vcp-main,.vcp-content{box-sizing:border-box;max-width:100%}
-.vcp-table-wrap{touch-action:pan-x pan-y}
+/* ════════════════════════════════════════════════════════════
+   MOBIIL — Vesho Client Portal v2.9.64
+   ════════════════════════════════════════════════════════════ */
 
-/* 1024px: tahvelarvuti */
+/* Globaalsed alused */
+html:has(.vcp-wrap),body:has(.vcp-wrap){overscroll-behavior-x:none;touch-action:pan-y}
+*{box-sizing:border-box}
+.vcp-wrap,.vcp-main,.vcp-content{box-sizing:border-box;max-width:100%}
+.vcp-table-wrap{touch-action:pan-x pan-y;-webkit-overflow-scrolling:touch}
+
+/* ── 1024px: tahvelarvuti ── */
 @media(max-width:1024px){
   .vcp-content{padding:24px 20px}
   .vcp-stat-grid{grid-template-columns:repeat(2,1fr)}
   .vcp-two-col{gap:16px}
 }
 
-/* 768px: mobiil */
+/* ── 768px: mobiil ── */
 @media(max-width:768px){
-  /* Saidi päis: portaalil ainult logo */
-  body:has(.vcp-wrap) .site-topbar,body:has(.vcp-wrap) .header-nav,
-  body:has(.vcp-wrap) .header-phone,body:has(.vcp-wrap) .header-cta,
-  body:has(.vcp-wrap) .hamburger{display:none !important}
-  body:has(.vcp-wrap) .site-header .header-inner{height:52px !important;padding:0 16px !important}
-  body:has(.vcp-wrap) #page-content{padding-top:52px !important}
-  body:has(.vcp-wrap) #page,body:has(.vcp-wrap) #primary,body:has(.vcp-wrap) #main,
-  body:has(.vcp-wrap) .entry-content,body:has(.vcp-wrap) article{padding:0 !important;margin:0 !important}
 
-  /* Bottom nav */
+  /* Avaliku saidi päis: portaalil ainult logo */
+  body:has(.vcp-wrap) .site-topbar,
+  body:has(.vcp-wrap) .header-nav,
+  body:has(.vcp-wrap) .header-phone,
+  body:has(.vcp-wrap) .header-cta,
+  body:has(.vcp-wrap) .hamburger{display:none !important}
+  body:has(.vcp-wrap) .site-header .header-inner{height:52px !important;padding:0 16px !important;min-height:unset !important}
+  body:has(.vcp-wrap) #page-content{padding-top:52px !important}
+  body:has(.vcp-wrap) #page,
+  body:has(.vcp-wrap) #primary,
+  body:has(.vcp-wrap) #main,
+  body:has(.vcp-wrap) .entry-content,
+  body:has(.vcp-wrap) article{padding:0 !important;margin:0 !important}
+
+  /* ── Bottom navigation bar ── */
   .vcp-sidebar{
-    position:fixed !important;bottom:0 !important;left:0 !important;right:0 !important;top:auto !important;
+    position:fixed !important;
+    bottom:0 !important;left:0 !important;right:0 !important;top:auto !important;
     width:100% !important;min-height:unset !important;
-    height:calc(62px + env(safe-area-inset-bottom)) !important;
-    flex-direction:row !important;z-index:500 !important;overflow:hidden !important;
-    border-top:1px solid rgba(255,255,255,.1) !important;
+    height:calc(64px + env(safe-area-inset-bottom)) !important;
+    flex-direction:row !important;
+    z-index:900 !important;
+    overflow:hidden !important;
+    border-top:1px solid rgba(0,180,200,.15) !important;
     padding:0 0 env(safe-area-inset-bottom) !important;
     background:#0d1f2d !important;
-    box-shadow:0 -4px 24px rgba(0,0,0,.3) !important;
+    box-shadow:0 -2px 20px rgba(0,0,0,.35) !important;
   }
   .vcp-sidebar-logo,.vcp-sidebar-label,.vcp-sidebar-footer{display:none !important}
 
-  /* Nav rida */
-  .vcp-nav{display:flex !important;flex-direction:row !important;flex:1 !important;padding:0 !important;
-    min-width:0 !important;overflow-x:auto !important;overflow-y:hidden !important;
+  /* Nav: flex rida */
+  .vcp-nav{
+    display:flex !important;flex-direction:row !important;flex:1 !important;
+    padding:0 !important;margin:0 !important;min-width:0 !important;
+    overflow-x:auto !important;overflow-y:hidden !important;
     scroll-behavior:smooth !important;-webkit-overflow-scrolling:touch !important;
-    scrollbar-width:none !important;align-items:stretch !important}
-  .vcp-nav::-webkit-scrollbar{display:none !important}
-  .vcp-nav li{flex:1 1 0 !important;min-width:52px !important;margin:0 !important;display:flex !important}
-
-  /* Nav link: ikoon + tekst, Vesho stiil */
-  .vcp-nav-link{
-    flex-direction:column !important;justify-content:center !important;align-items:center !important;
-    gap:3px !important;padding:8px 4px 6px !important;font-size:10px !important;font-weight:600 !important;
-    letter-spacing:.2px !important;border-radius:0 !important;
-    min-height:62px !important;height:62px !important;
-    text-align:center !important;white-space:nowrap !important;
-    color:rgba(255,255,255,.45) !important;
-    transition:color .15s,background .15s !important;flex:1 !important;
-    position:relative !important;
+    scrollbar-width:none !important;align-items:stretch !important;
   }
-  .vcp-nav-link:hover{color:rgba(255,255,255,.75) !important;background:rgba(255,255,255,.04) !important}
-  .vcp-nav-link.active{color:#00b4c8 !important;background:rgba(0,180,200,.08) !important}
-  .vcp-nav-link.active::before{content:"";position:absolute;top:0;left:15%;right:15%;height:2px;background:#00b4c8;border-radius:0 0 2px 2px}
-  .vcp-nav-icon{font-size:20px !important;width:auto !important;line-height:1 !important}
+  .vcp-nav::-webkit-scrollbar{display:none !important}
+  .vcp-nav li{flex:1 1 0 !important;min-width:54px !important;margin:0 !important;display:flex !important}
 
-  /* Nav noolte nupud */
-  .vcp-nav-arrow{display:flex !important;align-items:center !important;justify-content:center !important;
-    width:30px !important;height:62px !important;background:#0d1f2d !important;
-    border:none !important;padding:0 !important;margin:0 !important;cursor:pointer !important;
-    color:rgba(255,255,255,.5) !important;font-size:18px !important;line-height:1 !important;
-    flex-shrink:0 !important;transition:opacity .2s !important}
-  .vcp-nav-arrow--left{box-shadow:5px 0 10px rgba(0,0,0,.3) !important}
-  .vcp-nav-arrow--right{box-shadow:-5px 0 10px rgba(0,0,0,.3) !important}
+  /* Nav link */
+  .vcp-nav-link{
+    flex-direction:column !important;
+    justify-content:center !important;align-items:center !important;
+    gap:4px !important;padding:6px 4px 8px !important;
+    font-size:10px !important;font-weight:700 !important;letter-spacing:.3px !important;
+    border-radius:0 !important;
+    min-height:64px !important;height:64px !important;
+    text-align:center !important;white-space:nowrap !important;
+    color:rgba(255,255,255,.4) !important;
+    transition:color .15s,background .15s !important;
+    flex:1 !important;position:relative !important;
+    text-decoration:none !important;
+  }
+  .vcp-nav-link:hover{
+    color:rgba(255,255,255,.7) !important;
+    background:rgba(255,255,255,.05) !important;
+  }
+  .vcp-nav-link.active{
+    color:#00b4c8 !important;
+    background:rgba(0,180,200,.07) !important;
+  }
+  .vcp-nav-link.active::after{
+    content:"" !important;
+    position:absolute !important;top:0 !important;left:20% !important;right:20% !important;
+    height:2px !important;background:#00b4c8 !important;
+    border-radius:0 0 3px 3px !important;
+  }
+  .vcp-nav-icon{font-size:21px !important;width:auto !important;line-height:1 !important}
+
+  /* Nav noolenupud */
+  .vcp-nav-arrow{
+    display:flex !important;align-items:center !important;justify-content:center !important;
+    width:32px !important;height:64px !important;background:#0d1f2d !important;
+    border:none !important;padding:0 !important;cursor:pointer !important;
+    color:rgba(255,255,255,.5) !important;font-size:16px !important;
+    flex-shrink:0 !important;transition:opacity .2s !important;
+  }
+  .vcp-nav-arrow--left{box-shadow:6px 0 12px rgba(0,0,0,.3) !important}
+  .vcp-nav-arrow--right{box-shadow:-6px 0 12px rgba(0,0,0,.3) !important}
   .vcp-nav-arrow:disabled{opacity:0 !important;pointer-events:none !important}
 
-  /* Main + topbar */
+  /* Main area */
   .vcp-main{width:100% !important;min-width:0 !important}
   .vcp-hamburger{display:none !important}
-  .vcp-topbar{position:sticky !important;top:0 !important;padding:0 16px !important;
-    height:52px !important;z-index:100 !important;
-    border-bottom:1px solid #f1f5f9 !important;background:#fff !important}
-  .vcp-topbar-title{font-size:15px !important;font-weight:700 !important}
+
+  /* Topbar */
+  .vcp-topbar{
+    position:sticky !important;top:0 !important;
+    padding:0 16px !important;height:52px !important;
+    z-index:200 !important;
+    background:#fff !important;
+    border-bottom:2px solid #f1f5f9 !important;
+    box-shadow:0 1px 6px rgba(0,0,0,.06) !important;
+  }
+  .vcp-topbar-title{font-size:15px !important;font-weight:700 !important;color:#0d1f2d !important}
   .vcp-topbar-right{display:none !important}
 
   /* Sisu */
-  .vcp-content{padding:14px 14px calc(76px + env(safe-area-inset-bottom)) !important;max-width:100% !important;box-sizing:border-box !important}
+  .vcp-content{
+    padding:16px 14px calc(80px + env(safe-area-inset-bottom)) !important;
+    max-width:100% !important;
+  }
 
-  /* Stat kaardid: 2 veergu, kompaktsed */
-  .vcp-stat-grid{grid-template-columns:1fr 1fr !important;gap:10px !important}
-  .vcp-stat-card{padding:14px 12px !important;border-radius:10px !important;border-left-width:3px !important}
-  .vcp-stat-label{font-size:10px !important;letter-spacing:.03em !important;margin-bottom:4px !important}
-  .vcp-stat-value{font-size:1.45rem !important;font-weight:800 !important}
+  /* Stat kaardid: 2 veergu */
+  .vcp-stat-grid{grid-template-columns:1fr 1fr !important;gap:10px !important;margin-bottom:16px !important}
+  .vcp-stat-card{
+    padding:14px 12px 12px !important;
+    border-radius:12px !important;
+    border-left-width:3px !important;
+    box-shadow:0 1px 4px rgba(0,0,0,.08) !important;
+  }
+  .vcp-stat-label{font-size:10px !important;letter-spacing:.04em !important;margin-bottom:6px !important}
+  .vcp-stat-value{font-size:1.5rem !important;font-weight:800 !important;line-height:1.1 !important}
 
-  /* Kahe veeruga → üks veerg */
+  /* 2-veergu → 1 veerg */
   .vcp-two-col{grid-template-columns:1fr !important;gap:12px !important}
 
   /* Kaardid */
-  .vcp-card{padding:14px !important;border-radius:10px !important}
-  .vcp-maint-item{flex-wrap:wrap !important;gap:8px !important}
-  .vcp-maint-date{min-width:unset !important}
+  .vcp-card{padding:14px !important;border-radius:12px !important;margin-bottom:12px !important}
+  .vcp-maint-item{flex-wrap:wrap !important;gap:6px !important;padding:10px 12px !important}
+  .vcp-maint-date{min-width:unset !important;font-size:12px !important}
+  .vcp-maint-info{font-size:12px !important}
 
   /* Lehepealkiri */
   .vcp-page-header{margin-bottom:14px !important}
   .vcp-page-header h1{font-size:20px !important;font-weight:800 !important}
   .vcp-page-header p{font-size:13px !important}
-  .vcp-section-title{font-size:14px !important;font-weight:700 !important}
+  .vcp-section-title{font-size:14px !important;font-weight:700 !important;margin-bottom:10px !important}
 
-  /* Tabelid */
-  .vcp-table-wrap{border-radius:10px !important}
-  .vcp-table{display:block !important;overflow-x:auto !important;-webkit-overflow-scrolling:touch !important}
+  /* Tabelid: mobiilil keritav */
+  .vcp-table-wrap{border-radius:10px !important;overflow:hidden !important}
+  .vcp-table{font-size:12.5px !important}
   .vcp-table th{font-size:10px !important;padding:8px 10px !important}
-  .vcp-table td{font-size:13px !important;padding:10px 10px !important}
+  .vcp-table td{font-size:12.5px !important;padding:9px 10px !important}
 
   /* Nupud */
-  .vcp-quick-actions{gap:8px !important}
-  .vcp-btn-primary,.vcp-btn-outline,.vcp-btn-danger{padding:11px 18px !important;font-size:13px !important;border-radius:8px !important}
+  .vcp-quick-actions{gap:8px !important;flex-wrap:wrap !important}
+  .vcp-btn-primary,.vcp-btn-outline,.vcp-btn-danger{
+    padding:11px 16px !important;font-size:13px !important;border-radius:8px !important;
+    display:inline-flex !important;align-items:center !important;
+  }
 
   /* Login */
   .vcp-login-card{padding:28px 20px !important}
   .vcp-login-title{font-size:16px !important}
   .vcp-input{font-size:16px !important}
+
+  /* Tühi olek */
+  .vcp-empty{padding:28px 16px !important;font-size:13px !important}
 }
 
-/* 480px */
+/* ── 640px: tabelid → kaartideks ── */
+@media(max-width:640px){
+  .vcp-table thead{display:none !important}
+  .vcp-table-wrap{background:transparent !important;box-shadow:none !important;border-radius:0 !important}
+  .vcp-table tbody{display:flex !important;flex-direction:column !important;gap:8px !important}
+  .vcp-table tbody tr{
+    display:block !important;
+    background:#fff !important;
+    border-radius:12px !important;
+    box-shadow:0 1px 4px rgba(0,0,0,.08) !important;
+    overflow:hidden !important;
+    border-bottom:none !important;
+  }
+  .vcp-table tbody tr:nth-child(even){background:#fff !important}
+  .vcp-table tbody tr:hover{background:#f8faff !important}
+  .vcp-table tbody td{
+    display:flex !important;
+    align-items:center !important;
+    justify-content:space-between !important;
+    gap:10px !important;
+    padding:10px 14px !important;
+    border-bottom:1px solid #f1f5f9 !important;
+    font-size:13px !important;
+    min-height:42px !important;
+  }
+  .vcp-table tbody td:last-child{border-bottom:none !important}
+  .vcp-table tbody td::before{
+    content:attr(data-label) !important;
+    font-size:10px !important;font-weight:700 !important;
+    color:#94a3b8 !important;
+    text-transform:uppercase !important;letter-spacing:.07em !important;
+    flex-shrink:0 !important;min-width:70px !important;
+  }
+  .vcp-table tbody td[data-label=""]::before{display:none !important}
+  .vcp-table tbody td[data-label=""]{justify-content:flex-end !important}
+  /* Peidame toimingute veergu mobiilil */
+  .vcp-dev-history-row{display:none !important}
+}
+
+/* ── 480px ── */
 @media(max-width:480px){
-  .vcp-content{padding:12px 12px calc(70px + env(safe-area-inset-bottom)) !important;box-sizing:border-box !important}
-  .vcp-stat-grid{grid-template-columns:1fr 1fr !important}
+  .vcp-content{padding:12px 12px calc(76px + env(safe-area-inset-bottom)) !important}
   .vcp-stat-card{padding:12px 10px !important}
-  .vcp-stat-value{font-size:1.3rem !important}
+  .vcp-stat-value{font-size:1.35rem !important}
   .vcp-page-header h1{font-size:18px !important}
-  .vcp-btn-primary,.vcp-btn-outline,.vcp-btn-danger{width:100% !important;justify-content:center !important;box-sizing:border-box !important;display:flex !important;align-items:center !important}
+  .vcp-btn-primary,.vcp-btn-outline,.vcp-btn-danger{
+    width:100% !important;justify-content:center !important;
+  }
   .vcp-quick-actions{flex-direction:column !important}
   .vcp-card{padding:12px !important}
-  .vcp-login-card{padding:24px 16px !important;border-radius:12px !important}
-  .vcp-input{font-size:16px !important}
-  .vcp-empty{padding:24px 16px !important;font-size:13px !important}
+  .vcp-login-card{padding:24px 16px !important}
+  .vcp-empty{padding:20px 14px !important}
 }
 
-/* 360px */
+/* ── 360px ── */
 @media(max-width:360px){
-  .vcp-content{padding:10px 10px calc(66px + env(safe-area-inset-bottom)) !important}
+  .vcp-content{padding:10px 10px calc(72px + env(safe-area-inset-bottom)) !important}
   .vcp-stat-value{font-size:1.2rem !important}
   .vcp-stat-card{padding:10px 8px !important}
   .vcp-page-header h1{font-size:16px !important}
-  .vcp-login-card{padding:20px 14px !important}
-  .vcp-nav-link{font-size:9px !important}
+  .vcp-login-card{padding:20px 12px !important}
+  .vcp-nav-link{font-size:9px !important;gap:3px !important}
+  .vcp-nav-icon{font-size:19px !important}
 }
 ';
     }
