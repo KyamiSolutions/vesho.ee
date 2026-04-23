@@ -2253,3 +2253,9 @@
     /* Topbar height compensation */
     #page-content { padding-top: 56px; }
 }
+
+/* ── Avalik sait: keela horisontaalne liikumine mobiilil ── */
+@media (max-width: 1024px) {
+  html { overflow-x: hidden; }
+  body { overflow-x: hidden; touch-action: pan-y; max-width: 100vw; }
+}

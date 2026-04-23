@@ -1617,5 +1617,22 @@
 }
 
 /* --------------------------------------------------------------------------
+   29. Admin mobiil: horisontaalscroll + touch-pan keeld (v2.9.57)
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 1024px) {
+  /* WP admin body: keela horisontaalne scroll */
+  html, body { overflow-x: hidden; touch-action: pan-y; }
+  /* crm-wrap ei laiene üle ekraani */
+  .crm-wrap { max-width: 100%; overflow-x: hidden; }
+  /* crm-page-header: padding mobiilil väiksem */
+  .crm-page-header { padding: 20px 16px 20px 16px; }
+  /* Toolbar ei laiene üle */
+  .crm-toolbar { max-width: 100%; box-sizing: border-box; }
+  /* Tabelid lubavad horisontaalset scrolli tabelis endas */
+  .crm-table-wrap { touch-action: pan-x pan-y; }
+}
+
+/* --------------------------------------------------------------------------
    End of Vesho CRM Admin Stylesheet
    ========================================================================== */
