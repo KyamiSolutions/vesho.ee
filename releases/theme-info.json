@@ -1,10 +1,10 @@
 {
   "name": "Vesho",
   "slug": "vesho",
-  "version": "2.9.62",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.9.62/vesho-theme.zip",
+  "version": "2.9.63",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.9.63/vesho-theme.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-23",
-  "changelog": "<h4>2.9.62</h4><ul><li>Poe hinnad koos KM-ga (shop_price × 1.24)</li><li>Admin CRM täielik mobiilivaade 768px/480px/360px</li></ul><h4>2.9.60</h4><ul><li>Portaal ja töötaja portaal täielik mobiilivaade vesho stiilis</li></ul><h4>2.9.58</h4><ul><li>Mobiil: overscroll-behavior-x keelatud</li></ul>"
+  "changelog": "<h4>2.9.63</h4><ul><li>Kliendi ja töötaja portaal: täielik mobiilivaade (PHP inline CSS uuendatud)</li><li>Bottom nav 62px + iOS safe area, Vesho navy taust, aktiivne indikaator</li><li>3 breakpointi: 768px / 480px / 360px</li></ul><h4>2.9.62</h4><ul><li>Poe hinnad koos KM-ga</li><li>Admin CRM mobiilivaade</li></ul>"
 }
