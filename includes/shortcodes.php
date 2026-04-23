@@ -545,10 +545,13 @@ if ( $view === 'grid' ) :
     <?php else : ?>
     <div class="vs-grid" id="vsGrid">
       <?php foreach ( $products as $p ) :
-        $p_url      = esc_url( add_query_arg(['shop_view'=>'product','pid'=>$p->id], $page_url) );
-        $p_disc     = round( (float)$p->shop_price * (1 - $eff_disc/100), 2 );
-        $has_disc   = $eff_disc > 0;
-        $p_in_stock = ( (int)($p->quantity ?? 0) ) > 0;
+        $p_url        = esc_url( add_query_arg(['shop_view'=>'product','pid'=>$p->id], $page_url) );
+        $p_disc       = round( (float)$p->shop_price * (1 - $eff_disc/100), 2 );
+        $has_disc     = $eff_disc > 0;
+        $p_in_stock   = ( (int)($p->quantity ?? 0) ) > 0;
+        // KM-ga hinnad tarbijale
+        $p_gross      = round( (float)$p->shop_price * (1 + $vat_rate), 2 );
+        $p_disc_gross = round( $p_disc * (1 + $vat_rate), 2 );
       ?>
       <div class="vs-card"
            data-cat="<?php echo esc_attr($p->category); ?>"
@@ -576,10 +579,10 @@ if ( $view === 'grid' ) :
           <?php endif; ?>
           <div class="vs-card-price">
             <?php if ( $has_disc ) : ?>
-            <span class="vs-price-orig"><?php echo number_format((float)$p->shop_price,2,',',' '); ?> €</span>
-            <span class="vs-price-disc"><?php echo number_format($p_disc,2,',',' '); ?> €</span>
+            <span class="vs-price-orig"><?php echo number_format($p_gross,2,',',' '); ?> €</span>
+            <span class="vs-price-disc"><?php echo number_format($p_disc_gross,2,',',' '); ?> €</span>
             <?php else : ?>
-            <?php echo number_format((float)$p->shop_price,2,',',' '); ?> €
+            <?php echo number_format($p_gross,2,',',' '); ?> €
             <?php endif; ?>
             <?php if ( !empty($p->unit) ) : ?>
             <span class="vs-card-unit">/ <?php echo esc_html($p->unit); ?></span>
@@ -654,9 +657,12 @@ elseif ( $view === 'product' ) :
   </div>
 </div>
 <?php else :
-    $p_disc      = round( (float)$prod->shop_price * (1 - $eff_disc/100), 2 );
-    $has_disc    = $eff_disc > 0;
+    $p_disc        = round( (float)$prod->shop_price * (1 - $eff_disc/100), 2 );
+    $has_disc      = $eff_disc > 0;
     $prod_in_stock = ( (int)($prod->quantity ?? 0) ) > 0;
+    // KM-ga hinnad tarbijale
+    $prod_gross    = round( (float)$prod->shop_price * (1 + $vat_rate), 2 );
+    $p_disc_gross  = round( $p_disc * (1 + $vat_rate), 2 );
 ?>
 <div class="vs-layout">
 
@@ -706,10 +712,10 @@ elseif ( $view === 'product' ) :
           <h1 class="vs-detail-name"><?php echo esc_html($prod->name); ?></h1>
           <div class="vs-detail-price">
             <?php if ( $has_disc ) : ?>
-            <span class="vs-detail-price-orig"><?php echo number_format((float)$prod->shop_price,2,',',' '); ?> €</span>
-            <span class="vs-detail-price-disc"><?php echo number_format($p_disc,2,',',' '); ?> €</span>
+            <span class="vs-detail-price-orig"><?php echo number_format($prod_gross,2,',',' '); ?> €</span>
+            <span class="vs-detail-price-disc"><?php echo number_format($p_disc_gross,2,',',' '); ?> €</span>
             <?php else : ?>
-            <?php echo number_format((float)$prod->shop_price,2,',',' '); ?> €
+            <?php echo number_format($prod_gross,2,',',' '); ?> €
             <?php endif; ?>
             <?php if ( !empty($prod->unit) ) : ?>
             <span style="font-size:15px;font-weight:400;color:#5a7080">/ <?php echo esc_html($prod->unit); ?></span>
@@ -778,9 +784,13 @@ elseif ( $view === 'cart' ) :
     </tr></thead>
     <tbody>
     <?php foreach ( $cart['items'] as $ci ) :
-      $cp         = $ci['p'];
-      $disc_price = $eff_disc > 0 ? round((float)$cp->shop_price*(1-$eff_disc/100),2) : (float)$cp->shop_price;
-      $line_total = round($disc_price * $ci['qty'], 2);
+      $cp          = $ci['p'];
+      $disc_price  = $eff_disc > 0 ? round((float)$cp->shop_price*(1-$eff_disc/100),2) : (float)$cp->shop_price;
+      $line_total  = round($disc_price * $ci['qty'], 2);
+      // KM-ga hinnad kuvamiseks
+      $orig_gross  = round((float)$cp->shop_price * (1 + $vat_rate), 2);
+      $disc_gross  = round($disc_price * (1 + $vat_rate), 2);
+      $line_gross  = round($disc_gross * $ci['qty'], 2);
     ?>
     <tr>
       <td>
@@ -799,9 +809,9 @@ elseif ( $view === 'cart' ) :
       <td>
         <div class="vs-cart-price">
           <?php if ( $eff_disc > 0 ) : ?>
-          <span style="text-decoration:line-through;color:#94a3b8;font-size:12px"><?php echo number_format((float)$cp->shop_price,2,',',' '); ?> €</span><br>
+          <span style="text-decoration:line-through;color:#94a3b8;font-size:12px"><?php echo number_format($orig_gross,2,',',' '); ?> €</span><br>
           <?php endif; ?>
-          <?php echo number_format($disc_price,2,',',' '); ?> €
+          <?php echo number_format($disc_gross,2,',',' '); ?> €
         </div>
       </td>
       <td>
@@ -813,7 +823,7 @@ elseif ( $view === 'cart' ) :
           <button class="vs-cart-qty-btn" onclick="vsCartQty(<?php echo (int)$cp->id; ?>,1)">+</button>
         </div>
       </td>
-      <td><div class="vs-cart-price"><?php echo number_format($line_total,2,',',' '); ?> €</div></td>
+      <td><div class="vs-cart-price"><?php echo number_format($line_gross,2,',',' '); ?> €</div></td>
       <td><button class="vs-remove-btn" onclick="vsCartRemove(<?php echo (int)$cp->id; ?>)" title="Eemalda">×</button></td>
     </tr>
     <?php endforeach; ?>
@@ -821,19 +831,22 @@ elseif ( $view === 'cart' ) :
   </table>
 
   <div class="vs-cart-summary">
+    <?php
+      $sub_gross  = round($cart['subtotal'] * (1 + $vat_rate), 2); // ilma sooduseta km-ga
+      $total_gross = round($sub_chk + $vat_chk, 2);                // kokku km-ga
+    ?>
     <?php if ( $eff_disc > 0 ) : ?>
     <div class="vs-sum-row">
       <span>Tooted (ilma sooduseta)</span>
-      <span><?php echo number_format($cart['subtotal'],2,',',' '); ?> €</span>
+      <span><?php echo number_format($sub_gross,2,',',' '); ?> €</span>
     </div>
     <div class="vs-sum-row" style="color:#16a34a;font-weight:600">
       <span>Soodustus –<?php echo (int)$eff_disc; ?>%</span>
-      <span>−<?php echo number_format(round($cart['subtotal']-$sub_chk,2),2,',',' '); ?> €</span>
+      <span>−<?php echo number_format(round($sub_gross-$total_gross,2),2,',',' '); ?> €</span>
     </div>
     <?php endif; ?>
-    <div class="vs-sum-row"><span>Vahesumma (km-ta)</span><span><?php echo number_format($sub_chk,2,',',' '); ?> €</span></div>
-    <div class="vs-sum-row"><span>KM <?php echo $vat_pct; ?>%</span><span><?php echo number_format($vat_chk,2,',',' '); ?> €</span></div>
-    <div class="vs-sum-row vs-total"><span>Kokku (ilma tarneta)</span><span><?php echo number_format(round($sub_chk+$vat_chk,2),2,',',' '); ?> €</span></div>
+    <div class="vs-sum-row"><span>Sh KM <?php echo $vat_pct; ?>%</span><span><?php echo number_format($vat_chk,2,',',' '); ?> €</span></div>
+    <div class="vs-sum-row vs-total"><span>Kokku (ilma tarneta)</span><span><?php echo number_format($total_gross,2,',',' '); ?> €</span></div>
     <div class="vs-cart-actions">
       <a href="<?php echo esc_url($shop_url); ?>" class="vs-btn-outline">← Jätka ostmist</a>
       <a href="<?php echo esc_url($chk_url); ?>" class="vs-btn-primary">Vormista tellimus →</a>

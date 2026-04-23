@@ -1,10 +1,10 @@
 {
   "name": "Vesho",
   "slug": "vesho",
-  "version": "2.9.60",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.9.60/vesho-theme.zip",
+  "version": "2.9.61",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.9.61/vesho-theme.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-23",
-  "changelog": "<h4>2.9.60</h4><ul><li>Uus versioon</li></ul><h4>2.9.59</h4><ul><li>Portaali mall: eraldiseisev template ilma avaliku saidi päiseta — portaal on nüüd päris app</li><li>Mobiil: bottom-nav padding korrektne kõigil breakpointidel</li><li>Stat kaardid: 2 veergu kuni 360px (mitte 1 veerg)</li></ul><h4>2.9.58</h4><ul><li>Mobiil: overflow:hidden asendatud overscroll-behavior-x:none-ga</li></ul><h4>2.9.57</h4><ul><li>Mobiil: horisontaalne ekraaniliikumine keelatud</li></ul>"
+  "changelog": "<h4>2.9.61</h4><ul><li>Admin CRM täielik mobiilivaade: 768px/480px/360px breakpointid</li><li>Poe hinnad koos KM-ga</li></ul><h4>2.9.60</h4><ul><li>Portaal ja töötaja portaal täielik mobiilivaade vesho stiilis</li></ul><h4>2.9.59</h4><ul><li>Mobiil: bottom-nav padding korrektne kõigil breakpointidel</li></ul><h4>2.9.58</h4><ul><li>Mobiil: overflow:hidden asendatud overscroll-behavior-x:none-ga</li></ul>"
 }
