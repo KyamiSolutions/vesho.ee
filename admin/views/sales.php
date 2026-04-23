@@ -167,7 +167,7 @@ $months_et = ['','Jaanuar','Veebruar','Märts','Aprill','Mai','Juuni','Juuli','A
     <h1 class="crm-page-title">📊 Müügiraport</h1>
 
     <!-- Current month KPI cards -->
-    <div class="crm-stats-row" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:24px">
+    <div class="crm-stats-row crm-stats-row--4">
         <div class="crm-stat-card">
             <div class="crm-stat-num"><?php echo vesho_crm_format_money($kuu_tulu); ?></div>
             <div class="crm-stat-label">Kuu tulu (<?php echo date('M Y'); ?>)</div>
@@ -199,7 +199,7 @@ $months_et = ['','Jaanuar','Veebruar','Märts','Aprill','Mai','Juuni','Juuli','A
     </div>
 
     <!-- Year KPI cards -->
-    <div class="crm-stats-row" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:24px">
+    <div class="crm-stats-row crm-stats-row--4">
         <div class="crm-stat-card"><div class="crm-stat-num"><?php echo vesho_crm_format_money($year_total); ?></div><div class="crm-stat-label">Arved <?php echo $year; ?></div></div>
         <?php if ($shop_year_total > 0) : ?>
         <div class="crm-stat-card"><div class="crm-stat-num" style="color:#1d4ed8"><?php echo vesho_crm_format_money($shop_year_total); ?></div><div class="crm-stat-label">🛒 Pood <?php echo $year; ?></div></div>

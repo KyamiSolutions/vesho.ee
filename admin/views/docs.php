@@ -597,6 +597,17 @@ code,.vc{background:#f1f5f9;border:1px solid #e2e8f0;border-radius:3px;padding:1
       <div class="vd-sec" id="uuendused">
         <div class="vd-sec-h"><span class="ic cyan">🚀</span>Uuendused</div>
         <div class="vd-tip"><b>Paigaldatud</b>Vesho CRM <strong>v<?php echo esc_html($plugin_ver); ?></strong> · Teema <strong>v<?php echo esc_html($theme_ver); ?></strong></div>
+        <div class="vd-h3">v2.9.56 — Mobiili parendused</div>
+        <div class="vd-g3">
+          <div class="vd-c"><h4>📱 crm-stat-card CSS</h4><p>Kokkuvõttekaartide (.crm-stat-card, .crm-stat-num, .crm-stat-label) CSS puudus — lisati korrektne stiiliplokk shadow, hover ja tüpograafiaga.</p></div>
+          <div class="vd-c"><h4>🔲 crm-stats-row rea­grupp</h4><p>Inline grid-stiilid asendati CSS-klassidega (.crm-stats-row--2/3/4). 900px juures 2 veergu, 480px juures 1×1, 360px juures 1 veerg.</p></div>
+          <div class="vd-c"><h4>🎫 Tugipiletid: split-vaade mobiilis</h4><p>tk-split-view ja tk-list-panel on nüüd CSS-klasside põhised. 768px juures koondub vertikaalselt, loendipaneel piirdub 300px kõrgusega.</p></div>
+        </div>
+        <div class="vd-h3">v2.9.55 — Kliendi kustutamine blokeeritud</div>
+        <div class="vd-g3">
+          <div class="vd-c"><h4>🔒 Maksmata arved blokeerivad</h4><p>Kui kliendil on maksmata/saadetud/tähtaja ületanud arved, ei saa teda kustutada — kuvatakse veateade koos arveloenduse ja lingiga.</p></div>
+          <div class="vd-c"><h4>🔧 Avatud töökäsud blokeerivad</h4><p>Kui kliendil on avatud/määratud/töös töökäsud, kuvatakse samuti veateade. Blokeerimised kontrollitakse järjestikku.</p></div>
+        </div>
         <div class="vd-h3">v2.9.54 — Uued funktsioonid</div>
         <div class="vd-g3">
           <div class="vd-c"><h4>🎫 Tugipiletid: split-vaade</h4><p>Piletite leht on nüüd jagatud vaateks: vasak paneel näitab nimekirja, parem paneel laab valitud pileti detailid AJAX-iga — lehte ei laadita uuesti.</p></div>
