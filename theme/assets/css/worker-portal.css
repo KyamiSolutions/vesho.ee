@@ -117,20 +117,11 @@ textarea.vwp-input{min-height:90px;resize:vertical;line-height:1.5}
 .vwp-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:300}
 .vwp-backdrop.active{display:block}
 
-/* ── Töötaja portaal: horisontaalscroll + touch-pan keeld ── */
-@media(max-width:1024px){
-  html:has(.vwp-wrap){overflow-x:hidden}
-  body:has(.vwp-wrap){overflow-x:hidden;touch-action:pan-y}
-  /* Peida saidi päis — portaalil on oma nav */
-  body:has(.vwp-wrap) .site-top-wrapper{display:none!important}
-  body:has(.vwp-wrap) #page-content{padding-top:0!important}
-  /* Kõik konteineri elemendid mahuvad ekraanile */
-  .vwp-wrap{max-width:100vw;overflow-x:hidden;min-height:100svh}
-  .vwp-main{max-width:100%;overflow-x:hidden}
-  .vwp-content{box-sizing:border-box;max-width:100%;overflow-x:hidden}
-  /* Tabel: lubab horisontaalset scrolli ainult tabelis endas */
-  .vwp-table-wrap{touch-action:pan-x pan-y}
-}
+/* ── Töötaja portaal: horisontaalne libistamine keelatud (ei peida sisu) ── */
+html:has(.vwp-wrap){overscroll-behavior-x:none}
+body:has(.vwp-wrap){overscroll-behavior-x:none}
+.vwp-wrap,.vwp-main,.vwp-content{box-sizing:border-box;max-width:100%}
+.vwp-table-wrap{touch-action:pan-x pan-y}
 
 /* ── 1024px — tahvelarvuti, horisontaalne ────────────────────────────────── */
 @media(max-width:1024px){

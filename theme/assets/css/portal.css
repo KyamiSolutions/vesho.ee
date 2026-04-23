@@ -113,22 +113,11 @@ textarea.vcp-input{min-height:100px;resize:vertical;line-height:1.5}
    MOBIIL — ainult alla 1024px, desktop muutmata
    ═══════════════════════════════════════════════════════════ */
 
-/* ── Portaal: horisontaalscroll + touch-pan keeld ── */
-@media(max-width:1024px){
-  html:has(.vcp-wrap),html:has(.vauth-wrap){overflow-x:hidden}
-  body:has(.vcp-wrap),body:has(.vauth-wrap){overflow-x:hidden;touch-action:pan-y}
-  /* Peida saidi päis portaali lehtedel — portaalil on oma nav */
-  body:has(.vcp-wrap) .site-top-wrapper,
-  body:has(.vauth-wrap) .site-top-wrapper{display:none!important}
-  body:has(.vcp-wrap) #page-content,
-  body:has(.vauth-wrap) #page-content{padding-top:0!important}
-  /* Kõik konteineri elemendid mahuvad ekraanile */
-  .vcp-wrap{max-width:100vw;overflow-x:hidden;min-height:100svh}
-  .vcp-main{max-width:100%;overflow-x:hidden}
-  .vcp-content{box-sizing:border-box;max-width:100%;overflow-x:hidden}
-  /* Tabelite wrapper: touch-action lubab horisontaalset scrolli ainult seal */
-  .vcp-table-wrap{touch-action:pan-x pan-y}
-}
+/* ── Portaal: horisontaalne libistamine keelatud (ei peida sisu) ── */
+html:has(.vcp-wrap),html:has(.vauth-wrap){overscroll-behavior-x:none}
+body:has(.vcp-wrap),body:has(.vauth-wrap){overscroll-behavior-x:none}
+.vcp-wrap,.vcp-main,.vcp-content,.vauth-wrap{box-sizing:border-box;max-width:100%}
+.vcp-table-wrap{touch-action:pan-x pan-y}
 
 @media(max-width:1024px){
   .vcp-content{padding:24px 20px}
