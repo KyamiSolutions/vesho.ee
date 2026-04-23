@@ -299,4 +299,15 @@
 
     // Cookie notice disabled
 
+    // ── Dynamic top height: announcement bar + header ──────────────────────────
+    // Called on load and when announcement bar is dismissed
+    window.veshoAdjustTopHeight = function () {
+        var wrapper = document.querySelector('.site-top-wrapper');
+        if (wrapper) {
+            document.documentElement.style.setProperty('--site-top-height', wrapper.offsetHeight + 'px');
+        }
+    };
+    veshoAdjustTopHeight();
+    window.addEventListener('resize', veshoAdjustTopHeight, { passive: true });
+
 })();
