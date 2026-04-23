@@ -129,110 +129,153 @@ body:has(.vwp-wrap){overscroll-behavior-x:none}
   .vwp-stat-grid{grid-template-columns:repeat(2,1fr)}
 }
 
-/* ── 768px — mobiil: bottom navigation bar ──────────────────────────── */
+/* ── 768px — mobiil: täielik ümberkujundus ──────────────────────────── */
 @media(max-width:768px){
+
+  /* ── Saidi päis: portaalil ainult logo ── */
+  body:has(.vwp-wrap) .site-topbar{display:none!important}
+  body:has(.vwp-wrap) .header-nav{display:none!important}
+  body:has(.vwp-wrap) .header-phone{display:none!important}
+  body:has(.vwp-wrap) .header-cta{display:none!important}
+  body:has(.vwp-wrap) .hamburger{display:none!important}
+  body:has(.vwp-wrap) .site-header .header-inner{height:52px!important;padding:0 16px!important}
+  body:has(.vwp-wrap) #page-content{padding-top:52px!important}
+
+  /* ── WP wrapper reset ── */
   body:has(.vwp-wrap) #page,
   body:has(.vwp-wrap) #primary,
   body:has(.vwp-wrap) #main,
   body:has(.vwp-wrap) .entry-content,
   body:has(.vwp-wrap) article{padding:0!important;margin:0!important}
 
-  /* Sidebar → fikseeritud bottom nav bar */
+  /* ── Bottom navigation ── */
   .vwp-sidebar{
     position:fixed!important;
-    bottom:0!important; left:0!important; right:0!important; top:auto!important;
-    width:100%!important; min-height:unset!important; height:56px!important;
+    bottom:0!important;left:0!important;right:0!important;top:auto!important;
+    width:100%!important;min-height:unset!important;
+    height:calc(60px + env(safe-area-inset-bottom))!important;
     flex-direction:row!important;
     z-index:500!important;
     overflow:hidden!important;
-    border-top:2px solid rgba(255,255,255,0.1)!important;
-    padding:0!important;
+    border-top:1px solid rgba(255,255,255,.12)!important;
+    padding:0 0 env(safe-area-inset-bottom)!important;
+    background:#0f1e2c!important;
+    box-shadow:0 -4px 20px rgba(0,0,0,.25)!important;
   }
   .vwp-sidebar-logo{display:none!important}
   .vwp-sidebar-label{display:none!important}
   .vwp-sidebar-footer{display:none!important}
 
-  /* Nav: keritav, ilma scrollbarita */
-  .vwp-nav{display:flex;flex-direction:row;flex:1;padding:0;min-width:0;overflow-x:auto;overflow-y:hidden;scroll-behavior:smooth;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  /* Nav rida */
+  .vwp-nav{
+    display:flex;flex-direction:row;flex:1;padding:0;min-width:0;
+    overflow-x:auto;overflow-y:hidden;scroll-behavior:smooth;
+    -webkit-overflow-scrolling:touch;scrollbar-width:none;align-items:stretch;
+  }
   .vwp-nav::-webkit-scrollbar{display:none}
-  .vwp-nav li{flex:0 0 auto;min-width:64px;margin:0}
-  .vwp-nav-link{flex-direction:column;justify-content:center;align-items:center;gap:2px;padding:4px 6px;font-size:10px;border-radius:0;min-height:56px;height:56px;text-align:center;white-space:nowrap}
-  .vwp-nav-icon{font-size:18px;width:auto;text-align:center}
+  .vwp-nav li{flex:1 1 0;min-width:56px;margin:0;display:flex}
+
+  /* Nav link */
+  .vwp-nav-link{
+    flex-direction:column;justify-content:center;align-items:center;
+    gap:3px;padding:8px 4px 6px;
+    font-size:10px;font-weight:600;letter-spacing:.2px;
+    border-radius:0;min-height:60px;height:60px;
+    text-align:center;white-space:nowrap;
+    color:rgba(255,255,255,.5)!important;
+    transition:color .15s,background .15s;flex:1;
+  }
+  .vwp-nav-link:hover{color:rgba(255,255,255,.8)!important;background:rgba(255,255,255,.04)}
+  .vwp-nav-link.active{
+    color:#f59e0b!important;
+    background:rgba(245,158,11,.1)!important;
+    position:relative;
+  }
+  .vwp-nav-link.active::before{
+    content:'';position:absolute;top:0;left:10%;right:10%;
+    height:2px;background:#f59e0b;border-radius:0 0 3px 3px;
+  }
+  .vwp-nav-icon{font-size:20px;width:auto;line-height:1}
 
   /* Noolte nupud */
-  .vwp-nav-arrow{display:flex;align-items:center;justify-content:center;width:28px;height:56px;background:#1e293b;border:none;padding:0;margin:0;cursor:pointer;color:rgba(255,255,255,.85);font-size:26px;line-height:1;flex-shrink:0;transition:opacity .2s}
-  .vwp-nav-arrow--left{box-shadow:4px 0 10px rgba(0,0,0,.35)}
-  .vwp-nav-arrow--right{box-shadow:-4px 0 10px rgba(0,0,0,.35)}
+  .vwp-nav-arrow{
+    display:flex;align-items:center;justify-content:center;
+    width:32px;height:60px;background:#0f1e2c;
+    border:none;padding:0;margin:0;cursor:pointer;
+    color:rgba(255,255,255,.6);font-size:20px;line-height:1;
+    flex-shrink:0;transition:opacity .2s;
+  }
+  .vwp-nav-arrow--left{box-shadow:6px 0 12px rgba(0,0,0,.4)}
+  .vwp-nav-arrow--right{box-shadow:-6px 0 12px rgba(0,0,0,.4)}
   .vwp-nav-arrow:disabled{opacity:0;pointer-events:none}
 
-  /* Main ala */
+  /* ── Topbar ── */
   .vwp-main{width:100%;min-width:0}
   .vwp-hamburger{display:none}
-
-  /* Topbar: staatiline */
-  .vwp-topbar{position:static!important;padding:0 16px!important;height:48px!important}
+  .vwp-topbar{
+    position:sticky!important;top:0!important;
+    padding:0 16px!important;height:52px!important;
+    z-index:100!important;
+  }
+  .vwp-topbar-title{font-size:15px;font-weight:700}
   .vwp-topbar-right{display:none}
 
-  /* Sisu: padding-bottom bottom nav jaoks */
-  .vwp-content{padding:16px 16px 72px;max-width:100%;box-sizing:border-box}
+  /* ── Sisu ── */
+  .vwp-content{
+    padding:16px 16px calc(72px + env(safe-area-inset-bottom));
+    max-width:100%;box-sizing:border-box;
+  }
 
-  /* Stat grid */
-  .vwp-stat-grid{grid-template-columns:1fr 1fr}
+  /* ── Stat kaardid ── */
+  .vwp-stat-grid{grid-template-columns:1fr 1fr;gap:10px}
+  .vwp-stat-card{padding:14px 12px;border-radius:10px;border-left-width:3px}
+  .vwp-stat-label{font-size:10px;margin-bottom:4px}
+  .vwp-stat-value{font-size:1.5rem;font-weight:800}
 
-  /* Tabelid: keritavad */
+  /* ── Tabelid ── */
+  .vwp-table-wrap{border-radius:10px}
   .vwp-table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
-  .vwp-table th,.vwp-table td{white-space:nowrap}
+  .vwp-table th{font-size:10px;padding:8px 10px;white-space:nowrap}
+  .vwp-table td{font-size:13px;padding:10px 10px;white-space:nowrap}
 
-  /* Kaardid */
-  .vwp-card{padding:16px}
-  .vwp-order-actions{flex-wrap:wrap}
+  /* ── Kaardid ja tellimused ── */
+  .vwp-card{padding:16px;border-radius:10px}
+  .vwp-order-header{padding:12px 14px;flex-wrap:wrap;gap:6px}
+  .vwp-order-body{padding:12px 14px}
+  .vwp-order-actions{flex-wrap:wrap;gap:6px}
+
+  /* ── Lehepealkiri ── */
+  .vwp-page-header{margin-bottom:16px}
+  .vwp-page-header h1{font-size:20px;font-weight:800}
+  .vwp-page-header p{font-size:13px}
+  .vwp-section-title{font-size:14px;font-weight:700}
 }
 
-/* ── 600px — mobiil ──────────────────────────────────────────────────────── */
-@media(max-width:600px){
-  .vwp-content{padding:14px 14px 72px;box-sizing:border-box}
-  .vwp-card{padding:14px}
-  .vwp-order-body{padding:10px 14px}
-  .vwp-order-header{padding:12px 14px}
-  .vwp-stat-card{padding:16px 12px}
-}
-
-/* ── 480px — telefon ─────────────────────────────────────────────────────── */
+/* ── 480px ── */
 @media(max-width:480px){
   .vwp-stat-grid{grid-template-columns:1fr 1fr}
-  .vwp-stat-card{padding:14px 10px}
+  .vwp-stat-card{padding:12px 10px}
   .vwp-stat-value{font-size:1.3rem}
   .vwp-stat-label{font-size:10px}
-
-  .vwp-content{padding:12px 12px 72px;box-sizing:border-box}
+  .vwp-content{padding:12px 12px calc(68px + env(safe-area-inset-bottom));box-sizing:border-box}
   .vwp-topbar-title{font-size:14px}
-
-  .vwp-page-header{margin-bottom:16px}
   .vwp-page-header h1{font-size:18px}
-  .vwp-section-title{font-size:15px}
-
   .vwp-btn-primary,.vwp-btn-outline,.vwp-btn-danger{width:100%;justify-content:center}
   .vwp-order-actions{flex-direction:column;gap:6px}
-
   .vwp-login-card{padding:24px 16px;border-radius:12px}
   .vwp-login-title{font-size:16px}
-
-  .vwp-input{font-size:16px} /* iOS: ei zoom input-il */
-
-  .vwp-order-header{padding:10px 12px}
-  .vwp-order-body{padding:10px 12px}
+  .vwp-input{font-size:16px}
   .vwp-card{padding:12px}
-
   .vwp-tab{padding:8px 10px;font-size:12px}
 }
 
-/* ── 360px — väike telefon ───────────────────────────────────────────────── */
+/* ── 360px ── */
 @media(max-width:360px){
-  .vwp-content{padding:10px}
+  .vwp-content{padding:10px 10px calc(64px + env(safe-area-inset-bottom))}
   .vwp-stat-value{font-size:1.2rem}
   .vwp-page-header h1{font-size:16px}
-  .vwp-stat-card{padding:12px}
-  .vwp-nav-link{padding:6px 10px;font-size:10px}
+  .vwp-stat-card{padding:10px 8px}
+  .vwp-nav-link{font-size:9px}
   .vwp-login-card{padding:20px 14px}
   .vwp-order-header,.vwp-order-body{padding:10px}
 }

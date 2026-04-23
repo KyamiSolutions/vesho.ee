@@ -110,113 +110,188 @@ textarea.vcp-input{min-height:100px;resize:vertical;line-height:1.5}
 .vcp-backdrop.active{display:block}
 
 /* ═══════════════════════════════════════════════════════════
-   MOBIIL — ainult alla 1024px, desktop muutmata
+   MOBIIL — täielik ümberkujundus
    ═══════════════════════════════════════════════════════════ */
 
-/* ── Portaal: horisontaalne libistamine keelatud (ei peida sisu) ── */
+/* ── Globaalsed mobiili alused ── */
 html:has(.vcp-wrap),html:has(.vauth-wrap){overscroll-behavior-x:none}
 body:has(.vcp-wrap),body:has(.vauth-wrap){overscroll-behavior-x:none}
 .vcp-wrap,.vcp-main,.vcp-content,.vauth-wrap{box-sizing:border-box;max-width:100%}
 .vcp-table-wrap{touch-action:pan-x pan-y}
 
+/* ── 1024px — tahvelarvuti ── */
 @media(max-width:1024px){
   .vcp-content{padding:24px 20px}
   .vcp-stat-grid{grid-template-columns:repeat(2,1fr)}
   .vcp-two-col{gap:16px}
 }
 
+/* ── 768px — mobiil: peamine breakpoint ── */
 @media(max-width:768px){
-  /* WP wrapper reset */
+
+  /* ── Saidi päis: portaalil mobiilil ainult logo + kasutaja ── */
+  body:has(.vcp-wrap) .site-topbar,
+  body:has(.vauth-wrap) .site-topbar{display:none!important}
+  body:has(.vcp-wrap) .header-nav,
+  body:has(.vauth-wrap) .header-nav{display:none!important}
+  body:has(.vcp-wrap) .header-phone,
+  body:has(.vauth-wrap) .header-phone{display:none!important}
+  body:has(.vcp-wrap) .header-cta,
+  body:has(.vauth-wrap) .header-cta{display:none!important}
+  body:has(.vcp-wrap) .hamburger,
+  body:has(.vauth-wrap) .hamburger{display:none!important}
+  body:has(.vcp-wrap) .site-header .header-inner,
+  body:has(.vauth-wrap) .site-header .header-inner{height:52px!important;padding:0 16px!important}
+  body:has(.vcp-wrap) #page-content,
+  body:has(.vauth-wrap) #page-content{padding-top:52px!important}
+
+  /* ── WP wrapper reset ── */
   body:has(.vcp-wrap) #page,
   body:has(.vcp-wrap) #primary,
   body:has(.vcp-wrap) #main,
   body:has(.vcp-wrap) .entry-content,
   body:has(.vcp-wrap) article{padding:0!important;margin:0!important}
 
-  /* Sidebar → fikseeritud bottom nav bar */
+  /* ── Bottom navigation bar ── */
   .vcp-sidebar{
     position:fixed!important;
-    bottom:0!important; left:0!important; right:0!important; top:auto!important;
-    width:100%!important; min-height:unset!important; height:56px!important;
+    bottom:0!important;left:0!important;right:0!important;top:auto!important;
+    width:100%!important;min-height:unset!important;
+    height:calc(60px + env(safe-area-inset-bottom))!important;
     flex-direction:row!important;
     z-index:500!important;
     overflow:hidden!important;
-    border-top:2px solid rgba(255,255,255,0.1)!important;
-    padding:0!important;
+    border-top:1px solid rgba(255,255,255,.12)!important;
+    padding:0 0 env(safe-area-inset-bottom)!important;
+    background:#0f1e2c!important;
+    box-shadow:0 -4px 20px rgba(0,0,0,.25)!important;
   }
   .vcp-sidebar-logo{display:none!important}
   .vcp-sidebar-label{display:none!important}
   .vcp-sidebar-footer{display:none!important}
 
-  /* Nav: keritav, ilma scrollbarita */
-  .vcp-nav{display:flex;flex-direction:row;flex:1;padding:0;min-width:0;overflow-x:auto;overflow-y:hidden;scroll-behavior:smooth;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  /* Nav: keritav rida */
+  .vcp-nav{
+    display:flex;flex-direction:row;flex:1;padding:0;min-width:0;
+    overflow-x:auto;overflow-y:hidden;scroll-behavior:smooth;
+    -webkit-overflow-scrolling:touch;scrollbar-width:none;
+    align-items:stretch;
+  }
   .vcp-nav::-webkit-scrollbar{display:none}
-  .vcp-nav li{flex:0 0 auto;min-width:64px;margin:0}
-  .vcp-nav-link{flex-direction:column;justify-content:center;align-items:center;gap:2px;padding:4px 6px;font-size:10px;border-radius:0;min-height:56px;height:56px;text-align:center;white-space:nowrap}
-  .vcp-nav-icon{font-size:18px;width:auto;text-align:center}
+  .vcp-nav li{flex:1 1 0;min-width:56px;margin:0;display:flex}
+
+  /* Nav link: ikoon + tekst */
+  .vcp-nav-link{
+    flex-direction:column;justify-content:center;align-items:center;
+    gap:3px;padding:8px 4px 6px;
+    font-size:10px;font-weight:600;letter-spacing:.2px;
+    border-radius:0;min-height:60px;height:60px;
+    text-align:center;white-space:nowrap;
+    color:rgba(255,255,255,.5)!important;
+    transition:color .15s,background .15s;
+    flex:1;
+  }
+  .vcp-nav-link:hover{color:rgba(255,255,255,.8)!important;background:rgba(255,255,255,.04)}
+  .vcp-nav-link.active{
+    color:#00b4c8!important;
+    background:rgba(0,180,200,.1)!important;
+    position:relative;
+  }
+  .vcp-nav-link.active::before{
+    content:'';position:absolute;top:0;left:10%;right:10%;
+    height:2px;background:#00b4c8;border-radius:0 0 3px 3px;
+  }
+  .vcp-nav-icon{font-size:20px;width:auto;line-height:1}
 
   /* Noolte nupud */
-  .vcp-nav-arrow{display:flex;align-items:center;justify-content:center;width:28px;height:56px;background:#1e293b;border:none;padding:0;margin:0;cursor:pointer;color:rgba(255,255,255,.85);font-size:26px;line-height:1;flex-shrink:0;transition:opacity .2s}
-  .vcp-nav-arrow--left{box-shadow:4px 0 10px rgba(0,0,0,.35)}
-  .vcp-nav-arrow--right{box-shadow:-4px 0 10px rgba(0,0,0,.35)}
+  .vcp-nav-arrow{
+    display:flex;align-items:center;justify-content:center;
+    width:32px;height:60px;background:#0f1e2c;
+    border:none;padding:0;margin:0;cursor:pointer;
+    color:rgba(255,255,255,.6);font-size:20px;line-height:1;
+    flex-shrink:0;transition:opacity .2s;
+  }
+  .vcp-nav-arrow--left{box-shadow:6px 0 12px rgba(0,0,0,.4)}
+  .vcp-nav-arrow--right{box-shadow:-6px 0 12px rgba(0,0,0,.4)}
   .vcp-nav-arrow:disabled{opacity:0;pointer-events:none}
 
-  /* Main ala */
+  /* ── Portaali topbar ── */
   .vcp-main{width:100%;min-width:0}
   .vcp-hamburger{display:none}
-
-  /* Topbar: staatiline */
-  .vcp-topbar{position:static!important;padding:0 16px!important;height:48px!important}
+  .vcp-topbar{
+    position:sticky!important;top:0!important;
+    padding:0 16px!important;height:52px!important;
+    z-index:100!important;
+    border-bottom:1px solid #f1f5f9!important;
+    background:#fff!important;
+  }
+  .vcp-topbar-title{font-size:15px;font-weight:700}
   .vcp-topbar-right{display:none}
 
-  /* Sisu: padding-bottom bottom nav jaoks */
-  .vcp-content{padding:16px 16px 72px;max-width:100%;box-sizing:border-box}
+  /* ── Sisu ── */
+  .vcp-content{
+    padding:16px 16px calc(72px + env(safe-area-inset-bottom));
+    max-width:100%;box-sizing:border-box;
+  }
 
-  /* Grid */
-  .vcp-stat-grid{grid-template-columns:1fr 1fr}
-  .vcp-two-col{grid-template-columns:1fr}
+  /* ── Stat kaardid: 2 veergu ── */
+  .vcp-stat-grid{grid-template-columns:1fr 1fr;gap:10px}
+  .vcp-stat-card{
+    padding:14px 12px;
+    border-radius:10px;
+    border-left-width:3px;
+  }
+  .vcp-stat-label{font-size:10px;letter-spacing:.04em;margin-bottom:4px}
+  .vcp-stat-value{font-size:1.5rem;font-weight:800}
 
-  /* Tabelid */
+  /* ── Kaheveeruline → üks veerg ── */
+  .vcp-two-col{grid-template-columns:1fr;gap:12px}
+
+  /* ── Tabelid ── */
+  .vcp-table-wrap{border-radius:10px}
   .vcp-table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .vcp-table th{font-size:10px;padding:8px 10px}
+  .vcp-table td{font-size:13px;padding:10px 10px}
 
-  /* Kaardid */
+  /* ── Kaardid ── */
+  .vcp-card{padding:16px;border-radius:10px}
   .vcp-maint-item{flex-wrap:wrap;gap:8px}
+  .vcp-maint-date{min-width:unset}
+
+  /* ── Nupud ── */
   .vcp-quick-actions{gap:8px}
+  .vcp-btn-primary,.vcp-btn-outline{padding:11px 18px;font-size:13px;border-radius:8px}
+
+  /* ── Lehepealkiri ── */
+  .vcp-page-header{margin-bottom:16px}
+  .vcp-page-header h1{font-size:20px;font-weight:800}
+  .vcp-page-header p{font-size:13px}
+  .vcp-section-title{font-size:14px;font-weight:700}
 }
 
-@media(max-width:600px){
-  .vcp-content{padding:14px 14px 72px;box-sizing:border-box}
-  .vcp-card{padding:16px}
-  .vcp-stat-card{padding:16px}
-  .vcp-quick-actions{flex-direction:column}
-  .vcp-quick-actions .vcp-btn-primary,
-  .vcp-quick-actions .vcp-btn-outline{width:100%;justify-content:center;box-sizing:border-box}
-}
-
+/* ── 480px ── */
 @media(max-width:480px){
   .vcp-stat-grid{grid-template-columns:1fr 1fr}
-  .vcp-stat-card{padding:14px 10px}
-  .vcp-stat-value{font-size:1.3rem}
-  .vcp-content{padding:12px 12px 72px;box-sizing:border-box}
-  .vcp-page-header{margin-bottom:16px}
+  .vcp-stat-card{padding:12px 10px}
+  .vcp-stat-value{font-size:1.35rem}
+  .vcp-content{padding:12px 12px calc(68px + env(safe-area-inset-bottom));box-sizing:border-box}
   .vcp-page-header h1{font-size:18px}
-  .vcp-page-header p{font-size:13px}
   .vcp-btn-primary,.vcp-btn-outline,.vcp-btn-danger{width:100%;justify-content:center;box-sizing:border-box}
   .vcp-quick-actions{flex-direction:column}
-  .vcp-card{padding:14px}
+  .vcp-card{padding:12px}
   .vcp-login-card{padding:24px 16px;border-radius:12px}
   .vauth-card{padding:28px 20px}
-  /* iOS: ei zoom input-il */
   .vcp-input,.vauth-group input{font-size:16px!important}
   .vauth-btn{padding:16px}
+  .vcp-empty{padding:24px 16px;font-size:13px}
 }
 
+/* ── 360px ── */
 @media(max-width:360px){
-  .vcp-content{padding:10px}
+  .vcp-content{padding:10px 10px calc(64px + env(safe-area-inset-bottom))}
   .vcp-stat-value{font-size:1.2rem}
   .vcp-page-header h1{font-size:16px}
-  .vcp-stat-card{padding:12px}
-  .vcp-nav-link{padding:6px 10px;font-size:10px}
+  .vcp-stat-card{padding:10px 8px}
   .vauth-card{padding:22px 14px}
   .vcp-login-card{padding:20px 14px}
 }
