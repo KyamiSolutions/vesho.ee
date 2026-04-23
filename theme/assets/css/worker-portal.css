@@ -127,6 +127,9 @@ body:has(.vwp-wrap){overscroll-behavior-x:none}
 .vwp-table-wrap{touch-action:pan-x pan-y}
 .vwp-wrap a,.vwp-wrap button{-webkit-tap-highlight-color:transparent}
 
+/* ── Globaalne teadaanne: peidetud kõikidel ekraanil portaali lehel ── */
+body:has(.vwp-wrap) #global-announcement-bar{display:none!important}
+
 /* ── 1024px — MOBIIL: peamine breakpoint ── */
 @media(max-width:1024px){
 
@@ -216,9 +219,6 @@ body:has(.vwp-wrap){overscroll-behavior-x:none}
   .vwp-nav-arrow--left{box-shadow:6px 0 12px rgba(0,0,0,.4)!important}
   .vwp-nav-arrow--right{box-shadow:-6px 0 12px rgba(0,0,0,.4)!important}
   .vwp-nav-arrow:disabled{opacity:0!important;pointer-events:none!important}
-
-  /* ── Globaalne teadaanne: peidetud portaalil ── */
-  body:has(.vwp-wrap) #global-announcement-bar{display:none!important}
 
   /* ── Topbar: sticky 52px all — site-header jääb nähtavaks ── */
   .vwp-main{width:100%!important;min-width:0!important}

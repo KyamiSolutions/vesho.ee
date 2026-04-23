@@ -1584,6 +1584,7 @@ function veshoResendVerify(){
         $devices = $wpdb->get_results($wpdb->prepare(
             "SELECT id, name FROM {$wpdb->prefix}vesho_devices WHERE client_id=%d ORDER BY name", $cid
         ));
+        $vat_rate = (float)get_option('vesho_vat_rate', '24') / 100;
         ?>
 <h2 class="vcp-section-title">Broneeri teenus</h2>
 <div class="vcp-card">
@@ -1597,7 +1598,10 @@ function veshoResendVerify(){
         <?php foreach ($services as $svc): ?>
           <option value="<?php echo $svc->id; ?>">
             <?php echo esc_html($svc->name); ?>
-            <?php if ($svc->price) echo ' — ' . number_format((float)$svc->price, 2, ',', ' ') . ' €'; ?>
+            <?php if ($svc->price) {
+                $gross = round((float)$svc->price * (1 + $vat_rate), 2);
+                echo ' — ' . number_format($gross, 2, ',', ' ') . ' € (KM-ga)';
+            } ?>
           </option>
         <?php endforeach; ?>
       </select>

@@ -120,6 +120,10 @@ body:has(.vcp-wrap),body:has(.vauth-wrap){overscroll-behavior-x:none}
 .vcp-table-wrap{touch-action:pan-x pan-y}
 .vcp-wrap a,.vcp-wrap button{-webkit-tap-highlight-color:transparent}
 
+/* ── Globaalne teadaanne: peidetud kõikidel ekraanil portaali lehel ── */
+body:has(.vcp-wrap) #global-announcement-bar{display:none!important}
+body:has(.vauth-wrap) #global-announcement-bar{display:none!important}
+
 /* ── 1024px — MOBIIL: peamine breakpoint ── */
 @media(max-width:1024px){
 
@@ -210,10 +214,6 @@ body:has(.vcp-wrap),body:has(.vauth-wrap){overscroll-behavior-x:none}
   .vcp-nav-arrow--left{box-shadow:6px 0 12px rgba(0,0,0,.4)!important}
   .vcp-nav-arrow--right{box-shadow:-6px 0 12px rgba(0,0,0,.4)!important}
   .vcp-nav-arrow:disabled{opacity:0!important;pointer-events:none!important}
-
-  /* ── Globaalne teadaanne: peidetud portaalil (portaal renderdab oma) ── */
-  body:has(.vcp-wrap) #global-announcement-bar{display:none!important}
-  body:has(.vauth-wrap) #global-announcement-bar{display:none!important}
 
   /* ── Portaali topbar: sticky 52px all — site-header jääb nähtavaks ── */
   .vcp-main{width:100%!important;min-width:0!important}

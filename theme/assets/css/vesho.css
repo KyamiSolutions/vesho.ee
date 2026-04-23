@@ -2256,3 +2256,6 @@
 
 /* ── Avalik sait: horisontaalne overscroll keelatud (ei peida sisu) ── */
 html, body { overscroll-behavior-x: none; }
+
+/* ── Mobiil iOS: taustavärv = ei tule valge riba scroll-overshot'il ── */
+html { background: #0d1f2d; }
