@@ -313,7 +313,7 @@ if ( $action === 'print' && $invoice_id ) {
     endif; ?>
 
     <?php if ($action !== 'edit' && $action !== 'add') : ?>
-    <div class="crm-stats-row" style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px">
+    <div class="crm-stats-row crm-stats-row--4">
         <div class="crm-stat-card" style="border-top:3px solid #10b981">
             <div class="crm-stat-num" style="color:#10b981;font-size:20px"><?php echo vesho_crm_format_money($stats->paid_total??0); ?></div>
             <div class="crm-stat-label" style="margin-top:2px">Laekunud</div>

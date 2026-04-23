@@ -1488,5 +1488,134 @@
 }
 
 /* --------------------------------------------------------------------------
+   25. crm-stat-card — puuduvad CSS klassid (v2.9.55)
+   -------------------------------------------------------------------------- */
+
+.crm-stat-card {
+  background: var(--crm-surface);
+  border-radius: var(--crm-radius);
+  box-shadow: var(--crm-shadow-sm);
+  padding: 18px 16px;
+  transition: box-shadow var(--crm-duration) var(--crm-ease),
+              transform var(--crm-duration) var(--crm-ease);
+}
+
+.crm-stat-card:hover {
+  box-shadow: var(--crm-shadow-md);
+  transform: translateY(-1px);
+}
+
+.crm-stat-num {
+  display: block;
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--crm-navy);
+  line-height: 1.1;
+  letter-spacing: -0.4px;
+}
+
+.crm-stat-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--crm-text-light);
+  margin-top: 4px;
+}
+
+/* --------------------------------------------------------------------------
+   26. crm-stats-row — responsive grid wrapper (v2.9.55)
+   -------------------------------------------------------------------------- */
+
+.crm-stats-row {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.crm-stats-row--2 { grid-template-columns: repeat(2, 1fr); }
+.crm-stats-row--3 { grid-template-columns: repeat(3, 1fr); }
+.crm-stats-row--4 { grid-template-columns: repeat(4, 1fr); }
+
+@media (max-width: 900px) {
+  .crm-stats-row--3 { grid-template-columns: repeat(2, 1fr); }
+  .crm-stats-row--4 { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 600px) {
+  .crm-stats-row--2 { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 480px) {
+  .crm-stats-row--3 { grid-template-columns: 1fr 1fr; }
+  .crm-stats-row--4 { grid-template-columns: 1fr 1fr; }
+  .crm-stat-card { padding: 14px 12px; }
+  .crm-stat-num  { font-size: 18px; }
+}
+
+@media (max-width: 360px) {
+  .crm-stats-row--2,
+  .crm-stats-row--3,
+  .crm-stats-row--4 { grid-template-columns: 1fr; }
+  .crm-stat-card { padding: 12px 10px; }
+  .crm-stat-num  { font-size: 16px; }
+}
+
+/* --------------------------------------------------------------------------
+   27. Tickets split-view — mobiil (v2.9.55)
+   -------------------------------------------------------------------------- */
+
+.tk-split-view {
+  display: flex;
+  min-height: 560px;
+}
+
+.tk-list-panel {
+  width: 360px;
+  flex-shrink: 0;
+  border-right: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+}
+
+@media (max-width: 768px) {
+  .tk-split-view {
+    flex-direction: column;
+    min-height: auto;
+  }
+  .tk-list-panel {
+    width: 100% !important;
+    max-height: 300px;
+    border-right: none !important;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  #tk-detail-panel {
+    min-height: 300px;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   28. 600px breakpoint — täiendavad korrektuurid (v2.9.55)
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 600px) {
+  /* Toolbar: search täislaius */
+  .crm-toolbar > input[type="search"],
+  .crm-toolbar .crm-search { min-width: 0; width: 100%; }
+
+  /* Vormi grid → 1 veerg */
+  .crm-form-grid--2,
+  .crm-form-grid--3 { grid-template-columns: 1fr; }
+
+  /* Kaardid */
+  .crm-card-header { flex-wrap: wrap; gap: 8px; }
+
+  /* Tabelid */
+  .crm-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* Märgenda peidetavad veerud (PHP-s lisatav klass) */
+  .crm-table .col-hide-sm { display: none; }
+}
+
+/* --------------------------------------------------------------------------
    End of Vesho CRM Admin Stylesheet
    ========================================================================== */

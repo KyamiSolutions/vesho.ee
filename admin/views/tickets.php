@@ -186,7 +186,7 @@ $pcls       = ['low'=>'badge-gray','normal'=>'badge-info','high'=>'badge-warning
     </div>
     <?php else : ?>
     <!-- KPI cards (v2.9.54) -->
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px">
+    <div class="crm-stats-row crm-stats-row--4">
         <div class="crm-stat-card" style="border-top:3px solid #6b7280;cursor:pointer" onclick="tkFilterStatus('')">
             <div class="crm-stat-num"><?php echo $kpi_all; ?></div>
             <div class="crm-stat-label">Kõik piletid</div>
@@ -207,10 +207,10 @@ $pcls       = ['low'=>'badge-gray','normal'=>'badge-info','high'=>'badge-warning
 
     <!-- Split view -->
     <div class="crm-card" style="overflow:hidden">
-        <div style="display:flex;min-height:560px">
+        <div class="tk-split-view">
 
             <!-- Left panel: ticket list -->
-            <div style="width:360px;flex-shrink:0;border-right:1px solid #e2e8f0;display:flex;flex-direction:column">
+            <div class="tk-list-panel">
                 <!-- Search/filter toolbar -->
                 <div style="padding:10px 12px;border-bottom:1px solid #e2e8f0;flex-shrink:0">
                     <form method="GET" style="display:flex;gap:6px">
@@ -275,6 +275,13 @@ document.querySelectorAll('.tk-list-row').forEach(function(row) {
         row.dataset.origBg = row.style.background;
         row.style.background = '#eff6ff';
         loadTicketDetail(parseInt(row.dataset.id));
+        // Mobile: scroll detail panel into view
+        if (window.innerWidth <= 768) {
+            setTimeout(function(){
+                var panel = document.getElementById('tk-detail-panel');
+                if (panel) panel.scrollIntoView({behavior:'smooth', block:'start'});
+            }, 100);
+        }
     });
 });
 

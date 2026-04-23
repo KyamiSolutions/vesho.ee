@@ -109,7 +109,7 @@ $clockin_sessions = $wpdb->get_results(
     </div>
     <?php else : ?>
     <!-- Summary cards (v2.9.54) -->
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px">
+    <div class="crm-stats-row crm-stats-row--3">
         <div class="crm-stat-card" style="border-top:3px solid #00b4c8">
             <div class="crm-stat-num" style="color:#00b4c8"><?php echo number_format($wh_week_total,1); ?> h</div>
             <div class="crm-stat-label">Selle nädala tunnid</div>
