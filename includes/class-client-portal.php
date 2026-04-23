@@ -3092,51 +3092,149 @@ function setMsg(m){document.getElementById('vcp-pay-msg').textContent=m;}
 .vcp-tab.active{color:#00b4c8;border-bottom-color:#00b4c8}
 .vcp-panel{display:none}
 .vcp-panel.active{display:block}
-/* Responsive — mobiil: bottom navigation bar */
+/* ═══════════════════════════════════════════════════════
+   MOBIIL — Vesho Client Portal täielik mobiilivaade
+   ═══════════════════════════════════════════════════════ */
+html:has(.vcp-wrap),body:has(.vcp-wrap){overscroll-behavior-x:none;touch-action:pan-y}
+.vcp-wrap,.vcp-main,.vcp-content{box-sizing:border-box;max-width:100%}
+.vcp-table-wrap{touch-action:pan-x pan-y}
+
+/* 1024px: tahvelarvuti */
+@media(max-width:1024px){
+  .vcp-content{padding:24px 20px}
+  .vcp-stat-grid{grid-template-columns:repeat(2,1fr)}
+  .vcp-two-col{gap:16px}
+}
+
+/* 768px: mobiil */
 @media(max-width:768px){
-  body:has(.vcp-wrap) #page,body:has(.vcp-wrap) #primary,body:has(.vcp-wrap) #main,body:has(.vcp-wrap) .entry-content,body:has(.vcp-wrap) article{padding:0 !important;margin:0 !important}
+  /* Saidi päis: portaalil ainult logo */
+  body:has(.vcp-wrap) .site-topbar,body:has(.vcp-wrap) .header-nav,
+  body:has(.vcp-wrap) .header-phone,body:has(.vcp-wrap) .header-cta,
+  body:has(.vcp-wrap) .hamburger{display:none !important}
+  body:has(.vcp-wrap) .site-header .header-inner{height:52px !important;padding:0 16px !important}
+  body:has(.vcp-wrap) #page-content{padding-top:52px !important}
+  body:has(.vcp-wrap) #page,body:has(.vcp-wrap) #primary,body:has(.vcp-wrap) #main,
+  body:has(.vcp-wrap) .entry-content,body:has(.vcp-wrap) article{padding:0 !important;margin:0 !important}
 
-  /* Sidebar → fikseeritud bottom nav bar */
+  /* Bottom nav */
   .vcp-sidebar{
-    position:fixed !important;
-    bottom:0 !important; left:0 !important; right:0 !important; top:auto !important;
-    width:100% !important; min-height:unset !important; height:56px !important;
-    flex-direction:row !important;
-    z-index:500 !important;
-    overflow:hidden !important;
-    border-top:2px solid rgba(255,255,255,0.1) !important;
-    padding:0 !important;
+    position:fixed !important;bottom:0 !important;left:0 !important;right:0 !important;top:auto !important;
+    width:100% !important;min-height:unset !important;
+    height:calc(62px + env(safe-area-inset-bottom)) !important;
+    flex-direction:row !important;z-index:500 !important;overflow:hidden !important;
+    border-top:1px solid rgba(255,255,255,.1) !important;
+    padding:0 0 env(safe-area-inset-bottom) !important;
+    background:#0d1f2d !important;
+    box-shadow:0 -4px 24px rgba(0,0,0,.3) !important;
   }
-  .vcp-sidebar-logo{display:none !important}
-  .vcp-sidebar-label{display:none !important}
-  .vcp-sidebar-footer{display:none !important}
+  .vcp-sidebar-logo,.vcp-sidebar-label,.vcp-sidebar-footer{display:none !important}
 
-  /* Nav: keritav, ilma scrollbarita */
-  .vcp-nav{display:flex !important;flex-direction:row !important;flex:1 !important;padding:0 !important;min-width:0 !important;overflow-x:auto !important;overflow-y:hidden !important;scroll-behavior:smooth !important;-webkit-overflow-scrolling:touch !important;scrollbar-width:none !important}
+  /* Nav rida */
+  .vcp-nav{display:flex !important;flex-direction:row !important;flex:1 !important;padding:0 !important;
+    min-width:0 !important;overflow-x:auto !important;overflow-y:hidden !important;
+    scroll-behavior:smooth !important;-webkit-overflow-scrolling:touch !important;
+    scrollbar-width:none !important;align-items:stretch !important}
   .vcp-nav::-webkit-scrollbar{display:none !important}
-  .vcp-nav li{flex:0 0 auto !important;min-width:64px !important;margin:0 !important}
-  .vcp-nav-link{flex-direction:column !important;justify-content:center !important;align-items:center !important;gap:2px !important;padding:4px 6px !important;font-size:10px !important;border-radius:0 !important;min-height:56px !important;height:56px !important;text-align:center !important;white-space:nowrap !important}
-  .vcp-nav-icon{font-size:18px !important;width:auto !important;text-align:center !important}
+  .vcp-nav li{flex:1 1 0 !important;min-width:52px !important;margin:0 !important;display:flex !important}
 
-  /* Noolte nupud */
-  .vcp-nav-arrow{display:flex !important;align-items:center !important;justify-content:center !important;width:28px !important;height:56px !important;background:#1e293b !important;border:none !important;padding:0 !important;margin:0 !important;cursor:pointer !important;color:rgba(255,255,255,.85) !important;font-size:26px !important;line-height:1 !important;flex-shrink:0 !important;transition:opacity .2s !important}
-  .vcp-nav-arrow--left{box-shadow:4px 0 10px rgba(0,0,0,.35) !important}
-  .vcp-nav-arrow--right{box-shadow:-4px 0 10px rgba(0,0,0,.35) !important}
+  /* Nav link: ikoon + tekst, Vesho stiil */
+  .vcp-nav-link{
+    flex-direction:column !important;justify-content:center !important;align-items:center !important;
+    gap:3px !important;padding:8px 4px 6px !important;font-size:10px !important;font-weight:600 !important;
+    letter-spacing:.2px !important;border-radius:0 !important;
+    min-height:62px !important;height:62px !important;
+    text-align:center !important;white-space:nowrap !important;
+    color:rgba(255,255,255,.45) !important;
+    transition:color .15s,background .15s !important;flex:1 !important;
+    position:relative !important;
+  }
+  .vcp-nav-link:hover{color:rgba(255,255,255,.75) !important;background:rgba(255,255,255,.04) !important}
+  .vcp-nav-link.active{color:#00b4c8 !important;background:rgba(0,180,200,.08) !important}
+  .vcp-nav-link.active::before{content:"";position:absolute;top:0;left:15%;right:15%;height:2px;background:#00b4c8;border-radius:0 0 2px 2px}
+  .vcp-nav-icon{font-size:20px !important;width:auto !important;line-height:1 !important}
+
+  /* Nav noolte nupud */
+  .vcp-nav-arrow{display:flex !important;align-items:center !important;justify-content:center !important;
+    width:30px !important;height:62px !important;background:#0d1f2d !important;
+    border:none !important;padding:0 !important;margin:0 !important;cursor:pointer !important;
+    color:rgba(255,255,255,.5) !important;font-size:18px !important;line-height:1 !important;
+    flex-shrink:0 !important;transition:opacity .2s !important}
+  .vcp-nav-arrow--left{box-shadow:5px 0 10px rgba(0,0,0,.3) !important}
+  .vcp-nav-arrow--right{box-shadow:-5px 0 10px rgba(0,0,0,.3) !important}
   .vcp-nav-arrow:disabled{opacity:0 !important;pointer-events:none !important}
 
-  /* Main ala: täislaius */
+  /* Main + topbar */
   .vcp-main{width:100% !important;min-width:0 !important}
   .vcp-hamburger{display:none !important}
-
-  /* Topbar: nähtav, staatiline (näitab lehe pealkirja) */
-  .vcp-topbar{position:static !important;padding:0 16px !important;height:48px !important}
+  .vcp-topbar{position:sticky !important;top:0 !important;padding:0 16px !important;
+    height:52px !important;z-index:100 !important;
+    border-bottom:1px solid #f1f5f9 !important;background:#fff !important}
+  .vcp-topbar-title{font-size:15px !important;font-weight:700 !important}
   .vcp-topbar-right{display:none !important}
 
-  /* Sisu: padding-bottom bottom nav jaoks */
-  .vcp-content{padding:16px 16px 72px !important;max-width:100% !important}
-  .vcp-two-col{grid-template-columns:1fr !important}
-  .vcp-stat-grid{grid-template-columns:1fr 1fr !important}
+  /* Sisu */
+  .vcp-content{padding:14px 14px calc(76px + env(safe-area-inset-bottom)) !important;max-width:100% !important;box-sizing:border-box !important}
+
+  /* Stat kaardid: 2 veergu, kompaktsed */
+  .vcp-stat-grid{grid-template-columns:1fr 1fr !important;gap:10px !important}
+  .vcp-stat-card{padding:14px 12px !important;border-radius:10px !important;border-left-width:3px !important}
+  .vcp-stat-label{font-size:10px !important;letter-spacing:.03em !important;margin-bottom:4px !important}
+  .vcp-stat-value{font-size:1.45rem !important;font-weight:800 !important}
+
+  /* Kahe veeruga → üks veerg */
+  .vcp-two-col{grid-template-columns:1fr !important;gap:12px !important}
+
+  /* Kaardid */
+  .vcp-card{padding:14px !important;border-radius:10px !important}
+  .vcp-maint-item{flex-wrap:wrap !important;gap:8px !important}
+  .vcp-maint-date{min-width:unset !important}
+
+  /* Lehepealkiri */
+  .vcp-page-header{margin-bottom:14px !important}
+  .vcp-page-header h1{font-size:20px !important;font-weight:800 !important}
+  .vcp-page-header p{font-size:13px !important}
+  .vcp-section-title{font-size:14px !important;font-weight:700 !important}
+
+  /* Tabelid */
+  .vcp-table-wrap{border-radius:10px !important}
   .vcp-table{display:block !important;overflow-x:auto !important;-webkit-overflow-scrolling:touch !important}
+  .vcp-table th{font-size:10px !important;padding:8px 10px !important}
+  .vcp-table td{font-size:13px !important;padding:10px 10px !important}
+
+  /* Nupud */
+  .vcp-quick-actions{gap:8px !important}
+  .vcp-btn-primary,.vcp-btn-outline,.vcp-btn-danger{padding:11px 18px !important;font-size:13px !important;border-radius:8px !important}
+
+  /* Login */
+  .vcp-login-card{padding:28px 20px !important}
+  .vcp-login-title{font-size:16px !important}
+  .vcp-input{font-size:16px !important}
+}
+
+/* 480px */
+@media(max-width:480px){
+  .vcp-content{padding:12px 12px calc(70px + env(safe-area-inset-bottom)) !important;box-sizing:border-box !important}
+  .vcp-stat-grid{grid-template-columns:1fr 1fr !important}
+  .vcp-stat-card{padding:12px 10px !important}
+  .vcp-stat-value{font-size:1.3rem !important}
+  .vcp-page-header h1{font-size:18px !important}
+  .vcp-btn-primary,.vcp-btn-outline,.vcp-btn-danger{width:100% !important;justify-content:center !important;box-sizing:border-box !important;display:flex !important;align-items:center !important}
+  .vcp-quick-actions{flex-direction:column !important}
+  .vcp-card{padding:12px !important}
+  .vcp-login-card{padding:24px 16px !important;border-radius:12px !important}
+  .vcp-input{font-size:16px !important}
+  .vcp-empty{padding:24px 16px !important;font-size:13px !important}
+}
+
+/* 360px */
+@media(max-width:360px){
+  .vcp-content{padding:10px 10px calc(66px + env(safe-area-inset-bottom)) !important}
+  .vcp-stat-value{font-size:1.2rem !important}
+  .vcp-stat-card{padding:10px 8px !important}
+  .vcp-page-header h1{font-size:16px !important}
+  .vcp-login-card{padding:20px 14px !important}
+  .vcp-nav-link{font-size:9px !important}
 }
 ';
     }
