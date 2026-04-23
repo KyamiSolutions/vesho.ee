@@ -1,20 +1,10 @@
 {
   "name": "Vesho CRM",
   "slug": "vesho-crm",
-<<<<<<< HEAD
-  "version": "2.9.67",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.9.67/vesho-crm.zip",
-  "requires": "6.0",
-  "tested": "6.7",
-  "last_updated": "2026-04-23",
-  "changelog": "<h4>2.9.67</h4><ul><li>Uus versioon</li></ul><h4>2.9.66</h4><ul><li>Uus versioon</li></ul><h4>2.9.65</h4><ul><li>Uus versioon</li></ul><h4>2.9.64</h4><ul><li>Portaalid: täielik mobiilivaade uuesti — tabelid kaartideks (640px), data-label kõigil TD-del</li><li>Bottom nav 64px + iOS safe area, Barlow font, aktiivne ::after indikaator</li><li>5 breakpointi: 1024px / 768px / 640px / 480px / 360px</li></ul><h4>2.9.63</h4><ul><li>Kliendi ja töötaja portaal: täielik mobiilivaade (PHP inline CSS uuendatud)</li><li>Bottom nav 62px + iOS safe area, Vesho navy taust, aktiivne indikaator</li></ul>"
-}
-=======
   "version": "2.9.68",
   "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.9.68/vesho-crm.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-23",
-  "changelog": "<h4>2.9.68</h4><ul><li>Kliendi portaal: teenuste hinnad kuvatakse KM-ga (bruto)</li><li>Portaalid: globaalne teadaanne peidetud kõikidel ekraanil</li></ul><h4>2.9.67</h4><ul><li>Portaalid: professionaalsed SVG ikooniid navigatsioonis (Feather/Lucide stiil)</li></ul><h4>2.9.66</h4><ul><li>Portaalid: täielik mobiilivaade — bottom nav, announcements, topbar fix</li></ul>"
+  "changelog": "<h4>2.9.68</h4><ul><li>Uus versioon</li></ul>"
 }
->>>>>>> b51df20 (v2.9.68: valge riba fix, teadaanne globaalne, teenused KM-ga)
