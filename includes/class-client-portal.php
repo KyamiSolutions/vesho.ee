@@ -3097,10 +3097,11 @@ function setMsg(m){document.getElementById('vcp-pay-msg').textContent=m;}
    ════════════════════════════════════════════════════════════ */
 
 /* Globaalsed alused */
-html:has(.vcp-wrap),body:has(.vcp-wrap){overscroll-behavior-x:none;touch-action:pan-y}
+html:has(.vcp-wrap),body:has(.vcp-wrap){overscroll-behavior-x:none;touch-action:pan-y;overflow-x:hidden}
 *{box-sizing:border-box}
 .vcp-wrap,.vcp-main,.vcp-content{box-sizing:border-box;max-width:100%}
 .vcp-table-wrap{touch-action:pan-x pan-y;-webkit-overflow-scrolling:touch}
+.vcp-wrap a,.vcp-wrap button{-webkit-tap-highlight-color:transparent}
 
 /* ── 1024px: tahvelarvuti ── */
 @media(max-width:1024px){
@@ -3243,10 +3244,11 @@ html:has(.vcp-wrap),body:has(.vcp-wrap){overscroll-behavior-x:none;touch-action:
   .vcp-page-header p{font-size:13px !important}
   .vcp-section-title{font-size:14px !important;font-weight:700 !important;margin-bottom:10px !important}
 
-  /* Tabelid: mobiilil keritav */
+  /* Tabelid: horisontaalselt keritav 768-641px vahemikus */
   .vcp-table-wrap{border-radius:10px !important;overflow:hidden !important}
-  .vcp-table{font-size:12.5px !important}
-  .vcp-table th{font-size:10px !important;padding:8px 10px !important}
+  .vcp-table{font-size:12.5px !important;display:block !important;overflow-x:auto !important;-webkit-overflow-scrolling:touch !important}
+  .vcp-table thead,.vcp-table tbody{display:table !important;width:100% !important}
+  .vcp-table th{font-size:10px !important;padding:8px 10px !important;white-space:nowrap !important}
   .vcp-table td{font-size:12.5px !important;padding:9px 10px !important}
 
   /* Nupud */
@@ -3267,6 +3269,7 @@ html:has(.vcp-wrap),body:has(.vcp-wrap){overscroll-behavior-x:none;touch-action:
 
 /* ── 640px: tabelid → kaartideks ── */
 @media(max-width:640px){
+  .vcp-table{overflow-x:visible !important;display:block !important}
   .vcp-table thead{display:none !important}
   .vcp-table-wrap{background:transparent !important;box-shadow:none !important;border-radius:0 !important}
   .vcp-table tbody{display:flex !important;flex-direction:column !important;gap:8px !important}

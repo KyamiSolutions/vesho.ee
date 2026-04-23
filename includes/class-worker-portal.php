@@ -4155,10 +4155,11 @@ document.querySelectorAll('.vwp-hist-header').forEach(function(hdr){
    ════════════════════════════════════════════════════════════ */
 
 /* Globaalsed alused */
-html:has(.vwp-wrap),body:has(.vwp-wrap){overscroll-behavior-x:none;touch-action:pan-y}
+html:has(.vwp-wrap),body:has(.vwp-wrap){overscroll-behavior-x:none;touch-action:pan-y;overflow-x:hidden}
 *{box-sizing:border-box}
 .vwp-wrap,.vwp-main,.vwp-content{box-sizing:border-box;max-width:100%}
 .vwp-table-wrap{touch-action:pan-x pan-y;-webkit-overflow-scrolling:touch}
+.vwp-wrap a,.vwp-wrap button{-webkit-tap-highlight-color:transparent}
 
 /* ── 1024px: tahvelarvuti ── */
 @media(max-width:1024px){
@@ -4169,7 +4170,7 @@ html:has(.vwp-wrap),body:has(.vwp-wrap){overscroll-behavior-x:none;touch-action:
 /* ── 768px: mobiil ── */
 @media(max-width:768px){
 
-  /* Avaliku saidi päis: ainult logo */
+  /* Avaliku saidi päis: portaalil ainult logo */
   body:has(.vwp-wrap) .site-topbar,
   body:has(.vwp-wrap) .header-nav,
   body:has(.vwp-wrap) .header-phone,
@@ -4298,10 +4299,17 @@ html:has(.vwp-wrap),body:has(.vwp-wrap){overscroll-behavior-x:none;touch-action:
   .vwp-order-body{padding:12px 14px !important}
   .vwp-order-actions{flex-wrap:wrap !important;gap:6px !important}
 
-  /* Tabelid */
-  .vwp-table{font-size:12.5px !important}
+  /* Tabelid: horisontaalselt keritav 768-641px vahemikus */
+  .vwp-table{font-size:12.5px !important;display:block !important;overflow-x:auto !important;-webkit-overflow-scrolling:touch !important}
+  .vwp-table thead,.vwp-table tbody{display:table !important;width:100% !important}
   .vwp-table th{font-size:10px !important;padding:8px 10px !important;white-space:nowrap !important}
   .vwp-table td{font-size:12.5px !important;padding:9px 10px !important}
+
+  /* Nav link: override inline justify-content:space-between */
+  .vwp-nav-link{justify-content:center !important}
+  .vwp-nav-link > span:first-child{flex-direction:column !important;align-items:center !important;gap:3px !important;justify-content:center !important}
+  /* Badge peidetud bottom nav-is (pole ruumi) */
+  .vwp-nav li span[id^="vwp-nav-badge"]{display:none !important}
 
   /* Nupud */
   .vwp-btn-primary,.vwp-btn-outline,.vwp-btn-danger{
@@ -4316,6 +4324,7 @@ html:has(.vwp-wrap),body:has(.vwp-wrap){overscroll-behavior-x:none;touch-action:
 
 /* ── 640px: tabelid → kaartideks ── */
 @media(max-width:640px){
+  .vwp-table{overflow-x:visible !important;display:block !important}
   .vwp-table thead{display:none !important}
   .vwp-table-wrap{background:transparent !important;box-shadow:none !important;border-radius:0 !important}
   .vwp-table tbody{display:flex !important;flex-direction:column !important;gap:8px !important}
