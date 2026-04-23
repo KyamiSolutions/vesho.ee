@@ -174,7 +174,7 @@ body:has(.vwp-wrap){overscroll-behavior-x:none}
   .vwp-topbar-right{display:none}
 
   /* Sisu: padding-bottom bottom nav jaoks */
-  .vwp-content{padding:16px 16px 72px;overflow-x:hidden;max-width:100%}
+  .vwp-content{padding:16px 16px 72px;max-width:100%;box-sizing:border-box}
 
   /* Stat grid */
   .vwp-stat-grid{grid-template-columns:1fr 1fr}
@@ -190,7 +190,7 @@ body:has(.vwp-wrap){overscroll-behavior-x:none}
 
 /* ── 600px — mobiil ──────────────────────────────────────────────────────── */
 @media(max-width:600px){
-  .vwp-content{padding:14px}
+  .vwp-content{padding:14px 14px 72px;box-sizing:border-box}
   .vwp-card{padding:14px}
   .vwp-order-body{padding:10px 14px}
   .vwp-order-header{padding:12px 14px}
@@ -199,12 +199,12 @@ body:has(.vwp-wrap){overscroll-behavior-x:none}
 
 /* ── 480px — telefon ─────────────────────────────────────────────────────── */
 @media(max-width:480px){
-  .vwp-stat-grid{grid-template-columns:1fr}
-  .vwp-stat-card{padding:14px}
-  .vwp-stat-value{font-size:1.4rem}
+  .vwp-stat-grid{grid-template-columns:1fr 1fr}
+  .vwp-stat-card{padding:14px 10px}
+  .vwp-stat-value{font-size:1.3rem}
   .vwp-stat-label{font-size:10px}
 
-  .vwp-content{padding:12px}
+  .vwp-content{padding:12px 12px 72px;box-sizing:border-box}
   .vwp-topbar-title{font-size:14px}
 
   .vwp-page-header{margin-bottom:16px}

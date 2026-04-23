@@ -170,7 +170,7 @@ body:has(.vcp-wrap),body:has(.vauth-wrap){overscroll-behavior-x:none}
   .vcp-topbar-right{display:none}
 
   /* Sisu: padding-bottom bottom nav jaoks */
-  .vcp-content{padding:16px 16px 72px;overflow-x:hidden;max-width:100%}
+  .vcp-content{padding:16px 16px 72px;max-width:100%;box-sizing:border-box}
 
   /* Grid */
   .vcp-stat-grid{grid-template-columns:1fr 1fr}
@@ -185,7 +185,7 @@ body:has(.vcp-wrap),body:has(.vauth-wrap){overscroll-behavior-x:none}
 }
 
 @media(max-width:600px){
-  .vcp-content{padding:14px}
+  .vcp-content{padding:14px 14px 72px;box-sizing:border-box}
   .vcp-card{padding:16px}
   .vcp-stat-card{padding:16px}
   .vcp-quick-actions{flex-direction:column}
@@ -194,10 +194,11 @@ body:has(.vcp-wrap),body:has(.vauth-wrap){overscroll-behavior-x:none}
 }
 
 @media(max-width:480px){
-  .vcp-stat-grid{grid-template-columns:1fr}
-  .vcp-stat-card{padding:14px}
-  .vcp-stat-value{font-size:1.4rem}
-  .vcp-content{padding:12px}
+  .vcp-stat-grid{grid-template-columns:1fr 1fr}
+  .vcp-stat-card{padding:14px 10px}
+  .vcp-stat-value{font-size:1.3rem}
+  .vcp-content{padding:12px 12px 72px;box-sizing:border-box}
+  .vcp-page-header{margin-bottom:16px}
   .vcp-page-header h1{font-size:18px}
   .vcp-page-header p{font-size:13px}
   .vcp-btn-primary,.vcp-btn-outline,.vcp-btn-danger{width:100%;justify-content:center;box-sizing:border-box}

@@ -1,10 +1,10 @@
 {
   "name": "Vesho CRM",
   "slug": "vesho-crm",
-  "version": "2.9.58",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.9.58/vesho-crm.zip",
+  "version": "2.9.59",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.9.59/vesho-crm.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-23",
-  "changelog": "<h4>2.9.58</h4><ul><li>Mobiil: overflow:hidden asendatud overscroll-behavior-x:none-ga — sisu ei peeta enam kinni</li><li>Eemaldatud display:none navigatsioonil — kõik nähtav</li></ul><h4>2.9.57</h4><ul><li>Mobiil: horisontaalne ekraaniliikumine keelatud kõigis portaalides</li></ul><h4>2.9.56</h4><ul><li>Mobiili parendused: crm-stat-card CSS, crm-stats-row grid, split-view breakpoint</li></ul><h4>2.9.55</h4><ul><li>Kliendi kustutamine blokeeritud maksmata arvete/avatud töökäskude korral</li></ul><h4>2.9.54</h4><ul><li>Tugipiletid: split-vaade + AJAX vastamine</li><li>Töötunnid: 3 kokkuvõttekaarti + Kellaaeg sisse/välja vaheleht</li><li>Töökäsud: fotode AJAX-expand</li><li>Arved: KM lüliti + kliendi automaatne otsimine</li></ul>"
+  "changelog": "<h4>2.9.59</h4><ul><li>Portaali mall: eraldiseisev template ilma avaliku saidi päiseta — portaal on nüüd päris app</li><li>Mobiil: bottom-nav padding korrektne kõigil breakpointidel</li><li>Stat kaardid: 2 veergu kuni 360px (mitte 1 veerg)</li></ul><h4>2.9.58</h4><ul><li>Mobiil: overflow:hidden asendatud overscroll-behavior-x:none-ga</li></ul><h4>2.9.57</h4><ul><li>Mobiil: horisontaalne ekraaniliikumine keelatud</li></ul>"
 }
