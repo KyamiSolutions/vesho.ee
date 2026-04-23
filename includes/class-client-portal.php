@@ -734,15 +734,26 @@ function veshoResendVerify(){
 
         $show_contract = get_option('vesho_show_contract_terms', '0') === '1';
 
-        $nav_items = ['dashboard' => ['icon' => '&#9634;', 'label' => 'Ülevaade']];
-        if ($show_devices)      $nav_items['devices']      = ['icon' => '&#128297;', 'label' => 'Seadmed'];
+        // SVG ikoonid — Feather/Lucide stiil, stroke="currentColor"
+        $ico = [
+            'home'     => '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12l9-9 9 9"/><path d="M5 10v9a1 1 0 001 1h4v-5h4v5h4a1 1 0 001-1v-9"/></svg>',
+            'monitor'  => '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>',
+            'tool'     => '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>',
+            'invoice'  => '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>',
+            'help'     => '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3M12 17h.01"/></svg>',
+            'cart'     => '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 001.98-1.67L23 6H6"/></svg>',
+            'contract' => '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><polyline points="9 15 11 17 15 13"/></svg>',
+            'user'     => '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+        ];
+        $nav_items = ['dashboard' => ['icon' => $ico['home'],     'label' => 'Ülevaade']];
+        if ($show_devices)      $nav_items['devices']      = ['icon' => $ico['monitor'],  'label' => 'Seadmed'];
         // Maintenance = unified tab (booking + list + photos), replaces old "maintenances" + "services"
-        if ($show_maintenances || $show_services) $nav_items['maintenances'] = ['icon' => '&#128295;', 'label' => 'Hooldus'];
-        if ($show_invoices)     $nav_items['invoices']     = ['icon' => '&#128196;', 'label' => 'Arved'];
-        if ($show_support)      $nav_items['support']      = ['icon' => '&#127881;', 'label' => 'Tugi'];
-        if ($show_orders)       $nav_items['orders']       = ['icon' => '&#128722;', 'label' => 'Tellimused'];
-        if ($show_contract)     $nav_items['contract']     = ['icon' => '&#128221;', 'label' => 'Lepingutingimused'];
-        $nav_items['profile'] = ['icon' => '&#128100;', 'label' => 'Profiil'];
+        if ($show_maintenances || $show_services) $nav_items['maintenances'] = ['icon' => $ico['tool'],     'label' => 'Hooldus'];
+        if ($show_invoices)     $nav_items['invoices']     = ['icon' => $ico['invoice'],  'label' => 'Arved'];
+        if ($show_support)      $nav_items['support']      = ['icon' => $ico['help'],     'label' => 'Tugi'];
+        if ($show_orders)       $nav_items['orders']       = ['icon' => $ico['cart'],     'label' => 'Tellimused'];
+        if ($show_contract)     $nav_items['contract']     = ['icon' => $ico['contract'], 'label' => 'Lepingutingimused'];
+        $nav_items['profile'] = ['icon' => $ico['user'],     'label' => 'Profiil'];
 
         $avatar   = strtoupper(mb_substr($client->name ?? 'K', 0, 1));
         $logo_id  = get_theme_mod('custom_logo');

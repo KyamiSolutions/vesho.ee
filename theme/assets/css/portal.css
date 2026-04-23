@@ -42,7 +42,8 @@
 .vcp-nav-link{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;color:rgba(255,255,255,.65);text-decoration:none;font-size:13px;font-weight:500;transition:background .15s,color .15s}
 .vcp-nav-link:hover,.vcp-nav-link.active{background:rgba(0,180,200,.18);color:#fff}
 .vcp-nav-link.active{color:var(--vesho-primary,#00b4c8)}
-.vcp-nav-icon{width:18px;text-align:center;font-size:15px}
+.vcp-nav-icon{width:20px;height:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.vcp-nav-icon svg{display:block;width:20px;height:20px}
 .vcp-sidebar-footer{margin-top:auto;padding:16px 16px 20px;border-top:1px solid rgba(255,255,255,.08)}
 .vcp-sidebar-user{display:flex;gap:10px;align-items:center;margin-bottom:12px}
 .vcp-avatar{width:34px;height:34px;border-radius:50%;background:var(--vesho-primary,#00b4c8);color:#fff;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
@@ -195,7 +196,8 @@ body:has(.vcp-wrap),body:has(.vauth-wrap){overscroll-behavior-x:none}
     content:''!important;position:absolute!important;top:0!important;left:10%!important;right:10%!important;
     height:2px!important;background:#00b4c8!important;border-radius:0 0 3px 3px!important;
   }
-  .vcp-nav-icon{font-size:20px!important;width:auto!important;line-height:1!important}
+  .vcp-nav-icon{width:20px!important;height:20px!important;display:flex!important;align-items:center!important;justify-content:center!important;flex-shrink:0!important;font-size:20px!important;line-height:1!important}
+  .vcp-nav-icon svg{width:20px!important;height:20px!important;display:block!important}
 
   /* Noolte nupud */
   .vcp-nav-arrow{
@@ -209,16 +211,20 @@ body:has(.vcp-wrap),body:has(.vauth-wrap){overscroll-behavior-x:none}
   .vcp-nav-arrow--right{box-shadow:-6px 0 12px rgba(0,0,0,.4)!important}
   .vcp-nav-arrow:disabled{opacity:0!important;pointer-events:none!important}
 
-  /* ── Portaali topbar ── */
+  /* ── Globaalne teadaanne: peidetud portaalil (portaal renderdab oma) ── */
+  body:has(.vcp-wrap) #global-announcement-bar{display:none!important}
+  body:has(.vauth-wrap) #global-announcement-bar{display:none!important}
+
+  /* ── Portaali topbar: sticky 52px all — site-header jääb nähtavaks ── */
   .vcp-main{width:100%!important;min-width:0!important}
   .vcp-hamburger{display:none!important}
   .vcp-topbar{
-    position:sticky!important;top:0!important;
+    position:sticky!important;top:52px!important;
     padding:0 16px!important;height:52px!important;
     z-index:200!important;
     border-bottom:1px solid #f1f5f9!important;
     background:#fff!important;
-    box-shadow:0 1px 4px rgba(0,0,0,.06)!important;
+    box-shadow:0 2px 6px rgba(0,0,0,.07)!important;
   }
   .vcp-topbar-title{font-size:15px!important;font-weight:700!important;color:#0d1f2d!important}
   .vcp-topbar-right{display:none!important}
