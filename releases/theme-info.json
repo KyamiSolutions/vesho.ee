@@ -1,20 +1,10 @@
 {
   "name": "Vesho",
   "slug": "vesho",
-<<<<<<< HEAD
-  "version": "2.9.68",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.9.68/vesho-theme.zip",
-  "requires": "6.0",
-  "tested": "6.7",
-  "last_updated": "2026-04-23",
-  "changelog": "<h4>2.9.68</h4><ul><li>Uus versioon</li></ul>"
-}
-=======
   "version": "2.9.69",
   "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.9.69/vesho-theme.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-23",
-  "changelog": "<h4>2.9.69</h4><ul><li>vesho.js: veshoAdjustTopHeight() — arvutab --site-top-height dünaamiliselt teadaande+header kõrguse järgi; parandab avalehekülje layout mobiilis</li></ul><h4>2.9.68</h4><ul><li>html taustavärv #0d1f2d — iOS scroll-overshot ei näita valget riba</li><li>Portaalid: globaalne teadaanne peidetud kõikidel ekraanil</li></ul><h4>2.9.67</h4><ul><li>Portaalid: professionaalsed SVG ikooniid navigatsioonis</li></ul>"
+  "changelog": "<h4>2.9.69</h4><ul><li>Uus versioon</li></ul>"
 }
->>>>>>> 7972488 (v2.9.69: veshoAdjustTopHeight — avalehekülje layout fix mobiilis)
