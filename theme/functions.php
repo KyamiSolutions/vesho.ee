@@ -133,19 +133,22 @@ function vesho_enqueue_assets() {
             .stat-item:nth-child(3),.stat-item:nth-child(4){border-bottom:none!important}
         }
     ' );
-    // JS fallback — muudab inline style DOM-il otse (töötab ka Elementori puhul)
+    // JS: leiab stats gridi kas klassi või inline style järgi (Elementori HTML widget)
     wp_add_inline_script( 'vesho-js', '
         (function(){
             function fixStatsGrid(){
-                var g=document.querySelector(".stats-grid");
-                if(!g) return;
-                if(window.innerWidth<=900){
-                    g.style.setProperty("display","grid","important");
-                    g.style.setProperty("grid-template-columns","1fr 1fr","important");
-                    g.style.setProperty("overflow","hidden","important");
-                } else {
-                    g.style.setProperty("grid-template-columns","repeat(4,1fr)","important");
-                }
+                // .stats-grid klass VÕI Elementori inline style "repeat(4,1fr)"
+                var targets=document.querySelectorAll(
+                    ".stats-grid,[style*=\"repeat(4,1fr)\"],[style*=\"repeat(4, 1fr)\"]"
+                );
+                targets.forEach(function(g){
+                    if(window.innerWidth<=900){
+                        g.style.setProperty("grid-template-columns","1fr 1fr","important");
+                        g.style.setProperty("overflow","hidden","important");
+                    } else {
+                        g.style.setProperty("grid-template-columns","repeat(4,1fr)","important");
+                    }
+                });
             }
             if(document.readyState==="loading"){
                 document.addEventListener("DOMContentLoaded",fixStatsGrid);
