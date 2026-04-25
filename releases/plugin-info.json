@@ -1,10 +1,10 @@
 {
   "name": "Vesho CRM",
   "slug": "vesho-crm",
-  "version": "2.9.81",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.9.81/vesho-crm.zip",
+  "version": "2.9.82",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.9.82/vesho-crm.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-25",
-  "changelog": "<h4>2.9.81</h4><ul><li>Uus versioon</li></ul><h4>2.9.80</h4><ul><li>Uus versioon</li></ul><h4>2.9.79</h4><ul><li>Uus versioon</li></ul><h4>2.9.78</h4><ul><li>Uus versioon</li></ul><h4>2.9.77</h4><ul><li>Uus versioon</li></ul><h4>2.9.76</h4><ul><li>Uus versioon</li></ul><h4>2.9.75</h4><ul><li>Uus versioon</li></ul><h4>2.9.74</h4><ul><li>Uus versioon</li></ul><h4>2.9.73</h4><ul><li>Uus versioon</li></ul><h4>2.9.72</h4><ul><li>CRM + Worker + Client + Avalik: native app mobile UI — dark topbar, frosted glass bottom nav, safe-area, theme-color, fade</li></ul><h4>2.9.71</h4><ul><li>overflow-x:hidden</li></ul><h4>2.9.70</h4><ul><li>body-move arhitektuur</li></ul>"
+  "changelog": "<h4>2.9.82</h4><ul><li>Vesho Stats Grid Elementor widget — muuda numbreid ja tekste otse Elementoris</li></ul><h4>2.9.81</h4><ul><li>Uus versioon</li></ul><h4>2.9.80</h4><ul><li>Uus versioon</li></ul><h4>2.9.79</h4><ul><li>Uus versioon</li></ul><h4>2.9.78</h4><ul><li>Uus versioon</li></ul><h4>2.9.77</h4><ul><li>Uus versioon</li></ul><h4>2.9.76</h4><ul><li>Uus versioon</li></ul><h4>2.9.75</h4><ul><li>Uus versioon</li></ul><h4>2.9.74</h4><ul><li>Uus versioon</li></ul><h4>2.9.73</h4><ul><li>Uus versioon</li></ul><h4>2.9.72</h4><ul><li>CRM + Worker + Client + Avalik: native app mobile UI — dark topbar, frosted glass bottom nav, safe-area, theme-color, fade</li></ul><h4>2.9.71</h4><ul><li>overflow-x:hidden</li></ul><h4>2.9.70</h4><ul><li>body-move arhitektuur</li></ul>"
 }
