@@ -686,7 +686,8 @@
 
 .stats-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    /* Auto-fit: mahutab nii palju veerge kui ruumi — min 140px veerg */
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
     border-top: 1px solid rgba(0, 180, 200, 0.1);
 }
 
@@ -697,6 +698,7 @@
     justify-content: center;
     padding: 28px 20px;
     border-right: 1px solid rgba(0, 180, 200, 0.1);
+    border-bottom: 1px solid rgba(0, 180, 200, 0.1);
     text-align: center;
 }
 
@@ -722,12 +724,21 @@
     text-align: center;
 }
 
+/* Desktopil: 4 veergu, eemalda alumine piir */
+@media (min-width: 769px) {
+    .stats-grid { grid-template-columns: repeat(4, 1fr); }
+    .stat-item { border-bottom: none; }
+    .stat-item:last-child { border-right: none; }
+}
+
+/* Mobiil/tahvelarvuti ≤768px: 2×2 ruudustik */
 @media (max-width: 768px) {
-    .stats-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-    .stat-item:nth-child(2) { border-right: none; }
-    .stat-item:nth-child(3) { border-bottom: none; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    /* Parem ülemine: ei taha parempoolset piiri */
+    .stat-item:nth-child(even) { border-right: none; }
+    /* Alumine rida: ei taha alumist piiri */
+    .stat-item:nth-child(3),
+    .stat-item:nth-child(4) { border-bottom: none; }
 }
 
 /* ============================================================
@@ -2212,10 +2223,9 @@
     .section-sm { padding: 32px 0; }
     .container { padding: 0 12px; }
 
-    /* Stats row: 1 column on tiny screens */
-    .stats-grid { grid-template-columns: 1fr 1fr; gap: 0; }
-    .stat-item { padding: 20px 12px; border-right: none; border-bottom: 1px solid rgba(255,255,255,.1); }
-    .stat-item:nth-child(odd) { border-right: 1px solid rgba(255,255,255,.1); }
+    /* Stats: 2×2 compact */
+    .stats-grid { grid-template-columns: 1fr 1fr; }
+    .stat-item { padding: 18px 10px; }
     .stat-item__num { font-size: 1.8rem; }
 
     /* Services grid — already 1 col via auto-fit but reinforce */
