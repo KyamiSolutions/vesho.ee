@@ -2196,6 +2196,63 @@ body.wp-admin {
 }
 
 /* --------------------------------------------------------------------------
+   27. Toolbar form fix mobiilis — search + filter + button ei purune
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 782px) {
+  /* Toolbar ise wrapib */
+  .crm-toolbar {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+
+  /* Toolbar sees olev form wrapib */
+  .crm-toolbar form {
+    flex-wrap: wrap !important;
+    flex: 1 1 100% !important;
+    width: 100% !important;
+    display: flex !important;
+    gap: 6px !important;
+  }
+
+  /* Select täislaiusele */
+  .crm-toolbar form select,
+  .crm-toolbar form .crm-form-select {
+    max-width: none !important;
+    flex: 1 1 100% !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Search input täislaiusele */
+  .crm-toolbar form input[type="search"],
+  .crm-toolbar form input[type="text"],
+  .crm-toolbar form .crm-search {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Submit nupp — ei suruta kokku */
+  .crm-toolbar form button[type="submit"],
+  .crm-toolbar form .crm-btn {
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
+    min-width: 60px !important;
+  }
+
+  /* Kõik toolbar nupud täislaiusele */
+  .crm-toolbar > .crm-btn,
+  .crm-toolbar > a.crm-btn,
+  .crm-toolbar > button.crm-btn {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
    31. CRM Mobile Bottom Nav + Slide-up Panel (v2.9.90)
    -------------------------------------------------------------------------- */
 
