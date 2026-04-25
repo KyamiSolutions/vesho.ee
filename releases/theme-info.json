@@ -1,10 +1,10 @@
 {
   "name": "Vesho",
   "slug": "vesho",
-  "version": "2.9.75",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.9.75/vesho-theme.zip",
+  "version": "2.9.76",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.9.76/vesho-theme.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-25",
-  "changelog": "<h4>2.9.75</h4><ul><li>Uus versioon</li></ul><h4>2.9.74</h4><ul><li>Uus versioon</li></ul><h4>2.9.73</h4><ul><li>Uus versioon</li></ul><h4>2.9.72</h4><ul><li>Kõik 4 portaali: native iOS/Android app UI — WP header peidetud, top:0, dark topbar koos safe-area toega, frosted glass bottom nav, fade animatsioon, theme-color meta</li></ul><h4>2.9.71</h4><ul><li>overflow-x:hidden kõikjal</li></ul><h4>2.9.70</h4><ul><li>body-move arhitektuur</li></ul>"
+  "changelog": "<h4>2.9.76</h4><ul><li>Uus versioon</li></ul><h4>2.9.75</h4><ul><li>Uus versioon</li></ul><h4>2.9.74</h4><ul><li>Uus versioon</li></ul><h4>2.9.73</h4><ul><li>Uus versioon</li></ul><h4>2.9.72</h4><ul><li>Kõik 4 portaali: native iOS/Android app UI — WP header peidetud, top:0, dark topbar koos safe-area toega, frosted glass bottom nav, fade animatsioon, theme-color meta</li></ul><h4>2.9.71</h4><ul><li>overflow-x:hidden kõikjal</li></ul><h4>2.9.70</h4><ul><li>body-move arhitektuur</li></ul>"
 }
