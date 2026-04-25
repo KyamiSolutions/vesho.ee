@@ -252,8 +252,10 @@ class Vesho_CRM_Worker_Portal {
             <div class="vwauth-pin-dot" id="vwdot-1"></div>
             <div class="vwauth-pin-dot" id="vwdot-2"></div>
             <div class="vwauth-pin-dot" id="vwdot-3"></div>
+            <div class="vwauth-pin-dot" id="vwdot-4"></div>
+            <div class="vwauth-pin-dot" id="vwdot-5"></div>
           </div>
-          <input type="password" name="pin" id="vwauth-pin" required placeholder="••••" maxlength="10" inputmode="numeric" autocomplete="off" style="text-align:center;font-size:1.4rem;letter-spacing:6px">
+          <input type="password" name="pin" id="vwauth-pin" required placeholder="••••••" maxlength="6" inputmode="numeric" autocomplete="off" style="text-align:center;font-size:1.4rem;letter-spacing:6px">
         </div>
         <button type="submit" class="vwauth-btn">Logi sisse</button>
       </form>
@@ -296,7 +298,7 @@ class Vesho_CRM_Worker_Portal {
   if(pinInput){
     pinInput.addEventListener('input',function(){
       var len=this.value.length;
-      for(var i=0;i<4;i++){
+      for(var i=0;i<6;i++){
         var dot=document.getElementById('vwdot-'+i);
         if(dot) dot.className='vwauth-pin-dot'+(i<len?' filled':'');
       }
