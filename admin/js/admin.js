@@ -390,4 +390,30 @@
 
     });
 
+    // ── Mobile: auto data-label tabelitele ────────────────────────────────────
+    // Loeb veeru nimed thead-ist ja lisab iga td-le data-label atribuudi.
+    // CSS kasutab seda pseudo-elemendina kaardikujul mobiilivaates.
+    function initMobileTableLabels() {
+        document.querySelectorAll('.crm-table').forEach(function(table) {
+            var headers = [];
+            table.querySelectorAll('thead th').forEach(function(th) {
+                headers.push(th.textContent.trim());
+            });
+            if (!headers.length) return;
+            table.querySelectorAll('tbody tr').forEach(function(row) {
+                row.querySelectorAll('td').forEach(function(td, i) {
+                    if (headers[i] && headers[i] !== 'Toimingud') {
+                        td.setAttribute('data-label', headers[i]);
+                    }
+                });
+            });
+        });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initMobileTableLabels);
+    } else {
+        initMobileTableLabels();
+    }
+
 })(jQuery);

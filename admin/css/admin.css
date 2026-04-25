@@ -1775,5 +1775,163 @@
 }
 
 /* --------------------------------------------------------------------------
+   23. Mobile-first: no horizontal page scroll
+   -------------------------------------------------------------------------- */
+
+/* Leht ei scrolli külili — ainult tabel oma wrapperis */
+html,
+body.wp-admin {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+#wpwrap,
+#wpcontent,
+#wpbody,
+#wpbody-content {
+  overflow-x: hidden !important;
+  max-width: 100% !important;
+}
+
+.crm-wrap {
+  max-width: 100%;
+  overflow-x: hidden;
+  word-break: break-word;
+}
+
+/* Tabel scrollib ise, mitte leht */
+.crm-table-wrap {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* --------------------------------------------------------------------------
+   24. Responsive Table Cards — ≤600px
+   Tabel → kaardid: iga rida on eraldi kaart, veeru nimi data-label atribuudist
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 600px) {
+
+  .crm-table {
+    min-width: 0 !important;
+    width: 100% !important;
+    display: block;
+  }
+
+  .crm-table thead {
+    display: none;
+  }
+
+  .crm-table tbody {
+    display: block;
+    width: 100%;
+  }
+
+  .crm-table tbody tr {
+    display: block;
+    background: var(--crm-surface);
+    border: 1px solid var(--crm-border);
+    border-radius: var(--crm-radius);
+    margin-bottom: 10px;
+    padding: 10px 14px;
+    box-shadow: var(--crm-shadow-xs);
+  }
+
+  .crm-table tbody tr:nth-child(even) {
+    background: var(--crm-surface);
+  }
+
+  .crm-table tbody td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0;
+    border: none;
+    border-bottom: 1px solid var(--crm-border-light);
+    font-size: 13px;
+    text-align: right;
+  }
+
+  .crm-table tbody td:last-child {
+    border-bottom: none;
+    padding-top: 10px;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  /* Veeru nimi data-label atribuudist */
+  .crm-table tbody td[data-label]::before {
+    content: attr(data-label);
+    font-weight: 600;
+    font-size: 11px;
+    color: var(--crm-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    text-align: left;
+  }
+
+  /* Toimingute nupud täislaiusele */
+  .crm-table tbody td.td-actions {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 6px;
+  }
+
+  .crm-table tbody td.td-actions .crm-btn {
+    flex: 1;
+    justify-content: center;
+    min-width: 0;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   25. Vormid mobiilis — 1 veerg
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 600px) {
+
+  .crm-form-grid,
+  .crm-form-row {
+    grid-template-columns: 1fr !important;
+  }
+
+  .crm-form-group--span2,
+  .crm-form-group--span3 {
+    grid-column: 1 !important;
+  }
+
+  .crm-card-body {
+    padding: 14px 12px;
+  }
+
+  .crm-card-header {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px 14px;
+  }
+
+  .crm-card-header .crm-btn {
+    flex: 1;
+    justify-content: center;
+  }
+
+  /* Toolbar: otsing + filtrid ühele reale */
+  .crm-toolbar {
+    gap: 8px;
+    padding: 10px 12px;
+  }
+
+  .crm-search input {
+    width: 100%;
+  }
+}
+
+/* --------------------------------------------------------------------------
    End of Vesho CRM Admin Stylesheet
    ========================================================================== */
