@@ -1933,5 +1933,129 @@ body.wp-admin {
 }
 
 /* --------------------------------------------------------------------------
+   26. inv-table (Ladu/Inventory) — sama kaardilayout kui crm-table
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 600px) {
+
+  /* inv-table → kaardid */
+  .inv-table-wrap {
+    overflow-x: visible !important;
+  }
+
+  .inv-table {
+    display: block !important;
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  .inv-table thead { display: none !important; }
+
+  .inv-table tbody { display: block; width: 100%; }
+
+  .inv-table tbody tr {
+    display: block;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    padding: 10px 14px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.05);
+  }
+
+  .inv-table tbody td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0;
+    border: none;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 13px;
+    text-align: right;
+    white-space: normal !important;
+  }
+
+  .inv-table tbody td:last-child {
+    border-bottom: none;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 6px;
+    padding-top: 10px;
+  }
+
+  .inv-table tbody td[data-label]::before {
+    content: attr(data-label);
+    font-weight: 600;
+    font-size: 11px;
+    color: #6b8599;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    text-align: left;
+  }
+
+  /* Inventory spetsiifika */
+  .inv-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 10px 12px;
+  }
+
+  .inv-toolbar input[type=search],
+  .inv-toolbar select {
+    width: 100%;
+  }
+
+  .inv-stats {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .inv-tabs {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 4px;
+  }
+
+  .inv-tabs::-webkit-scrollbar { display: none; }
+
+  /* Bulk bar */
+  #bulk-bar {
+    flex-direction: column;
+    gap: 6px;
+    padding: 10px 12px;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   27. JS: auto data-label inv-table-le (admin.js teeb seda)
+   inv-toolbar otsingu full-width
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 782px) {
+  /* WP admin: content area full-width mobiilis */
+  #wpcontent {
+    padding-left: 10px !important;
+  }
+
+  /* Kõik toolbar input/select full-width */
+  .inv-toolbar input,
+  .inv-toolbar select,
+  .crm-toolbar input,
+  .crm-toolbar select {
+    max-width: 100% !important;
+  }
+
+  /* Kaardid mitte liiga lai */
+  .crm-wrap {
+    padding: 0 0 20px;
+  }
+}
+
+/* --------------------------------------------------------------------------
    End of Vesho CRM Admin Stylesheet
    ========================================================================== */

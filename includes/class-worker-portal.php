@@ -329,7 +329,8 @@ class Vesho_CRM_Worker_Portal {
         $wid  = (int) $worker->id;
         $tab  = isset($_GET['wtab']) ? sanitize_text_field($_GET['wtab']) : 'overview';
         $base = get_permalink();
-        $logout_url = wp_logout_url(home_url('/worker/'));
+        $is_admin_preview = current_user_can('manage_options');
+        $logout_url = $is_admin_preview ? '' : wp_logout_url(home_url('/worker/'));
         $ajax  = esc_url(admin_url('admin-ajax.php'));
         $nonce = wp_create_nonce('vesho_portal_nonce');
         $avatar    = strtoupper(mb_substr($worker->name ?? 'T', 0, 1));
@@ -404,7 +405,11 @@ class Vesho_CRM_Worker_Portal {
           <div class="vwp-sidebar-role"><?php echo esc_html($worker->role ?? 'Töötaja'); ?></div>
         </div>
       </div>
+      <?php if ($is_admin_preview): ?>
+      <a href="<?php echo esc_url(admin_url()); ?>" class="vwp-logout-link" style="color:#f59e0b">← Admin vaade · WP Admin</a>
+      <?php else: ?>
       <a href="<?php echo esc_url($logout_url); ?>" class="vwp-logout-link">Logi välja</a>
+      <?php endif; ?>
     </div>
   </aside>
 
