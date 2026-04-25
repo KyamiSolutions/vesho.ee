@@ -124,6 +124,16 @@ function vesho_enqueue_assets() {
         VESHO_THEME_VERSION
     );
 
+    // Stat grid: 2×2 mobiilis — lisatakse <head> blokki, ei sõltu cache'ist
+    wp_add_inline_style( 'vesho-style', '
+        @media (max-width:900px){
+            .stats-grid{display:grid!important;grid-template-columns:1fr 1fr!important;overflow:hidden!important}
+            .stat-item:nth-child(even){border-right:none!important}
+            .stat-item:nth-child(1),.stat-item:nth-child(2){border-bottom:1px solid rgba(0,180,200,.1)!important}
+            .stat-item:nth-child(3),.stat-item:nth-child(4){border-bottom:none!important}
+        }
+    ' );
+
     // Main JS
     wp_enqueue_script(
         'vesho-js',
