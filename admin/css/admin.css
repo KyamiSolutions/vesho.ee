@@ -1634,6 +1634,12 @@
   /* WP admin sidebar ei too overflow-i */
   #wpbody-content { overflow-x: hidden; }
   #wpcontent { overflow-x: hidden; }
+  /* Touch: prevent horizontal bounce */
+  html, body { touch-action: pan-y; overscroll-behavior: none; }
+  /* Inputs: prevent iOS zoom */
+  input, select, textarea { font-size: 16px !important; touch-action: manipulation; }
+  /* All containers: no overflow-x */
+  .crm-wrap, #wpbody-content, #wpcontent { overflow-x: hidden; }
 }
 
 /* --------------------------------------------------------------------------

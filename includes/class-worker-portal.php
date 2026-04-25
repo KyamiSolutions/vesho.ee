@@ -263,6 +263,14 @@ class Vesho_CRM_Worker_Portal {
     // ── Dashboard ─────────────────────────────────────────────────────────────
 
     private static function render_dashboard($worker) {
+        // Native app meta tags — mobile browser chrome matches app header
+        add_action('wp_head', function(){
+            echo '<meta name="theme-color" content="#0d1f2d">';
+            echo '<meta name="apple-mobile-web-app-capable" content="yes">';
+            echo '<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">';
+            echo '<meta name="mobile-web-app-capable" content="yes">';
+        }, 1);
+
         global $wpdb;
         $wid  = (int) $worker->id;
         $tab  = isset($_GET['wtab']) ? sanitize_text_field($_GET['wtab']) : 'overview';

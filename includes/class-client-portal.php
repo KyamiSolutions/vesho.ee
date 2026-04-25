@@ -716,6 +716,14 @@ function veshoResendVerify(){
     // ── Portal shell ──────────────────────────────────────────────────────────
 
     private static function render_portal($client) {
+        // Native app meta tags — mobile browser chrome matches app header
+        add_action('wp_head', function(){
+            echo '<meta name="theme-color" content="#0d1f2d">';
+            echo '<meta name="apple-mobile-web-app-capable" content="yes">';
+            echo '<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">';
+            echo '<meta name="mobile-web-app-capable" content="yes">';
+        }, 1);
+
         global $wpdb;
         $tab = isset($_GET['ptab']) ? sanitize_text_field($_GET['ptab']) : 'dashboard';
         $base = get_permalink();

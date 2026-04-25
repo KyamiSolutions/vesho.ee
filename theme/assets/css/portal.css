@@ -117,7 +117,7 @@ textarea.vcp-input{min-height:100px;resize:vertical;line-height:1.5}
    ═══════════════════════════════════════════════════════════ */
 
 html:has(.vcp-wrap),html:has(.vauth-wrap){overscroll-behavior-x:none;overflow-x:hidden}
-body:has(.vcp-wrap),body:has(.vauth-wrap){overscroll-behavior-x:none;overflow-x:hidden}
+body:has(.vcp-wrap),body:has(.vauth-wrap){overscroll-behavior:none;overflow-x:hidden;touch-action:pan-y}
 .vcp-wrap,.vcp-main,.vcp-content,.vauth-wrap{box-sizing:border-box;max-width:100%;overflow-x:hidden}
 .vcp-table-wrap{touch-action:pan-x pan-y;overflow-x:auto;max-width:100%}
 .vcp-wrap a,.vcp-wrap button{-webkit-tap-highlight-color:transparent}
@@ -129,43 +129,33 @@ body:has(.vauth-wrap) #global-announcement-bar{display:none!important}
 /* ── MOBIIL max-width:1024px ── */
 @media(max-width:1024px){
 
-  /* Saidi päis: ainult logo */
-  body:has(.vcp-wrap) .site-topbar,
-  body:has(.vauth-wrap) .site-topbar{display:none!important}
-  body:has(.vcp-wrap) .header-nav,
-  body:has(.vauth-wrap) .header-nav{display:none!important}
-  body:has(.vcp-wrap) .header-phone,
-  body:has(.vauth-wrap) .header-phone{display:none!important}
-  body:has(.vcp-wrap) .header-cta,
-  body:has(.vauth-wrap) .header-cta{display:none!important}
-  body:has(.vcp-wrap) .hamburger,
-  body:has(.vauth-wrap) .hamburger{display:none!important}
-  body:has(.vcp-wrap) .site-header .header-inner,
-  body:has(.vauth-wrap) .site-header .header-inner{height:52px!important;padding:0 16px!important}
+  /* Site header: completely hidden on portal pages */
+  body:has(.vcp-wrap) .site-header,
+  body:has(.vauth-wrap) .site-header{display:none!important}
   body:has(.vcp-wrap) #page-content,
-  body:has(.vauth-wrap) #page-content{padding-top:52px!important}
+  body:has(.vauth-wrap) #page-content{padding-top:0!important}
 
-  /* Body ei scrolli — portaal scrollib ise */
+  /* body doesn't scroll */
   body:has(.vcp-wrap){overflow:hidden!important}
 
-  /* WP wrapperid: tühjaks + overflow clip et ei nihkuks */
+  /* WP wrappers: reset + clip */
   body:has(.vcp-wrap) #page,
   body:has(.vcp-wrap) #primary,
   body:has(.vcp-wrap) #main,
   body:has(.vcp-wrap) .entry-content,
   body:has(.vcp-wrap) article{padding:0!important;margin:0!important;min-height:unset!important;overflow:hidden!important}
 
-  /* ── PORTAAL: täidab ekraani alates 52px (site header) ── */
+  /* PORTAL: fills entire screen from top:0 */
   .vcp-wrap{
     position:fixed!important;
-    top:52px!important;left:0!important;right:0!important;bottom:0!important;
+    top:0!important;left:0!important;right:0!important;bottom:0!important;
     z-index:500!important;
     display:flex!important;flex-direction:column!important;
     overflow:hidden!important;
     width:100%!important;min-height:unset!important;
   }
 
-  /* Peaala: flex 1, kerib seest */
+  /* Main area */
   .vcp-main{
     order:1!important;flex:1!important;
     display:flex!important;flex-direction:column!important;
@@ -173,28 +163,41 @@ body:has(.vauth-wrap) #global-announcement-bar{display:none!important}
     min-width:0!important;width:100%!important;
   }
 
-  /* Topbar: sticky portaali top (mitte viewport top) */
+  /* TOPBAR: native app style — dark navy with safe-area support */
   .vcp-hamburger{display:none!important}
   .vcp-topbar{
     position:sticky!important;top:0!important;
-    height:52px!important;padding:0 16px!important;
+    padding-top:calc(env(safe-area-inset-top,0) + 14px)!important;
+    padding-bottom:14px!important;
+    padding-left:20px!important;padding-right:20px!important;
+    height:auto!important;
+    min-height:calc(52px + env(safe-area-inset-top,0))!important;
     z-index:10!important;flex-shrink:0!important;
-    background:#fff!important;
-    border-bottom:1px solid #f1f5f9!important;
-    box-shadow:0 2px 6px rgba(0,0,0,.07)!important;
+    background:#0d1f2d!important;
+    border-bottom:1px solid rgba(255,255,255,.08)!important;
+    box-shadow:0 1px 0 rgba(255,255,255,.05),0 2px 12px rgba(0,0,0,.35)!important;
   }
-  .vcp-topbar-title{font-size:15px!important;font-weight:700!important;color:#0d1f2d!important}
-  .vcp-topbar-right{display:none!important}
+  .vcp-topbar-title{
+    font-size:17px!important;font-weight:600!important;
+    color:#fff!important;letter-spacing:-.3px!important;
+  }
+  .vcp-topbar-right{
+    display:flex!important;align-items:center!important;
+    color:rgba(255,255,255,.6)!important;font-size:12px!important;
+    white-space:nowrap!important;
+  }
 
-  /* Sisu: kerib vertikaalselt, ei liigu horisontaalselt */
+  /* CONTENT: scrolls, fade animation, no horizontal shift */
   .vcp-content{
     flex:1!important;overflow-y:auto!important;overflow-x:hidden!important;
     -webkit-overflow-scrolling:touch!important;
-    padding:16px 16px calc(74px + env(safe-area-inset-bottom))!important;
+    overscroll-behavior:none!important;
+    padding:16px 16px calc(80px + env(safe-area-inset-bottom))!important;
     max-width:100%!important;box-sizing:border-box!important;
+    animation:vcpFadeIn .18s ease both!important;
   }
 
-  /* ── SIDEBAR → BOTTOM NAV: loomulik flex order ── */
+  /* SIDEBAR → BOTTOM NAV: frosted glass, iOS tab bar style */
   .vcp-sidebar{
     order:2!important;
     position:relative!important;
@@ -203,16 +206,18 @@ body:has(.vauth-wrap) #global-announcement-bar{display:none!important}
     height:calc(62px + env(safe-area-inset-bottom))!important;
     flex-direction:row!important;
     overflow:hidden!important;
-    background:#0f1e2c!important;
-    border-top:1px solid rgba(255,255,255,.12)!important;
-    box-shadow:0 -4px 20px rgba(0,0,0,.25)!important;
+    background:rgba(13,31,45,.97)!important;
+    backdrop-filter:saturate(180%) blur(20px)!important;
+    -webkit-backdrop-filter:saturate(180%) blur(20px)!important;
+    border-top:0.5px solid rgba(255,255,255,.12)!important;
+    box-shadow:none!important;
     padding:0 0 env(safe-area-inset-bottom)!important;
   }
   .vcp-sidebar-logo{display:none!important}
   .vcp-sidebar-label{display:none!important}
   .vcp-sidebar-footer{display:none!important}
 
-  /* Nav: horisontaalne keritav rida */
+  /* Nav: horizontal scrollable row */
   .vcp-nav{
     display:flex!important;flex-direction:row!important;flex:1!important;
     padding:0!important;min-width:0!important;align-items:stretch!important;
@@ -220,59 +225,52 @@ body:has(.vauth-wrap) #global-announcement-bar{display:none!important}
     scrollbar-width:none!important;-webkit-overflow-scrolling:touch!important;
   }
   .vcp-nav::-webkit-scrollbar{display:none!important}
-  .vcp-nav li{flex:1 1 0!important;min-width:60px!important;margin:0!important;display:flex!important}
+  .vcp-nav li{flex:1 1 0!important;min-width:56px!important;margin:0!important;display:flex!important}
 
-  /* Nav link */
+  /* Nav link: iOS tab bar style */
   .vcp-nav-link{
     flex-direction:column!important;justify-content:center!important;align-items:center!important;
     gap:3px!important;padding:8px 4px 6px!important;
-    font-size:10px!important;font-weight:600!important;
+    font-size:10px!important;font-weight:600!important;letter-spacing:.1px!important;
     border-radius:0!important;height:62px!important;flex:1!important;
-    color:rgba(255,255,255,.5)!important;
+    color:rgba(255,255,255,.45)!important;
     position:relative!important;text-decoration:none!important;
     -webkit-tap-highlight-color:transparent!important;white-space:nowrap!important;
-    transition:color .15s,background .15s!important;
+    transition:color .15s!important;
   }
-  .vcp-nav-link:hover{color:rgba(255,255,255,.8)!important;background:rgba(255,255,255,.05)!important}
-  .vcp-nav-link.active{color:#00b4c8!important;background:rgba(0,180,200,.1)!important}
+  .vcp-nav-link:hover{color:rgba(255,255,255,.75)!important;background:rgba(255,255,255,.05)!important}
+  .vcp-nav-link.active{color:#00b4c8!important;background:transparent!important}
   .vcp-nav-link.active::before{
     content:''!important;position:absolute!important;top:0!important;
-    left:10%!important;right:10%!important;height:2px!important;
-    background:#00b4c8!important;border-radius:0 0 3px 3px!important;
+    left:20%!important;right:20%!important;height:2px!important;
+    background:#00b4c8!important;border-radius:0 0 2px 2px!important;
   }
   .vcp-nav-icon{
-    width:20px!important;height:20px!important;flex-shrink:0!important;
+    width:22px!important;height:22px!important;flex-shrink:0!important;
     display:flex!important;align-items:center!important;justify-content:center!important;
   }
-  .vcp-nav-icon svg{width:20px!important;height:20px!important;display:block!important}
+  .vcp-nav-icon svg{width:22px!important;height:22px!important;display:block!important}
 
-  /* Noolte nupud */
+  /* Arrow buttons */
   .vcp-nav-arrow{
     display:flex!important;align-items:center!important;justify-content:center!important;
     width:28px!important;height:62px!important;flex-shrink:0!important;
-    background:#0f1e2c!important;border:none!important;padding:0!important;
+    background:rgba(13,31,45,.97)!important;border:none!important;padding:0!important;
     color:rgba(255,255,255,.6)!important;cursor:pointer!important;font-size:18px!important;
   }
   .vcp-nav-arrow:disabled{opacity:0!important;pointer-events:none!important}
 
-  /* Komponendid */
+  /* Stat cards */
   .vcp-stat-grid{grid-template-columns:1fr 1fr!important;gap:10px!important;margin-bottom:16px!important}
   .vcp-stat-card{padding:14px 12px!important;border-left-width:3px!important}
   .vcp-stat-label{font-size:10px!important;margin-bottom:4px!important}
   .vcp-stat-value{font-size:1.5rem!important;font-weight:800!important}
   .vcp-two-col{grid-template-columns:1fr!important;gap:12px!important}
-  .vcp-card{padding:16px!important;border-radius:10px!important;margin-bottom:12px!important}
-  .vcp-maint-item{flex-wrap:wrap!important;gap:8px!important}
-  .vcp-maint-date{min-width:unset!important}
-  .vcp-quick-actions{gap:8px!important}
-  .vcp-btn-primary,.vcp-btn-outline{padding:11px 18px!important;font-size:13px!important}
-  .vcp-page-header{margin-bottom:16px!important}
-  .vcp-page-header h1{font-size:20px!important;font-weight:800!important}
-  .vcp-page-header p{font-size:13px!important}
-  .vcp-section-title{font-size:14px!important;font-weight:700!important;margin-bottom:10px!important}
-  .vcp-empty{padding:24px 16px!important;font-size:13px!important}
-  .vcp-table th{font-size:10px!important;padding:8px 10px!important;white-space:nowrap!important}
-  .vcp-table td{font-size:13px!important;padding:10px!important}
+}
+
+@keyframes vcpFadeIn{
+  from{opacity:0;transform:translateY(6px)}
+  to{opacity:1;transform:translateY(0)}
 }
 
 /* ── 640px: tabelid → kaardid ── */
@@ -307,7 +305,7 @@ body:has(.vauth-wrap) #global-announcement-bar{display:none!important}
   .vcp-stat-grid{grid-template-columns:1fr 1fr!important}
   .vcp-stat-card{padding:12px 10px!important}
   .vcp-stat-value{font-size:1.35rem!important}
-  .vcp-content{padding:12px 12px calc(70px + env(safe-area-inset-bottom))!important;box-sizing:border-box!important}
+  .vcp-content{padding:12px 12px calc(76px + env(safe-area-inset-bottom))!important;box-sizing:border-box!important}
   .vcp-page-header h1{font-size:18px!important}
   .vcp-btn-primary,.vcp-btn-outline,.vcp-btn-danger{width:100%!important;justify-content:center!important;box-sizing:border-box!important}
   .vcp-quick-actions{flex-direction:column!important}
@@ -321,7 +319,7 @@ body:has(.vauth-wrap) #global-announcement-bar{display:none!important}
 
 /* ── 360px ── */
 @media(max-width:360px){
-  .vcp-content{padding:10px 10px calc(66px + env(safe-area-inset-bottom))!important}
+  .vcp-content{padding:10px 10px calc(72px + env(safe-area-inset-bottom))!important}
   .vcp-stat-value{font-size:1.2rem!important}
   .vcp-page-header h1{font-size:16px!important}
   .vcp-stat-card{padding:10px 8px!important}

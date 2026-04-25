@@ -199,3 +199,116 @@
     .vpl-card { margin: 20px auto; }
     .vpl-panel { padding: 18px 18px 22px; }
 }
+
+/* ══════════════════════════════════════════
+   MOBIIL — native app stiil (max 768px)
+   ══════════════════════════════════════════ */
+
+html:has(.vesho-portal),html:has(.vesho-portal-login){
+  overscroll-behavior:none;overflow-x:hidden;
+}
+body:has(.vesho-portal),body:has(.vesho-portal-login){
+  overscroll-behavior:none;overflow-x:hidden;touch-action:pan-y;
+}
+
+@media(max-width:768px){
+  /* Portal wrapper: full screen */
+  .vesho-portal-login,.vesho-portal{
+    max-width:100%;
+    padding:0;
+    min-height:100vh;
+    box-sizing:border-box;
+  }
+
+  /* Header: sticky app bar */
+  .vp-header{
+    position:sticky!important;top:0!important;
+    margin:0!important;
+    border-radius:0!important;
+    padding:calc(env(safe-area-inset-top,0) + 14px) 16px 14px!important;
+    z-index:100;
+    box-shadow:0 1px 0 rgba(255,255,255,.08),0 2px 12px rgba(0,0,0,.3)!important;
+  }
+  .vp-header__name{font-size:16px!important}
+  .vp-header__right{gap:6px!important}
+  .vp-logout{padding:6px 12px!important;font-size:12px!important}
+
+  /* Content: padding for bottom tabs */
+  .vesho-portal > *:not(.vp-header):not(.vp-tabs){
+    padding-left:12px;padding-right:12px;
+  }
+  .vesho-portal{padding-bottom:calc(70px + env(safe-area-inset-bottom))!important}
+
+  /* Tabs: fixed bottom nav */
+  .vp-tabs{
+    position:fixed!important;
+    bottom:0!important;left:0!important;right:0!important;
+    margin:0!important;
+    border-radius:0!important;
+    padding:0 0 env(safe-area-inset-bottom)!important;
+    background:rgba(13,31,45,.97)!important;
+    backdrop-filter:saturate(180%) blur(20px)!important;
+    -webkit-backdrop-filter:saturate(180%) blur(20px)!important;
+    border:none!important;
+    border-top:0.5px solid rgba(255,255,255,.12)!important;
+    z-index:200;
+    display:flex!important;
+    flex-wrap:nowrap!important;
+    overflow-x:auto;
+    scrollbar-width:none;
+    height:calc(54px + env(safe-area-inset-bottom))!important;
+    align-items:stretch;
+  }
+  .vp-tabs::-webkit-scrollbar{display:none}
+  .vp-tab{
+    flex:1 1 0!important;
+    min-width:56px!important;
+    padding:6px 4px!important;
+    font-size:10px!important;font-weight:600!important;
+    border-radius:0!important;
+    color:rgba(255,255,255,.45)!important;
+    background:transparent!important;
+    border:none!important;
+    display:flex!important;flex-direction:column!important;
+    align-items:center!important;justify-content:center!important;
+    gap:2px;
+    white-space:nowrap;
+    transition:color .15s!important;
+  }
+  .vp-tab.active,.vp-tab:hover{
+    background:transparent!important;
+    color:#00b4c8!important;
+  }
+  .vp-tab.active{position:relative}
+  .vp-tab.active::before{
+    content:'';position:absolute;top:0;left:15%;right:15%;
+    height:2px;background:#00b4c8;border-radius:0 0 2px 2px;
+  }
+
+  /* Stats: 2 columns */
+  .vp-stats{grid-template-columns:1fr 1fr!important;gap:10px!important}
+  .vp-stat{padding:14px 12px!important;border-radius:10px!important}
+  .vp-stat__num{font-size:22px!important}
+  .vp-stat__label{font-size:11px!important}
+
+  /* Tables: scrollable */
+  .vp-card{overflow-x:auto!important;border-radius:10px!important;margin-bottom:12px!important}
+  .vp-table{min-width:500px}
+  .vp-table th,.vp-table td{padding:8px 10px!important;font-size:12px!important}
+
+  /* Forms */
+  .vp-form-grid{grid-template-columns:1fr!important}
+  .vp-form-actions{flex-direction:column!important}
+  .vp-btn{width:100%!important;justify-content:center!important}
+
+  /* Login card */
+  .vpl-card{margin:0!important;border-radius:0!important;min-height:100vh!important}
+  .vpl-header{padding:calc(env(safe-area-inset-top,0) + 28px) 24px 20px!important}
+  .vpl-panel{padding:20px 20px 24px!important}
+}
+
+@media(max-width:480px){
+  .vp-stats{grid-template-columns:1fr 1fr!important}
+  .vp-header__email{display:none!important}
+  .vp-header__name{font-size:15px!important}
+}
