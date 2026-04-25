@@ -52,15 +52,13 @@ class Vesho_Widget_Stats_Grid extends Widget_Base {
             ];
         }
         ?>
-        <div class="stats-section">
-            <div class="stats-grid">
-                <?php foreach ( $stats as $stat ) : ?>
-                <div class="stat-item">
-                    <span class="stat-item__num"><?php echo $stat['num']; ?></span>
-                    <span class="stat-item__label"><?php echo $stat['label']; ?></span>
-                </div>
-                <?php endforeach; ?>
+        <div class="stats-grid">
+            <?php foreach ( $stats as $stat ) : ?>
+            <div class="stat-item">
+                <span class="stat-item__num"><?php echo $stat['num']; ?></span>
+                <span class="stat-item__label"><?php echo $stat['label']; ?></span>
             </div>
+            <?php endforeach; ?>
         </div>
         <?php
     }

@@ -760,7 +760,7 @@ function veshoResendVerify(){
         if ($show_invoices)     $nav_items['invoices']     = ['icon' => $ico['invoice'],  'label' => 'Arved'];
         if ($show_support)      $nav_items['support']      = ['icon' => $ico['help'],     'label' => 'Tugi'];
         if ($show_orders)       $nav_items['orders']       = ['icon' => $ico['cart'],     'label' => 'Tellimused'];
-        if ($show_contract)     $nav_items['contract']     = ['icon' => $ico['contract'], 'label' => 'Lepingutingimused'];
+        if ($show_contract)     $nav_items['contract']     = ['icon' => $ico['contract'], 'label' => 'Leping'];
         $nav_items['profile'] = ['icon' => $ico['user'],     'label' => 'Profiil'];
 
         $avatar   = strtoupper(mb_substr($client->name ?? 'K', 0, 1));
