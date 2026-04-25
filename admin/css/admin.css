@@ -2205,18 +2205,8 @@ body.wp-admin {
 
 @media (max-width: 782px) {
 
-  /* Hide WP chrome on CRM pages */
-  body.wp-admin #wpadminbar            { display: none !important; }
-  body.wp-admin #adminmenumain         { display: none !important; }
-  body.wp-admin #adminmenuback         { display: none !important; }
-  body.wp-admin #adminmenuwrap         { display: none !important; }
-  body.wp-admin html                   { margin-top: 0 !important; }
-  body.wp-admin                        { padding-top: 0 !important; margin-top: 0 !important; }
-  body.wp-admin #wpcontent             { margin-left: 0 !important; padding-top: 12px !important; }
-  body.wp-admin #wpbody                { padding-top: 0 !important; }
-  body.wp-admin #wpfooter              { display: none !important; }
   /* Push content above bottom nav */
-  body.wp-admin .crm-wrap              { padding-bottom: 72px !important; }
+  .crm-wrap { padding-bottom: 72px !important; }
 
   /* ── Bottom nav bar ── */
   .crm-mob-nav {
