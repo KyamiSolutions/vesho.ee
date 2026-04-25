@@ -124,7 +124,7 @@ function vesho_enqueue_assets() {
         VESHO_THEME_VERSION
     );
 
-    // Stat grid: 2×2 mobiilis — lisatakse <head> blokki, ei sõltu cache'ist
+    // Stat grid: 2×2 mobiilis — CSS + JS kaksikkaitse
     wp_add_inline_style( 'vesho-style', '
         @media (max-width:900px){
             .stats-grid{display:grid!important;grid-template-columns:1fr 1fr!important;overflow:hidden!important}
@@ -133,6 +133,26 @@ function vesho_enqueue_assets() {
             .stat-item:nth-child(3),.stat-item:nth-child(4){border-bottom:none!important}
         }
     ' );
+    // JS fallback — muudab inline style DOM-il otse (töötab ka Elementori puhul)
+    wp_add_inline_script( 'vesho-js', '
+        (function(){
+            function fixStatsGrid(){
+                var g=document.querySelector(".stats-grid");
+                if(!g) return;
+                if(window.innerWidth<=900){
+                    g.style.setProperty("display","grid","important");
+                    g.style.setProperty("grid-template-columns","1fr 1fr","important");
+                    g.style.setProperty("overflow","hidden","important");
+                } else {
+                    g.style.setProperty("grid-template-columns","repeat(4,1fr)","important");
+                }
+            }
+            if(document.readyState==="loading"){
+                document.addEventListener("DOMContentLoaded",fixStatsGrid);
+            } else { fixStatsGrid(); }
+            window.addEventListener("resize",fixStatsGrid);
+        })();
+    ', 'after' );
 
     // Main JS
     wp_enqueue_script(
