@@ -808,6 +808,7 @@ function veshoResendVerify(){
   <div class="vcp-main">
     <header class="vcp-topbar">
       <button class="vcp-hamburger" id="vcpHamburger" aria-label="Menüü">&#9776;</button>
+      <a href="<?php echo esc_url(home_url('/')); ?>" class="vcp-topbar-home" aria-label="Esileht"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12l9-9 9 9"/><path d="M5 10v9a1 1 0 001 1h4v-5h4v5h4a1 1 0 001-1v-9"/></svg></a>
       <span class="vcp-topbar-title"><?php echo esc_html($nav_items[$tab]['label'] ?? 'Portaal'); ?></span>
       <div class="vcp-topbar-right">Tere, <strong><?php echo esc_html(explode(' ', $client->name)[0]); ?></strong></div>
     </header>

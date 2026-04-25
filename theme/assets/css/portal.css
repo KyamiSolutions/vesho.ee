@@ -129,33 +129,43 @@ body:has(.vauth-wrap) #global-announcement-bar{display:none!important}
 /* ── MOBIIL max-width:1024px ── */
 @media(max-width:1024px){
 
-  /* Site header: completely hidden on portal pages */
-  body:has(.vcp-wrap) .site-header,
-  body:has(.vauth-wrap) .site-header{display:none!important}
+  /* Saidi päis: ainult logo — navigatsioon peidetud aga header jääb */
+  body:has(.vcp-wrap) .site-topbar,
+  body:has(.vauth-wrap) .site-topbar{display:none!important}
+  body:has(.vcp-wrap) .header-nav,
+  body:has(.vauth-wrap) .header-nav{display:none!important}
+  body:has(.vcp-wrap) .header-phone,
+  body:has(.vauth-wrap) .header-phone{display:none!important}
+  body:has(.vcp-wrap) .header-cta,
+  body:has(.vauth-wrap) .header-cta{display:none!important}
+  body:has(.vcp-wrap) .hamburger,
+  body:has(.vauth-wrap) .hamburger{display:none!important}
+  body:has(.vcp-wrap) .site-header .header-inner,
+  body:has(.vauth-wrap) .site-header .header-inner{height:52px!important;padding:0 16px!important}
   body:has(.vcp-wrap) #page-content,
-  body:has(.vauth-wrap) #page-content{padding-top:0!important}
+  body:has(.vauth-wrap) #page-content{padding-top:52px!important}
 
-  /* body doesn't scroll */
+  /* body ei scrolli */
   body:has(.vcp-wrap){overflow:hidden!important}
 
-  /* WP wrappers: reset + clip */
+  /* WP wrapperid: tühjaks + clip */
   body:has(.vcp-wrap) #page,
   body:has(.vcp-wrap) #primary,
   body:has(.vcp-wrap) #main,
   body:has(.vcp-wrap) .entry-content,
   body:has(.vcp-wrap) article{padding:0!important;margin:0!important;min-height:unset!important;overflow:hidden!important}
 
-  /* PORTAL: fills entire screen from top:0 */
+  /* PORTAAL: täidab ekraani alates 52px (WP header) */
   .vcp-wrap{
     position:fixed!important;
-    top:0!important;left:0!important;right:0!important;bottom:0!important;
+    top:52px!important;left:0!important;right:0!important;bottom:0!important;
     z-index:500!important;
     display:flex!important;flex-direction:column!important;
     overflow:hidden!important;
     width:100%!important;min-height:unset!important;
   }
 
-  /* Main area */
+  /* Peaala */
   .vcp-main{
     order:1!important;flex:1!important;
     display:flex!important;flex-direction:column!important;
@@ -163,31 +173,21 @@ body:has(.vauth-wrap) #global-announcement-bar{display:none!important}
     min-width:0!important;width:100%!important;
   }
 
-  /* TOPBAR: native app style — dark navy with safe-area support */
+  /* TOPBAR: sama stiil kui desktopil — valge, tume tekst */
   .vcp-hamburger{display:none!important}
+  .vcp-topbar-home{display:none!important}
   .vcp-topbar{
     position:sticky!important;top:0!important;
-    padding-top:calc(env(safe-area-inset-top,0) + 14px)!important;
-    padding-bottom:14px!important;
-    padding-left:20px!important;padding-right:20px!important;
-    height:auto!important;
-    min-height:calc(52px + env(safe-area-inset-top,0))!important;
+    height:52px!important;padding:0 16px!important;
     z-index:10!important;flex-shrink:0!important;
-    background:#0d1f2d!important;
-    border-bottom:1px solid rgba(255,255,255,.08)!important;
-    box-shadow:0 1px 0 rgba(255,255,255,.05),0 2px 12px rgba(0,0,0,.35)!important;
+    background:#fff!important;
+    border-bottom:1px solid #e2e8f0!important;
+    box-shadow:0 2px 6px rgba(0,0,0,.07)!important;
   }
-  .vcp-topbar-title{
-    font-size:17px!important;font-weight:600!important;
-    color:#fff!important;letter-spacing:-.3px!important;
-  }
-  .vcp-topbar-right{
-    display:flex!important;align-items:center!important;
-    color:rgba(255,255,255,.6)!important;font-size:12px!important;
-    white-space:nowrap!important;
-  }
+  .vcp-topbar-title{font-size:15px!important;font-weight:700!important;color:#0d1f2d!important}
+  .vcp-topbar-right{display:flex!important;align-items:center!important;color:#64748b!important;font-size:12px!important;white-space:nowrap!important}
 
-  /* CONTENT: scrolls, fade animation, no horizontal shift */
+  /* SISU: kerib, fade animatsioon */
   .vcp-content{
     flex:1!important;overflow-y:auto!important;overflow-x:hidden!important;
     -webkit-overflow-scrolling:touch!important;
@@ -197,7 +197,7 @@ body:has(.vauth-wrap) #global-announcement-bar{display:none!important}
     animation:vcpFadeIn .18s ease both!important;
   }
 
-  /* SIDEBAR → BOTTOM NAV: frosted glass, iOS tab bar style */
+  /* SIDEBAR → BOTTOM NAV: sama tume värv mis desktopi sidebar */
   .vcp-sidebar{
     order:2!important;
     position:relative!important;
@@ -206,18 +206,16 @@ body:has(.vauth-wrap) #global-announcement-bar{display:none!important}
     height:calc(62px + env(safe-area-inset-bottom))!important;
     flex-direction:row!important;
     overflow:hidden!important;
-    background:rgba(13,31,45,.97)!important;
-    backdrop-filter:saturate(180%) blur(20px)!important;
-    -webkit-backdrop-filter:saturate(180%) blur(20px)!important;
-    border-top:0.5px solid rgba(255,255,255,.12)!important;
-    box-shadow:none!important;
+    background:var(--vesho-dark,#1e293b)!important;
+    border-top:1px solid rgba(255,255,255,.1)!important;
+    box-shadow:0 -2px 12px rgba(0,0,0,.2)!important;
     padding:0 0 env(safe-area-inset-bottom)!important;
   }
   .vcp-sidebar-logo{display:none!important}
   .vcp-sidebar-label{display:none!important}
   .vcp-sidebar-footer{display:none!important}
 
-  /* Nav: horizontal scrollable row */
+  /* Nav: horisontaalne keritav rida */
   .vcp-nav{
     display:flex!important;flex-direction:row!important;flex:1!important;
     padding:0!important;min-width:0!important;align-items:stretch!important;
@@ -227,23 +225,23 @@ body:has(.vauth-wrap) #global-announcement-bar{display:none!important}
   .vcp-nav::-webkit-scrollbar{display:none!important}
   .vcp-nav li{flex:1 1 0!important;min-width:56px!important;margin:0!important;display:flex!important}
 
-  /* Nav link: iOS tab bar style */
+  /* Nav link: sama stiil mis desktopi nav */
   .vcp-nav-link{
     flex-direction:column!important;justify-content:center!important;align-items:center!important;
     gap:3px!important;padding:8px 4px 6px!important;
     font-size:10px!important;font-weight:600!important;letter-spacing:.1px!important;
     border-radius:0!important;height:62px!important;flex:1!important;
-    color:rgba(255,255,255,.45)!important;
+    color:rgba(255,255,255,.5)!important;
     position:relative!important;text-decoration:none!important;
     -webkit-tap-highlight-color:transparent!important;white-space:nowrap!important;
-    transition:color .15s!important;
+    transition:color .15s,background .15s!important;
   }
-  .vcp-nav-link:hover{color:rgba(255,255,255,.75)!important;background:rgba(255,255,255,.05)!important}
-  .vcp-nav-link.active{color:#00b4c8!important;background:transparent!important}
+  .vcp-nav-link:hover{color:rgba(255,255,255,.8)!important;background:rgba(0,180,200,.12)!important}
+  .vcp-nav-link.active{color:#00b4c8!important;background:rgba(0,180,200,.15)!important}
   .vcp-nav-link.active::before{
     content:''!important;position:absolute!important;top:0!important;
-    left:20%!important;right:20%!important;height:2px!important;
-    background:#00b4c8!important;border-radius:0 0 2px 2px!important;
+    left:15%!important;right:15%!important;height:2px!important;
+    background:#00b4c8!important;border-radius:0 0 3px 3px!important;
   }
   .vcp-nav-icon{
     width:22px!important;height:22px!important;flex-shrink:0!important;
@@ -251,16 +249,16 @@ body:has(.vauth-wrap) #global-announcement-bar{display:none!important}
   }
   .vcp-nav-icon svg{width:22px!important;height:22px!important;display:block!important}
 
-  /* Arrow buttons */
+  /* Noolte nupud */
   .vcp-nav-arrow{
     display:flex!important;align-items:center!important;justify-content:center!important;
     width:28px!important;height:62px!important;flex-shrink:0!important;
-    background:rgba(13,31,45,.97)!important;border:none!important;padding:0!important;
+    background:var(--vesho-dark,#1e293b)!important;border:none!important;padding:0!important;
     color:rgba(255,255,255,.6)!important;cursor:pointer!important;font-size:18px!important;
   }
   .vcp-nav-arrow:disabled{opacity:0!important;pointer-events:none!important}
 
-  /* Stat cards */
+  /* Stat kaardid */
   .vcp-stat-grid{grid-template-columns:1fr 1fr!important;gap:10px!important;margin-bottom:16px!important}
   .vcp-stat-card{padding:14px 12px!important;border-left-width:3px!important}
   .vcp-stat-label{font-size:10px!important;margin-bottom:4px!important}

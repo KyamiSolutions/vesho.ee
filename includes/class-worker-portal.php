@@ -357,6 +357,7 @@ class Vesho_CRM_Worker_Portal {
   <div class="vwp-main">
     <header class="vwp-topbar">
       <button class="vwp-hamburger" id="vwpHamburger" aria-label="Menüü">&#9776;</button>
+      <a href="<?php echo esc_url(home_url('/')); ?>" class="vwp-topbar-home" aria-label="Esileht"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12l9-9 9 9"/><path d="M5 10v9a1 1 0 001 1h4v-5h4v5h4a1 1 0 001-1v-9"/></svg></a>
       <span class="vwp-topbar-title"><?php echo esc_html($nav_items[$tab]['label'] ?? 'Portaal'); ?></span>
       <div class="vwp-topbar-right">Tere, <strong><?php echo esc_html(explode(' ', $worker->name)[0]); ?></strong></div>
     </header>
