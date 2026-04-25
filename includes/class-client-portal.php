@@ -577,6 +577,10 @@ function veshoResendVerify(){
 .vcl-type-btn{flex:1;border:1.5px solid #e2e8f0;border-radius:8px;padding:10px 6px;cursor:pointer;text-align:center;font-size:13px;font-weight:600;color:#5a7080;transition:.15s;background:#f8fafc;user-select:none;font-family:'Barlow',sans-serif}
 .vcl-type-btn.selected{border-color:#00b4c8;color:#00b4c8;background:#f0fbfc}
 .vcl-hint{font-size:13px;color:#6b8599;margin-bottom:16px;line-height:1.5}
+.vcl-divider{display:flex;align-items:center;gap:12px;margin:16px 0;color:#cbd5e1;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.vcl-divider::before,.vcl-divider::after{content:'';flex:1;border-top:1px solid #e2e8f0}
+.vesho-google-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:12px;border:1.5px solid #e2e8f0;border-radius:8px;background:#fff;color:#1e293b;font-family:'Barlow',sans-serif;font-size:14px;font-weight:600;text-decoration:none;cursor:pointer;transition:.15s;box-sizing:border-box}
+.vesho-google-btn:hover{border-color:#00b4c8;background:#f0fbfc;color:#1e293b}
 </style>
 <div class="vcl-wrap">
   <div class="vcl-inner">
@@ -605,6 +609,20 @@ function veshoResendVerify(){
 
         <!-- Login -->
         <div class="vcl-panel active" id="vcl-panel-login">
+          <?php if (!empty($_GET['google_error'])): ?>
+          <div class="vcl-msg" style="background:#fee2e2;color:#991b1b;border-radius:6px;padding:10px 14px;margin-bottom:12px;font-size:13px">
+            <?php
+            $errs = [
+                '1'          => 'Google login ebaõnnestus.',
+                'no_account' => 'Selle Google kontoga seotud kliendikontot ei leitud.',
+                'state'      => 'Turvaviga — proovi uuesti.',
+                'token'      => 'Google\'iga ühendamine ebaõnnestus.',
+                'email'      => 'Google ei tagastanud e-posti aadressi.',
+            ];
+            echo esc_html( $errs[ $_GET['google_error'] ] ?? 'Google login ebaõnnestus.' );
+            ?>
+          </div>
+          <?php endif; ?>
           <div class="vcl-msg" id="vcl-login-msg"></div>
           <form id="vcl-login-form" autocomplete="on">
             <input type="hidden" name="nonce" value="<?php echo $nonce; ?>">
@@ -612,6 +630,11 @@ function veshoResendVerify(){
             <div class="vcl-group"><label>Parool</label><input type="password" name="password" required placeholder="••••••••" autocomplete="current-password"></div>
             <button type="submit" class="vcl-btn">Logi sisse</button>
           </form>
+          <?php $g_btn = class_exists('Vesho_Google_Auth') ? Vesho_Google_Auth::login_button('client') : ''; ?>
+          <?php if ($g_btn): ?>
+          <div class="vcl-divider"><span>või</span></div>
+          <?php echo $g_btn; ?>
+          <?php endif; ?>
           <div class="vcl-links">
             <a href="#" data-panel="forgot">Unustasid parooli?</a>
             <?php if ($reg): ?><span>Pole kontot? <a href="#" data-panel="register">Registreeru</a></span><?php endif; ?>

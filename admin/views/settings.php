@@ -356,6 +356,54 @@ $services_page_subtitle = get_option('vesho_services_page_subtitle', '');
 
         <!-- ── TAB: Integratsioonid ───────────────────────────────────── -->
         <div class="crm-tab-section" data-tab-content="integratsioonid">
+
+            <!-- Google Login -->
+            <div class="crm-card" style="margin-bottom:20px">
+                <div class="crm-card-header"><span class="crm-card-title">🔑 Google Login</span></div>
+                <div style="padding:20px">
+                    <div style="background:#f0f7ff;border-radius:8px;padding:12px 16px;font-size:13px;color:#1e3a8a;margin-bottom:20px">
+                        <strong>Seadistamine Google Cloud'is:</strong><br>
+                        1. <a href="https://console.cloud.google.com/" target="_blank">console.cloud.google.com</a> → APIs &amp; Services → Credentials → Create OAuth 2.0 Client ID<br>
+                        2. Application type: <strong>Web application</strong><br>
+                        3. Authorized redirect URIs lisada:<br>
+                        &nbsp;&nbsp;• <code><?php echo esc_html( home_url('/?vesho_google_cb=client') ); ?></code><br>
+                        &nbsp;&nbsp;• <code><?php echo esc_html( home_url('/?vesho_google_cb=worker') ); ?></code>
+                    </div>
+                    <div class="crm-form-grid">
+                        <div class="crm-form-group">
+                            <label class="crm-form-label">Google Client ID</label>
+                            <input class="crm-form-input" type="text" name="google_client_id"
+                                   value="<?php echo esc_attr(get_option('vesho_google_client_id','')); ?>"
+                                   placeholder="xxxxxxxxxx.apps.googleusercontent.com">
+                        </div>
+                        <div class="crm-form-group">
+                            <label class="crm-form-label">Google Client Secret</label>
+                            <input class="crm-form-input" type="password" name="google_client_secret"
+                                   value="<?php echo esc_attr(get_option('vesho_google_client_secret','')); ?>"
+                                   placeholder="GOCSPX-...">
+                        </div>
+                        <div class="crm-form-group crm-form-full">
+                            <label class="crm-form-label">Luba Google login portaalides</label>
+                            <div style="display:flex;flex-wrap:wrap;gap:20px;margin-top:8px">
+                                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
+                                    <input type="checkbox" name="google_login_client" value="1"
+                                           <?php checked(get_option('vesho_google_login_client','0'),'1'); ?>>
+                                    Client portaal (kliendid)
+                                </label>
+                                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
+                                    <input type="checkbox" name="google_login_worker" value="1"
+                                           <?php checked(get_option('vesho_google_login_worker','0'),'1'); ?>>
+                                    Worker portaal (töötajad)
+                                </label>
+                            </div>
+                            <small style="color:#6b8599;font-size:12px;margin-top:6px;display:block">
+                                Olemasolev sisselogimine jääb alles — Google on lisavalik
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="crm-card" style="margin-bottom:20px">
                 <div class="crm-card-header"><span class="crm-card-title">🔗 Integratsioonid</span></div>
                 <div style="padding:20px">

@@ -257,6 +257,26 @@ class Vesho_CRM_Worker_Portal {
         </div>
         <button type="submit" class="vwauth-btn">Logi sisse</button>
       </form>
+      <?php if (!empty($_GET['google_error'])): ?>
+      <div style="background:#fee2e2;color:#991b1b;border-radius:8px;padding:10px 14px;margin:12px 0;font-size:13px;text-align:center">
+        <?php
+        $errs=['1'=>'Google login ebaõnnestus.','no_worker'=>'Selle Google kontoga töötajat ei leitud.','state'=>'Turvaviga — proovi uuesti.','token'=>'Google\'iga ühendamine ebaõnnestus.','email'=>'Google ei tagastanud e-posti aadressi.'];
+        echo esc_html($errs[$_GET['google_error']] ?? 'Google login ebaõnnestus.');
+        ?>
+      </div>
+      <?php endif; ?>
+      <?php if (class_exists('Vesho_Google_Auth') && Vesho_Google_Auth::enabled_for('worker')): ?>
+      <div style="display:flex;align-items:center;gap:12px;margin:16px 0;color:#94a3b8;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.5px">
+        <span style="flex:1;border-top:1px solid rgba(255,255,255,.1)"></span>või<span style="flex:1;border-top:1px solid rgba(255,255,255,.1)"></span>
+      </div>
+      <a href="<?php echo esc_url(Vesho_Google_Auth::auth_url('worker')); ?>"
+         style="display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:12px;border:1.5px solid rgba(255,255,255,.15);border-radius:10px;background:rgba(255,255,255,.05);color:#fff;font-family:'Barlow',sans-serif;font-size:14px;font-weight:600;text-decoration:none;box-sizing:border-box;transition:.15s"
+         onmouseover="this.style.borderColor='#00b4c8';this.style.background='rgba(0,180,200,.08)'"
+         onmouseout="this.style.borderColor='rgba(255,255,255,.15)';this.style.background='rgba(255,255,255,.05)'">
+        <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+        Jätka Google'iga
+      </a>
+      <?php endif; ?>
       <div style="text-align:center;margin-top:16px">
         <button type="button" id="vwauth-scan-btn" class="vwauth-btn" style="background:#0d1f2d;margin-top:0" onclick="startQRLogin()">
           📷 Skänni töötaja QR kaart

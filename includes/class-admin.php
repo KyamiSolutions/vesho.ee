@@ -1904,6 +1904,7 @@ private static function load_view( $name ) {
             'invoice_prefix','invoice_start','portal_page','login_page','worker_page',
             'portal_title','portal_login_sub','notify_email','maintenance_reminder_days',
             'vat_rate','invoice_due_days','ga_id',
+            'google_client_id',
             'services_page_title','services_page_subtitle','maintenance_message',
             'coming_soon_title','coming_soon_message',
             // payment gateways
@@ -1923,7 +1924,7 @@ private static function load_view( $name ) {
             if ( isset($_POST[$f]) ) update_option( 'vesho_'.$f, sanitize_text_field($_POST[$f]) );
         }
         // Sensitive keys — store but don't overwrite if empty (keep existing secret)
-        foreach ( array('stripe_secret_key','stripe_webhook_secret','mc_secret_key','montonio_secret_key') as $f ) {
+        foreach ( array('stripe_secret_key','stripe_webhook_secret','mc_secret_key','montonio_secret_key','google_client_secret') as $f ) {
             if ( !empty($_POST[$f]) ) update_option( 'vesho_'.$f, sanitize_text_field($_POST[$f]) );
         }
         if ( isset($_POST['portal_welcome']) ) {
@@ -1948,6 +1949,7 @@ private static function load_view( $name ) {
             'notify_new_request','notify_new_ticket','notify_invoice_paid','notify_new_client',
             'notify_maintenance_reminder','notify_low_stock','notify_worker_shift',
             'low_stock_alert','worker_reminder','cookie_banner','maintenance_mode','coming_soon_mode','geofence_warn_only',
+            'google_login_client','google_login_worker',
             'stripe_enabled','mc_enabled','mc_sandbox','montonio_enabled','montonio_sandbox',
             'shop_ship_pickup_enabled','shop_ship_courier_enabled','shop_ship_parcelshop_enabled',
             'cookie_banner_enabled',
