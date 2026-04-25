@@ -872,6 +872,15 @@ function veshoResendVerify(){
 </div>
 <script>
 (function(){
+  // Body-move: portaal otse body lapseks → position:fixed töötab alati
+  if(window.innerWidth<=1024){
+    var bm=document.querySelector('.vcp-wrap');
+    if(bm&&bm.parentElement!==document.body){
+      bm.style.visibility='hidden';
+      document.body.appendChild(bm);
+      requestAnimationFrame(function(){bm.style.visibility='';});
+    }
+  }
   var sidebar=document.getElementById('vcpSidebar');
   var ham=document.getElementById('vcpHamburger');
   var backdrop=document.createElement('div');
