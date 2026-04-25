@@ -408,7 +408,15 @@ function vesho_sc_stats_grid( $atts = [] ) {
     ];
     ob_start();
     ?>
-    <div class="stats-grid" style="display:grid;grid-template-columns:repeat(4,1fr)">
+    <style>
+    @media (max-width:900px){
+        .stats-grid{display:grid!important;grid-template-columns:1fr 1fr!important}
+        .stat-item:nth-child(even){border-right:none!important}
+        .stat-item:nth-child(1),.stat-item:nth-child(2){border-bottom:1px solid rgba(0,180,200,.1)!important}
+        .stat-item:nth-child(3),.stat-item:nth-child(4){border-bottom:none!important}
+    }
+    </style>
+    <div class="stats-grid">
         <?php foreach ( $s as $item ) : ?>
         <div class="stat-item">
             <span class="stat-item__num"><?php echo esc_html( $item[0] ); ?></span>
