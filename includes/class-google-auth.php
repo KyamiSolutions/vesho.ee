@@ -31,9 +31,9 @@ class Vesho_Google_Auth {
     public static function enabled_for( $portal ) {
         // Credentials puuduvad → keelatud
         if ( ! self::client_id() || ! self::client_secret() ) return false;
-        // Credentials olemas → Google login lubatud
-        // (keelamiseks: eemalda Client ID / Secret seadetest)
-        return true;
+        // Checkbox seade: vesho_google_login_client / vesho_google_login_worker
+        $option_key = ( $portal === 'worker' ) ? 'vesho_google_login_worker' : 'vesho_google_login_client';
+        return get_option( $option_key, '1' ) === '1';
     }
 
     // ── Build OAuth URL ───────────────────────────────────────────────────────
