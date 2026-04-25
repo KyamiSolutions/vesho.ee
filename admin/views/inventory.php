@@ -43,8 +43,9 @@ function inv_fmt($n) { return rtrim(rtrim(number_format((float)$n, 3, '.', ''), 
 .inv-stat-val{font-size:22px;font-weight:800;color:#0d1f2d;line-height:1}
 .inv-stat-lbl{font-size:12px;color:#6b8599;margin-top:3px}
 /* ── Tabs ─────────────────────────────────────────────────────────────────── */
-.inv-tabs{display:flex;gap:4px;margin-bottom:20px;flex-wrap:wrap}
-.inv-tab{padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;color:#64748b;background:#f1f5f9;border:none;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:6px}
+.inv-tabs{display:flex;gap:4px;margin-bottom:20px;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:2px}
+.inv-tabs::-webkit-scrollbar{display:none}
+.inv-tab{padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;color:#64748b;background:#f1f5f9;border:none;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;flex-shrink:0}
 .inv-tab:hover{background:#e2e8f0;color:#0d1f2d}
 .inv-tab.active{background:#00b4c8;color:#fff}
 .inv-tab .badge{background:rgba(0,0,0,.15);color:inherit;border-radius:20px;font-size:11px;padding:1px 6px;min-width:18px;text-align:center}

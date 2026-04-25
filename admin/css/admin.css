@@ -938,6 +938,7 @@
   background: none;
   position: relative;
   white-space: nowrap;
+  flex-shrink: 0;
   transition: color var(--crm-duration) var(--crm-ease);
   text-decoration: none;
 }
@@ -2208,7 +2209,7 @@ body.wp-admin {
   /* Push content above bottom nav */
   .crm-wrap { padding-bottom: 72px !important; }
 
-  /* ── Bottom nav bar ── */
+  /* ── Bottom nav bar (horizontally scrollable) ── */
   .crm-mob-nav {
     display: flex;
     align-items: stretch;
@@ -2223,10 +2224,17 @@ body.wp-admin {
     border-top: 1px solid rgba(255,255,255,0.08);
     height: 58px;
     padding-bottom: env(safe-area-inset-bottom, 0px);
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
   }
 
+  .crm-mob-nav::-webkit-scrollbar { display: none; }
+
   .crm-mob-nav__item {
-    flex: 1;
+    flex: 0 0 72px;
+    min-width: 72px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -2241,9 +2249,10 @@ body.wp-admin {
     background: none;
     border: none;
     cursor: pointer;
-    padding: 0;
+    padding: 0 4px;
     transition: color 0.15s;
     -webkit-tap-highlight-color: transparent;
+    white-space: nowrap;
   }
 
   .crm-mob-nav__item:hover,
