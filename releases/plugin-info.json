@@ -1,10 +1,10 @@
 {
   "name": "Vesho CRM",
   "slug": "vesho-crm",
-  "version": "2.9.73",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.9.73/vesho-crm.zip",
+  "version": "2.9.74",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.9.74/vesho-crm.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-25",
-  "changelog": "<h4>2.9.73</h4><ul><li>Uus versioon</li></ul><h4>2.9.72</h4><ul><li>CRM + Worker + Client + Avalik: native app mobile UI — dark topbar, frosted glass bottom nav, safe-area, theme-color, fade</li></ul><h4>2.9.71</h4><ul><li>overflow-x:hidden</li></ul><h4>2.9.70</h4><ul><li>body-move arhitektuur</li></ul>"
+  "changelog": "<h4>2.9.74</h4><ul><li>Uus versioon</li></ul><h4>2.9.73</h4><ul><li>Uus versioon</li></ul><h4>2.9.72</h4><ul><li>CRM + Worker + Client + Avalik: native app mobile UI — dark topbar, frosted glass bottom nav, safe-area, theme-color, fade</li></ul><h4>2.9.71</h4><ul><li>overflow-x:hidden</li></ul><h4>2.9.70</h4><ul><li>body-move arhitektuur</li></ul>"
 }
