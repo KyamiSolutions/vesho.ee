@@ -544,7 +544,8 @@ function veshoResendVerify(){
         ?>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Barlow:wght@400;500;600&display=swap');
-.vcl-wrap{min-height:100vh;background:#f0f4f8;display:flex;align-items:center;justify-content:center;padding:32px 20px;font-family:'Barlow',sans-serif}
+html:has(.vcl-wrap){overflow-x:clip}
+.vcl-wrap{min-height:100vh;background:#f0f4f8;display:flex;align-items:flex-start;justify-content:center;padding:32px 20px;font-family:'Barlow',sans-serif}
 .vcl-inner{width:100%;max-width:460px}
 .vcl-logo{text-align:center;margin-bottom:24px}
 .vcl-logo a{display:inline-flex;align-items:center;gap:10px;text-decoration:none}
