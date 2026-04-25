@@ -7,7 +7,10 @@ class Vesho_CRM_Worker_Portal {
         // Server-side login POST — töötab iOS Safaril kus AJAX küpsis ei jää alles
         add_action('init', [__CLASS__, 'handle_login_post']);
         // Keela cache worker portaali lehel (Hostinger LiteSpeed)
-        add_action('template_redirect', [__CLASS__, 'maybe_nocache']);
+        // Kasuta 'init' mitte 'template_redirect' — LiteSpeed otsustab cache enne template_redirect't
+        add_action('init', [__CLASS__, 'maybe_nocache'], 1);
+        // Kirjuta ka .htaccess reegel et LiteSpeed ei cacheks /worker URL-i üldse
+        add_action('init', [__CLASS__, 'ensure_htaccess_nocache'], 1);
 
         $nopriv = ['vesho_worker_login', 'vesho_worker_logout', 'vesho_worker_scan_checkin', 'vesho_worker_barcode_login'];
         $auth   = [
@@ -105,15 +108,40 @@ class Vesho_CRM_Worker_Portal {
     // ── Server-side login POST (iOS Safari fix) ───────────────────────────────
 
     // ── Nocache worker portaali lehel ────────────────────────────────────────
+    // ── Nocache worker portaali lehel ────────────────────────────────────────
+    // Käivitatakse 'init' hookis (priority 1) — enne LiteSpeed cache otsust
     public static function maybe_nocache() {
-        global $post;
-        if ( $post && has_shortcode( $post->post_content, 'vesho_worker_portal' ) ) {
+        $uri = $_SERVER['REQUEST_URI'] ?? '';
+        // Kontrolli URL-i järgi — $post pole veel 'init' ajal saadaval
+        $worker_slug = trim( str_replace( home_url(), '', get_option( 'vesho_worker_page_url', '' ) ), '/' );
+        $is_worker = ( strpos( $uri, '/worker' ) !== false )
+                  || ( $worker_slug && strpos( $uri, '/' . $worker_slug ) !== false );
+        if ( $is_worker ) {
             nocache_headers();
             do_action( 'litespeed_control_set_nocache', 'vesho_worker_portal' );
             if ( ! headers_sent() ) {
                 header( 'X-LiteSpeed-Cache-Control: no-cache, no-store' );
+                header( 'Surrogate-Control: no-store' );
             }
         }
+    }
+
+    // ── Lisa .htaccess reegel LiteSpeed cache välistamiseks /worker URL-il ──
+    public static function ensure_htaccess_nocache() {
+        // Käivita ainult üks kord (option flag)
+        if ( get_option( 'vesho_htaccess_nocache_done' ) ) return;
+        $htaccess = ABSPATH . '.htaccess';
+        if ( ! file_exists( $htaccess ) || ! is_writable( $htaccess ) ) return;
+        $content = file_get_contents( $htaccess );
+        $marker  = '# Vesho Worker Nocache';
+        if ( strpos( $content, $marker ) !== false ) {
+            update_option( 'vesho_htaccess_nocache_done', 1 );
+            return;
+        }
+        $rule = "\n$marker\n<IfModule LiteSpeed>\nRewriteEngine On\nRewriteRule ^worker(/.*)?$ - [E=Cache-Control:no-store]\n</IfModule>\n# End Vesho Worker Nocache\n\n";
+        $content = str_replace( '# BEGIN WordPress', $rule . '# BEGIN WordPress', $content );
+        file_put_contents( $htaccess, $content );
+        update_option( 'vesho_htaccess_nocache_done', 1 );
     }
 
     public static function handle_login_post() {
