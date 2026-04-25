@@ -718,8 +718,12 @@
     font-family: 'Barlow', system-ui, sans-serif;
     font-size: 13px;
     font-weight: 500;
-    color: rgba(255, 255, 255, 0.6);
+    color: var(--text-muted);
     text-align: center;
+}
+/* Tume sektsioon (stats-section): valge tekst */
+.stats-section .stat-item__label {
+    color: rgba(255, 255, 255, 0.6);
 }
 
 /* ≤900px: 2×2 — katab kõik mobiilid ja tahvelarvutid */
