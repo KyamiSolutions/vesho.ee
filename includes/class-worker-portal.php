@@ -440,8 +440,15 @@ class Vesho_CRM_Worker_Portal {
         ];
         $nav_items['vastuvott'] = ['icon' => $wico['download'], 'label' => 'Vastuvõtt'];
         $nav_items['inventuur'] = ['icon' => $wico['list'],     'label' => 'Inventuur'];
+        $is_coming_soon = get_option('vesho_coming_soon_mode','0') === '1';
+        $is_maintenance = get_option('vesho_maintenance_mode','0') === '1';
         ?>
 <div class="vwp-wrap">
+  <?php if ($is_maintenance || $is_coming_soon): ?>
+  <div style="background:#f59e0b;color:#1a1a1a;text-align:center;padding:10px 16px;font-size:13px;font-weight:600;position:sticky;top:0;z-index:9999">
+    🔧 <?php echo $is_maintenance ? 'Leht on hoolduses — kasutajad näevad hoolduse teadet' : 'Leht on "Varsti tulekul" režiimis — kasutajad ei näe saiti'; ?>
+  </div>
+  <?php endif; ?>
   <aside class="vwp-sidebar" id="vwpSidebar">
     <div class="vwp-sidebar-logo">
       <?php if ($logo_id): ?>
