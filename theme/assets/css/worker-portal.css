@@ -123,7 +123,7 @@ textarea.vwp-input{min-height:90px;resize:vertical;line-height:1.5}
    → position:fixed töötab garanteeritult, WP wrapperid ei sega
    ═══════════════════════════════════════════════════════════ */
 
-html:has(.vwp-wrap){overscroll-behavior-x:none;overflow-x:hidden}
+html:has(.vwp-wrap){overscroll-behavior-x:none;overflow-x:clip}
 body:has(.vwp-wrap){overscroll-behavior:none;overflow-x:hidden;touch-action:pan-y}
 .vwp-wrap,.vwp-main,.vwp-content{box-sizing:border-box;max-width:100%;overflow-x:hidden}
 .vwp-table-wrap{touch-action:pan-x pan-y;overflow-x:auto;max-width:100%}

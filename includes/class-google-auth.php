@@ -30,10 +30,9 @@ class Vesho_Google_Auth {
 
     public static function enabled_for( $portal ) {
         if ( ! self::client_id() || ! self::client_secret() ) return false;
-        // Kui checkbox pole seadistatud, kasuta client puhul vaikimisi sisse lülitatud
-        $opt = get_option( 'vesho_google_login_' . $portal, '' );
-        if ( $opt === '' ) return true; // esimene kord — vaikimisi sees kui credentials olemas
-        return $opt === '1';
+        // Ainult siis keelatud kui kasutaja on SÕNASELGELT välja lülitanud (saved as '0')
+        $opt = get_option( 'vesho_google_login_' . $portal );
+        return $opt !== '0';
     }
 
     // ── Build OAuth URL ───────────────────────────────────────────────────────

@@ -4268,7 +4268,7 @@ document.querySelectorAll('.vwp-hist-header').forEach(function(hdr){
    ════════════════════════════════════════════════════════════ */
 
 /* Globaalsed alused */
-html:has(.vwp-wrap),body:has(.vwp-wrap){overscroll-behavior-x:none;touch-action:pan-y;overflow-x:hidden}
+html:has(.vwp-wrap){overflow-x:clip}body:has(.vwp-wrap){overscroll-behavior-x:none;touch-action:pan-y;overflow-x:hidden}
 *{box-sizing:border-box}
 .vwp-wrap,.vwp-main,.vwp-content{box-sizing:border-box;max-width:100%}
 .vwp-table-wrap{touch-action:pan-x pan-y;-webkit-overflow-scrolling:touch}

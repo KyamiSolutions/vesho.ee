@@ -387,12 +387,12 @@ $services_page_subtitle = get_option('vesho_services_page_subtitle', '');
                             <div style="display:flex;flex-wrap:wrap;gap:20px;margin-top:8px">
                                 <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
                                     <input type="checkbox" name="google_login_client" value="1"
-                                           <?php checked(get_option('vesho_google_login_client','0'),'1'); ?>>
+                                           <?php checked(get_option('vesho_google_login_client','1'),'1'); ?>>
                                     Client portaal (kliendid)
                                 </label>
                                 <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
                                     <input type="checkbox" name="google_login_worker" value="1"
-                                           <?php checked(get_option('vesho_google_login_worker','0'),'1'); ?>>
+                                           <?php checked(get_option('vesho_google_login_worker','1'),'1'); ?>>
                                     Worker portaal (töötajad)
                                 </label>
                             </div>
