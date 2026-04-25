@@ -6,6 +6,8 @@ class Vesho_CRM_Worker_Portal {
         add_shortcode('vesho_worker_portal', [__CLASS__, 'shortcode']);
         // Server-side login POST — töötab iOS Safaril kus AJAX küpsis ei jää alles
         add_action('init', [__CLASS__, 'handle_login_post']);
+        // Keela cache worker portaali lehel (Hostinger LiteSpeed)
+        add_action('template_redirect', [__CLASS__, 'maybe_nocache']);
 
         $nopriv = ['vesho_worker_login', 'vesho_worker_logout', 'vesho_worker_scan_checkin', 'vesho_worker_barcode_login'];
         $auth   = [
@@ -92,7 +94,7 @@ class Vesho_CRM_Worker_Portal {
         if (!is_user_logged_in()) return null;
         $user = wp_get_current_user();
         global $wpdb;
-        // Admin preview: use first worker in DB
+        // Admin preview: kasuta esimest aktiivset töötajat
         if (current_user_can('manage_options')) {
             $w = $wpdb->get_row("SELECT * FROM {$wpdb->prefix}vesho_workers WHERE active=1 ORDER BY id ASC LIMIT 1");
             return $w ?: null;
@@ -105,6 +107,18 @@ class Vesho_CRM_Worker_Portal {
     }
 
     // ── Server-side login POST (iOS Safari fix) ───────────────────────────────
+
+    // ── Nocache worker portaali lehel ────────────────────────────────────────
+    public static function maybe_nocache() {
+        global $post;
+        if ( $post && has_shortcode( $post->post_content, 'vesho_worker_portal' ) ) {
+            nocache_headers();
+            do_action( 'litespeed_control_set_nocache', 'vesho_worker_portal' );
+            if ( ! headers_sent() ) {
+                header( 'X-LiteSpeed-Cache-Control: no-cache, no-store' );
+            }
+        }
+    }
 
     public static function handle_login_post() {
         if ( $_SERVER['REQUEST_METHOD'] !== 'POST' ) return;
@@ -164,12 +178,12 @@ class Vesho_CRM_Worker_Portal {
             header( 'Expires: Thu, 01 Jan 1970 00:00:00 GMT' );
         }
 
-        // WP admin — show portal directly
+        // WP admin — näita portaali preview'na
         if ( current_user_can('manage_options') ) {
             global $wpdb;
-            $worker = $wpdb->get_row("SELECT * FROM {$wpdb->prefix}vesho_workers ORDER BY id ASC LIMIT 1");
+            $worker = $wpdb->get_row("SELECT * FROM {$wpdb->prefix}vesho_workers WHERE active=1 ORDER BY id ASC LIMIT 1");
             if ( !$worker ) {
-                $worker = (object)['id'=>0,'name'=>'Töötaja puudub','phone'=>'','email'=>'','role'=>'technician','active'=>1,'user_id'=>0];
+                $worker = (object)['id'=>0,'name'=>get_user_meta(get_current_user_id(),'first_name',true) ?: wp_get_current_user()->display_name,'phone'=>'','email'=>'','role'=>'Admin preview','active'=>1,'user_id'=>0];
             }
             ob_start();
             self::render_dashboard($worker);
