@@ -4440,7 +4440,7 @@ private static function load_view( $name ) {
 
     // ── AJAX: toggle campaign paused ──────────────────────────────────────────
     public static function ajax_toggle_campaign() {
-        check_ajax_referer( 'vesho_admin_nonce' );
+        check_ajax_referer( 'vesho_admin_nonce', 'nonce' );
         if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error( 'Unauthorized' );
         global $wpdb;
         $id = absint( $_POST['campaign_id'] ?? 0 );
@@ -4455,7 +4455,7 @@ private static function load_view( $name ) {
 
     // ── AJAX: delete campaign ─────────────────────────────────────────────────
     public static function ajax_delete_campaign() {
-        check_ajax_referer( 'vesho_admin_nonce' );
+        check_ajax_referer( 'vesho_admin_nonce', 'nonce' );
         if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error( 'Unauthorized' );
         global $wpdb;
         $id = absint( $_POST['campaign_id'] ?? 0 );
