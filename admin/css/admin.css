@@ -2199,9 +2199,11 @@ body.wp-admin {
    31. CRM Mobile Bottom Nav + Slide-up Panel (v2.9.90)
    -------------------------------------------------------------------------- */
 
-/* ── Bottom nav ── */
-.crm-mob-nav {
-  display: none; /* hidden by default, shown on mobile */
+/* ── Bottom nav + panel: peidetud desktop'il ── */
+.crm-mob-nav,
+.crm-mob-more-overlay,
+.crm-mob-more-panel {
+  display: none;
 }
 
 @media (max-width: 782px) {
@@ -2295,6 +2297,7 @@ body.wp-admin {
 
   /* ── Slide-up panel ── */
   .crm-mob-more-panel {
+    display: block;
     position: fixed;
     bottom: 0;
     left: 0;
