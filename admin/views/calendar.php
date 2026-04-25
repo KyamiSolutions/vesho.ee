@@ -203,7 +203,7 @@ $ajax_nonce = wp_create_nonce('vesho_admin_nonce');
 
 <!-- Event detail modal -->
 <div id="vesho-event-modal" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.4);align-items:center;justify-content:center">
-    <div style="background:#fff;border-radius:10px;padding:24px;min-width:360px;max-width:500px;box-shadow:0 8px 32px rgba(0,0,0,.2)">
+    <div style="background:#fff;border-radius:10px;padding:24px;width:calc(100vw - 32px);max-width:500px;box-shadow:0 8px 32px rgba(0,0,0,.2)">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
             <h3 style="margin:0;font-size:15px" id="event-modal-title">Hoolduse detailid</h3>
             <button onclick="closeEventModal()" style="background:none;border:none;font-size:18px;cursor:pointer;color:#6b7280">✕</button>
@@ -224,7 +224,7 @@ $ajax_nonce = wp_create_nonce('vesho_admin_nonce');
 
 <!-- Add maintenance modal -->
 <div id="vesho-add-modal" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.4);align-items:center;justify-content:center">
-    <div style="background:#fff;border-radius:10px;padding:24px;min-width:400px;max-width:560px;box-shadow:0 8px 32px rgba(0,0,0,.2);max-height:90vh;overflow-y:auto">
+    <div style="background:#fff;border-radius:10px;padding:24px;width:calc(100vw - 32px);max-width:560px;box-shadow:0 8px 32px rgba(0,0,0,.2);max-height:90vh;overflow-y:auto">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
             <h3 style="margin:0;font-size:15px">Lisa hooldus</h3>
             <button onclick="closeAddModal()" style="background:none;border:none;font-size:18px;cursor:pointer;color:#6b7280">✕</button>

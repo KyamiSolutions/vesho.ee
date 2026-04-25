@@ -426,7 +426,7 @@ if ( $action === 'print' && $invoice_id ) {
                         <?php endif; ?>
                     </div>
                 </div>
-                <table class="crm-table" id="items-table">
+                <div class="crm-table-wrap"><table class="crm-table" id="items-table">
                     <thead><tr>
                         <th style="width:40%">Kirjeldus</th>
                         <th style="width:10%">Kogus</th>
@@ -458,7 +458,7 @@ if ( $action === 'print' && $invoice_id ) {
                         </tr>
                     <?php endif; ?>
                     </tbody>
-                </table>
+                </table></div>
                 <div style="margin-top:8px;display:flex;justify-content:space-between;align-items:center">
                     <button type="button" onclick="addRow()" class="crm-btn crm-btn-outline crm-btn-sm">+ Lisa rida</button>
                     <div style="text-align:right;font-size:14px">

@@ -882,7 +882,7 @@ function issuePartialRefund(orderId, amount) {
 function openManualRefund(orderId) {
     var overlay = document.createElement('div');
     overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99999;display:flex;align-items:center;justify-content:center';
-    overlay.innerHTML = '<div style="background:#fff;border-radius:12px;padding:28px;min-width:320px;max-width:440px;box-shadow:0 8px 32px rgba(0,0,0,.15)">'
+    overlay.innerHTML = '<div style="background:#fff;border-radius:12px;padding:20px;width:calc(100vw - 32px);max-width:440px;box-shadow:0 8px 32px rgba(0,0,0,.15)">'
         + '<h3 style="margin:0 0 16px;color:#0d1f2d;font-size:16px">💸 Tagasimakse kliendile</h3>'
         + '<p style="font-size:13px;color:#6b8599;margin:0 0 14px">Sisesta tagastatav summa (€). Stripe ja Maksekeskus töödeldakse automaatselt. Montonio puhul tee tagastus käsitsi Montonio halduspaneelil.</p>'
         + '<input id="mr-amount" type="number" min="0.01" step="0.01" placeholder="Summa (€)" style="width:100%;padding:9px 12px;border:1px solid #dce3e9;border-radius:8px;font-size:15px;box-sizing:border-box;margin-bottom:14px">'
@@ -940,7 +940,7 @@ function pakiModalOpen() {
         var overlay = document.createElement('div');
         overlay.id = 'paki-modal-overlay';
         overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:99999;display:flex;align-items:center;justify-content:center';
-        overlay.innerHTML = '<div style="background:#fff;border-radius:16px;padding:32px 28px;min-width:360px;max-width:480px;width:90%;box-shadow:0 8px 40px rgba(0,0,0,.18);position:relative">'
+        overlay.innerHTML = '<div style="background:#fff;border-radius:16px;padding:24px 20px;width:calc(100vw - 32px);max-width:480px;box-shadow:0 8px 40px rgba(0,0,0,.18);position:relative">'
             + '<button id="paki-modal-close" style="position:absolute;top:14px;right:14px;background:none;border:1px solid #e2e8f0;border-radius:50%;width:30px;height:30px;font-size:14px;cursor:pointer;color:#64748b;display:flex;align-items:center;justify-content:center">✕</button>'
             + '<div style="font-size:17px;font-weight:700;color:#1a2a38;margin-bottom:8px">🔍 Leia pakikaardiga</div>'
             + '<div style="font-size:13px;color:#64748b;margin-bottom:20px">Skanni tellimuse pakikaardil olev ribakood.</div>'

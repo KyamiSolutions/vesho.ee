@@ -185,7 +185,7 @@ $upcoming = $wpdb->get_results( $wpdb->prepare(
 
 <!-- Confirm modal -->
 <div id="vesho-confirm-modal" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.4);align-items:center;justify-content:center">
-    <div style="background:#fff;border-radius:10px;padding:28px;min-width:340px;max-width:460px;box-shadow:0 8px 32px rgba(0,0,0,.2)">
+    <div style="background:#fff;border-radius:10px;padding:28px;width:calc(100vw - 32px);max-width:460px;box-shadow:0 8px 32px rgba(0,0,0,.2)">
         <h3 style="margin:0 0 16px;font-size:16px">Kinnita hooldus</h3>
         <form method="POST" action="<?php echo admin_url('admin-post.php'); ?>" id="vesho-confirm-form">
             <?php wp_nonce_field('vesho_confirm_maintenance', '_wpnonce'); ?>

@@ -2419,5 +2419,83 @@ body.wp-admin {
 }
 
 /* --------------------------------------------------------------------------
+   32. Mobiil: modaalid, tabelid, grids — kõigi lehtede fix (v2.9.95)
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 600px) {
+
+  /* ── Kõik modaalid: min-width eemalda, max screen-width ── */
+  [style*="min-width:3"],
+  [style*="min-width:4"],
+  [style*="min-width:5"] {
+    min-width: 0 !important;
+    width: calc(100vw - 24px) !important;
+    max-width: calc(100vw - 24px) !important;
+    box-sizing: border-box !important;
+  }
+
+  /* ── Modaali padding mobiilis väiksem ── */
+  [style*="padding:28px"],
+  [style*="padding:32px"],
+  [style*="padding:24px"] {
+    padding: 16px !important;
+  }
+
+  /* ── so-item-row (tellimuse read) → vertikaalne kaartlayout ── */
+  .so-item-row {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 6px !important;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 10px !important;
+  }
+
+  .so-item-row select,
+  .so-item-row input {
+    width: 100% !important;
+    max-width: none !important;
+    box-sizing: border-box !important;
+  }
+
+  /* ── Tickets: töötaja assign ── */
+  [style*="min-width:180px"] {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  /* ── Tasks toolbar: 2 selectit + otsing ── */
+  .crm-toolbar form select + select {
+    margin-top: 0;
+  }
+
+  /* ── Invoices credit note modal width ── */
+  [style*="width:420px"] {
+    width: calc(100vw - 24px) !important;
+    max-width: calc(100vw - 24px) !important;
+  }
+
+  /* ── Dashboard quick-action grid ── */
+  [style*="grid-template-columns: repeat(3"] {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  /* ── Route toolbar inputs ── */
+  .crm-toolbar input[type="date"] {
+    flex: 1 1 auto !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  /* ── Stat kaardid (reminders, orders) ── */
+  [style*="flex:1;min-width:160px"] {
+    flex: 1 1 calc(50% - 8px) !important;
+    min-width: 0 !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
    End of Vesho CRM Admin Stylesheet
    ========================================================================== */
