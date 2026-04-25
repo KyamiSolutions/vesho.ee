@@ -478,7 +478,8 @@ code,.vc{background:#f1f5f9;border:1px solid #e2e8f0;border-radius:3px;padding:1
         </ul>
       </div>
     </div>
-    <div class="vd-warn"><b>Ettevaatust</b>Ära aktiveeri mitut makseproviderit korraga — valige üks. Testige makset alati enne päris kasutamist sandbox-režiimis.</div>
+    <div class="vd-tip"><b>Mitu providerit korraga</b>Kõik kolm võivad olla korraga aktiivsed — klient näeb eraldi nuppe: "Kaardiga (Stripe)", "Pangalink (Montonio)", "Panka/kaardiga (Maksekeskus)". Mõistlik kombinatsioon: <strong>Stripe kaartide jaoks + Montonio pangalinkide jaoks</strong>. Montonio + Maksekeskus korraga on mõttetu kuna mõlemad pakuvad pangalinke.</div>
+    <div class="vd-warn"><b>Enne aktiveerimist</b>Testige makset alati sandbox-režiimis enne päris kasutamist.</div>
   </div>
 
   <div class="vd-sec" id="ladu">
