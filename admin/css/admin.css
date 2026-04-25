@@ -2291,6 +2291,14 @@ body.wp-admin {
 
   .crm-mob-nav::-webkit-scrollbar { display: none; }
 
+  /* Hostinger Kodee AI nupp on paremas nurgas — lisa ruum */
+  .crm-mob-nav::after {
+    content: '';
+    display: block;
+    min-width: 80px;
+    flex-shrink: 0;
+  }
+
   .crm-mob-nav__item {
     flex: 0 0 72px;
     min-width: 72px;
