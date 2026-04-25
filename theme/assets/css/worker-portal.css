@@ -123,10 +123,10 @@ textarea.vwp-input{min-height:90px;resize:vertical;line-height:1.5}
    → position:fixed töötab garanteeritult, WP wrapperid ei sega
    ═══════════════════════════════════════════════════════════ */
 
-html:has(.vwp-wrap){overscroll-behavior-x:none}
-body:has(.vwp-wrap){overscroll-behavior-x:none}
-.vwp-wrap,.vwp-main,.vwp-content{box-sizing:border-box;max-width:100%}
-.vwp-table-wrap{touch-action:pan-x pan-y}
+html:has(.vwp-wrap){overscroll-behavior-x:none;overflow-x:hidden}
+body:has(.vwp-wrap){overscroll-behavior-x:none;overflow-x:hidden}
+.vwp-wrap,.vwp-main,.vwp-content{box-sizing:border-box;max-width:100%;overflow-x:hidden}
+.vwp-table-wrap{touch-action:pan-x pan-y;overflow-x:auto;max-width:100%}
 .vwp-wrap a,.vwp-wrap button{-webkit-tap-highlight-color:transparent}
 
 /* Teadaanne: peidetud portaali lehel kõikidel ekraanil */
@@ -147,12 +147,12 @@ body:has(.vwp-wrap) #global-announcement-bar{display:none!important}
   /* Body ei scrolli — portaal scrollib ise */
   body:has(.vwp-wrap){overflow:hidden!important}
 
-  /* WP wrapperid: tühjaks */
+  /* WP wrapperid: tühjaks + overflow clip et ei nihkuks */
   body:has(.vwp-wrap) #page,
   body:has(.vwp-wrap) #primary,
   body:has(.vwp-wrap) #main,
   body:has(.vwp-wrap) .entry-content,
-  body:has(.vwp-wrap) article{padding:0!important;margin:0!important;min-height:unset!important}
+  body:has(.vwp-wrap) article{padding:0!important;margin:0!important;min-height:unset!important;overflow:hidden!important}
 
   /* ── PORTAAL: täidab ekraani alates 52px (site header) ── */
   .vwp-wrap{
@@ -185,9 +185,10 @@ body:has(.vwp-wrap) #global-announcement-bar{display:none!important}
   .vwp-topbar-title{font-size:15px!important;font-weight:700!important;color:#0d1f2d!important}
   .vwp-topbar-right{display:none!important}
 
-  /* Sisu: kerib */
+  /* Sisu: kerib vertikaalselt, ei liigu horisontaalselt */
   .vwp-content{
-    flex:1!important;overflow-y:auto!important;-webkit-overflow-scrolling:touch!important;
+    flex:1!important;overflow-y:auto!important;overflow-x:hidden!important;
+    -webkit-overflow-scrolling:touch!important;
     padding:16px 16px calc(74px + env(safe-area-inset-bottom))!important;
     max-width:100%!important;box-sizing:border-box!important;
   }

@@ -1621,14 +1621,19 @@
    -------------------------------------------------------------------------- */
 
 @media (max-width: 1024px) {
-  /* Horisontaalne overscroll keelatud — ei peida sisu */
-  html, body { overscroll-behavior-x: none; }
+  /* Horisontaalne overscroll + scroll keelatud lehe tasemel */
+  html, body { overscroll-behavior-x: none; overflow-x: hidden; }
   /* crm-wrap mahub ekraanile */
-  .crm-wrap { max-width: 100%; box-sizing: border-box; }
+  .crm-wrap { max-width: 100%; box-sizing: border-box; overflow-x: hidden; }
   /* crm-page-header: padding mobiilil väiksem */
   .crm-page-header { padding: 20px 16px; }
   /* Tabelid: horisontaalne scroll ainult tabelis endas */
-  .crm-table-wrap { touch-action: pan-x pan-y; }
+  .crm-table-wrap { touch-action: pan-x pan-y; overflow-x: auto; max-width: 100%; }
+  /* Kõik laiad elemendid mahuvad ekraanile */
+  .crm-card, .crm-toolbar, .crm-form-grid { max-width: 100%; box-sizing: border-box; }
+  /* WP admin sidebar ei too overflow-i */
+  #wpbody-content { overflow-x: hidden; }
+  #wpcontent { overflow-x: hidden; }
 }
 
 /* --------------------------------------------------------------------------
