@@ -3153,7 +3153,7 @@ function setMsg(m){document.getElementById('vcp-pay-msg').textContent=m;}
    ════════════════════════════════════════════════════════════ */
 
 /* Globaalsed alused */
-html:has(.vcp-wrap),body:has(.vcp-wrap){overscroll-behavior-x:none;touch-action:pan-y;overflow-x:hidden}
+html:has(.vcp-wrap){overflow-x:clip}body:has(.vcp-wrap){overscroll-behavior-x:none;touch-action:pan-y;overflow-x:hidden}
 *{box-sizing:border-box}
 .vcp-wrap,.vcp-main,.vcp-content{box-sizing:border-box;max-width:100%}
 .vcp-table-wrap{touch-action:pan-x pan-y;-webkit-overflow-scrolling:touch}
