@@ -128,20 +128,23 @@ class Vesho_CRM_Worker_Portal {
 
     // ── Lisa .htaccess reegel LiteSpeed cache välistamiseks /worker URL-il ──
     public static function ensure_htaccess_nocache() {
-        // Käivita ainult üks kord (option flag)
-        if ( get_option( 'vesho_htaccess_nocache_done' ) ) return;
         $htaccess = ABSPATH . '.htaccess';
         if ( ! file_exists( $htaccess ) || ! is_writable( $htaccess ) ) return;
-        $content = file_get_contents( $htaccess );
-        $marker  = '# Vesho Worker Nocache';
+        $content    = file_get_contents( $htaccess );
+        $marker     = '# Vesho Worker Nocache';
+        $end_marker = '# End Vesho Worker Nocache';
+        // Kustuta vana/vale reegel kui on
         if ( strpos( $content, $marker ) !== false ) {
-            update_option( 'vesho_htaccess_nocache_done', 1 );
-            return;
+            $content = preg_replace( '/' . preg_quote( $marker, '/' ) . '.*?' . preg_quote( $end_marker, '/' ) . '\s*/s', '', $content );
         }
-        $rule = "\n$marker\n<IfModule LiteSpeed>\nRewriteEngine On\nRewriteRule ^worker(/.*)?$ - [E=Cache-Control:no-store]\n</IfModule>\n# End Vesho Worker Nocache\n\n";
+        // Lisa õige LiteSpeed noLSCache reegel
+        // noLSCache=1 ütleb LiteSpeed'ile: ära serveeri cache'st JA ära salvesta cache'i
+        $rule = "$marker\n<IfModule LiteSpeed>\nRewriteEngine On\nRewriteRule ^worker(/.*)?$ - [E=noLSCache:1]\n</IfModule>\n$end_marker\n\n";
         $content = str_replace( '# BEGIN WordPress', $rule . '# BEGIN WordPress', $content );
         file_put_contents( $htaccess, $content );
-        update_option( 'vesho_htaccess_nocache_done', 1 );
+        // Puhasta LiteSpeed cache /worker URL-il
+        do_action( 'litespeed_purge_url', home_url( '/worker/' ) );
+        do_action( 'litespeed_purge_url', home_url( '/worker' ) );
     }
 
     public static function handle_login_post() {
@@ -324,6 +327,16 @@ class Vesho_CRM_Worker_Portal {
 </div>
 <script>
 (function(){
+  // ── Cache-bust: kui kasutajal on WP küpsis aga ta näeb login lehte,
+  // tähendab LiteSpeed serveerib cache'd — lae uuesti päris URL-iga
+  var hasWpCookie = document.cookie.split(';').some(function(c){
+    return c.trim().indexOf('wordpress_logged_in') === 0;
+  });
+  if (hasWpCookie && !window.location.search.includes('_r=')) {
+    window.location.replace(window.location.pathname + '?_r=' + Date.now());
+    return;
+  }
+
   var ajaxUrl='<?php echo $ajax; ?>';
   var nonce='<?php echo $nonce; ?>';
 
