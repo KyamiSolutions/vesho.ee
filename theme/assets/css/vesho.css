@@ -2262,7 +2262,11 @@
 }
 
 /* ── Avalik sait: horisontaalne nihkumine keelatud ── */
-html, body {
+html {
+    overscroll-behavior-x: none;
+    overflow-x: clip; /* clip ei loo scroll-container'it — mouse wheel töötab */
+}
+body {
     overscroll-behavior-x: none;
     overflow-x: hidden;
 }

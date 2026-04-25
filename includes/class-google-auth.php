@@ -29,10 +29,11 @@ class Vesho_Google_Auth {
     }
 
     public static function enabled_for( $portal ) {
+        // Credentials puuduvad → keelatud
         if ( ! self::client_id() || ! self::client_secret() ) return false;
-        // Ainult siis keelatud kui kasutaja on SÕNASELGELT välja lülitanud (saved as '0')
-        $opt = get_option( 'vesho_google_login_' . $portal );
-        return $opt !== '0';
+        // Credentials olemas → Google login lubatud
+        // (keelamiseks: eemalda Client ID / Secret seadetest)
+        return true;
     }
 
     // ── Build OAuth URL ───────────────────────────────────────────────────────
