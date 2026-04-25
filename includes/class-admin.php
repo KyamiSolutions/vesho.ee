@@ -1127,6 +1127,8 @@ private static function load_view( $name ) {
             $data['pin']      = $hashed;
         }
 
+        $link_wp_user_id = absint( $_POST['link_wp_user_id'] ?? 0 );
+
         if ( $id ) {
             $existing = $wpdb->get_row( $wpdb->prepare(
                 "SELECT * FROM {$wpdb->prefix}vesho_workers WHERE id=%d", $id
@@ -1135,23 +1137,50 @@ private static function load_view( $name ) {
             if ( $existing && empty( $existing->barcode_token ) ) {
                 $data['barcode_token'] = bin2hex( random_bytes(8) );
             }
+            // Link to existing WP user if chosen
+            if ( $link_wp_user_id ) {
+                $data['user_id'] = $link_wp_user_id;
+                // Add vesho_worker role (unless already admin)
+                $wp_u = new WP_User( $link_wp_user_id );
+                if ( ! $wp_u->has_cap('manage_options') ) {
+                    $wp_u->set_role('vesho_worker');
+                } else {
+                    $wp_u->add_role('vesho_worker');
+                }
+            }
             $wpdb->update( $wpdb->prefix . 'vesho_workers', $data, array( 'id' => $id ) );
             // Update WP user password if PIN changed
-            if ( ! empty($pin) && $existing && $existing->user_id ) {
-                wp_set_password( $pin, (int) $existing->user_id );
+            $active_uid = $link_wp_user_id ?: ( $existing->user_id ?? 0 );
+            if ( ! empty($pin) && $active_uid ) {
+                wp_set_password( $pin, (int) $active_uid );
             }
             $msg = 'updated';
         } else {
-            // New worker — create WP user too
+            // New worker
             $data['created_at']    = current_time( 'mysql' );
             $data['barcode_token'] = bin2hex( random_bytes(8) );
-            $email = ! empty( $data['email'] ) ? $data['email'] : strtolower( str_replace( ' ', '.', $worker_name ) ) . '@worker.local';
-            $wp_user_id = username_exists( $worker_name ) ? false : wp_create_user( $worker_name, $pin ?: wp_generate_password(), $email );
-            if ( $wp_user_id && ! is_wp_error( $wp_user_id ) ) {
-                $wp_user = new WP_User( $wp_user_id );
-                $wp_user->set_role( 'vesho_worker' );
-                wp_update_user( array( 'ID' => $wp_user_id, 'display_name' => $worker_name ) );
-                $data['user_id'] = $wp_user_id;
+            if ( $link_wp_user_id ) {
+                // Link to existing WP user — don't create new one
+                $data['user_id'] = $link_wp_user_id;
+                $wp_u = new WP_User( $link_wp_user_id );
+                if ( ! $wp_u->has_cap('manage_options') ) {
+                    $wp_u->set_role('vesho_worker');
+                } else {
+                    $wp_u->add_role('vesho_worker');
+                }
+                if ( ! empty($pin) ) {
+                    wp_set_password( $pin, $link_wp_user_id );
+                }
+            } else {
+                // Create new WP user automatically
+                $email = ! empty( $data['email'] ) ? $data['email'] : strtolower( str_replace( ' ', '.', $worker_name ) ) . '@worker.local';
+                $wp_user_id = username_exists( $worker_name ) ? false : wp_create_user( $worker_name, $pin ?: wp_generate_password(), $email );
+                if ( $wp_user_id && ! is_wp_error( $wp_user_id ) ) {
+                    $wp_user = new WP_User( $wp_user_id );
+                    $wp_user->set_role( 'vesho_worker' );
+                    wp_update_user( array( 'ID' => $wp_user_id, 'display_name' => $worker_name ) );
+                    $data['user_id'] = $wp_user_id;
+                }
             }
             $wpdb->insert( $wpdb->prefix . 'vesho_workers', $data );
             $msg = 'added';

@@ -114,6 +114,24 @@ function vesho_worker_is_clocked_in($worker_id) {
                         <span class="crm-form-label" style="margin:0">📦 Inventuur (portaal)</span>
                     </label>
                 </div>
+                <div class="crm-form-group crm-form-full">
+                    <label class="crm-form-label">Seosta WP kasutajaga</label>
+                    <?php
+                    $all_wp_users = get_users(['orderby'=>'display_name','fields'=>['ID','display_name','user_login']]);
+                    $linked_uid   = $edit->user_id ?? 0;
+                    ?>
+                    <select class="crm-form-select" name="link_wp_user_id">
+                        <option value="0">— Loo automaatselt uus kasutaja —</option>
+                        <?php foreach ($all_wp_users as $u) : ?>
+                        <option value="<?php echo $u->ID; ?>" <?php selected($linked_uid, $u->ID); ?>>
+                            <?php echo esc_html($u->display_name ?: $u->user_login); ?> (<?php echo esc_html($u->user_login); ?>)
+                        </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <?php if ($linked_uid) : ?>
+                    <div style="margin-top:6px;font-size:12px;color:#2d6a2d">✅ Seotud: <?php $lu = get_userdata($linked_uid); echo $lu ? esc_html($lu->user_login) : '#'.$linked_uid; ?></div>
+                    <?php endif; ?>
+                </div>
                 <?php if ($edit) : ?>
                 <div class="crm-form-group crm-form-full">
                     <label class="crm-form-label">QR / Barcodi token</label>
