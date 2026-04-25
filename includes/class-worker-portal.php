@@ -128,6 +128,7 @@ class Vesho_CRM_Worker_Portal {
 
     // ── Lisa .htaccess reegel LiteSpeed cache välistamiseks /worker URL-il ──
     public static function ensure_htaccess_nocache() {
+        if ( get_option( 'vesho_htaccess_nocache_v2' ) ) return; // Juba tehtud
         $htaccess = ABSPATH . '.htaccess';
         if ( ! file_exists( $htaccess ) || ! is_writable( $htaccess ) ) return;
         $content    = file_get_contents( $htaccess );
@@ -142,9 +143,7 @@ class Vesho_CRM_Worker_Portal {
         $rule = "$marker\n<IfModule LiteSpeed>\nRewriteEngine On\nRewriteRule ^worker(/.*)?$ - [E=noLSCache:1]\n</IfModule>\n$end_marker\n\n";
         $content = str_replace( '# BEGIN WordPress', $rule . '# BEGIN WordPress', $content );
         file_put_contents( $htaccess, $content );
-        // Puhasta LiteSpeed cache /worker URL-il
-        do_action( 'litespeed_purge_url', home_url( '/worker/' ) );
-        do_action( 'litespeed_purge_url', home_url( '/worker' ) );
+        update_option( 'vesho_htaccess_nocache_v2', 1 );
     }
 
     public static function handle_login_post() {

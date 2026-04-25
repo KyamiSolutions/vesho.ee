@@ -1,8 +1,8 @@
 {
   "name": "Vesho CRM",
   "slug": "vesho-crm",
-  "version": "2.9.118",
-  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.9.118/vesho-crm.zip",
+  "version": "2.9.119",
+  "download_url": "https://github.com/KyamiSolutions/vesho.ee/releases/download/v2.9.119/vesho-crm.zip",
   "requires": "6.0",
   "tested": "6.7",
   "last_updated": "2026-04-25",
