@@ -150,11 +150,11 @@ class Vesho_CRM_Updater {
         ] );
 
         if ( is_wp_error( $response ) || wp_remote_retrieve_response_code( $response ) !== 200 ) {
-            // Fallback to raw CDN
-            $url      = self::get_server_url() . '/' . $type . '-info.json';
+            // Fallback to raw CDN — timestamp parameetriga et CDN cache ei blokeeri
+            $url      = self::get_server_url() . '/' . $type . '-info.json?t=' . time();
             $response = wp_remote_get( $url, [
                 'timeout' => 10,
-                'headers' => [ 'Cache-Control' => 'no-cache', 'Pragma' => 'no-cache' ],
+                'headers' => [ 'Cache-Control' => 'no-cache, no-store', 'Pragma' => 'no-cache' ],
             ] );
             if ( is_wp_error( $response ) ) return null;
         }
