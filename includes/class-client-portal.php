@@ -536,6 +536,11 @@ function veshoResendVerify(){
     // ── Login / Register form ─────────────────────────────────────────────────
 
     private static function render_login_form() {
+        // Ära cache seda lehte — LiteSpeed / Hostinger cache peab alati värske HTML serveerima
+        nocache_headers();
+        do_action( 'litespeed_control_set_nocache', 'vesho_portal_login' );
+        header( 'X-LiteSpeed-Cache-Control: no-cache, no-store' );
+
         $ajax    = esc_url(admin_url('admin-ajax.php'));
         $nonce   = wp_create_nonce('vesho_portal_nonce');
         $reg     = get_option('vesho_portal_registration','1') === '1';
@@ -580,8 +585,8 @@ html:has(.vcl-wrap){overscroll-behavior-x:none}
 .vcl-hint{font-size:13px;color:#6b8599;margin-bottom:16px;line-height:1.5}
 .vcl-divider{display:flex;align-items:center;gap:12px;margin:16px 0;color:#cbd5e1;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
 .vcl-divider::before,.vcl-divider::after{content:'';flex:1;border-top:1px solid #e2e8f0}
-.vesho-google-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:12px;border:1.5px solid #e2e8f0;border-radius:8px;background:#fff;color:#1e293b;font-family:'Barlow',sans-serif;font-size:14px;font-weight:600;text-decoration:none;cursor:pointer;transition:.15s;box-sizing:border-box}
-.vesho-google-btn:hover{border-color:#00b4c8;background:#f0fbfc;color:#1e293b}
+.vesho-google-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:12px;border:1.5px solid #e2e8f0;border-radius:8px;background:#fff!important;color:#1e293b!important;font-family:'Barlow',sans-serif;font-size:14px;font-weight:600;text-decoration:none!important;cursor:pointer;transition:.15s;box-sizing:border-box}
+.vesho-google-btn:hover{border-color:#00b4c8;background:#f0fbfc!important;color:#0f172a!important}
 </style>
 <div class="vcl-wrap">
   <div class="vcl-inner">
