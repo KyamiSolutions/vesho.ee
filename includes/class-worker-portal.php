@@ -157,6 +157,13 @@ class Vesho_CRM_Worker_Portal {
     // ── Shortcode ─────────────────────────────────────────────────────────────
 
     public static function shortcode() {
+        // Keela caching — Hostinger ei tohi serveerida vana sessiooni
+        if ( ! headers_sent() ) {
+            header( 'Cache-Control: no-store, no-cache, must-revalidate, max-age=0' );
+            header( 'Pragma: no-cache' );
+            header( 'Expires: Thu, 01 Jan 1970 00:00:00 GMT' );
+        }
+
         // WP admin — show portal directly
         if ( current_user_can('manage_options') ) {
             global $wpdb;
