@@ -2195,5 +2195,170 @@ body.wp-admin {
 }
 
 /* --------------------------------------------------------------------------
+   31. CRM Mobile Bottom Nav + Slide-up Panel (v2.9.90)
+   -------------------------------------------------------------------------- */
+
+/* ── Bottom nav ── */
+.crm-mob-nav {
+  display: none; /* hidden by default, shown on mobile */
+}
+
+@media (max-width: 782px) {
+
+  /* Hide WP chrome on CRM pages */
+  body.wp-admin #wpadminbar            { display: none !important; }
+  body.wp-admin #adminmenumain         { display: none !important; }
+  body.wp-admin #adminmenuback         { display: none !important; }
+  body.wp-admin #adminmenuwrap         { display: none !important; }
+  body.wp-admin html                   { margin-top: 0 !important; }
+  body.wp-admin                        { padding-top: 0 !important; margin-top: 0 !important; }
+  body.wp-admin #wpcontent             { margin-left: 0 !important; padding-top: 12px !important; }
+  body.wp-admin #wpbody                { padding-top: 0 !important; }
+  body.wp-admin #wpfooter              { display: none !important; }
+  /* Push content above bottom nav */
+  body.wp-admin .crm-wrap              { padding-bottom: 72px !important; }
+
+  /* ── Bottom nav bar ── */
+  .crm-mob-nav {
+    display: flex;
+    align-items: stretch;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 99999;
+    background: rgba(13, 31, 45, 0.96);
+    backdrop-filter: blur(16px) saturate(1.6);
+    -webkit-backdrop-filter: blur(16px) saturate(1.6);
+    border-top: 1px solid rgba(255,255,255,0.08);
+    height: 58px;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .crm-mob-nav__item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    color: rgba(255,255,255,0.5);
+    text-decoration: none;
+    font-size: 10px;
+    font-family: 'Barlow', system-ui, sans-serif;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    transition: color 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .crm-mob-nav__item:hover,
+  .crm-mob-nav__item:focus {
+    color: rgba(255,255,255,0.85);
+    text-decoration: none;
+  }
+
+  .crm-mob-nav__item--active {
+    color: #00b4c8 !important;
+  }
+
+  .crm-mob-nav__icon {
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .crm-mob-nav__icon svg {
+    width: 20px;
+    height: 20px;
+    stroke: currentColor;
+  }
+
+  .crm-mob-nav__item--active .crm-mob-nav__icon svg {
+    stroke: #00b4c8;
+  }
+
+  /* ── Overlay ── */
+  .crm-mob-more-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 99997;
+    background: rgba(0,0,0,0.45);
+  }
+  .crm-mob-more-overlay--open { display: block; }
+
+  /* ── Slide-up panel ── */
+  .crm-mob-more-panel {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 99998;
+    background: #0d1f2d;
+    border-radius: 16px 16px 0 0;
+    padding: 0 0 calc(env(safe-area-inset-bottom, 0px) + 70px);
+    transform: translateY(100%);
+    transition: transform 0.28s cubic-bezier(0.32,0.72,0,1);
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+
+  .crm-mob-more-panel--open {
+    transform: translateY(0);
+  }
+
+  .crm-mob-more-handle {
+    width: 36px;
+    height: 4px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 2px;
+    margin: 12px auto 16px;
+  }
+
+  .crm-mob-more-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: rgba(255,255,255,0.06);
+    border-top: 1px solid rgba(255,255,255,0.08);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .crm-mob-more-item {
+    display: flex;
+    align-items: center;
+    padding: 16px 18px;
+    color: rgba(255,255,255,0.75);
+    text-decoration: none;
+    font-size: 13px;
+    font-family: 'Barlow', system-ui, sans-serif;
+    font-weight: 600;
+    background: transparent;
+    transition: background 0.12s, color 0.12s;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .crm-mob-more-item:hover,
+  .crm-mob-more-item:focus {
+    background: rgba(0,180,200,0.12);
+    color: #00b4c8;
+    text-decoration: none;
+  }
+
+  .crm-mob-more-item--active {
+    color: #00b4c8 !important;
+    background: rgba(0,180,200,0.08) !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
    End of Vesho CRM Admin Stylesheet
    ========================================================================== */

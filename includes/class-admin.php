@@ -136,6 +136,96 @@ class Vesho_CRM_Admin {
         add_action( 'wp_ajax_vesho_ajax_reply_ticket',       array( __CLASS__, 'ajax_reply_ticket_inline' ) );
         add_action( 'wp_ajax_vesho_ajax_ticket_status',      array( __CLASS__, 'ajax_ticket_status_inline' ) );
         add_action( 'wp_ajax_vesho_get_workorder_photos',    array( __CLASS__, 'ajax_get_workorder_photos' ) );
+        // Mobile CRM nav
+        add_action( 'admin_footer', array( __CLASS__, 'render_crm_mobile_nav' ) );
+    }
+
+    // ── Mobile CRM bottom nav ─────────────────────────────────────────────────
+
+    public static function render_crm_mobile_nav() {
+        $page = sanitize_text_field( $_GET['page'] ?? '' );
+        if ( strpos( $page, 'vesho-crm' ) !== 0 ) return;
+
+        $base = admin_url( 'admin.php' );
+        $nav_items = [
+            [ 'slug' => 'vesho-crm',               'label' => 'Töölaud',   'icon' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>' ],
+            [ 'slug' => 'vesho-crm-clients',        'label' => 'Kliendid',  'icon' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>' ],
+            [ 'slug' => 'vesho-crm-maintenances',   'label' => 'Hooldused', 'icon' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>' ],
+            [ 'slug' => 'vesho-crm-inventory',      'label' => 'Ladu',      'icon' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>' ],
+            [ 'slug' => 'vesho-crm-invoices',       'label' => 'Arved',     'icon' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>' ],
+        ];
+
+        $more_items = [
+            [ 'slug' => 'vesho-crm-workorders',     'label' => 'Töökäsud' ],
+            [ 'slug' => 'vesho-crm-workers',         'label' => 'Töötajad' ],
+            [ 'slug' => 'vesho-crm-tasks',           'label' => 'Ülesanded' ],
+            [ 'slug' => 'vesho-crm-orders',          'label' => 'Tellimused' ],
+            [ 'slug' => 'vesho-crm-requests',        'label' => 'Päringud' ],
+            [ 'slug' => 'vesho-crm-tickets',         'label' => 'Tugipiletid' ],
+            [ 'slug' => 'vesho-crm-calendar',        'label' => 'Kalender' ],
+            [ 'slug' => 'vesho-crm-workhours',       'label' => 'Töötunnid' ],
+            [ 'slug' => 'vesho-crm-receipts',        'label' => 'Vastuvõtt' ],
+            [ 'slug' => 'vesho-crm-suppliers',       'label' => 'Tarnijad' ],
+            [ 'slug' => 'vesho-crm-sales',           'label' => 'Müügiraport' ],
+            [ 'slug' => 'vesho-crm-campaigns',       'label' => 'Kampaaniad' ],
+            [ 'slug' => 'vesho-crm-settings',        'label' => 'Seaded' ],
+        ];
+        ?>
+        <div id="crm-mob-nav" class="crm-mob-nav">
+            <?php foreach ( $nav_items as $item ) :
+                $active = $page === $item['slug'] ? ' crm-mob-nav__item--active' : '';
+            ?>
+            <a href="<?php echo esc_url( add_query_arg( 'page', $item['slug'], $base ) ); ?>"
+               class="crm-mob-nav__item<?php echo $active; ?>">
+                <span class="crm-mob-nav__icon"><?php echo $item['icon']; ?></span>
+                <span class="crm-mob-nav__label"><?php echo esc_html( $item['label'] ); ?></span>
+            </a>
+            <?php endforeach; ?>
+            <button class="crm-mob-nav__item" id="crm-mob-more-btn" type="button" aria-label="Rohkem">
+                <span class="crm-mob-nav__icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                </span>
+                <span class="crm-mob-nav__label">Rohkem</span>
+            </button>
+        </div>
+
+        <div id="crm-mob-more-overlay" class="crm-mob-more-overlay"></div>
+        <div id="crm-mob-more-panel" class="crm-mob-more-panel">
+            <div class="crm-mob-more-handle"></div>
+            <div class="crm-mob-more-grid">
+                <?php foreach ( $more_items as $item ) :
+                    $active = $page === $item['slug'] ? ' crm-mob-more-item--active' : '';
+                ?>
+                <a href="<?php echo esc_url( add_query_arg( 'page', $item['slug'], $base ) ); ?>"
+                   class="crm-mob-more-item<?php echo $active; ?>">
+                    <?php echo esc_html( $item['label'] ); ?>
+                </a>
+                <?php endforeach; ?>
+            </div>
+        </div>
+
+        <script>
+        (function(){
+            var btn = document.getElementById('crm-mob-more-btn');
+            var panel = document.getElementById('crm-mob-more-panel');
+            var overlay = document.getElementById('crm-mob-more-overlay');
+            function openPanel() {
+                panel.classList.add('crm-mob-more-panel--open');
+                overlay.classList.add('crm-mob-more-overlay--open');
+                document.body.style.overflow = 'hidden';
+            }
+            function closePanel() {
+                panel.classList.remove('crm-mob-more-panel--open');
+                overlay.classList.remove('crm-mob-more-overlay--open');
+                document.body.style.overflow = '';
+            }
+            if (btn) btn.addEventListener('click', function() {
+                panel.classList.contains('crm-mob-more-panel--open') ? closePanel() : openPanel();
+            });
+            if (overlay) overlay.addEventListener('click', closePanel);
+        })();
+        </script>
+        <?php
     }
 
     // ── Scanner assets ─────────────────────────────────────────────────────────
