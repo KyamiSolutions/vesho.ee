@@ -94,12 +94,8 @@ class Vesho_CRM_Worker_Portal {
         if (!is_user_logged_in()) return null;
         $user = wp_get_current_user();
         global $wpdb;
-        // Admin preview: kasuta esimest aktiivset töötajat
-        if (current_user_can('manage_options')) {
-            $w = $wpdb->get_row("SELECT * FROM {$wpdb->prefix}vesho_workers WHERE active=1 ORDER BY id ASC LIMIT 1");
-            return $w ?: null;
-        }
-        if (!in_array('vesho_worker', (array) $user->roles)) return null;
+        // Admin võib olla ka töötaja — vaata andmebaasist user_id järgi
+        if (!current_user_can('manage_options') && !in_array('vesho_worker', (array) $user->roles)) return null;
         return $wpdb->get_row($wpdb->prepare(
             "SELECT * FROM {$wpdb->prefix}vesho_workers WHERE user_id=%d AND active=1 LIMIT 1",
             $user->ID
@@ -178,24 +174,20 @@ class Vesho_CRM_Worker_Portal {
             header( 'Expires: Thu, 01 Jan 1970 00:00:00 GMT' );
         }
 
-        // WP admin — näita portaali preview'na
-        if ( current_user_can('manage_options') ) {
-            global $wpdb;
-            $worker = $wpdb->get_row("SELECT * FROM {$wpdb->prefix}vesho_workers WHERE active=1 ORDER BY id ASC LIMIT 1");
-            if ( !$worker ) {
-                $worker = (object)['id'=>0,'name'=>get_user_meta(get_current_user_id(),'first_name',true) ?: wp_get_current_user()->display_name,'phone'=>'','email'=>'','role'=>'Admin preview','active'=>1,'user_id'=>0];
-            }
-            ob_start();
-            self::render_dashboard($worker);
-            return ob_get_clean();
-        }
-        if (!is_user_logged_in() || !current_user_can('vesho_worker')) {
+        if (!is_user_logged_in() || (!current_user_can('vesho_worker') && !current_user_can('manage_options'))) {
             ob_start();
             self::render_login();
             return ob_get_clean();
         }
         $worker = self::get_current_worker();
-        if (!$worker) return '<p>Töötaja konto ei ole seotud CRM töötajaga. <a href="'.esc_url(wp_logout_url(home_url())).'">Logi välja</a></p>';
+        if (!$worker) {
+            // Admin pole töötajana lisatud — suuna CRM-i
+            if (current_user_can('manage_options')) {
+                wp_safe_redirect( admin_url('admin.php?page=vesho-crm') );
+                exit;
+            }
+            return '<p>Töötaja konto ei ole seotud CRM töötajaga. <a href="'.esc_url(wp_logout_url(home_url())).'">Logi välja</a></p>';
+        }
         ob_start();
         self::render_dashboard($worker);
         return ob_get_clean();
