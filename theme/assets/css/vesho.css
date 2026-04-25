@@ -17,6 +17,10 @@
     left: 0;
     right: 0;
     z-index: 1000;
+    /* GPU kiht — iOS Safari position:fixed jitter fix */
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+    will-change: transform;
 }
 
 #page-content {
@@ -221,7 +225,7 @@
     .header-nav {
         display: none;
         position: fixed;
-        top: 64px;
+        top: var(--site-top-height);
         left: 0;
         right: 0;
         background: #fff;
@@ -2250,12 +2254,15 @@
     .hero__actions { flex-direction: column; align-items: stretch; }
     .hero__actions .btn { text-align: center; justify-content: center; }
 
-    /* Topbar height compensation */
-    #page-content { padding-top: 56px; }
+    /* Topbar height compensation — var(--site-top-height) set to 56px above,
+       JS veshoAdjustTopHeight() updates it if announcement bar is also visible */
 }
 
-/* ── Avalik sait: horisontaalne overscroll keelatud (ei peida sisu) ── */
-html, body { overscroll-behavior-x: none; }
+/* ── Avalik sait: horisontaalne nihkumine keelatud ── */
+html, body {
+    overscroll-behavior-x: none;
+    overflow-x: hidden;
+}
 
 /* ── Mobiil iOS: taustavärv = ei tule valge riba scroll-overshot'il ── */
 html { background: #0d1f2d; }
