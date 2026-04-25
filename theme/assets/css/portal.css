@@ -116,7 +116,7 @@ textarea.vcp-input{min-height:100px;resize:vertical;line-height:1.5}
    → position:fixed töötab garanteeritult, WP wrapperid ei sega
    ═══════════════════════════════════════════════════════════ */
 
-html:has(.vcp-wrap),html:has(.vauth-wrap){overscroll-behavior-x:none;overflow-x:clip}
+html:has(.vcp-wrap),html:has(.vauth-wrap){overscroll-behavior-x:none}
 body:has(.vcp-wrap),body:has(.vauth-wrap){overscroll-behavior:none;overflow-x:hidden;touch-action:pan-y}
 .vcp-wrap,.vcp-main,.vcp-content,.vauth-wrap{box-sizing:border-box;max-width:100%;overflow-x:hidden}
 .vcp-table-wrap{touch-action:pan-x pan-y;overflow-x:auto;max-width:100%}

@@ -397,8 +397,19 @@ $services_page_subtitle = get_option('vesho_services_page_subtitle', '');
                                 </label>
                             </div>
                             <small style="color:#6b8599;font-size:12px;margin-top:6px;display:block">
-                                Olemasolev sisselogimine jääb alles — Google on lisavalik
+                                Olemasolev sisselogimine jääb alles — Google on lisavalik.<br>
+                                <strong>Google nupp ilmub login vormil automaatselt kui mõlemad väljad on täidetud.</strong>
                             </small>
+                        </div>
+                        <?php
+                        $gid = get_option('vesho_google_client_id','');
+                        $gsec = get_option('vesho_google_client_secret','');
+                        $status_color = ($gid && $gsec) ? '#15803d' : '#b91c1c';
+                        $status_text  = ($gid && $gsec) ? '✅ Credentials olemas — Google nupp on aktiivne' : '❌ Client ID või Secret on tühi — Google nupp ei ilmu';
+                        ?>
+                        <div style="margin-top:12px;padding:10px 14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;color:<?php echo $status_color; ?>">
+                            <?php echo $status_text; ?>
+                            <?php if ($gid): ?><br><span style="color:#64748b">Client ID: <?php echo esc_html(substr($gid,0,20)).'...'; ?></span><?php endif; ?>
                         </div>
                     </div>
                 </div>

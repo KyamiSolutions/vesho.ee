@@ -2262,13 +2262,14 @@
 }
 
 /* ── Avalik sait: horisontaalne nihkumine keelatud ── */
+/* html-l EI SEA overflow — body overflow propageeritakse viewport'ile (html=visible) */
+/* overflow-x:clip/hidden html-l muudab overflow-y käitumist ja katkestab mouse wheel */
 html {
     overscroll-behavior-x: none;
-    overflow-x: clip; /* clip ei loo scroll-container'it — mouse wheel töötab */
 }
 body {
     overscroll-behavior-x: none;
-    overflow-x: hidden;
+    overflow-x: hidden; /* propageeritakse viewport'ile, body ise ei saa scroll container'iks */
 }
 
 /* ── Mobiil iOS: taustavärv = ei tule valge riba scroll-overshot'il ── */

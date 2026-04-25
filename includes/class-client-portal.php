@@ -544,7 +544,7 @@ function veshoResendVerify(){
         ?>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Barlow:wght@400;500;600&display=swap');
-html:has(.vcl-wrap){overflow-x:clip}
+html:has(.vcl-wrap){overscroll-behavior-x:none}
 .vcl-wrap{min-height:100vh;background:#f0f4f8;display:flex;align-items:flex-start;justify-content:center;padding:32px 20px;font-family:'Barlow',sans-serif}
 .vcl-inner{width:100%;max-width:460px}
 .vcl-logo{text-align:center;margin-bottom:24px}
@@ -3154,7 +3154,7 @@ function setMsg(m){document.getElementById('vcp-pay-msg').textContent=m;}
    ════════════════════════════════════════════════════════════ */
 
 /* Globaalsed alused */
-html:has(.vcp-wrap){overflow-x:clip}body:has(.vcp-wrap){overscroll-behavior-x:none;touch-action:pan-y;overflow-x:hidden}
+html:has(.vcp-wrap){overscroll-behavior-x:none}body:has(.vcp-wrap){overscroll-behavior-x:none;touch-action:pan-y;overflow-x:hidden}
 *{box-sizing:border-box}
 .vcp-wrap,.vcp-main,.vcp-content{box-sizing:border-box;max-width:100%}
 .vcp-table-wrap{touch-action:pan-x pan-y;-webkit-overflow-scrolling:touch}
