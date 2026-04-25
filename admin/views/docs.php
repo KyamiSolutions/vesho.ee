@@ -17,7 +17,7 @@ $wp_ok      = version_compare($wp_ver,  '6.0', '>=');
 /* ── Header ── */
 #vdHeader{background:#0d1f2d;padding:18px 32px;display:flex;align-items:center;justify-content:space-between;gap:16px}
 #vdHeader h1{font-size:17px;font-weight:700;color:#fff;letter-spacing:-.3px;display:flex;align-items:center;gap:10px}
-#vdHeader h1 span{background:#00b4c8;border-radius:6px;width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;font-size:14px}
+#vdHeader h1 span:first-child{background:#00b4c8;border-radius:6px;width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;font-size:14px}
 .vd-hver{font-size:11px;font-weight:600;background:rgba(0,180,200,.18);color:#00b4c8;border-radius:4px;padding:2px 8px;letter-spacing:.3px}
 .vd-hback{font-size:12px;font-weight:600;color:rgba(255,255,255,.5);text-decoration:none;transition:.15s;display:flex;align-items:center;gap:5px}
 .vd-hback:hover{color:#fff}
