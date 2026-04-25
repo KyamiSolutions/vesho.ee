@@ -4,6 +4,8 @@ class Vesho_CRM_Worker_Portal {
 
     public static function init() {
         add_shortcode('vesho_worker_portal', [__CLASS__, 'shortcode']);
+        // Server-side login POST — töötab iOS Safaril kus AJAX küpsis ei jää alles
+        add_action('init', [__CLASS__, 'handle_login_post']);
 
         $nopriv = ['vesho_worker_login', 'vesho_worker_logout', 'vesho_worker_scan_checkin', 'vesho_worker_barcode_login'];
         $auth   = [
@@ -102,6 +104,56 @@ class Vesho_CRM_Worker_Portal {
         ));
     }
 
+    // ── Server-side login POST (iOS Safari fix) ───────────────────────────────
+
+    public static function handle_login_post() {
+        if ( $_SERVER['REQUEST_METHOD'] !== 'POST' ) return;
+        if ( empty( $_POST['vesho_worker_login_submit'] ) ) return;
+
+        if ( ! wp_verify_nonce( $_POST['_wpnonce'] ?? '', 'vesho_worker_login' ) ) {
+            wp_die( 'Turvatoken aegunud. <a href="' . esc_url( home_url('/worker/') ) . '">Proovi uuesti</a>' );
+        }
+
+        $name = sanitize_text_field( $_POST['worker_name'] ?? '' );
+        $pin  = sanitize_text_field( $_POST['pin']         ?? '' );
+        $back = add_query_arg( 'login_error', 'invalid', home_url('/worker/') );
+
+        if ( empty($name) || empty($pin) ) {
+            wp_safe_redirect( add_query_arg('login_error', 'empty', home_url('/worker/')) );
+            exit();
+        }
+
+        global $wpdb;
+        $worker = $wpdb->get_row( $wpdb->prepare(
+            "SELECT * FROM {$wpdb->prefix}vesho_workers WHERE LOWER(name)=LOWER(%s) AND active=1 LIMIT 1",
+            $name
+        ));
+
+        if ( ! $worker || empty($worker->pin) || ! wp_check_password($pin, $worker->pin) ) {
+            wp_safe_redirect( $back );
+            exit();
+        }
+
+        if ( ! empty($worker->user_id) ) {
+            $user = get_user_by('id', (int) $worker->user_id);
+            if ( $user && in_array('vesho_worker', (array) $user->roles) ) {
+                wp_set_auth_cookie( $user->ID, true, is_ssl() );
+                wp_safe_redirect( home_url('/worker/') );
+                exit();
+            }
+        }
+
+        // Fallback: wp_signon
+        $creds = ['user_login' => $worker->name, 'user_password' => $pin, 'remember' => true];
+        $user  = wp_signon( $creds, is_ssl() );
+        if ( is_wp_error($user) ) {
+            wp_safe_redirect( add_query_arg('login_error', 'account', home_url('/worker/')) );
+            exit();
+        }
+        wp_safe_redirect( home_url('/worker/') );
+        exit();
+    }
+
     // ── Shortcode ─────────────────────────────────────────────────────────────
 
     public static function shortcode() {
@@ -168,9 +220,20 @@ class Vesho_CRM_Worker_Portal {
     </div>
     <div class="vwauth-card">
       <h2>Töötaja Portaal</h2>
+      <?php if ( ! empty($_GET['login_error']) ) : ?>
+      <div class="vwauth-msg error" style="display:block"><?php
+        $err = $_GET['login_error'];
+        echo $err === 'empty'   ? 'Sisesta nimi ja PIN-kood.' :
+            ($err === 'account' ? 'Konto seadistus puudub. Pöördu administraatori poole.' :
+                                  'Vale nimi või PIN-kood.');
+      ?></div>
+      <?php endif; ?>
       <div class="vwauth-msg" id="vwauth-msg"></div>
-      <form id="vwauth-form">
-        <input type="hidden" name="nonce" value="<?php echo $nonce; ?>">
+      <?php /* Server-side POST form — küpsis seotakse lehe navigatsiooniga, töötab iOS Safaril */ ?>
+      <form id="vwauth-form" method="POST" action="<?php echo esc_url(home_url('/worker/')); ?>">
+        <?php wp_nonce_field('vesho_worker_login'); ?>
+        <input type="hidden" name="vesho_worker_login_submit" value="1">
+        <input type="hidden" name="ajax_nonce" value="<?php echo $nonce; ?>">
         <div class="vwauth-group">
           <label>Nimi</label>
           <input type="text" name="worker_name" required placeholder="Sinu nimi" autocomplete="name">
@@ -213,21 +276,12 @@ class Vesho_CRM_Worker_Portal {
     });
   }
 
+  // Vorm: server-side POST, ei peata default submit
   var form=document.getElementById('vwauth-form');
   if(form){
-    form.addEventListener('submit',function(e){
-      e.preventDefault();
-      var msg=document.getElementById('vwauth-msg');
-      var fd=new FormData(form); fd.append('action','vesho_worker_login');
-      var btn=form.querySelector('button[type=submit]'); btn.disabled=true; btn.textContent='...';
-      msg.style.display='none';
-      fetch(ajaxUrl,{method:'POST',body:fd}).then(function(r){return r.json();}).then(function(d){
-        msg.style.display='block';
-        msg.className='vwauth-msg '+(d.success?'success':'error');
-        msg.textContent=(d.data&&d.data.message)||(d.success?'Õnnestus!':'Viga!');
-        if(d.success) setTimeout(function(){window.location.href=(d.data&&d.data.redirect)||window.location.href;},600);
-        else{btn.disabled=false; btn.textContent='Logi sisse';}
-      }).catch(function(){msg.style.display='block';msg.className='vwauth-msg error';msg.textContent='Ühenduse viga';btn.disabled=false;btn.textContent='Logi sisse';});
+    form.addEventListener('submit',function(){
+      var btn=form.querySelector('button[type=submit]');
+      if(btn){ btn.disabled=true; btn.textContent='...'; }
     });
   }
 
