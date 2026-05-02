@@ -863,9 +863,13 @@ html:has(.vcl-wrap){overscroll-behavior-x:none}
     <div class="vcp-content">
       <?php
       // ── Global announcement (admin seab kohe, kõigile) ───────────────────────
-      $g_ann = get_option('vesho_global_announcement', '');
-      $g_type = get_option('vesho_global_announcement_type', 'info');
-      if ($g_ann):
+      $g_ann   = get_option('vesho_global_announcement', '');
+      $g_type  = get_option('vesho_global_announcement_type', 'info');
+      $g_start = get_option('vesho_global_announcement_start', '');
+      $g_end   = get_option('vesho_global_announcement_end', '');
+      $g_today = current_time('Y-m-d');
+      $g_show  = $g_ann && (!$g_start || $g_start <= $g_today) && (!$g_end || $g_end >= $g_today);
+      if ($g_show):
           $g_bg  = $g_type==='warning' ? '#fff7ed' : ($g_type==='success' ? '#f0fdf4' : '#eef2ff');
           $g_brd = $g_type==='warning' ? '#fcd34d' : ($g_type==='success' ? '#86efac' : '#c7d2fe');
           $g_col = $g_type==='warning' ? '#92400e' : ($g_type==='success' ? '#166534' : '#3730a3');

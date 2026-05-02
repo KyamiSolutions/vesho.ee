@@ -506,9 +506,13 @@ class Vesho_CRM_Worker_Portal {
     <div class="vwp-content">
       <?php
       // ── Global announcement ───────────────────────────────────────────────────
-      $g_ann_w = get_option('vesho_global_announcement', '');
-      $g_type_w = get_option('vesho_global_announcement_type', 'info');
-      if ($g_ann_w):
+      $g_ann_w   = get_option('vesho_global_announcement', '');
+      $g_type_w  = get_option('vesho_global_announcement_type', 'info');
+      $g_start_w = get_option('vesho_global_announcement_start', '');
+      $g_end_w   = get_option('vesho_global_announcement_end', '');
+      $g_today_w = current_time('Y-m-d');
+      $g_show_w  = $g_ann_w && (!$g_start_w || $g_start_w <= $g_today_w) && (!$g_end_w || $g_end_w >= $g_today_w);
+      if ($g_show_w):
           $g_bg_w  = $g_type_w==='warning' ? '#fff7ed' : ($g_type_w==='success' ? '#f0fdf4' : '#eef2ff');
           $g_brd_w = $g_type_w==='warning' ? '#fcd34d' : ($g_type_w==='success' ? '#86efac' : '#c7d2fe');
           $g_col_w = $g_type_w==='warning' ? '#92400e' : ($g_type_w==='success' ? '#166534' : '#3730a3');
